@@ -274,17 +274,84 @@ class MobileGameControls {
     handleDirectionPress(direction) {
         this.pressedKeys.add(direction);
         console.log(`Moving: ${direction}`);
-        this.updatePlayerPosition(direction);
+        
+        // Simulate keyboard events for the actual game
+        const keyMap = {
+            'up': 'w',
+            'down': 's',
+            'left': 'a',
+            'right': 'd'
+        };
+        
+        const key = keyMap[direction];
+        if (key) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                code: 'Key' + key.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(event);
+        }
     }
 
     handleDirectionRelease(direction) {
         this.pressedKeys.delete(direction);
+        
+        // Simulate keyboard release for the actual game
+        const keyMap = {
+            'up': 'w',
+            'down': 's',
+            'left': 'a',
+            'right': 'd'
+        };
+        
+        const key = keyMap[direction];
+        if (key) {
+            const event = new KeyboardEvent('keyup', {
+                key: key,
+                code: 'Key' + key.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(event);
+        }
     }
 
     handleAction(action) {
         if (this.isOnCooldown(action)) return;
         
         console.log(`Action: ${action}`);
+        
+        // Map actions to keyboard keys used by the game
+        const actionKeyMap = {
+            'attack': 'l',
+            'roll': 'k',
+            'block': 'm'
+        };
+        
+        const key = actionKeyMap[action];
+        if (key) {
+            // Simulate keydown
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: key,
+                code: 'Key' + key.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(keydownEvent);
+            
+            // Simulate keyup after a short delay
+            setTimeout(() => {
+                const keyupEvent = new KeyboardEvent('keyup', {
+                    key: key,
+                    code: 'Key' + key.toUpperCase(),
+                    bubbles: true,
+                    cancelable: true
+                });
+                window.dispatchEvent(keyupEvent);
+            }, 100);
+        }
         
         switch(action) {
             case 'attack':
@@ -417,24 +484,10 @@ class MobileGameControls {
         }, 1000);
     }
 
+    // Note: Player position is now handled by the main game (site.js)
+    // This method is kept for compatibility but does nothing
     updatePlayerPosition(direction) {
-        const speed = 5;
-        switch(direction) {
-            case 'up':
-                this.gameState.position.y = Math.max(0, this.gameState.position.y - speed);
-                break;
-            case 'down':
-                this.gameState.position.y = Math.min(100, this.gameState.position.y + speed);
-                break;
-            case 'left':
-                this.gameState.position.x = Math.max(0, this.gameState.position.x - speed);
-                break;
-            case 'right':
-                this.gameState.position.x = Math.min(100, this.gameState.position.x + speed);
-                break;
-        }
-        
-        this.updateMinimap();
+        // Position updates are handled by the main game through keyboard events
     }
 
     updateMinimap() {
@@ -721,10 +774,8 @@ class MobileGameControls {
     }
 
     update() {
-        // Handle continuous movement
-        this.pressedKeys.forEach(direction => {
-            this.updatePlayerPosition(direction);
-        });
+        // Note: Movement is now handled by the main game through keyboard events
+        // We don't need to update position here anymore
         
         // Regenerate energy slowly
         if (this.gameState.energy < this.gameState.maxEnergy) {
@@ -736,20 +787,9 @@ class MobileGameControls {
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw player
-        const x = (this.gameState.position.x / 100) * this.canvas.width;
-        const y = (this.gameState.position.y / 100) * this.canvas.height;
-        
-        this.ctx.fillStyle = this.gameState.invulnerable ? 'rgba(255,255,255,0.5)' : '#00ff00';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, 10, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Draw player glow
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = '#00ff00';
-        this.ctx.fill();
-        this.ctx.shadowBlur = 0;
+        // Note: The actual player is rendered by site.js as a blue div element
+        // This canvas is only for visual effects like attacks, skills, etc.
+        // We don't draw the player here to avoid duplicate visualization
     }
 }
 
