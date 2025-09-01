@@ -7,6 +7,7 @@
 #include "scent.h"
 #include "enemies.h"
 #include "choices.h"
+#include "risk.h"
 
 #if 0
 
@@ -953,6 +954,10 @@ static int g_non_rare_choice_streak = 0;
 
 int main() { return 0; }
 
+// Pack tracking variables (needed by active implementation)
+static unsigned char g_pack_peak_wolves = 0; // tracks peak active wolves
+static float g_howl_cooldown_until = -1000.f;
+
 static unsigned int spawn_wolf_pack(unsigned int packSize) {
   if (packSize == 0u) return 0u;
   // Choose a center away from extreme edges for better clustering
@@ -997,6 +1002,10 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   g_is_rolling = 0;
   g_prev_is_rolling = 0;
   g_choice_count = 0;
+  g_non_rare_choice_streak = 0;
+  g_total_choices_offered = 0;
+  init_choice_pool();  // Initialize the choice pool
+  init_risk_phase();   // Initialize risk phase
   g_time_seconds = 0.f;
   g_last_attack_time = -1000.f;
   g_last_roll_time = -1000.f;
@@ -1075,6 +1084,36 @@ unsigned int get_choice_rarity(unsigned int idx) { return (idx < g_choice_count)
 __attribute__((export_name("get_choice_tags")))
 unsigned int get_choice_tags(unsigned int idx) { return (idx < g_choice_count) ? g_choices[idx].tags : 0u; }
 
+// Risk phase exports
+__attribute__((export_name("get_curse_count")))
+unsigned int get_curse_count() { return g_curse_count; }
+
+__attribute__((export_name("get_risk_multiplier")))
+float get_risk_multiplier() { return g_risk_multiplier; }
+
+__attribute__((export_name("escape_risk")))
+int escape_risk() {
+  if (g_phase != GamePhase::Risk) return 0;
+  if (attempt_risk_escape()) {
+    g_phase = GamePhase::Explore;
+    return 1;
+  }
+  return 0;
+}
+
+__attribute__((export_name("get_timed_challenge_progress")))
+unsigned int get_timed_challenge_progress() { return g_timed_challenge_progress; }
+
+__attribute__((export_name("get_timed_challenge_target")))
+unsigned int get_timed_challenge_target() { return g_timed_challenge_target; }
+
+__attribute__((export_name("get_timed_challenge_remaining")))
+float get_timed_challenge_remaining() {
+  if (g_timed_challenge_end < 0.0f) return 0.0f;
+  float remaining = g_timed_challenge_end - g_time_seconds;
+  return remaining > 0.0f ? remaining : 0.0f;
+}
+
 __attribute__((export_name("commit_choice")))
 int commit_choice(unsigned int choice_id) {
   if (g_phase != GamePhase::Choose) return 0;
@@ -1084,9 +1123,27 @@ int commit_choice(unsigned int choice_id) {
     if (g_choices[i].id == choice_id) { found = true; break; }
   }
   if (!found) return 0;
-  // Apply a trivial immediate benefit for demo: small stamina bump
-  g_stamina += 0.15f;
-  if (g_stamina > 1.0f) g_stamina = 1.0f;
+  
+  // Mark the choice as taken for exclusion system
+  mark_choice_taken(choice_id);
+  
+  // Apply choice effects based on type and tags
+  for (unsigned int i = 0; i < g_choice_count; ++i) {
+    if (g_choices[i].id == choice_id) {
+      // Apply effects based on rarity
+      float staminaBonus = 0.1f;
+      if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Uncommon) staminaBonus = 0.15f;
+      else if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Rare) staminaBonus = 0.2f;
+      else if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Legendary) staminaBonus = 0.3f;
+      
+      g_stamina += staminaBonus;
+      if (g_stamina > 1.0f) g_stamina = 1.0f;
+      
+      // TODO: Apply specific effects based on tags
+      break;
+    }
+  }
+  
   g_phase = GamePhase::Explore;
   g_choice_count = 0;
   g_wolf_kills_since_choice = 0;
@@ -1346,6 +1403,36 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
     }
     update_pack_controller();
     enemy_tick_all(dtSeconds);
+  }
+  
+  // Risk phase management
+  if (g_phase == GamePhase::Risk) {
+    update_risk_phase(dtSeconds);
+    
+    // Check for timed challenge completion
+    if (g_timed_challenge_end > 0.0f && g_timed_challenge_progress >= g_timed_challenge_target) {
+      // Success! Grant bonus and exit risk phase
+      g_stamina = 1.0f; // Full stamina restore
+      g_phase = GamePhase::PowerUp;
+      g_timed_challenge_end = -1.0f;
+    }
+  } else if (g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) {
+    // Check if should enter risk phase
+    if (should_enter_risk_phase()) {
+      g_phase = GamePhase::Risk;
+      trigger_risk_event();
+    }
+  }
+  
+  // Apply curse modifiers to player stats
+  if (g_curse_count > 0) {
+    // Apply weakness curse to damage (handled in attack logic)
+    // Apply slowness curse to movement
+    float slowMod = get_curse_modifier(CurseType::Slowness);
+    g_vel_x *= slowMod;
+    g_vel_y *= slowMod;
+    
+    // Apply exhaustion curse to stamina regen (handled in stamina update)
   }
 }
 
@@ -1617,6 +1704,4 @@ unsigned int spawn_wolves(unsigned int count) {
   // Refresh roles quickly; pack controller also updates each frame in update().
   update_pack_controller();
   return spawned;
-}
-
 }

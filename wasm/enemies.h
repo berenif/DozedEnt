@@ -61,6 +61,15 @@ static const float ENEMY_MIN_CHASE_BEFORE_LUNGE = 0.75f;
 static const float LATCH_DURATION = 1.0f;
 static const float LATCH_DRAG_SPEED = 0.22f;
 
+// Prey cone avoidance constants
+static const float PREY_CONE_COS = 0.5f;  // cos(60 deg) - threshold for player's facing cone
+static const float PREY_CONE_WEIGHT = 0.8f;  // weight for avoidance when in player's cone
+
+// Fatigue system constants
+static const float FATIGUE_LUNGE_BONUS = 0.15f;  // fatigue gained from lunging
+static const float FATIGUE_PER_SPEED = 0.3f;  // fatigue accumulation rate
+static const float FATIGUE_RECOVERY_PER_SEC = 0.2f;  // fatigue recovery rate
+
 // Danger zones (blackboard) and den
 #define MAX_DANGER_ZONES 16
 struct DangerZone { float x; float y; float radius; float strength; float expiresAt; };
