@@ -37,17 +37,30 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [ ] Boon/relic/affix effects applied in WASM on `commit_choice`
 - [ ] Immediate breakpoint or visible stat change reflected in snapshot
 
-### Risk (push your luck)
-- [ ] Curses/elite flags/timed events resolved in WASM
-- [ ] Clear escape hatch encoded; UI only reflects state
+### 🎲 Phase: Risk (Push Your Luck)
+- [ ] **Curse System** - Negative effects managed in WASM
+- [ ] **Elite Encounters** - Special enemy flags set deterministically
+- [ ] **Timed Events** - Countdown mechanics in WASM
+- [ ] **Risk/Reward Balance** - Clear cost/benefit ratios
+- [ ] **Escape Mechanism** - Bail-out option always available
+- [ ] **Probability Curves** - Risk increases properly scaled
 
-### Escalate
-- [ ] Density/modifiers/miniboss interrupts seeded and deterministic
-- [ ] New problems, not just bigger numbers (data/tags over constants)
+### 📈 Phase: Escalate
+- [ ] **Difficulty Scaling** - Enemy density increases properly
+- [ ] **Modifier System** - Environmental challenges added
+- [ ] **Miniboss Spawns** - Interrupt events deterministic
+- [ ] **Mechanical Complexity** - New problems, not just stat inflation
+- [ ] **Data-Driven Design** - Uses tags/systems over hardcoded values
+- [ ] **Player Adaptation** - Forces strategy changes
 
-### CashOut
-- [ ] Shops/forge/heal are WASM decisions; JS only buttons/labels
-- [ ] Two-currency constraints enforced in WASM
+### 💰 Phase: CashOut
+- [ ] **Shop System** - Item availability/pricing in WASM
+- [ ] **Forge Mechanics** - Upgrade paths calculated server-side
+- [ ] **Healing Options** - Recovery amounts determined in WASM
+- [ ] **Currency Management** - Dual-currency system enforced:
+  - 🔶 **Primary Currency** - Main resource
+  - 🔷 **Premium Currency** - Special resource
+- [ ] **Transaction Validation** - All purchases verified in WASM
 
 ### Reset
 - [ ] Instant restart via `reset_run(seed)` reproduces clean state
@@ -93,17 +106,30 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] Boon/relic/affix effects applied in WASM on `commit_choice`
 - [x] Immediate breakpoint or visible stat change reflected in snapshot
 
-### Risk (push your luck)
-- [ ] Curses/elite flags/timed events resolved in WASM
-- [ ] Clear escape hatch encoded; UI only reflects state
+### 🎲 Phase: Risk (Push Your Luck)
+- [ ] **Curse System** - Negative effects managed in WASM
+- [ ] **Elite Encounters** - Special enemy flags set deterministically
+- [ ] **Timed Events** - Countdown mechanics in WASM
+- [ ] **Risk/Reward Balance** - Clear cost/benefit ratios
+- [ ] **Escape Mechanism** - Bail-out option always available
+- [ ] **Probability Curves** - Risk increases properly scaled
 
-### Escalate
-- [ ] Density/modifiers/miniboss interrupts seeded and deterministic
-- [ ] New problems, not just bigger numbers (data/tags over constants)
+### 📈 Phase: Escalate
+- [ ] **Difficulty Scaling** - Enemy density increases properly
+- [ ] **Modifier System** - Environmental challenges added
+- [ ] **Miniboss Spawns** - Interrupt events deterministic
+- [ ] **Mechanical Complexity** - New problems, not just stat inflation
+- [ ] **Data-Driven Design** - Uses tags/systems over hardcoded values
+- [ ] **Player Adaptation** - Forces strategy changes
 
-### CashOut
-- [ ] Shops/forge/heal are WASM decisions; JS only buttons/labels
-- [ ] Two-currency constraints enforced in WASM
+### 💰 Phase: CashOut
+- [ ] **Shop System** - Item availability/pricing in WASM
+- [ ] **Forge Mechanics** - Upgrade paths calculated server-side
+- [ ] **Healing Options** - Recovery amounts determined in WASM
+- [ ] **Currency Management** - Dual-currency system enforced:
+  - 🔶 **Primary Currency** - Main resource
+  - 🔷 **Premium Currency** - Special resource
+- [ ] **Transaction Validation** - All purchases verified in WASM
 
 ### Reset
 - [x] Instant restart via `reset_run(seed)` reproduces clean state

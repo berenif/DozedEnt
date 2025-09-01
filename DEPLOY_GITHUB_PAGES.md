@@ -1,20 +1,38 @@
-# GitHub Pages Deployment Guide
+# 🚀 GitHub Pages Deployment Guide
 
-This guide explains how to deploy your Trystero documentation site to GitHub Pages.
+<div align="center">
+  <h3>🌐 Deploy Your Trystero Documentation to GitHub Pages</h3>
+  <p>Automated deployment with GitHub Actions • Zero configuration • Instant updates</p>
+</div>
 
-## Overview
+---
 
-The project is configured to automatically deploy the `docs/` folder to GitHub Pages whenever you push to the main/master branch. The deployment uses GitHub Actions for continuous deployment.
+## 📌 Overview
 
-## Files Created
+This guide provides step-by-step instructions for deploying your Trystero documentation site to GitHub Pages with automatic continuous deployment via GitHub Actions.
 
-1. **`.github/workflows/deploy-gh-pages.yml`** - GitHub Actions workflow for automatic deployment
-2. **`docs/_config.yml`** - Jekyll configuration for GitHub Pages
-3. **`package.json`** - Updated with `build:docs` script
+### ✨ Key Features
+- **Automatic Deployment** - Push to main branch triggers deployment
+- **GitHub Actions CI/CD** - Fully automated build and deploy pipeline
+- **Custom Domain Support** - Use your own domain name
+- **WASM Support** - Proper MIME types for WebAssembly files
+- **Jekyll Integration** - GitHub Pages processing with custom configuration
 
-## Setup Instructions
+## 📁 Files & Configuration
 
-### 1. Enable GitHub Pages in Your Repository
+### Required Files
+
+| File | Purpose | Location |
+|------|---------|----------|
+| `deploy-gh-pages.yml` | GitHub Actions workflow | `.github/workflows/` |
+| `_config.yml` | Jekyll configuration | `docs/` |
+| `package.json` | Build scripts | Root directory |
+| `index.html` | Main documentation page | `docs/` |
+| `game.wasm` | WebAssembly module | `docs/` |
+
+## 🔧 Setup Instructions
+
+### Step 1️⃣ Enable GitHub Pages
 
 1. Go to your repository on GitHub
 2. Click on **Settings** (in the repository navigation)
@@ -22,7 +40,7 @@ The project is configured to automatically deploy the `docs/` folder to GitHub P
 4. Under **Source**, select **GitHub Actions** (not "Deploy from a branch")
 5. Click **Save**
 
-### 2. Verify GitHub Actions Permissions
+### Step 2️⃣ Configure GitHub Actions Permissions
 
 1. Go to **Settings** → **Actions** → **General**
 2. Scroll down to **Workflow permissions**
@@ -30,7 +48,7 @@ The project is configured to automatically deploy the `docs/` folder to GitHub P
 4. Check **Allow GitHub Actions to create and approve pull requests** (optional but recommended)
 5. Click **Save**
 
-### 3. Deploy Your Site
+### Step 3️⃣ Deploy Your Site
 
 The site will automatically deploy when you:
 - Push to the `main` or `master` branch
@@ -42,7 +60,7 @@ To manually trigger:
 3. Click **Run workflow**
 4. Select the branch and click **Run workflow**
 
-### 4. Access Your Site
+### Step 4️⃣ Access Your Published Site
 
 After successful deployment, your site will be available at:
 - **With custom domain**: `https://your-domain.com`
@@ -52,9 +70,11 @@ You can find the exact URL in:
 - **Settings** → **Pages** → Your site is published at...
 - The GitHub Actions workflow run summary
 
-## Build Process
+## 🏭 Build Process
 
-The deployment workflow performs these steps:
+### 🔄 Workflow Steps
+
+The automated deployment pipeline executes the following stages:
 
 1. **Checkout** - Gets the latest code from your repository
 2. **Setup Node.js** - Installs Node.js version 20
@@ -65,9 +85,11 @@ The deployment workflow performs these steps:
 5. **Upload artifact** - Packages the docs folder for deployment
 6. **Deploy** - Publishes the site to GitHub Pages
 
-## Local Development
+## 💻 Local Development
 
-To test the site locally before deploying:
+### 🧪 Testing Locally
+
+Before deploying to production, test your site locally:
 
 ```bash
 # Install dependencies
@@ -82,9 +104,9 @@ npx serve docs
 # python -m http.server 8000 -d docs
 ```
 
-## Custom Domain (Optional)
+## 🌐 Custom Domain Configuration
 
-To use a custom domain:
+### 🔗 Setting Up Your Domain
 
 1. Add a `CNAME` file to the `docs/` folder with your domain:
    ```
@@ -103,22 +125,24 @@ To use a custom domain:
 
 3. Enable HTTPS in repository settings after DNS propagation
 
-## Troubleshooting
+## 🔧 Troubleshooting Guide
 
-### Build Fails
+### ⚠️ Common Issues & Solutions
+
+#### 🔴 Build Failures
 
 - Check the Actions tab for error logs
 - Ensure all dependencies are in `package.json`
 - Verify Node.js version compatibility
 
-### Page Not Loading
+#### 🔵 Page Not Loading
 
 - Verify GitHub Pages is enabled in Settings
 - Check that the workflow completed successfully
 - Wait 5-10 minutes for initial deployment
 - Clear browser cache
 
-### 404 Errors
+#### 🟡 404 Errors
 
 - If using a subdomain path, update `baseurl` in `docs/_config.yml`:
   ```yaml
@@ -126,16 +150,18 @@ To use a custom domain:
   ```
 - Ensure all asset paths in HTML are relative
 
-### WASM Files Not Loading
+#### 🟠 WASM Files Not Loading
 
 The Jekyll configuration is set to properly serve WASM files. If issues persist:
 - Check browser console for CORS errors
 - Verify WASM file exists in `docs/` folder
 - Ensure proper MIME type is set (handled by Jekyll config)
 
-## Updating the Site
+## 🔄 Updating Your Site
 
-Simply push your changes to the main/master branch:
+### 🚀 Automatic Updates
+
+Deployment is triggered automatically when you push changes:
 
 ```bash
 git add .
@@ -145,25 +171,52 @@ git push origin main
 
 The GitHub Actions workflow will automatically build and deploy your changes.
 
-## Manual Deployment
+## 🔨 Manual Deployment
 
-If you prefer manual deployment:
+### 🛠️ Alternative Deployment Method
+
+For manual control over deployment:
 
 1. Build locally: `npm run build:docs`
 2. Commit the docs folder: `git add docs && git commit -m "Update docs"`
 3. Push to GitHub: `git push origin main`
 
-## Notes
+## 📝 Important Notes
 
-- The first deployment may take 10-15 minutes to become available
-- Subsequent deployments typically take 2-5 minutes
-- The workflow preserves the WASM file and all assets in the docs folder
-- GitHub Pages has a soft limit of 1GB for sites
-- The site uses Jekyll for processing, but no Jekyll theme (custom HTML/CSS)
+### ⏱️ Deployment Timing
+- **First deployment**: 10-15 minutes for DNS propagation
+- **Updates**: 2-5 minutes to go live
+- **Cache refresh**: May take up to 10 minutes
 
-## Support
+### 📈 Limitations
+- **Size limit**: 1GB soft limit for GitHub Pages sites
+- **Bandwidth**: 100GB/month soft limit
+- **Build time**: 10 minute maximum for Actions
 
-For issues specific to:
-- **GitHub Pages**: Check [GitHub Pages documentation](https://docs.github.com/en/pages)
-- **GitHub Actions**: See [GitHub Actions documentation](https://docs.github.com/en/actions)
-- **This project**: Open an issue in the repository
+### ⚙️ Technical Details
+- WASM files preserved with correct MIME types
+- Jekyll processes Markdown but uses custom HTML/CSS
+- All assets in `docs/` folder are deployed
+- Supports modern browsers with WebAssembly
+
+## 👥 Support & Resources
+
+### 📚 Documentation
+- 📖 [GitHub Pages Documentation](https://docs.github.com/en/pages)
+- 🤖 [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- 🌐 [Custom Domains Guide](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site)
+- 🔒 [HTTPS Configuration](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)
+
+### 🐛 Reporting Issues
+- **Bug Reports**: Open an issue with `[Deploy]` tag
+- **Feature Requests**: Use `[Enhancement]` tag
+- **Questions**: Start a discussion in the repository
+
+### 💬 Community
+- Join our [Discord Server](#)
+- Follow updates on [Twitter](#)
+- Check [Stack Overflow](https://stackoverflow.com/questions/tagged/github-pages)
+
+---
+
+*Last updated: January 2025*
