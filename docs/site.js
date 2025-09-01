@@ -1,4 +1,4 @@
-import {joinRoom, selfId} from 'https://esm.run/trystero/mqtt'  // MQTT strategy - try this if Nostr fails
+import {joinRoom, selfId} from './dist/trystero-mqtt.min.js'  // MQTT strategy - using local bundle
 // WASM helpers (browser bundle)
 let wasmExports = null
 let runSeed = 0n
