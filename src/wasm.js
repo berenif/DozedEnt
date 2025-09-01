@@ -85,8 +85,8 @@ const createWasiPreview1 = (memory) => {
 				offset += 8
 				const chunk = bytes.subarray(ptr, ptr + len)
 				const text = textDecoder.decode(chunk)
-				if (fd === 1) console.log(text)
-				else if (fd === 2) console.error(text)
+				if (fd === 1) {console.log(text)}
+				else if (fd === 2) {console.error(text)}
 				written += len
 			}
 			dataView.setUint32(nwrittenPtr >>> 0, written >>> 0, true)
@@ -97,8 +97,8 @@ const createWasiPreview1 = (memory) => {
 
 		random_get: (ptr, len) => {
 			const view = u8().subarray(ptr >>> 0, (ptr >>> 0) + (len >>> 0))
-			if (cryptoObj) cryptoObj.getRandomValues(view)
-			else for (let i = 0; i < view.length; i++) view[i] = (Math.random() * 256) | 0
+			if (cryptoObj) {cryptoObj.getRandomValues(view)}
+			else {for (let i = 0; i < view.length; i++) {view[i] = (Math.random() * 256) | 0}}
 			return 0
 		},
 
@@ -146,9 +146,7 @@ const createWasiPreview1 = (memory) => {
 	return Object.freeze(wasi)
 }
 
-const ensureWasiObject = (maybeWasi, memory) => {
-	return (maybeWasi && typeof maybeWasi === 'object') ? maybeWasi : createWasiPreview1(memory)
-}
+const ensureWasiObject = (maybeWasi, memory) => (maybeWasi && typeof maybeWasi === 'object') ? maybeWasi : createWasiPreview1(memory)
 
 /**
  * Load a WebAssembly module.

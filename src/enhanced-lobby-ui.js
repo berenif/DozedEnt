@@ -29,7 +29,7 @@ export class EnhancedLobbyUI {
   }
   
   initializeStyles() {
-    if (document.getElementById('enhanced-lobby-styles')) return
+    if (document.getElementById('enhanced-lobby-styles')) {return}
     
     const styles = document.createElement('style')
     styles.id = 'enhanced-lobby-styles'
@@ -970,7 +970,7 @@ export class EnhancedLobbyUI {
   
   showInRoom(content, headerActions) {
     const room = this.roomManager.currentRoom
-    if (!room) return
+    if (!room) {return}
     
     const isHost = this.roomManager.playerInfo.role === 'host'
     const isSpectator = this.roomManager.playerInfo.role === 'spectator'
@@ -1311,7 +1311,7 @@ export class EnhancedLobbyUI {
   
   updateRoomList(rooms) {
     const roomList = document.getElementById('room-list')
-    if (!roomList) return
+    if (!roomList) {return}
     
     if (rooms.length === 0) {
       roomList.innerHTML = `
@@ -1427,7 +1427,7 @@ export class EnhancedLobbyUI {
   
   addChatMessage(message) {
     const chatMessages = document.getElementById('chat-messages')
-    if (!chatMessages) return
+    if (!chatMessages) {return}
     
     const messageEl = document.createElement('div')
     messageEl.className = 'chat-message'

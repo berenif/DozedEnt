@@ -27,7 +27,7 @@ const fixedDiv = (a, b) => {
 
 // Deterministic math functions
 const fixedSqrt = (n) => {
-  if (n < 0) return 0
+  if (n < 0) {return 0}
   let x = n
   let y = (x + FIXED_POINT_SCALE) >> 1
   while (y < x) {
@@ -249,10 +249,10 @@ class DeterministicGame {
   processInput() {
     for (const [playerId, player] of this.players) {
       const entity = this.entities.get(player.entityId)
-      if (!entity || !entity.alive) continue
+      if (!entity || !entity.alive) {continue}
       
       const vel = this.velocities.get(player.entityId)
-      if (!vel) continue
+      if (!vel) {continue}
       
       // Apply input to velocity (using fixed-point math)
       const speed = toFixed(5)
@@ -260,10 +260,10 @@ class DeterministicGame {
       vel.vx = 0
       vel.vy = 0
       
-      if (player.input.left) vel.vx = -speed
-      if (player.input.right) vel.vx = speed
-      if (player.input.up) vel.vy = -speed
-      if (player.input.down) vel.vy = speed
+      if (player.input.left) {vel.vx = -speed}
+      if (player.input.right) {vel.vx = speed}
+      if (player.input.up) {vel.vy = -speed}
+      if (player.input.down) {vel.vy = speed}
       
       // Normalize diagonal movement
       if (vel.vx !== 0 && vel.vy !== 0) {
@@ -289,7 +289,7 @@ class DeterministicGame {
     
     for (const [entityId, pos] of this.positions) {
       const vel = this.velocities.get(entityId)
-      if (!vel) continue
+      if (!vel) {continue}
       
       // Update position using velocity
       pos.x = fixedAdd(pos.x, fixedMul(vel.vx, dt))
@@ -336,12 +336,12 @@ class DeterministicGame {
         const e1 = entities[i]
         const e2 = entities[j]
         
-        if (!e1.alive || !e2.alive) continue
+        if (!e1.alive || !e2.alive) {continue}
         
         const pos1 = this.positions.get(e1.id)
         const pos2 = this.positions.get(e2.id)
         
-        if (!pos1 || !pos2) continue
+        if (!pos1 || !pos2) {continue}
         
         // Calculate distance using fixed-point math
         const dx = fixedSub(pos2.x, pos1.x)
@@ -511,11 +511,11 @@ class DeterministicGame {
   
   // Override these methods in game implementation
   onInitialize() {}
-  onPlayerAction(playerId, player) {}
-  onCollision(entity1, entity2) {}
+  onPlayerAction(_playerId, _player) {}
+  onCollision(_entity1, _entity2) {}
   updateGameLogic() {}
   onSaveState() { return {} }
-  onLoadState(state) {}
+  onLoadState(_state) {}
   onGetChecksum() { return 0 }
 }
 

@@ -125,7 +125,7 @@ export class WolfVocalizationSystem {
     // Emit a vocalization from a wolf
     vocalize(wolf, vocalizationType, targetPosition = null) {
         const vocalization = this.vocalizations[vocalizationType]
-        if (!vocalization) return false
+        if (!vocalization) {return false}
         
         // Check cooldown
         const lastTime = this.lastVocalizationTime.get(`${wolf.id}_${vocalizationType}`) || 0
@@ -273,7 +273,7 @@ export class WolfVocalizationSystem {
     
     getVocalizationColor(type) {
         const vocalization = this.vocalizations[type]
-        if (!vocalization) return '#ffffff'
+        if (!vocalization) {return '#ffffff'}
         
         switch(vocalization.type) {
             case 'howl': return '#4a90e2'
@@ -286,7 +286,7 @@ export class WolfVocalizationSystem {
     
     getVocalizationIcon(type) {
         const vocalization = this.vocalizations[type]
-        if (!vocalization) return '🔊'
+        if (!vocalization) {return '🔊'}
         
         switch(vocalization.type) {
             case 'howl': return '🌙'
@@ -423,7 +423,7 @@ export class AlphaWolf {
     // Use alpha ability
     useAbility(abilityName, target = null) {
         const ability = this.abilities[abilityName]
-        if (!ability) return false
+        if (!ability) {return false}
         
         const now = Date.now()
         if (now - ability.lastUsed < ability.cooldown) {
@@ -476,7 +476,7 @@ export class AlphaWolf {
     
     // Coordinate pack assault
     coordinateAssault(target) {
-        if (!target) return
+        if (!target) {return}
         
         // Calculate attack positions around target
         const attackPositions = this.calculateSurroundPositions(target.position, this.packMembers.length)
@@ -546,7 +546,7 @@ export class AlphaWolf {
     // Get retreat direction based on pack status
     getRetreatDirection() {
         // Calculate center of healthy pack members
-        let centerX = 0, centerY = 0
+        let centerX = 0; let centerY = 0
         let healthyCount = 0
         
         this.packMembers.forEach(member => {
@@ -607,7 +607,7 @@ export class AlphaWolf {
     
     // Process command queue
     processCommands() {
-        if (this.commandQueue.length === 0) return
+        if (this.commandQueue.length === 0) {return}
         
         // Sort by priority
         this.commandQueue.sort((a, b) => b.priority - a.priority)
@@ -887,11 +887,11 @@ export class ScentTrackingSystem {
         this.scentTrails.forEach((trail, entityId) => {
             trail.forEach(point => {
                 // Filter by scent type if specified
-                if (scentType && point.type !== scentType) return
+                if (scentType && point.type !== scentType) {return}
                 
                 // Calculate age and decay
                 const age = now - point.timestamp
-                if (age > this.scentDecayTime) return
+                if (age > this.scentDecayTime) {return}
                 
                 const decay = 1 - (age / this.scentDecayTime)
                 const scentConfig = this.scentTypes[point.type]
@@ -916,7 +916,7 @@ export class ScentTrackingSystem {
         // Check territory markers
         this.territoryMarkers.forEach(marker => {
             const age = now - marker.timestamp
-            if (age > 60000) return // Territory marks last 1 minute
+            if (age > 60000) {return} // Territory marks last 1 minute
             
             const distance = this.getDistance(position, marker.position)
             if (distance < marker.radius) {
@@ -963,13 +963,13 @@ export class ScentTrackingSystem {
         const now = Date.now()
         
         this.scentTrails.forEach((trail, entityId) => {
-            if (entityId === excludeEntityId) return
+            if (entityId === excludeEntityId) {return}
             
             trail.forEach(point => {
-                if (point.type !== scentType) return
+                if (point.type !== scentType) {return}
                 
                 const age = now - point.timestamp
-                if (age > this.scentDecayTime) return
+                if (age > this.scentDecayTime) {return}
                 
                 const decay = 1 - (age / this.scentDecayTime)
                 const distance = this.getDistance(position, point.position)
@@ -1062,7 +1062,7 @@ export class ScentTrackingSystem {
     
     // Render scent trails (for debug/visualization)
     render(ctx, camera, showScent = true) {
-        if (!showScent) return
+        if (!showScent) {return}
         
         const now = Date.now()
         
@@ -1070,7 +1070,7 @@ export class ScentTrackingSystem {
         this.scentTrails.forEach(trail => {
             trail.forEach(point => {
                 const age = now - point.timestamp
-                if (age > this.scentDecayTime) return
+                if (age > this.scentDecayTime) {return}
                 
                 const decay = 1 - (age / this.scentDecayTime)
                 const scentConfig = this.scentTypes[point.type]
@@ -1095,7 +1095,7 @@ export class ScentTrackingSystem {
         // Render territory markers
         this.territoryMarkers.forEach(marker => {
             const age = now - marker.timestamp
-            if (age > 60000) return
+            if (age > 60000) {return}
             
             const decay = 1 - (age / 60000)
             
@@ -1192,7 +1192,7 @@ export class EnhancedWolfAISystem {
     
     // Create a new wolf pack with alpha
     createPack(packId, wolves) {
-        if (wolves.length === 0) return null
+        if (wolves.length === 0) {return null}
         
         // Select strongest wolf as alpha
         const alphaCandidate = wolves.reduce((strongest, wolf) => 
@@ -1263,7 +1263,7 @@ export class EnhancedWolfAISystem {
             
             // Update pack members
             pack.forEach(wolf => {
-                if (wolf.health <= 0) return
+                if (wolf.health <= 0) {return}
                 
                 // Add wolf scent trail
                 this.scentTrackingSystem.addScentPoint(

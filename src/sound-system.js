@@ -176,8 +176,8 @@ export class SoundSystem {
     }
 
     async initialize() {
-        if (this.initialized) return
-        if (this.initPromise) return this.initPromise
+        if (this.initialized) {return}
+        if (this.initPromise) {return this.initPromise}
         
         this.initPromise = this._doInitialize()
         return this.initPromise
@@ -251,7 +251,7 @@ export class SoundSystem {
         for (let channel = 0; channel < 2; channel++) {
             const channelData = impulse.getChannelData(channel)
             for (let i = 0; i < length; i++) {
-                channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2)
+                channelData[i] = (Math.random() * 2 - 1) * (1 - i / length)**2
             }
         }
         
@@ -550,7 +550,7 @@ export class SoundSystem {
     }
 
     stop(playingSound, fadeOut = 0) {
-        if (!playingSound) return
+        if (!playingSound) {return}
         
         if (fadeOut > 0) {
             playingSound.gainNode.gain.linearRampToValueAtTime(

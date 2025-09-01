@@ -454,7 +454,7 @@ export class GameRenderer {
         const time = Date.now() / 1000
         
         this.collectibles.forEach(item => {
-            if (item.collected) return
+            if (item.collected) {return}
             
             // Floating animation
             const floatY = Math.sin(time * 2 + item.animationTime) * 5
@@ -665,7 +665,7 @@ export class GameRenderer {
     
     renderEnemies() {
         this.enemies.forEach(enemy => {
-            if (enemy.health <= 0) return
+            if (enemy.health <= 0) {return}
             
             this.ctx.save()
             
@@ -1100,7 +1100,7 @@ export class GameRenderer {
     
     updateEnemies(deltaTime) {
         this.enemies.forEach(enemy => {
-            if (enemy.health <= 0) return
+            if (enemy.health <= 0) {return}
             
             // Update animation
             enemy.animationTime += deltaTime
@@ -1108,8 +1108,8 @@ export class GameRenderer {
             
             // Simple AI behavior
             const distToPlayer = Math.sqrt(
-                Math.pow(this.player.x - enemy.x, 2) +
-                Math.pow(this.player.y - enemy.y, 2)
+                (this.player.x - enemy.x)**2 +
+                (this.player.y - enemy.y)**2
             )
             
             // Alert state

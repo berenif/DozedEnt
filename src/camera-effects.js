@@ -59,7 +59,7 @@ export class CameraEffects {
     update(deltaTime) {
         // Update screen shake
         if (this.shakeIntensity > 0.01) {
-            const shake = Math.pow(this.shakeIntensity, this.traumaExponent)
+            const shake = this.shakeIntensity**this.traumaExponent
             this.shakeOffset.x = (Math.random() - 0.5) * 2 * shake * 20
             this.shakeOffset.y = (Math.random() - 0.5) * 2 * shake * 20
             this.shakeIntensity *= this.shakeDecay
@@ -163,8 +163,7 @@ export class CameraEffects {
     }
 
     applyChromaticAberration(ctx) {
-        const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-        const data = imageData.data
+        ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
         const offset = Math.floor(this.chromaticAberration * 5)
         
         // Create temporary canvas for channel shifting
