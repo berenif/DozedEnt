@@ -206,7 +206,10 @@ static void update_pack_controller() {
   float timeSinceSuccess = g_time_seconds - g_pack_last_success_time;
   float timeSinceFailure = g_time_seconds - g_pack_last_failure_time;
   if (timeSinceSuccess < 5.0f) g_player_skill_estimate *= 0.98f; // player is easier
-  if (timeSinceFailure < 5.0f) g_player_skill_estimate = fminf(1.0f, g_player_skill_estimate * 1.02f);
+  if (timeSinceFailure < 5.0f) {
+    float newEstimate = g_player_skill_estimate * 1.02f;
+    g_player_skill_estimate = (1.0f < newEstimate) ? 1.0f : newEstimate;
+  }
   
   // Dynamic morale based on pack state and history
   g_pack_morale = avgHealth * 0.4f + (1.0f - avgFatigue) * 0.3f + (healthyCount / (float)count) * 0.3f;
@@ -372,7 +375,7 @@ static void update_emotional_state(Enemy &e, float dt) {
         // High morale and success = Confident
         newEmotion = EmotionalState::Confident;
         newIntensity = 0.7f;
-    } else if (failedAttacks > 3 && successfulAttacks == 0) {
+    } else if (e.failedAttacks > 3 && e.successfulAttacks == 0) {
         // Multiple failures = Frustrated
         newEmotion = EmotionalState::Frustrated;
         newIntensity = 0.9f;
@@ -387,7 +390,7 @@ static void update_emotional_state(Enemy &e, float dt) {
     } else {
         // Default to calm
         newEmotion = EmotionalState::Calm;
-        newIntensity = fmaxf(0.3f, e.emotionIntensity);
+        newIntensity = (0.3f > e.emotionIntensity) ? 0.3f : e.emotionIntensity;
     }
     
     // Smooth emotional transitions
@@ -395,14 +398,16 @@ static void update_emotional_state(Enemy &e, float dt) {
         e.emotion = newEmotion;
         e.emotionIntensity = newIntensity;
     } else {
-        e.emotionIntensity = fmaxf(e.emotionIntensity, newIntensity);
+        e.emotionIntensity = (e.emotionIntensity > newIntensity) ? e.emotionIntensity : newIntensity;
     }
     
     // Apply emotional effects to behavior modifiers
     switch(e.emotion) {
-        case EmotionalState::Aggressive:
-            e.aggression = fminf(1.0f, e.aggression + 0.2f * e.emotionIntensity);
+        case EmotionalState::Aggressive: {
+            float newAggression = e.aggression + 0.2f * e.emotionIntensity;
+            e.aggression = (1.0f < newAggression) ? 1.0f : newAggression;
             break;
+        }
         case EmotionalState::Fearful:
             e.aggression *= (1.0f - 0.3f * e.emotionIntensity);
             e.morale *= (1.0f - 0.2f * e.emotionIntensity);
@@ -410,13 +415,20 @@ static void update_emotional_state(Enemy &e, float dt) {
         case EmotionalState::Desperate:
             e.aggression = 1.0f; // Maximum aggression when desperate
             break;
-        case EmotionalState::Confident:
-            e.coordination = fminf(1.0f, e.coordination + 0.2f * e.emotionIntensity);
-            e.intelligence = fminf(1.0f, e.intelligence + 0.1f * e.emotionIntensity);
+        case EmotionalState::Confident: {
+            float newCoord = e.coordination + 0.2f * e.emotionIntensity;
+            e.coordination = (1.0f < newCoord) ? 1.0f : newCoord;
+            float newIntel = e.intelligence + 0.1f * e.emotionIntensity;
+            e.intelligence = (1.0f < newIntel) ? 1.0f : newIntel;
             break;
+        }
         case EmotionalState::Frustrated:
             // Erratic behavior
             e.aggression = 0.5f + rng_float01() * 0.5f * e.emotionIntensity;
+            break;
+        case EmotionalState::Calm:
+        default:
+            // Calm state - no modifications
             break;
     }
 }
@@ -484,8 +496,8 @@ static void update_enemy_wolf(Enemy &e, float dt) {
     
     for (int i = 0; i < SCAN_POINTS; ++i) {
       float angle = (float)i * (2.0f * 3.14159f / SCAN_POINTS);
-      float testX = e.x + cosf(angle) * SCAN_RADIUS;
-      float testY = e.y + sinf(angle) * SCAN_RADIUS;
+      float testX = e.x + __builtin_cosf(angle) * SCAN_RADIUS;
+      float testY = e.y + __builtin_sinf(angle) * SCAN_RADIUS;
       float testAdv = get_terrain_advantage(testX, testY, stateOut);
       
       if (testAdv > bestAdv) {
@@ -523,7 +535,7 @@ static void update_enemy_wolf(Enemy &e, float dt) {
   } else if (stateOut == EnemyState::Flank) {
     // Wide flanking movement
     float angle = (role == (unsigned char)PackRole::FlankL) ? 1.2f : -1.2f;
-    float cosA = cosf(angle), sinA = sinf(angle);
+    float cosA = __builtin_cosf(angle), sinA = __builtin_sinf(angle);
     desiredDirX = dirToPlayerX * cosA - dirToPlayerY * sinA;
     desiredDirY = dirToPlayerX * sinA + dirToPlayerY * cosA;
     normalize(desiredDirX, desiredDirY);
@@ -577,6 +589,10 @@ static void update_enemy_wolf(Enemy &e, float dt) {
         case EmotionalState::Frustrated:
             // Random variation in attack timing
             cooldownMod = 0.5f + rng_float01();
+            break;
+        case EmotionalState::Calm:
+        default:
+            // Default behavior
             break;
     }
     
@@ -676,8 +692,16 @@ static void broadcast_pack_message(PackMessage msg, float senderX, float senderY
         case PackMessage::Retreat:
           g_enemies[i].retreatUntilTime = g_time_seconds + 2.0f;
           break;
-        case PackMessage::TargetSpotted:
-          g_enemies[i].mem.lastSeenConfidence = fmaxf(g_enemies[i].mem.lastSeenConfidence, 0.5f);
+        case PackMessage::TargetSpotted: {
+          float currentConf = g_enemies[i].mem.lastSeenConfidence;
+          g_enemies[i].mem.lastSeenConfidence = (currentConf > 0.5f) ? currentConf : 0.5f;
+          break;
+        }
+        case PackMessage::Regroup:
+        case PackMessage::FlankLeft:
+        case PackMessage::FlankRight:
+        default:
+          // Other messages handled elsewhere or ignored
           break;
       }
     }
