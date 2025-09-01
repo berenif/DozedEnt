@@ -29,8 +29,8 @@
   "dependencies": {
     "@noble/secp256k1": "^3.0.0",
     "@supabase/supabase-js": "^2.49.8",
-    "@waku/discovery": "^0.0.8",
-    "@waku/sdk": "^0.0.31",
+    "@waku/discovery": "^0.0.11",
+    "@waku/sdk": "^0.0.34",
     "firebase": "^12.2.1",
     "libp2p": "^2.8.8",
     "mqtt": "^5.13.0"
