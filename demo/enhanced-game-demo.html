@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Game Feel Demo - Next-Level Combat Experience</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1280px;
+            aspect-ratio: 16/9;
+            background: #1a1a2e;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: crisp-edges;
+        }
+        
+        .controls-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 10px;
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .settings-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            width: 250px;
+        }
+        
+        .settings-panel h3 {
+            margin-bottom: 15px;
+            color: #60a5fa;
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .setting-item input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            border-radius: 2px;
+        }
+        
+        .setting-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .performance-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .performance-stats div {
+            margin-bottom: 5px;
+        }
+        
+        .loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 20px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="controls-overlay">
+            <div class="control-group">
+                <span class="key">WASD</span>
+                <span>Move</span>
+            </div>
+            <div class="control-group">
+                <span class="key">Space</span>
+                <span>Roll</span>
+            </div>
+            <div class="control-group">
+                <span class="key">LMB</span>
+                <span>Attack</span>
+            </div>
+            <div class="control-group">
+                <span class="key">RMB</span>
+                <span>Block</span>
+            </div>
+            <div class="control-group">
+                <span class="key">Shift</span>
+                <span>Sprint</span>
+            </div>
+        </div>
+        
+        <div class="settings-panel">
+            <h3>Game Feel Settings</h3>
+            
+            <div class="setting-item">
+                <label for="screenShake">Screen Shake Intensity</label>
+                <input type="range" id="screenShake" min="0" max="100" value="80">
+            </div>
+            
+            <div class="setting-item">
+                <label for="particles">Particle Density</label>
+                <input type="range" id="particles" min="0" max="100" value="100">
+            </div>
+            
+            <div class="setting-item">
+                <label for="soundVolume">Sound Volume</label>
+                <input type="range" id="soundVolume" min="0" max="100" value="70">
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="hitStop" checked>
+                    Hit Stop
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="motionBlur" checked>
+                    Motion Blur
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="chromaticAberration" checked>
+                    Chromatic Aberration
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="damageNumbers" checked>
+                    Damage Numbers
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <label for="performance">Performance Mode</label>
+                <select id="performance">
+                    <option value="high">High Quality</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low (Better FPS)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="performance-stats">
+            <div>FPS: <span id="fps">60</span></div>
+            <div>Particles: <span id="particleCount">0</span></div>
+            <div>Combo: <span id="comboCount">0</span></div>
+        </div>
+        
+        <div class="loading-screen" id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading Enhanced Game Feel...</div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import GameFeelEnhancer from '../src/game-feel-enhancer.js'
+        
+        // Game state
+        let canvas, ctx, gameFeelEnhancer
+        let lastTime = 0
+        let frameCount = 0
+        let fpsTime = 0
+        let currentFPS = 60
+        
+        // Player state
+        let player = {
+            x: 640,
+            y: 360,
+            vx: 0,
+            vy: 0,
+            health: 100,
+            stamina: 100,
+            facing: 1,
+            state: 'idle'
+        }
+        
+        // Enemies
+        let enemies = []
+        
+        // Input state
+        const keys = {}
+        const mouse = { x: 0, y: 0, left: false, right: false }
+        
+        // Initialize
+        async function init() {
+            canvas = document.getElementById('gameCanvas')
+            ctx = canvas.getContext('2d')
+            
+            // Set canvas size
+            canvas.width = 1280
+            canvas.height = 720
+            
+            // Initialize game feel enhancer
+            gameFeelEnhancer = new GameFeelEnhancer(canvas)
+            
+            // Initialize sound system
+            await gameFeelEnhancer.sound.initialize()
+            
+            // Spawn some test enemies
+            spawnEnemies()
+            
+            // Setup input handlers
+            setupInput()
+            
+            // Setup settings handlers
+            setupSettings()
+            
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none'
+            }, 1000)
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop)
+        }
+        
+        function spawnEnemies() {
+            for (let i = 0; i < 5; i++) {
+                enemies.push({
+                    x: 200 + Math.random() * 880,
+                    y: 200 + Math.random() * 320,
+                    vx: 0,
+                    vy: 0,
+                    health: 50,
+                    maxHealth: 50,
+                    state: 'idle',
+                    type: 'wolf',
+                    lastAttackTime: 0
+                })
+            }
+        }
+        
+        function setupInput() {
+            // Keyboard
+            window.addEventListener('keydown', e => {
+                keys[e.key.toLowerCase()] = true
+                
+                // Trigger specific actions
+                if (e.key === ' ' && !player.isRolling) {
+                    performRoll()
+                }
+            })
+            
+            window.addEventListener('keyup', e => {
+                keys[e.key.toLowerCase()] = false
+            })
+            
+            // Mouse
+            canvas.addEventListener('mousemove', e => {
+                const rect = canvas.getBoundingClientRect()
+                mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width)
+                mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height)
+            })
+            
+            canvas.addEventListener('mousedown', e => {
+                if (e.button === 0) {
+                    mouse.left = true
+                    performAttack()
+                } else if (e.button === 2) {
+                    mouse.right = true
+                    startBlock()
+                }
+            })
+            
+            canvas.addEventListener('mouseup', e => {
+                if (e.button === 0) mouse.left = false
+                if (e.button === 2) {
+                    mouse.right = false
+                    endBlock()
+                }
+            })
+            
+            canvas.addEventListener('contextmenu', e => e.preventDefault())
+        }
+        
+        function setupSettings() {
+            // Screen shake
+            document.getElementById('screenShake').addEventListener('input', e => {
+                const value = e.target.value / 100
+                // Scale shake intensity
+            })
+            
+            // Particle density
+            document.getElementById('particles').addEventListener('input', e => {
+                const value = e.target.value / 100
+                gameFeelEnhancer.particleLimit = Math.floor(500 * value)
+            })
+            
+            // Sound volume
+            document.getElementById('soundVolume').addEventListener('input', e => {
+                const value = e.target.value / 100
+                gameFeelEnhancer.sound.setMasterVolume(value)
+            })
+            
+            // Performance mode
+            document.getElementById('performance').addEventListener('change', e => {
+                gameFeelEnhancer.setPerformanceMode(e.target.value)
+            })
+        }
+        
+        function performAttack() {
+            if (player.state === 'attacking') return
+            
+            player.state = 'attacking'
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x)
+            
+            // Trigger game feel effects
+            gameFeelEnhancer.onPlayerAttack(player.x, player.y, angle)
+            
+            // Check for enemy hits
+            enemies.forEach(enemy => {
+                const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y)
+                if (dist < 80 && enemy.health > 0) {
+                    const damage = 10 + Math.random() * 10
+                    const critical = Math.random() < 0.2
+                    
+                    enemy.health -= damage
+                    gameFeelEnhancer.onEnemyHit(enemy.x, enemy.y, Math.floor(damage), critical)
+                    
+                    // Knockback
+                    const knockbackAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x)
+                    enemy.vx = Math.cos(knockbackAngle) * 300
+                    enemy.vy = Math.sin(knockbackAngle) * 300
+                    
+                    if (enemy.health <= 0) {
+                        gameFeelEnhancer.onEnemyDeath(enemy.x, enemy.y, enemy.type)
+                    }
+                }
+            })
+            
+            setTimeout(() => {
+                player.state = 'idle'
+            }, 400)
+        }
+        
+        function performRoll() {
+            if (player.stamina < 30) return
+            
+            player.state = 'rolling'
+            player.stamina -= 30
+            
+            const angle = Math.atan2(player.vy, player.vx) || player.facing
+            gameFeelEnhancer.onPlayerRoll(player.x, player.y, angle)
+            
+            // Roll velocity
+            player.vx = Math.cos(angle) * 600
+            player.vy = Math.sin(angle) * 600
+            
+            setTimeout(() => {
+                player.state = 'idle'
+            }, 300)
+        }
+        
+        function startBlock() {
+            if (player.state === 'blocking') return
+            
+            player.state = 'blocking'
+            const perfect = Math.random() < 0.3 // 30% chance for demo
+            gameFeelEnhancer.onPlayerBlock(player.x, player.y, perfect)
+        }
+        
+        function endBlock() {
+            if (player.state === 'blocking') {
+                player.state = 'idle'
+            }
+        }
+        
+        function updatePlayer(deltaTime) {
+            // Movement input
+            let inputX = 0, inputY = 0
+            if (keys['a']) inputX -= 1
+            if (keys['d']) inputX += 1
+            if (keys['w']) inputY -= 1
+            if (keys['s']) inputY += 1
+            
+            // Normalize diagonal movement
+            if (inputX !== 0 && inputY !== 0) {
+                inputX *= 0.707
+                inputY *= 0.707
+            }
+            
+            // Apply acceleration
+            const speed = keys['shift'] ? 400 : 250
+            if (player.state !== 'rolling') {
+                player.vx += inputX * 1000 * deltaTime
+                player.vy += inputY * 1000 * deltaTime
+            }
+            
+            // Apply friction
+            player.vx *= Math.pow(0.1, deltaTime)
+            player.vy *= Math.pow(0.1, deltaTime)
+            
+            // Update position
+            player.x += player.vx * deltaTime
+            player.y += player.vy * deltaTime
+            
+            // Keep in bounds
+            player.x = Math.max(50, Math.min(1230, player.x))
+            player.y = Math.max(50, Math.min(670, player.y))
+            
+            // Update facing
+            if (Math.abs(player.vx) > 10) {
+                player.facing = Math.sign(player.vx)
+            }
+            
+            // Regenerate stamina
+            if (player.stamina < 100) {
+                player.stamina = Math.min(100, player.stamina + 20 * deltaTime)
+            }
+            
+            // Update game feel enhancer player state
+            gameFeelEnhancer.playerState.position = { x: player.x, y: player.y }
+            gameFeelEnhancer.playerState.velocity = { x: player.vx, y: player.vy }
+            gameFeelEnhancer.playerState.health = player.health
+            gameFeelEnhancer.playerState.stamina = player.stamina
+        }
+        
+        function updateEnemies(deltaTime) {
+            enemies = enemies.filter(enemy => {
+                if (enemy.health <= 0) return false
+                
+                // Apply friction to velocity
+                enemy.vx *= Math.pow(0.1, deltaTime)
+                enemy.vy *= Math.pow(0.1, deltaTime)
+                
+                // Update position
+                enemy.x += enemy.vx * deltaTime
+                enemy.y += enemy.vy * deltaTime
+                
+                // Simple AI - move towards player
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
+                if (dist > 100 && dist < 400) {
+                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x)
+                    enemy.vx += Math.cos(angle) * 200 * deltaTime
+                    enemy.vy += Math.sin(angle) * 200 * deltaTime
+                }
+                
+                // Attack player if close
+                if (dist < 60 && Date.now() - enemy.lastAttackTime > 2000) {
+                    enemy.lastAttackTime = Date.now()
+                    if (player.state !== 'blocking' && player.state !== 'rolling') {
+                        const damage = 5 + Math.random() * 10
+                        gameFeelEnhancer.onPlayerDamaged(damage, player.x, player.y)
+                        player.health -= damage
+                    }
+                }
+                
+                return true
+            })
+            
+            // Respawn enemies if all dead
+            if (enemies.length === 0) {
+                setTimeout(spawnEnemies, 2000)
+            }
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#1a1a2e'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw grid for reference
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
+            ctx.lineWidth = 1
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath()
+                ctx.moveTo(x, 0)
+                ctx.lineTo(x, canvas.height)
+                ctx.stroke()
+            }
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath()
+                ctx.moveTo(0, y)
+                ctx.lineTo(canvas.width, y)
+                ctx.stroke()
+            }
+            
+            // Draw enemies
+            enemies.forEach(enemy => {
+                ctx.save()
+                ctx.translate(enemy.x, enemy.y)
+                
+                // Enemy body
+                ctx.fillStyle = enemy.health > 25 ? '#dc2626' : '#7f1d1d'
+                ctx.beginPath()
+                ctx.arc(0, 0, 20, 0, Math.PI * 2)
+                ctx.fill()
+                
+                // Health bar
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+                ctx.fillRect(-25, -35, 50, 4)
+                ctx.fillStyle = '#ef4444'
+                ctx.fillRect(-25, -35, 50 * (enemy.health / enemy.maxHealth), 4)
+                
+                ctx.restore()
+            })
+            
+            // Draw player
+            ctx.save()
+            ctx.translate(player.x, player.y)
+            ctx.scale(player.facing, 1)
+            
+            // Player body
+            let playerColor = '#4ade80'
+            if (player.state === 'blocking') playerColor = '#3b82f6'
+            else if (player.state === 'attacking') playerColor = '#f59e0b'
+            else if (player.state === 'rolling') playerColor = '#a78bfa'
+            
+            ctx.fillStyle = playerColor
+            ctx.beginPath()
+            ctx.arc(0, 0, 25, 0, Math.PI * 2)
+            ctx.fill()
+            
+            // Direction indicator
+            ctx.strokeStyle = 'white'
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.lineTo(20, 0)
+            ctx.stroke()
+            
+            ctx.restore()
+            
+            // Draw health and stamina bars
+            ctx.save()
+            ctx.translate(50, 50)
+            
+            // Health bar
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+            ctx.fillRect(0, 0, 200, 20)
+            ctx.fillStyle = player.health > 50 ? '#4ade80' : player.health > 25 ? '#fbbf24' : '#ef4444'
+            ctx.fillRect(0, 0, 200 * (player.health / 100), 20)
+            
+            // Stamina bar
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+            ctx.fillRect(0, 25, 200, 10)
+            ctx.fillStyle = '#60a5fa'
+            ctx.fillRect(0, 25, 200 * (player.stamina / 100), 10)
+            
+            ctx.restore()
+        }
+        
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1)
+            lastTime = timestamp
+            
+            // Update FPS counter
+            frameCount++
+            fpsTime += deltaTime
+            if (fpsTime >= 1) {
+                currentFPS = frameCount
+                frameCount = 0
+                fpsTime = 0
+                document.getElementById('fps').textContent = currentFPS
+            }
+            
+            // Update game
+            updatePlayer(deltaTime)
+            updateEnemies(deltaTime)
+            
+            // Update game feel systems
+            gameFeelEnhancer.update(deltaTime)
+            
+            // Render with camera effects
+            gameFeelEnhancer.camera.preRender(ctx)
+            render()
+            gameFeelEnhancer.particles.render(ctx)
+            gameFeelEnhancer.camera.postRender(ctx)
+            gameFeelEnhancer.uiFeedback.render(ctx)
+            
+            // Update stats
+            document.getElementById('particleCount').textContent = gameFeelEnhancer.particles.particles.length
+            document.getElementById('comboCount').textContent = gameFeelEnhancer.playerState.comboCount
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        // Start the game
+        init()
+    </script>
+</body>
+</html>
