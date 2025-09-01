@@ -6,6 +6,7 @@ import CameraEffects from './camera-effects.js'
 import { getSoundSystem } from './sound-system.js'
 import { CharacterAnimator } from './animation-system.js'
 import UIFeedbackSystem from './ui-feedback.js'
+import GameRenderer from './game-renderer.js'
 
 export class GameFeelEnhancer {
     constructor(canvas) {
@@ -18,6 +19,7 @@ export class GameFeelEnhancer {
         this.sound = getSoundSystem()
         this.uiFeedback = new UIFeedbackSystem()
         this.characterAnimators = new Map()
+        this.gameRenderer = new GameRenderer(this.ctx, canvas)
         
         // Game state tracking
         this.playerState = {
@@ -99,6 +101,22 @@ export class GameFeelEnhancer {
         // Update player movement with enhanced feel
         this.updateMovement(scaledDelta)
         
+        // Update game renderer entities
+        this.gameRenderer.updatePlayer(scaledDelta, {})
+        this.gameRenderer.updateEnemies(scaledDelta)
+        this.gameRenderer.updateProjectiles(scaledDelta)
+        this.gameRenderer.checkCollisions()
+        
+        // Sync player state with renderer
+        this.gameRenderer.player.x = this.playerState.position.x
+        this.gameRenderer.player.y = this.playerState.position.y
+        this.gameRenderer.player.velocityX = this.playerState.velocity.x
+        this.gameRenderer.player.velocityY = this.playerState.velocity.y
+        this.gameRenderer.player.state = this.playerState.isAttacking ? 'attacking' : 
+                                          this.playerState.isRolling ? 'rolling' :
+                                          this.playerState.isBlocking ? 'blocking' :
+                                          Math.abs(this.playerState.velocity.x) > 10 ? 'running' : 'idle'
+        
         // Check combo timeout
         if (Date.now() - this.lastHitTime > this.comboWindow) {
             if (this.playerState.comboCount > 0) {
@@ -148,10 +166,10 @@ export class GameFeelEnhancer {
         this.ctx.fillStyle = '#1a1a2e'
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
         
-        // Render game content here (placeholder)
-        // This would be replaced with actual game rendering
+        // Render actual game content using the GameRenderer
+        this.gameRenderer.render(this.playerState.position.x, this.playerState.position.y)
         
-        // Render particles
+        // Render particles (on top of game content)
         this.particles.render(this.ctx)
         
         // Post-render camera effects
