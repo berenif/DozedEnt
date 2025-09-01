@@ -27,7 +27,13 @@ static int g_latch_enemy_idx = -1;
 
 // Resources
 static float g_stamina = 1.0f;
+static float g_max_stamina = 1.0f;
+static float g_stamina_regen_mult = 1.0f;
 static float g_hp = 1.0f;
+
+// Combat multipliers
+static float g_attack_damage_mult = 1.0f;
+static float g_defense_mult = 1.0f;
 
 // Simple player attack state
 enum class AttackState : unsigned char { Idle = 0, Windup = 1, Active = 2, Recovery = 3 };
