@@ -123,4 +123,9 @@ declare module 'trystero' {
   ): Room
 
   export const selfId: string
+  
+  // Room Manager exports
+  export {default as RoomManager} from './room-manager'
+  export {default as HostAuthority} from './host-authority'
+  export {default as RoomLobbyUI} from './room-lobby-ui'
 }
