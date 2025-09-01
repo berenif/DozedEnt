@@ -115,12 +115,18 @@ export class RoomLobbyUI {
       .room-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.9);
-        backdrop-filter: blur(4px);
+        background: linear-gradient(135deg, rgba(15, 10, 30, 0.95) 0%, rgba(5, 5, 20, 0.98) 100%);
+        backdrop-filter: blur(12px) saturate(150%);
         display: grid;
         place-items: center;
         z-index: 1000;
-        font-family: 'Space Mono', monospace;
+        font-family: 'Inter', 'Space Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        animation: overlayFadeIn 0.3s ease-out;
+      }
+      
+      @keyframes overlayFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       
       .room-overlay[hidden] {
@@ -128,37 +134,55 @@ export class RoomLobbyUI {
       }
       
       .room-overlay .overlay-box {
-        width: min(90vw, 520px);
-        max-height: 80vh;
-        padding: 32px;
-        border: 2px solid #fff;
-        border-radius: 12px;
-        background: #000;
+        width: min(90vw, 580px);
+        max-height: 85vh;
+        padding: 36px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(20, 20, 40, 0.95) 0%, rgba(10, 10, 25, 0.98) 100%);
         box-shadow: 
-          0 0 0 2px rgba(255, 255, 255, 0.12) inset,
-          0 12px 32px rgba(0, 0, 0, 0.6),
-          0 0 40px rgba(0, 128, 255, 0.22);
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+          0 20px 60px rgba(0, 0, 0, 0.5),
+          0 0 100px rgba(100, 180, 255, 0.15),
+          0 0 200px rgba(100, 180, 255, 0.05);
         position: relative;
         overflow-y: auto;
+        overflow-x: hidden;
       }
       
       .room-overlay .overlay-title {
-        font-size: 2.4rem;
-        font-weight: bold;
+        font-size: 2.6rem;
+        font-weight: 800;
         text-align: center;
-        margin-bottom: 24px;
-        color: #fff;
+        margin-bottom: 32px;
+        background: linear-gradient(135deg, #fff 0%, #64b5f6 50%, #00e5ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
+        text-shadow: 0 0 40px rgba(100, 180, 255, 0.5);
+        animation: titleGlow 3s ease-in-out infinite alternate;
+      }
+      
+      @keyframes titleGlow {
+        from { filter: brightness(1) drop-shadow(0 0 20px rgba(100, 180, 255, 0.3)); }
+        to { filter: brightness(1.2) drop-shadow(0 0 30px rgba(100, 180, 255, 0.6)); }
       }
       
       .lobby-section {
-        animation: fadeIn 0.3s ease-out;
+        animation: sectionSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+      @keyframes sectionSlideIn {
+        from { 
+          opacity: 0; 
+          transform: translateY(20px) scale(0.95);
+        }
+        to { 
+          opacity: 1; 
+          transform: translateY(0) scale(1);
+        }
       }
       
       /* Form Groups */
@@ -178,22 +202,32 @@ export class RoomLobbyUI {
       .form-group input,
       .form-group select {
         width: 100%;
-        padding: 12px 16px;
+        padding: 14px 18px;
         font-family: inherit;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         color: #fff;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.06) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
         outline: none;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .form-group input:hover,
+      .form-group select:hover {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.08) 100%);
+        border-color: rgba(255, 255, 255, 0.25);
       }
       
       .form-group input:focus,
       .form-group select:focus {
-        border-color: #00e676;
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);
+        border-color: #00e5ff;
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.05) 0%, rgba(0, 229, 255, 0.1) 100%);
+        box-shadow: 
+          0 0 0 3px rgba(0, 229, 255, 0.1),
+          0 0 20px rgba(0, 229, 255, 0.2),
+          inset 0 0 20px rgba(0, 229, 255, 0.05);
+        transform: translateY(-1px);
       }
       
       /* Buttons */
@@ -223,57 +257,125 @@ export class RoomLobbyUI {
       
       .primary-btn {
         color: #000;
-        background: #fff;
+        background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .primary-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
       }
       
       .primary-btn:hover:not(:disabled) {
-        background: #00e676;
-        box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, #00ffff 0%, #00bcd4 100%);
+        box-shadow: 
+          0 4px 20px rgba(0, 229, 255, 0.4),
+          0 0 40px rgba(0, 229, 255, 0.2),
+          inset 0 0 20px rgba(255, 255, 255, 0.1);
+        transform: translateY(-3px) scale(1.02);
+      }
+      
+      .primary-btn:hover:not(:disabled)::before {
+        left: 100%;
+      }
+      
+      .primary-btn:active:not(:disabled) {
+        transform: translateY(-1px) scale(1);
       }
       
       .secondary-btn {
         color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .secondary-btn::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
       }
       
       .secondary-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.5);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 
+          0 4px 15px rgba(255, 255, 255, 0.1),
+          inset 0 0 20px rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+      }
+      
+      .secondary-btn:hover::after {
+        opacity: 1;
       }
       
       .danger-btn {
         color: #fff;
-        background: #d32f2f;
+        background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .danger-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
       }
       
       .danger-btn:hover {
-        background: #f44336;
-        box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+        background: linear-gradient(135deg, #ff6b6b 0%, #f44336 100%);
+        box-shadow: 
+          0 4px 20px rgba(244, 67, 54, 0.4),
+          0 0 40px rgba(244, 67, 54, 0.2),
+          inset 0 0 20px rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+      }
+      
+      .danger-btn:hover::before {
+        opacity: 1;
       }
       
       button:disabled {
-        opacity: 0.5;
+        opacity: 0.4;
         cursor: not-allowed;
+        filter: grayscale(0.5);
       }
       
       .icon-btn {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         padding: 0;
         font-size: 2rem;
         color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .icon-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: rotate(180deg);
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.08) 100%);
+        border-color: rgba(0, 229, 255, 0.4);
+        transform: rotate(360deg) scale(1.1);
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
       }
       
       /* Room List */
@@ -300,24 +402,46 @@ export class RoomLobbyUI {
       }
       
       .room-item {
-        padding: 16px;
-        margin-bottom: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 14px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .room-item::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
       }
       
       .room-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.4);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateX(4px);
+        box-shadow: 
+          0 4px 15px rgba(0, 0, 0, 0.2),
+          inset 0 0 20px rgba(255, 255, 255, 0.02);
+      }
+      
+      .room-item:hover::before {
+        opacity: 1;
       }
       
       .room-item.selected {
-        background: rgba(0, 230, 118, 0.1);
-        border-color: #00e676;
-        box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.05) 100%);
+        border-color: rgba(0, 229, 255, 0.5);
+        box-shadow: 
+          0 0 20px rgba(0, 229, 255, 0.3),
+          inset 0 0 30px rgba(0, 229, 255, 0.1);
+        transform: translateX(8px) scale(1.02);
       }
       
       .room-item-header {
@@ -335,7 +459,9 @@ export class RoomLobbyUI {
       
       .room-players {
         font-size: 1.4rem;
-        color: #00e676;
+        color: #00e5ff;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
       }
       
       .room-id {
@@ -364,8 +490,10 @@ export class RoomLobbyUI {
       }
       
       .room-code span {
-        color: #00e676;
-        font-family: monospace;
+        color: #00e5ff;
+        font-family: 'Fira Code', 'Cascadia Code', monospace;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
       }
       
       .players-section {
@@ -387,23 +515,56 @@ export class RoomLobbyUI {
       }
       
       .player-item {
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .player-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      
+      .player-item:hover::before {
+        opacity: 1;
       }
       
       .player-item.host {
-        border-color: #ffd700;
-        background: rgba(255, 215, 0, 0.05);
+        border-color: rgba(255, 215, 0, 0.4);
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.03) 100%);
+        box-shadow: 
+          0 0 20px rgba(255, 215, 0, 0.1),
+          inset 0 0 20px rgba(255, 215, 0, 0.05);
+      }
+      
+      .player-item.host::before {
+        background: linear-gradient(180deg, transparent, #ffd700, transparent);
       }
       
       .player-item.self {
-        border-color: #00e676;
-        background: rgba(0, 230, 118, 0.05);
+        border-color: rgba(0, 229, 255, 0.4);
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, rgba(0, 229, 255, 0.03) 100%);
+        box-shadow: 
+          0 0 20px rgba(0, 229, 255, 0.1),
+          inset 0 0 20px rgba(0, 229, 255, 0.05);
+      }
+      
+      .player-item.self::before {
+        background: linear-gradient(180deg, transparent, #00e5ff, transparent);
       }
       
       .player-name {
@@ -420,8 +581,10 @@ export class RoomLobbyUI {
       }
       
       .player-badge.host {
-        background: #ffd700;
+        background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
         color: #000;
+        font-weight: 700;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
       }
       
       /* Close Button */
@@ -471,6 +634,47 @@ export class RoomLobbyUI {
         40% { content: '.'; }
         60% { content: '..'; }
         80%, 100% { content: '...'; }
+      }
+      
+      /* Scrollbar Styling */
+      .room-overlay .overlay-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .room-overlay .overlay-box::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 4px;
+      }
+      
+      .room-overlay .overlay-box::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, rgba(0, 229, 255, 0.3) 0%, rgba(0, 229, 255, 0.1) 100%);
+        border-radius: 4px;
+      }
+      
+      .room-overlay .overlay-box::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, rgba(0, 229, 255, 0.5) 0%, rgba(0, 229, 255, 0.2) 100%);
+      }
+      
+      /* Responsive improvements */
+      @media (max-width: 640px) {
+        .room-overlay .overlay-box {
+          width: 95vw;
+          padding: 24px;
+        }
+        
+        .room-overlay .overlay-title {
+          font-size: 2rem;
+        }
+        
+        .button-group {
+          flex-direction: column;
+        }
+        
+        .primary-btn,
+        .secondary-btn,
+        .danger-btn {
+          width: 100%;
+        }
       }
     `
     
