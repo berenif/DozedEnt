@@ -2,6 +2,7 @@
 // - Maintains player position in normalized [0,1] space
 // - Applies movement and collision against a vertical wall centered at x=0.5
 
+#include <cmath>
 #include "internal_core.h"
 #include "obstacles.h"
 #include "terrain_hazards.h"
@@ -1003,18 +1004,70 @@ static int g_non_rare_choice_streak = 0;
 
 int main() { return 0; }
 
+// Tag-based effect variables (moved from disabled block for compilation)
+static float g_health = 1.0f; // Alias for g_hp
+static float g_player_speed_multiplier = 1.0f;
+static float g_speed_boost_duration = 0.0f;
+static float g_player_damage_multiplier = 1.0f;
+static float g_player_defense_multiplier = 1.0f;
+static float g_player_lifesteal_percent = 0.0f;
+static float g_player_crit_chance = 0.1f; // Base 10% crit chance
+static float g_player_dodge_chance = 0.05f; // Base 5% dodge chance
+static float g_stamina_regen_multiplier = 1.0f;
+static float g_wolf_damage_multiplier = 1.0f;
+static int g_pack_hunter_active = 0;
+static int g_berserker_active = 0;
+static int g_survivor_active = 0;
+static float g_treasure_multiplier = 1.0f;
+static float g_vision_radius_multiplier = 1.0f;
+static float g_health_regen_per_second = 0.0f;
+
 // Pack tracking variables (needed by active implementation)
 static unsigned char g_pack_peak_wolves = 0; // tracks peak active wolves
 static float g_howl_cooldown_until = -1000.f;
 
 static unsigned int spawn_wolf_pack(unsigned int packSize) {
   if (packSize == 0u) return 0u;
-  // Choose a center away from extreme edges for better clustering
-  const float margin = 0.18f;
-  const float range = 1.f - margin - margin;
-  float cx = margin + range * rng_float01();
-  float cy = margin + range * rng_float01();
+  
+  // Spawn wolves outside of player's view range
+  // ENEMY_SEEK_RANGE is 0.45f, so we want to spawn beyond this distance
+  const float MIN_SPAWN_DISTANCE = 0.55f; // Slightly beyond seek range
+  const float MAX_SPAWN_DISTANCE = 0.85f; // But not too far
   const float spread = 0.06f; // cluster radius in normalized units
+  
+  // Try multiple times to find a good spawn location outside player view
+  float cx = 0.5f, cy = 0.5f;
+  bool foundGoodLocation = false;
+  for (int attempt = 0; attempt < 10; ++attempt) {
+    // Choose a random location
+    const float margin = 0.18f;
+    const float range = 1.f - margin - margin;
+    cx = margin + range * rng_float01();
+    cy = margin + range * rng_float01();
+    
+    // Check distance from player
+    float dx = cx - g_pos_x;
+    float dy = cy - g_pos_y;
+    float distToPlayer = vec_len(dx, dy);
+    
+    // If it's outside player's view range, use this location
+    if (distToPlayer >= MIN_SPAWN_DISTANCE && distToPlayer <= MAX_SPAWN_DISTANCE) {
+      foundGoodLocation = true;
+      break;
+    }
+  }
+  
+  // If we couldn't find a location outside view after attempts, 
+  // spawn at maximum distance in a random direction from player
+  if (!foundGoodLocation) {
+    float angle = rng_float01() * 2.f * 3.14159f;
+    float spawnDist = MIN_SPAWN_DISTANCE + (MAX_SPAWN_DISTANCE - MIN_SPAWN_DISTANCE) * rng_float01();
+    cx = g_pos_x + cosf(angle) * spawnDist;
+    cy = g_pos_y + sinf(angle) * spawnDist;
+    cx = clamp01(cx);
+    cy = clamp01(cy);
+  }
+  
   unsigned int spawned = 0u;
   for (unsigned int i = 0; i < packSize; ++i) {
     int idx = enemy_alloc_slot();
@@ -1556,8 +1609,13 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
         if ((1.f - g_hp) > 0.35f) {
           int idx = enemy_alloc_slot();
           if (idx >= 0) {
-            float ex = clamp01(g_pos_x + (rng_float01() * 0.4f - 0.2f));
-            float ey = clamp01(g_pos_y + (rng_float01() * 0.4f - 0.2f));
+            // Spawn wolf outside player's view range when howling
+            const float MIN_SPAWN_DISTANCE = 0.55f;
+            const float MAX_SPAWN_DISTANCE = 0.75f;
+            float angle = rng_float01() * 2.f * 3.14159f;
+            float spawnDist = MIN_SPAWN_DISTANCE + (MAX_SPAWN_DISTANCE - MIN_SPAWN_DISTANCE) * rng_float01();
+            float ex = clamp01(g_pos_x + cosf(angle) * spawnDist);
+            float ey = clamp01(g_pos_y + sinf(angle) * spawnDist);
             enemy_activate(idx, EnemyType::Wolf, ex, ey);
           }
           g_howl_cooldown_until = g_time_seconds + 8.f;
@@ -1885,11 +1943,18 @@ void clear_enemies() {
 __attribute__((export_name("spawn_wolves")))
 unsigned int spawn_wolves(unsigned int count) {
   unsigned int spawned = 0u;
+  const float MIN_SPAWN_DISTANCE = 0.55f; // Outside player view
+  const float MAX_SPAWN_DISTANCE = 0.85f;
+  
   for (unsigned int i = 0; i < count; ++i) {
     int idx = enemy_alloc_slot();
     if (idx < 0) break;
-    float ex = 0.1f + 0.8f * rng_float01();
-    float ey = 0.1f + 0.8f * rng_float01();
+    
+    // Spawn wolves outside player's view in random directions
+    float angle = rng_float01() * 2.f * 3.14159f;
+    float spawnDist = MIN_SPAWN_DISTANCE + (MAX_SPAWN_DISTANCE - MIN_SPAWN_DISTANCE) * rng_float01();
+    float ex = clamp01(g_pos_x + cosf(angle) * spawnDist);
+    float ey = clamp01(g_pos_y + sinf(angle) * spawnDist);
     enemy_activate(idx, EnemyType::Wolf, ex, ey);
     spawned += 1u;
   }
