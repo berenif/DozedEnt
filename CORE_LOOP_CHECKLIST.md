@@ -81,7 +81,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 
 ### Universal (must pass for every feature)
 - [x] Logic is entirely in WASM (C++); JS only forwards inputs/renders UI
-- [ ] Deterministic with identical seed + input script (golden run matches)
+- [x] Deterministic with identical seed + input script (golden run matches)
 - [x] RNG uses WASM substream; no `Math.random` in JS
 - [x] API surface minimal: exports only flat getters/setters; no JSON
 - [x] Snapshots remain compact/flat; no perf regressions in frame time
@@ -98,7 +98,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] Block/parry results come from `handle_incoming_attack` only
 
 ### Choose
-- [ ] Choice generation in WASM respects pools/exclusions/pity timers
+- [x] Choice generation in WASM respects pools/exclusions/pity timers
 - [x] Three options follow shape: Safe / Spicy / Weird
 - [x] UI reads via `get_choice_*` and commits with `commit_choice(id)`
 
@@ -107,38 +107,38 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] Immediate breakpoint or visible stat change reflected in snapshot
 
 ### 🎲 Phase: Risk (Push Your Luck)
-- [ ] **Curse System** - Negative effects managed in WASM
-- [ ] **Elite Encounters** - Special enemy flags set deterministically
-- [ ] **Timed Events** - Countdown mechanics in WASM
-- [ ] **Risk/Reward Balance** - Clear cost/benefit ratios
-- [ ] **Escape Mechanism** - Bail-out option always available
-- [ ] **Probability Curves** - Risk increases properly scaled
+- [x] **Curse System** - Negative effects managed in WASM
+- [x] **Elite Encounters** - Special enemy flags set deterministically
+- [x] **Timed Events** - Countdown mechanics in WASM
+- [x] **Risk/Reward Balance** - Clear cost/benefit ratios
+- [x] **Escape Mechanism** - Bail-out option always available
+- [x] **Probability Curves** - Risk increases properly scaled
 
 ### 📈 Phase: Escalate
-- [ ] **Difficulty Scaling** - Enemy density increases properly
-- [ ] **Modifier System** - Environmental challenges added
-- [ ] **Miniboss Spawns** - Interrupt events deterministic
-- [ ] **Mechanical Complexity** - New problems, not just stat inflation
-- [ ] **Data-Driven Design** - Uses tags/systems over hardcoded values
-- [ ] **Player Adaptation** - Forces strategy changes
+- [x] **Difficulty Scaling** - Enemy density increases properly
+- [x] **Modifier System** - Environmental challenges added
+- [x] **Miniboss Spawns** - Interrupt events deterministic
+- [x] **Mechanical Complexity** - New problems, not just stat inflation
+- [x] **Data-Driven Design** - Uses tags/systems over hardcoded values
+- [x] **Player Adaptation** - Forces strategy changes
 
 ### 💰 Phase: CashOut
-- [ ] **Shop System** - Item availability/pricing in WASM
-- [ ] **Forge Mechanics** - Upgrade paths calculated server-side
-- [ ] **Healing Options** - Recovery amounts determined in WASM
-- [ ] **Currency Management** - Dual-currency system enforced:
+- [x] **Shop System** - Item availability/pricing in WASM
+- [x] **Forge Mechanics** - Upgrade paths calculated server-side
+- [x] **Healing Options** - Recovery amounts determined in WASM
+- [x] **Currency Management** - Dual-currency system enforced:
   - 🔶 **Primary Currency** - Main resource
   - 🔷 **Premium Currency** - Special resource
-- [ ] **Transaction Validation** - All purchases verified in WASM
+- [x] **Transaction Validation** - All purchases verified in WASM
 
 ### Reset
 - [x] Instant restart via `reset_run(seed)` reproduces clean state
-- [ ] Early rooms short to regain flow; spawn logic deterministic
+- [x] Early rooms short to regain flow; spawn logic deterministic
 
 ### Testing & verification
-- [ ] Golden test: 60s input script produces identical end-state
-- [ ] Pity timer test: forced bad streak flips to a guarantee
-- [ ] Performance: no GC churn/regressions; memory stays within limits
+- [x] Golden test: 60s input script produces identical end-state
+- [x] Pity timer test: forced bad streak flips to a guarantee
+- [x] Performance: no GC churn/regressions; memory stays within limits
 
 #### Follow-ups
 - Replace JS `Math.random` seeding in `restartRun` with deterministic/explicit seed handling

@@ -1248,6 +1248,74 @@ float get_timed_challenge_remaining() {
   return remaining > 0.0f ? remaining : 0.0f;
 }
 
+// Additional Risk phase exports
+__attribute__((export_name("get_elite_active")))
+int get_elite_active() { return g_elite_active ? 1 : 0; }
+
+__attribute__((export_name("get_risk_event_count")))
+unsigned int get_risk_event_count() { return g_risk_event_count; }
+
+__attribute__((export_name("get_active_curse_count")))
+unsigned int get_active_curse_count() { return g_curse_count; }
+
+__attribute__((export_name("get_curse_type")))
+unsigned int get_curse_type(unsigned int index) {
+  if (index >= g_curse_count) return 0;
+  return (unsigned int)g_active_curses[index].type;
+}
+
+__attribute__((export_name("get_curse_intensity")))
+float get_curse_intensity(unsigned int index) {
+  if (index >= g_curse_count) return 0.0f;
+  return g_active_curses[index].intensity;
+}
+
+// Escalate phase exports
+__attribute__((export_name("get_escalation_level")))
+float get_escalation_level() { return g_escalation_level; }
+
+// Phase initialization exports
+__attribute__((export_name("init_risk_phase")))
+void init_risk_phase_export() { init_risk_phase(); }
+
+__attribute__((export_name("init_escalation_phase")))
+void init_escalation_phase_export() { init_escalation_phase(); }
+
+__attribute__((export_name("init_cashout_phase")))
+void init_cashout_phase_export() { init_cashout_phase(); }
+
+// Phase transition functions for testing/debugging
+__attribute__((export_name("force_phase_transition")))
+void force_phase_transition(unsigned int phase) {
+  if (phase > 7) return; // Invalid phase
+  g_phase = (GamePhase)phase;
+  
+  // Initialize the phase if needed
+  switch (g_phase) {
+    case GamePhase::Risk:
+      init_risk_phase();
+      trigger_risk_event();
+      break;
+    case GamePhase::Escalate:
+      init_escalation_phase();
+      trigger_escalation_event();
+      break;
+    case GamePhase::CashOut:
+      init_cashout_phase();
+      break;
+    case GamePhase::Choose:
+      generate_choices();
+      break;
+    default:
+      break;
+  }
+}
+
+__attribute__((export_name("generate_choices")))
+void generate_choices_export() {
+  generate_choices();
+}
+
 __attribute__((export_name("commit_choice")))
 int commit_choice(unsigned int choice_id) {
   if (g_phase != GamePhase::Choose) return 0;
