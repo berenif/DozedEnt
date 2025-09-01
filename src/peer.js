@@ -143,7 +143,12 @@ export default (initiator, {rtcConfig, rtcPolyfill, turnConfig}) => {
       }
     },
 
-    sendData: data => dataChannel.send(data),
+    sendData: data => {
+      if (!dataChannel || dataChannel.readyState !== 'open') {
+        throw new Error('Data channel is not available or not open')
+      }
+      dataChannel.send(data)
+    },
 
     destroy: () => {
       dataChannel?.close()

@@ -18,7 +18,12 @@ const fromFixed = (n) => n / FIXED_POINT_SCALE
 const fixedAdd = (a, b) => a + b
 const fixedSub = (a, b) => a - b
 const fixedMul = (a, b) => Math.floor((a * b) / FIXED_POINT_SCALE)
-const fixedDiv = (a, b) => Math.floor((a * FIXED_POINT_SCALE) / b)
+const fixedDiv = (a, b) => {
+  if (b === 0) {
+    throw new Error('Division by zero in fixed-point arithmetic')
+  }
+  return Math.floor((a * FIXED_POINT_SCALE) / b)
+}
 
 // Deterministic math functions
 const fixedSqrt = (n) => {
@@ -73,6 +78,9 @@ class DeterministicRandom {
   }
   
   nextInt(min, max) {
+    if (min >= max) {
+      throw new Error('Invalid range: min must be less than max')
+    }
     return min + (this.next() % (max - min))
   }
   

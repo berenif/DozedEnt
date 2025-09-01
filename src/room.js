@@ -231,6 +231,11 @@ export default (onPeer, onPeerLeave, onSelfLeave, logger) => {
       return
     }
 
+    // Check if peer still exists before processing
+    if (!peerMap[id]) {
+      return
+    }
+
     pendingTransmissions[id] ||= {}
     pendingTransmissions[id][type] ||= {}
 
@@ -257,7 +262,10 @@ export default (onPeer, onPeerLeave, onSelfLeave, logger) => {
       return a + c.byteLength
     }, 0)
 
-    delete pendingTransmissions[id][type][nonce]
+    // Safe cleanup with existence check
+    if (pendingTransmissions[id]?.[type]) {
+      delete pendingTransmissions[id][type][nonce]
+    }
 
     if (isBinary) {
       actions[type].onComplete(full, id, target.meta)
