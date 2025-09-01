@@ -4,6 +4,7 @@
 
 #include "internal_core.h"
 #include "obstacles.h"
+#include "terrain_hazards.h"
 #include "scent.h"
 #include "enemies.h"
 #include "choices.h"
@@ -574,6 +575,34 @@ static inline void enemy_face_towards(Enemy &e, float tx, float ty) {
 static void enemy_apply_world_collision(Enemy &e, float nextX, float nextY) {
   float nx = nextX, ny = nextY;
   resolve_obstacle_collision(e.x, e.y, nx, ny);
+  
+  // Avoid hazards - enemies try to steer around them
+  if (enemy_should_avoid_hazard(nx, ny, ENEMY_RADIUS)) {
+    // Find a safe direction away from hazards
+    float safeX = e.x, safeY = e.y;
+    float bestDist = 0.f;
+    
+    // Try 8 directions to find safest path
+    for (int i = 0; i < 8; ++i) {
+      float angle = (float)i * 0.785398f; // PI/4
+      float testX = e.x + __builtin_cosf(angle) * 0.05f;
+      float testY = e.y + __builtin_sinf(angle) * 0.05f;
+      
+      if (!enemy_should_avoid_hazard(testX, testY, ENEMY_RADIUS)) {
+        float dist = vec_len(testX - nx, testY - ny);
+        if (dist < 0.1f) { // Close to intended direction
+          safeX = testX;
+          safeY = testY;
+          break;
+        }
+      }
+    }
+    
+    // Move towards safe position instead
+    nx = safeX;
+    ny = safeY;
+  }
+  
   // Push enemy away from the player to prevent overlap
   {
     const float rr = PLAYER_RADIUS + ENEMY_RADIUS;
@@ -1038,6 +1067,9 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
 
   // Generate obstacles deterministically, guaranteeing walkable space
   generate_obstacles_walkable();
+  
+  // Generate hostile terrain hazards
+  generate_hazards();
 
   // Generate simple deterministic landmarks (3) and exits (1)
   g_landmark_count = 3;
@@ -1270,6 +1302,16 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
 
   // Stamina drain/regen
   apply_stamina_and_block_update(dtSeconds);
+  
+  // Update hazards and apply effects
+  update_hazards(dtSeconds);
+  
+  // Apply hazard movement modifiers
+  float hazardSpeedMod = get_hazard_speed_modifier();
+  if (hazardSpeedMod < 1.0f) {
+    g_vel_x *= hazardSpeedMod;
+    g_vel_y *= hazardSpeedMod;
+  }
 
   // Advance player attack state and resolve hits
   if (dtSeconds > 0.f) {
