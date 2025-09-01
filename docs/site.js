@@ -335,6 +335,7 @@ function ensureSelfEl() {
   const el = document.createElement('div')
   el.className = 'player self'
   el.style.background = '#2196f3' // blue
+  el.title = 'You (controlled by joystick)' // Add tooltip to identify local player
   canvas.appendChild(el)
   // soft shadow
   ensureShadow(el)
@@ -549,12 +550,26 @@ function isLandscape() {
 }
 
 function updateOverlayVisibility() {
-  if (!isMobile) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceJoystick = urlParams.get('joystick') === '1';
+  
+  if (!isMobile && !forceJoystick) {
     orientationOverlay.hidden = true
     if (actions) actions.hidden = true
     if (controlsTip) controlsTip.hidden = false
+    joystick.hidden = true
     return
   }
+  
+  if (forceJoystick && !isMobile) {
+    // Testing mode on desktop
+    orientationOverlay.hidden = true
+    joystick.hidden = false
+    if (actions) actions.hidden = true
+    if (controlsTip) controlsTip.hidden = true
+    return
+  }
+  
   const inLandscape = isLandscape()
   orientationOverlay.hidden = inLandscape
   joystick.hidden = !inLandscape
@@ -828,6 +843,12 @@ function gameLoop(ts) {
   updateFromKeyboard()
 
   // joystick input already updates inputX/inputY
+  // Debug: Log joystick input occasionally
+  if (inputX !== 0 || inputY !== 0) {
+    if (Math.random() < 0.01) { // Log 1% of the time to avoid spam
+      console.log('Joystick controlling local player:', { inputX, inputY, posX, posY });
+    }
+  }
   
   // update roll timers
   if (rollCooldownLeft > 0) rollCooldownLeft = Math.max(0, rollCooldownLeft - dt)
@@ -1025,7 +1046,14 @@ function resetKnob() {
 }
 
 function attachJoystick() {
-  if (!isMobile) return
+  // Allow joystick on mobile OR if explicitly testing with ?joystick=1 in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceJoystick = urlParams.get('joystick') === '1';
+  
+  if (!isMobile && !forceJoystick) return
+  
+  console.log('Joystick initialized for', isMobile ? 'mobile device' : 'testing mode');
+  
   const onStart = e => {
     const t = (e.touches ? e.touches[0] : e)
     joystickTouchId = t.identifier ?? 'mouse'
