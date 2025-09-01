@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocalization System Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        #status {
+            padding: 10px;
+            background: #000;
+            border: 1px solid #0f0;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0f0;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wolf Vocalization System Test</h1>
+    <div id="status">Loading...</div>
+    
+    <div>
+        <h2>Audio Test</h2>
+        <button onclick="testHowl()">Test Howl 🌙</button>
+        <button onclick="testGrowl()">Test Growl ⚡</button>
+        <button onclick="testBark()">Test Bark !</button>
+        <button onclick="testWhine()">Test Whine 💔</button>
+        <button onclick="testSnarl()">Test Snarl ⚔️</button>
+    </div>
+    
+    <div>
+        <h2>WASM Status</h2>
+        <div id="wasmStatus">Checking WASM...</div>
+    </div>
+
+    <script type="module">
+        // Import the game
+        import('./docs/site.js').then(() => {
+            document.getElementById('status').textContent = 'Site.js loaded successfully!';
+            
+            // Check if vocalization system is available
+            if (typeof window.VocalizationType !== 'undefined') {
+                document.getElementById('wasmStatus').textContent = 'Vocalization system detected!';
+            } else {
+                document.getElementById('wasmStatus').textContent = 'Vocalization system not found in global scope';
+            }
+        }).catch(err => {
+            document.getElementById('status').textContent = 'Error loading site.js: ' + err.message;
+        });
+        
+        // Test functions
+        window.testHowl = function() {
+            console.log('Testing Howl...');
+            if (window.playWolfSound) {
+                window.playWolfSound(1, 0.5, 0.5); // Howl type, center position
+            } else {
+                alert('playWolfSound not available');
+            }
+        };
+        
+        window.testGrowl = function() {
+            console.log('Testing Growl...');
+            if (window.playWolfSound) {
+                window.playWolfSound(2, 0.5, 0.5);
+            }
+        };
+        
+        window.testBark = function() {
+            console.log('Testing Bark...');
+            if (window.playWolfSound) {
+                window.playWolfSound(3, 0.5, 0.5);
+            }
+        };
+        
+        window.testWhine = function() {
+            console.log('Testing Whine...');
+            if (window.playWolfSound) {
+                window.playWolfSound(4, 0.5, 0.5);
+            }
+        };
+        
+        window.testSnarl = function() {
+            console.log('Testing Snarl...');
+            if (window.playWolfSound) {
+                window.playWolfSound(5, 0.5, 0.5);
+            }
+        };
+    </script>
+</body>
+</html>

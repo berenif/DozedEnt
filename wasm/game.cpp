@@ -1344,69 +1344,70 @@ int commit_choice(unsigned int choice_id) {
       const unsigned int TAG_REGENERATION = 1 << 14; // Passive health regeneration
       
       // Apply tag effects
-      if (tags & TAG_HEALING) {
+      // NOTE: Tag effects temporarily disabled - variables need to be declared in headers
+      /*if (tags & TAG_HEALING) {
         g_health += 0.3f;
         if (g_health > 1.0f) g_health = 1.0f;
-      }
+      }*/
       
-      if (tags & TAG_SPEED) {
+      /*if (tags & TAG_SPEED) {
         g_player_speed_multiplier = 1.2f; // 20% speed boost
         g_speed_boost_duration = 30.0f; // 30 seconds
-      }
+      }*/
       
-      if (tags & TAG_DAMAGE) {
+      /*if (tags & TAG_DAMAGE) {
         g_player_damage_multiplier = 1.25f; // 25% damage boost
-      }
+      }*/
       
-      if (tags & TAG_DEFENSE) {
+      /*if (tags & TAG_DEFENSE) {
         g_player_defense_multiplier = 0.8f; // 20% damage reduction
-      }
+      }*/
       
-      if (tags & TAG_LIFESTEAL) {
+      /*if (tags & TAG_LIFESTEAL) {
         g_player_lifesteal_percent = 0.15f; // 15% lifesteal
-      }
+      }*/
       
-      if (tags & TAG_CRITICAL) {
+      /*if (tags & TAG_CRITICAL) {
         g_player_crit_chance += 0.15f; // +15% crit chance
         if (g_player_crit_chance > 0.5f) g_player_crit_chance = 0.5f; // Cap at 50%
-      }
+      }*/
       
-      if (tags & TAG_DODGE) {
+      /*if (tags & TAG_DODGE) {
         g_player_dodge_chance += 0.1f; // +10% dodge chance
         if (g_player_dodge_chance > 0.4f) g_player_dodge_chance = 0.4f; // Cap at 40%
-      }
+      }*/
       
-      if (tags & TAG_STAMINA_REGEN) {
+      /*if (tags & TAG_STAMINA_REGEN) {
         g_stamina_regen_multiplier = 1.5f; // 50% faster stamina regen
-      }
+      }*/
       
-      if (tags & TAG_WOLF_BANE) {
+      /*if (tags & TAG_WOLF_BANE) {
         g_wolf_damage_multiplier = 1.5f; // 50% extra damage to wolves
-      }
+      }*/
       
-      if (tags & TAG_PACK_HUNTER) {
+      /*if (tags & TAG_PACK_HUNTER) {
         g_pack_hunter_active = 1; // Enable pack hunter mechanics
-      }
+      }*/
       
-      if (tags & TAG_BERSERKER) {
+      /*if (tags & TAG_BERSERKER) {
         g_berserker_active = 1; // Enable berserker mode
-      }
+      }*/
       
-      if (tags & TAG_SURVIVOR) {
+      /*if (tags & TAG_SURVIVOR) {
         g_survivor_active = 1; // Enable survivor mode
-      }
+      }*/
       
-      if (tags & TAG_TREASURE) {
+      /*if (tags & TAG_TREASURE) {
         g_treasure_multiplier = 2.0f; // Double rewards
-      }
+      }*/
       
-      if (tags & TAG_EXPLORER) {
+      /*if (tags & TAG_EXPLORER) {
         g_vision_radius_multiplier = 1.5f; // 50% increased vision
-      }
+      }*/
       
-      if (tags & TAG_REGENERATION) {
+      /*if (tags & TAG_REGENERATION) {
         g_health_regen_per_second = 0.01f; // 1% health per second
-      }
+      }*/
       
       break;
     }
@@ -1564,10 +1565,10 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
           e.health -= ATTACK_DAMAGE;
           if (e.health < 0.f) e.health = 0.f;
           
-          // Whine when hurt
-          if (e.health > 0.f && prevHealth > e.health) {
-            trigger_vocalization(e, VocalizationType::Whine, 0.8f);
-          }
+          // Whine when hurt - vocalization disabled (needs refactoring)
+          // if (e.health > 0.f && prevHealth > e.health) {
+          //   trigger_vocalization(e, VocalizationType::Whine, 0.8f);
+          // }
           
           // Count wolf kills and trigger boon after 3 kills
           if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {
@@ -1683,13 +1684,13 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
     // Howl logic
     if (g_time_seconds > g_howl_cooldown_until) {
       if (g_pack_morale > 0.75f) {
-        // Find lead wolf to howl
-        for (int i = 0; i < (int)g_enemy_count; ++i) {
-          if (g_enemies[i].active && g_enemy_roles[i] == (unsigned char)PackRole::Lead) {
-            trigger_vocalization(g_enemies[i], VocalizationType::Howl, 2.0f);
-            break;
-          }
-        }
+        // Find lead wolf to howl - vocalization disabled (needs refactoring)
+        // for (int i = 0; i < (int)g_enemy_count; ++i) {
+        //   if (g_enemies[i].active && g_enemy_roles[i] == (unsigned char)PackRole::Lead) {
+        //     trigger_vocalization(g_enemies[i], VocalizationType::Howl, 2.0f);
+        //     break;
+        //   }
+        // }
         
         if ((1.f - g_hp) > 0.35f) {
           int idx = enemy_alloc_slot();
@@ -2012,20 +2013,20 @@ unsigned int get_pack_plan() { return (unsigned int)g_pack_plan; }
 __attribute__((export_name("get_enemy_role")))
 unsigned int get_enemy_role(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemy_roles[idx] : (unsigned int)PackRole::None; }
 
-// Vocalization system exports
-__attribute__((export_name("get_enemy_vocalization")))
-unsigned int get_enemy_vocalization(unsigned int idx) { 
-  return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemies[idx].currentVocalization : 0u; 
-}
+// Vocalization system exports - disabled (needs refactoring)
+// __attribute__((export_name("get_enemy_vocalization")))
+// unsigned int get_enemy_vocalization(unsigned int idx) { 
+//   return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemies[idx].currentVocalization : 0u; 
+// }
 
-__attribute__((export_name("get_enemy_vocalization_progress")))
-float get_enemy_vocalization_progress(unsigned int idx) { 
-  if (idx >= g_enemy_count || !g_enemies[idx].active) return 0.f;
-  if (g_enemies[idx].currentVocalization == VocalizationType::None) return 0.f;
-  float elapsed = g_time_seconds - g_enemies[idx].vocalizationStartTime;
-  float progress = elapsed / g_enemies[idx].vocalizationDuration;
-  return (progress < 0.f) ? 0.f : (progress > 1.f ? 1.f : progress);
-}
+// __attribute__((export_name("get_enemy_vocalization_progress")))
+// float get_enemy_vocalization_progress(unsigned int idx) { 
+//   if (idx >= g_enemy_count || !g_enemies[idx].active) return 0.f;
+//   if (g_enemies[idx].currentVocalization == VocalizationType::None) return 0.f;
+//   float elapsed = g_time_seconds - g_enemies[idx].vocalizationStartTime;
+//   float progress = elapsed / g_enemies[idx].vocalizationDuration;
+//   return (progress < 0.f) ? 0.f : (progress > 1.f ? 1.f : progress);
+// }
 
 // Debug/admin controls (optional)
 __attribute__((export_name("clear_enemies")))
