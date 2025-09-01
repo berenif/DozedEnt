@@ -4,7 +4,7 @@
 # Basic site settings
 title: Trystero
 description: Serverless WebRTC matchmaking for painless P2P
-baseurl: "" # Leave empty if serving from root, or set to "/repository-name" if not using custom domain
+baseurl: "/DozedEnt" # Repository name for GitHub Pages
 url: "" # Your custom domain or leave empty for github.io domain
 
 # Build settings

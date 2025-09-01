@@ -6,12 +6,12 @@ try {
   // Prefer local bundle if served from repo root; otherwise fallback to CDN
   let wasmHelperModule
   try {
-    wasmHelperModule = await import('../dist/trystero-wasm.min.js')
+    wasmHelperModule = await import('/DozedEnt/dist/trystero-wasm.min.js')
   } catch (_) {
     wasmHelperModule = await import('https://esm.run/trystero/wasm')
   }
   const {loadWasm} = wasmHelperModule
-  const {exports} = await loadWasm('game.wasm')
+  const {exports} = await loadWasm('/DozedEnt/game.wasm')
   wasmExports = exports
   if (typeof wasmExports.start === 'function') wasmExports.start()
   // Seed and initialize a run inside WASM (logic stays in WASM)
