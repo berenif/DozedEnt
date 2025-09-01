@@ -8,6 +8,8 @@
 #include "enemies.h"
 #include "choices.h"
 #include "risk.h"
+#include "escalate.h"
+#include "cashout.h"
 
 #if 0
 
@@ -1101,6 +1103,14 @@ int escape_risk() {
   return 0;
 }
 
+__attribute__((export_name("exit_cashout")))
+int exit_cashout() {
+  if (g_phase != GamePhase::CashOut) return 0;
+  g_phase = GamePhase::Explore;
+  g_wolf_kills_since_choice = 0;
+  return 1;
+}
+
 __attribute__((export_name("get_timed_challenge_progress")))
 unsigned int get_timed_challenge_progress() { return g_timed_challenge_progress; }
 
@@ -1288,6 +1298,18 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
           // Count wolf kills and trigger boon after 3 kills
           if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {
             g_wolf_kills_since_choice += 1u;
+            
+            // Award currency for defeating enemies
+            add_gold(10.0f + rng_float01() * 5.0f);
+            if (g_elite_active) {
+              add_essence(2.0f + rng_float01() * 2.0f);
+            }
+            
+            // Update timed challenge progress if active
+            if (g_timed_challenge_end > 0.0f && g_time_seconds < g_timed_challenge_end) {
+              g_timed_challenge_progress++;
+            }
+            
             if ((g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) && g_wolf_kills_since_choice >= 3u) {
               generate_choices();
               g_phase = GamePhase::Choose;
@@ -1415,6 +1437,32 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
       g_stamina = 1.0f; // Full stamina restore
       g_phase = GamePhase::PowerUp;
       g_timed_challenge_end = -1.0f;
+    }
+    
+    // Check if should transition to Escalate
+    if (g_risk_event_count == 0 && should_enter_escalation_phase()) {
+      g_phase = GamePhase::Escalate;
+      init_escalation_phase();
+      trigger_escalation_event();
+    }
+  } else if (g_phase == GamePhase::Escalate) {
+    // Escalate phase management
+    update_escalation_phase(dtSeconds);
+    
+    // Check if should transition to CashOut
+    if (should_enter_cashout_phase()) {
+      g_phase = GamePhase::CashOut;
+      init_cashout_phase();
+    }
+  } else if (g_phase == GamePhase::CashOut) {
+    // CashOut phase - waiting for player decisions
+    // Phase transitions are handled by export functions (buy_shop_item, etc.)
+    
+    // Exit cashout when player is done (could add a "leave shop" button)
+    // For now, exit after spending most currency
+    if (g_gold < 20.0f && g_essence < 3.0f) {
+      g_phase = GamePhase::Explore;
+      g_wolf_kills_since_choice = 0;
     }
   } else if (g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) {
     // Check if should enter risk phase
