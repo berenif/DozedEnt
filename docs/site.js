@@ -285,6 +285,65 @@ function playWolfSound(type, x, y) {
 // Track active vocalizations to avoid duplicate sounds
 const activeVocalizations = new Map()
 
+// Testing: Expose vocalization functions globally for testing
+window.VocalizationType = VocalizationType
+window.playWolfSound = playWolfSound
+window.initAudioContext = initAudioContext
+
+// Add test buttons for vocalization (temporary for testing)
+function addVocalizationTestButtons() {
+  const testPanel = document.createElement('div')
+  testPanel.id = 'vocalization-test-panel'
+  testPanel.style.cssText = `
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 10000;
+    font-family: monospace;
+    color: #00ffff;
+  `
+  testPanel.innerHTML = `
+    <div style="margin-bottom: 5px; font-size: 12px;">🎵 Vocalization Test</div>
+    <button onclick="window.testVocalization(1)" style="margin: 2px; padding: 5px; background: #111; color: #0ff; border: 1px solid #0ff; cursor: pointer;">🌙 Howl</button>
+    <button onclick="window.testVocalization(2)" style="margin: 2px; padding: 5px; background: #111; color: #f60; border: 1px solid #f60; cursor: pointer;">⚡ Growl</button>
+    <button onclick="window.testVocalization(3)" style="margin: 2px; padding: 5px; background: #111; color: #ff0; border: 1px solid #ff0; cursor: pointer;">! Bark</button>
+    <button onclick="window.testVocalization(4)" style="margin: 2px; padding: 5px; background: #111; color: #99f; border: 1px solid #99f; cursor: pointer;">💔 Whine</button>
+    <button onclick="window.testVocalization(5)" style="margin: 2px; padding: 5px; background: #111; color: #f00; border: 1px solid #f00; cursor: pointer;">⚔️ Snarl</button>
+  `
+  document.body.appendChild(testPanel)
+}
+
+// Test vocalization function
+window.testVocalization = function(type) {
+  initAudioContext()
+  // Play at random position near player
+  const x = (selfX || 0.5) + (Math.random() - 0.5) * 0.3
+  const y = (selfY || 0.5) + (Math.random() - 0.5) * 0.3
+  playWolfSound(type, x, y)
+  
+  // Add visual indicator to a random enemy if any exist
+  if (enemyEls && enemyEls.length > 0) {
+    const validEnemies = enemyEls.filter(el => el && el.parentNode)
+    if (validEnemies.length > 0) {
+      const enemy = validEnemies[Math.floor(Math.random() * validEnemies.length)]
+      addVocalizationVisual(enemy, type)
+      setTimeout(() => {
+        const visual = enemy.querySelector('.vocalization')
+        if (visual) visual.remove()
+      }, 1000)
+    }
+  }
+}
+
+// Add test buttons after page loads
+setTimeout(() => {
+  addVocalizationTestButtons()
+}, 1000)
+
 // Visual indicators for vocalizations
 function addVocalizationVisual(el, type) {
   // Remove any existing vocalization visual
@@ -543,38 +602,58 @@ function renderEnemies() {
       shadow.style.setProperty('--shadow-opacity', moving ? '0.55' : '0.65')
     }
     // optional enemy role label
+    let role = 255 // Default to no role
     if (typeof wasmExports.get_enemy_role === 'function') {
-      const role = (wasmExports.get_enemy_role(i) | 0)
+      role = (wasmExports.get_enemy_role(i) | 0)
       const tag = ensureRoleTag(el)
       tag.textContent = enemyRoleLabel(role)
     }
     
-    // Process vocalizations
-    if (typeof wasmExports.get_enemy_vocalization === 'function') {
-      const vocalization = wasmExports.get_enemy_vocalization(i) | 0
-      const progress = (typeof wasmExports.get_enemy_vocalization_progress === 'function') 
-        ? wasmExports.get_enemy_vocalization_progress(i) : 0
+    // Process vocalizations - using simulated triggers since WASM integration needs refactoring
+    // Simulate vocalizations based on enemy state
+    const enemyKey = `enemy_${i}`
+    const lastState = el.dataset.lastState || ''
+    const currentState = String(state)
+    
+    // Trigger vocalizations on state changes
+    if (currentState !== lastState) {
+      el.dataset.lastState = currentState
       
-      // Check if this is a new vocalization
-      const enemyKey = `enemy_${i}`
-      const lastVocalization = activeVocalizations.get(enemyKey) || 0
+      // Random chance to vocalize based on state
+      const rand = Math.random()
       
-      if (vocalization !== VocalizationType.None && vocalization !== lastVocalization) {
-        // New vocalization started
-        activeVocalizations.set(enemyKey, vocalization)
-        playWolfSound(vocalization, x, y)
-        
-        // Add visual indicator
-        addVocalizationVisual(el, vocalization)
-      } else if (vocalization === VocalizationType.None && lastVocalization !== 0) {
-        // Vocalization ended
-        activeVocalizations.set(enemyKey, 0)
+      if (state === 1 && rand < 0.3) { // Seek state - bark to alert pack
+        playWolfSound(VocalizationType.Bark, x, y)
+        addVocalizationVisual(el, VocalizationType.Bark)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 500)
+      } else if (state === 2 && rand < 0.2) { // Circle state - growl to intimidate
+        playWolfSound(VocalizationType.Growl, x, y)
+        addVocalizationVisual(el, VocalizationType.Growl)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 1000)
+      } else if (state === 3 && rand < 0.4) { // Harass state - snarl before attack
+        playWolfSound(VocalizationType.Snarl, x, y)
+        addVocalizationVisual(el, VocalizationType.Snarl)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 300)
       }
-      
-      // Update visual indicator progress
-      if (vocalization !== VocalizationType.None) {
-        updateVocalizationVisual(el, progress)
-      }
+    }
+    
+    // Occasional howl from lead wolf
+    if (role === 0 && Math.random() < 0.001) { // Lead role, very rare howl
+      playWolfSound(VocalizationType.Howl, x, y)
+      addVocalizationVisual(el, VocalizationType.Howl)
+      setTimeout(() => {
+        const visual = el.querySelector('.vocalization')
+        if (visual) visual.remove()
+      }, 2000)
     }
   }
   // remove excess DOM nodes
