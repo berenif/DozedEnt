@@ -1,4 +1,4 @@
-import {joinRoom} from 'https://esm.run/trystero/mqtt'  // MQTT strategy - try this if Nostr fails
+import {joinRoom, selfId} from 'https://esm.run/trystero/mqtt'  // MQTT strategy - try this if Nostr fails
 // WASM helpers (browser bundle)
 let wasmExports = null
 let runSeed = 0n
@@ -658,6 +658,8 @@ function init(n) {
   }, 2000)
   
   room.onPeerJoin(peerId => {
+    // Skip if it's our own ID (shouldn't happen but be safe)
+    if (peerId === selfId) return
     console.log(`Peer joined: ${peerId}`)
     connectionStatusEl.innerText = 'Peer Connected!'
     // ensure element and color assigned
@@ -666,6 +668,8 @@ function init(n) {
   })
   
   room.onPeerLeave(peerId => {
+    // Skip if it's our own ID
+    if (peerId === selfId) return
     console.log(`Peer left: ${peerId}`)
     connectionStatusEl.innerText = 'Peer Disconnected'
     removePeerEl(peerId)
@@ -674,6 +678,8 @@ function init(n) {
   
   // receive peer movement
   getMove(([x, y], peerId) => {
+    // Ignore our own movement messages to prevent duplicate player
+    if (peerId === selfId) return
     if (typeof x !== 'number' || typeof y !== 'number') return
     const el = getOrCreatePeerEl(peerId)
     setElPos(el, clamp01(x), clamp01(y))
@@ -683,6 +689,8 @@ function init(n) {
 
   // receive peer actions (attack / block / roll)
   onAct((msg, peerId) => {
+    // Ignore our own action messages
+    if (peerId === selfId) return
     if (!msg || typeof msg !== 'object') return
     const el = getOrCreatePeerEl(peerId)
     const t = msg.t
@@ -1053,6 +1061,7 @@ function attachJoystick() {
   if (!isMobile && !forceJoystick) return
   
   console.log('Joystick initialized for', isMobile ? 'mobile device' : 'testing mode');
+  console.log('Local player ID:', selfId);
   
   const onStart = e => {
     const t = (e.touches ? e.touches[0] : e)
