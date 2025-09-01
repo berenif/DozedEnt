@@ -59,7 +59,7 @@ class RollbackP2P {
    * Set up signaling message handlers
    */
   setupSignalingHandlers() {
-    if (!this.signalingChannel) return
+    if (!this.signalingChannel) {return}
     
     // Handle incoming offers
     this.signalingChannel.onOffer = async (peerId, offer) => {
@@ -439,7 +439,7 @@ class RollbackP2P {
     
     for (const id of peerIds) {
       const peerInfo = this.peers.get(id)
-      if (!peerInfo || !peerInfo.connection) continue
+      if (!peerInfo || !peerInfo.connection) {continue}
       
       const rtcStats = await peerInfo.connection.getStats()
       const peerStats = {

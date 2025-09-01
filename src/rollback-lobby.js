@@ -237,10 +237,10 @@ class RollbackLobby {
    * Handle join request (host only)
    */
   async handleJoinRequest(data, peerId) {
-    if (!this.isHost) return
+    if (!this.isHost) {return}
     
     const lobby = this.lobbies.get(this.lobbyId)
-    if (!lobby) return
+    if (!lobby) {return}
     
     // Check if lobby is full
     if (this.players.size >= this.config.maxPlayers) {
@@ -322,11 +322,9 @@ class RollbackLobby {
       if (this.pendingJoinResolve) {
         this.pendingJoinResolve()
       }
-    } else {
-      if (this.pendingJoinReject) {
+    } else if (this.pendingJoinReject) {
         this.pendingJoinReject(new Error(data.reason || 'Join request rejected'))
       }
-    }
   }
   
   /**
@@ -680,7 +678,7 @@ class RollbackLobby {
    * Leave current lobby
    */
   leaveLobby() {
-    if (!this.lobbyId) return
+    if (!this.lobbyId) {return}
     
     // Stop game if running
     if (this.rollbackNetcode) {

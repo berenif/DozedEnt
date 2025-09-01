@@ -380,7 +380,7 @@ export class EnhancedRoomManager {
   /**
    * Leave current room
    */
-  async leaveRoom() {
+  leaveRoom() {
     if (!this.currentRoom) {
       return
     }
@@ -418,20 +418,20 @@ export class EnhancedRoomManager {
       // Join the best matching room
       const bestRoom = suitableRooms[0]
       return await this.joinRoom(bestRoom.id)
-    } else {
+    } 
       // Create a new room
       return await this.createRoom({
         name: 'Quick Play Room',
         type: RoomType.PUBLIC,
         ...preferences
       })
-    }
+    
   }
   
   /**
    * Start matchmaking
    */
-  async startMatchmaking(criteria = {}) {
+  startMatchmaking(criteria = {}) {
     if (!this.config.enableMatchmaking) {
       throw new Error('Matchmaking is not enabled')
     }
@@ -600,7 +600,7 @@ export class EnhancedRoomManager {
   // Private helper methods
   
   _setupGameRoomActions() {
-    if (!this.gameRoom) return
+    if (!this.gameRoom) {return}
     
     // Player management
     const [sendPlayerJoin, onPlayerJoin] = this.gameRoom.makeAction('player_join')
@@ -742,7 +742,7 @@ export class EnhancedRoomManager {
   }
   
   _announceRoom() {
-    if (!this.currentRoom || !this.lobbyActions) return
+    if (!this.currentRoom || !this.lobbyActions) {return}
     
     const announcement = {
       id: this.currentRoom.id,
@@ -820,19 +820,19 @@ export class EnhancedRoomManager {
     
     for (const room of this.rooms.values()) {
       // Skip full rooms
-      if (room.players.length >= room.maxPlayers) continue
+      if (room.players.length >= room.maxPlayers) {continue}
       
       // Skip private rooms
-      if (room.type === RoomType.PRIVATE) continue
+      if (room.type === RoomType.PRIVATE) {continue}
       
       // Skip in-progress rooms if late join not allowed
-      if (room.state === RoomState.IN_PROGRESS && !room.settings.allowLateJoin) continue
+      if (room.state === RoomState.IN_PROGRESS && !room.settings.allowLateJoin) {continue}
       
       // Check game mode preference
-      if (preferences.gameMode && room.settings.gameMode !== preferences.gameMode) continue
+      if (preferences.gameMode && room.settings.gameMode !== preferences.gameMode) {continue}
       
       // Check room size preference
-      if (preferences.maxPlayers && room.maxPlayers !== preferences.maxPlayers) continue
+      if (preferences.maxPlayers && room.maxPlayers !== preferences.maxPlayers) {continue}
       
       // Calculate match score
       let score = 100
@@ -841,10 +841,10 @@ export class EnhancedRoomManager {
       score += (room.players.length / room.maxPlayers) * 50
       
       // Prefer rooms in waiting state
-      if (room.state === RoomState.WAITING) score += 20
+      if (room.state === RoomState.WAITING) {score += 20}
       
       // Prefer rooms in same region
-      if (preferences.region && room.metadata.region === preferences.region) score += 30
+      if (preferences.region && room.metadata.region === preferences.region) {score += 30}
       
       suitableRooms.push({ ...room, matchScore: score })
     }
@@ -855,7 +855,7 @@ export class EnhancedRoomManager {
   
   _handleMatchmakingRequest(request, peerId) {
     // Only process if we're hosting a room
-    if (!this.currentRoom || this.playerInfo.role !== PlayerRole.HOST) return
+    if (!this.currentRoom || this.playerInfo.role !== PlayerRole.HOST) {return}
     
     const req = typeof request === 'string' ? fromJson(request) : request
     
@@ -934,9 +934,7 @@ export class EnhancedRoomManager {
       return 1000
     }
     
-    const totalRating = this.currentRoom.players.reduce((sum, player) => {
-      return sum + (player.stats?.rating || 1000)
-    }, 0)
+    const totalRating = this.currentRoom.players.reduce((sum, player) => sum + (player.stats?.rating || 1000), 0)
     
     return Math.round(totalRating / this.currentRoom.players.length)
   }
@@ -968,7 +966,7 @@ export class EnhancedRoomManager {
   
   _updateStatistics(event, data) {
     switch (event) {
-      case 'roomCreated':
+      case 'roomCreated': {
         this.stats.totalRoomsCreated++
         if (this.rooms.size > this.stats.peakConcurrentRooms) {
           this.stats.peakConcurrentRooms = this.rooms.size
@@ -981,6 +979,7 @@ export class EnhancedRoomManager {
           (this.stats.popularGameModes.get(gameMode) || 0) + 1
         )
         break
+      }
         
       case 'playerJoined':
         this.stats.totalPlayersJoined++
@@ -1002,7 +1001,7 @@ export class EnhancedRoomManager {
     this.listeners.onRoomListUpdate(roomList)
   }
   
-  async _loadPersistedData() {
+  _loadPersistedData() {
     try {
       const stored = localStorage.getItem(`${this.appId}_room_data`)
       if (stored) {
@@ -1016,7 +1015,7 @@ export class EnhancedRoomManager {
     }
   }
   
-  async _persistRoomData(room) {
+  _persistRoomData(room) {
     try {
       const data = {
         stats: this.stats,
@@ -1039,9 +1038,9 @@ export class EnhancedRoomManager {
    */
   destroy() {
     // Clear intervals
-    if (this.announceInterval) clearInterval(this.announceInterval)
-    if (this.cleanupInterval) clearInterval(this.cleanupInterval)
-    if (this.heartbeatInterval) clearInterval(this.heartbeatInterval)
+    if (this.announceInterval) {clearInterval(this.announceInterval)}
+    if (this.cleanupInterval) {clearInterval(this.cleanupInterval)}
+    if (this.heartbeatInterval) {clearInterval(this.heartbeatInterval)}
     
     // Leave current room
     if (this.currentRoom) {

@@ -523,7 +523,7 @@ export class ParticleEmitter {
     }
 
     emit() {
-        if (!this.system) return
+        if (!this.system) {return}
         
         const angle = this.direction + (Math.random() - 0.5) * this.spread
         const config = { ...this.particleConfig }

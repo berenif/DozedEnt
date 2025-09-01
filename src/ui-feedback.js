@@ -66,7 +66,7 @@ export class DamageNumber {
 
     render(ctx) {
         const progress = this.age / this.lifetime
-        const alpha = 1 - Math.pow(progress, 2)
+        const alpha = 1 - progress**2
         
         // Calculate animated size
         let animatedSize = this.size
@@ -189,7 +189,7 @@ export class ComboCounter {
     }
 
     render(ctx) {
-        if (this.count === 0) return
+        if (this.count === 0) {return}
         
         const shakeX = (Math.random() - 0.5) * this.shakeIntensity
         const shakeY = (Math.random() - 0.5) * this.shakeIntensity
@@ -201,11 +201,11 @@ export class ComboCounter {
         
         // Determine color based on combo level
         let color = '#ffffff'
-        if (this.count >= 50) color = '#ff6b6b'
-        else if (this.count >= 30) color = '#f59e0b'
-        else if (this.count >= 20) color = '#fbbf24'
-        else if (this.count >= 10) color = '#4ade80'
-        else if (this.count >= 5) color = '#60a5fa'
+        if (this.count >= 50) {color = '#ff6b6b'}
+        else if (this.count >= 30) {color = '#f59e0b'}
+        else if (this.count >= 20) {color = '#fbbf24'}
+        else if (this.count >= 10) {color = '#4ade80'}
+        else if (this.count >= 5) {color = '#60a5fa'}
         
         // Draw combo text
         ctx.font = `bold ${this.baseSize}px Arial`
@@ -314,7 +314,7 @@ export class StatusIndicator {
     }
 
     update(deltaTime) {
-        if (!this.active) return false
+        if (!this.active) {return false}
         
         this.pulse += deltaTime * 3
         
@@ -330,7 +330,7 @@ export class StatusIndicator {
     }
 
     render(ctx, x, y, index) {
-        if (!this.active) return
+        if (!this.active) {return}
         
         const offsetX = index * (this.size + 5)
         const pulseScale = 1 + Math.sin(this.pulse) * 0.1
@@ -492,8 +492,8 @@ export class HealthBar {
     }
 
     getHealthColor(percent) {
-        if (percent > 0.6) return '#4ade80'
-        if (percent > 0.3) return '#fbbf24'
+        if (percent > 0.6) {return '#4ade80'}
+        if (percent > 0.3) {return '#fbbf24'}
         return '#ef4444'
     }
 
@@ -579,7 +579,7 @@ export class UIFeedbackSystem {
     }
 
     renderNotification(ctx, notification, index) {
-        const alpha = 1 - Math.pow(notification.age / notification.duration, 2)
+        const alpha = 1 - (notification.age / notification.duration)**2
         const y = 200 + index * 40 - notification.age * 50
         
         ctx.save()

@@ -126,7 +126,7 @@ class HostAuthority {
    * Handle player action/input from clients
    */
   handlePlayerAction(action, playerId) {
-    if (!this.roomManager.isHost) return
+    if (!this.roomManager.isHost) {return}
     
     // Buffer player inputs
     if (!this.playerInputs.has(playerId)) {
@@ -150,7 +150,7 @@ class HostAuthority {
    * Process all buffered player inputs
    */
   processPlayerInputs() {
-    if (!this.wasmGame?.exports.game_handle_input) return
+    if (!this.wasmGame?.exports.game_handle_input) {return}
     
     for (const [playerId, inputs] of this.playerInputs.entries()) {
       while (inputs.length > 0) {
@@ -179,7 +179,7 @@ class HostAuthority {
    */
   getPlayerIndex(playerId) {
     const room = this.roomManager.currentRoom
-    if (!room) return -1
+    if (!room) {return -1}
     return room.players.indexOf(playerId)
   }
   
@@ -187,7 +187,7 @@ class HostAuthority {
    * Send full game state snapshot to all players
    */
   sendStateSnapshot() {
-    if (!this.wasmGame?.exports.game_get_state) return
+    if (!this.wasmGame?.exports.game_get_state) {return}
     
     // Get state from WASM
     const statePtr = this.wasmGame.exports.game_get_state(this.gameStatePtr)
@@ -217,7 +217,7 @@ class HostAuthority {
    * Handle state update from host (client side)
    */
   receiveStateUpdate(state) {
-    if (this.roomManager.isHost) return
+    if (this.roomManager.isHost) {return}
     
     this.gameState = state
     

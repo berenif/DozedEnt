@@ -15,7 +15,7 @@ export class Animation {
     constructor(name, frames, options = {}) {
         this.name = name
         this.frames = frames
-        this.loop = options.loop !== undefined ? options.loop : true
+        this.loop = options.loop !== null && options.loop !== undefined ? options.loop : true
         this.pingPong = options.pingPong || false
         this.speed = options.speed || 1.0
         this.onComplete = options.onComplete || null
@@ -56,7 +56,9 @@ export class Animation {
     }
 
     update(deltaTime) {
-        if (!this.isPlaying || this.frames.length === 0) return
+        if (!this.isPlaying || this.frames.length === 0) {
+            return
+        }
 
         this.elapsedTime += deltaTime * this.speed * 1000 // Convert to milliseconds
 
@@ -73,18 +75,16 @@ export class Animation {
                     this.direction *= -1
                     this.currentFrame += this.direction * 2
                 }
-            } else {
-                if (this.currentFrame >= this.frames.length) {
+            } else if (this.currentFrame >= this.frames.length) {
                     if (this.loop) {
                         this.currentFrame = 0
                     } else {
                         this.currentFrame = this.frames.length - 1
                         this.isPlaying = false
                         this.hasCompleted = true
-                        if (this.onComplete) this.onComplete()
+                        if (this.onComplete) {this.onComplete()}
                     }
                 }
-            }
 
             if (this.onFrame && this.currentFrame !== previousFrame) {
                 this.onFrame(this.currentFrame, this.frames[this.currentFrame])
@@ -93,12 +93,12 @@ export class Animation {
     }
 
     getCurrentFrame() {
-        if (this.frames.length === 0) return null
+        if (this.frames.length === 0) {return null}
         return this.frames[this.currentFrame]
     }
 
     getProgress() {
-        if (this.frames.length === 0) return 0
+        if (this.frames.length === 0) {return 0}
         return this.currentFrame / (this.frames.length - 1)
     }
 }
@@ -158,7 +158,7 @@ export class AnimationController {
     }
 
     getCurrentFrame() {
-        if (!this.currentAnimation) return null
+        if (!this.currentAnimation) {return null}
         return this.currentAnimation.getCurrentFrame()
     }
 
@@ -232,7 +232,7 @@ export class ProceduralAnimator {
                 this.active = true
             },
             update(deltaTime) {
-                if (!this.active) return { scaleX: 1, scaleY: 1 }
+                if (!this.active) {return { scaleX: 1, scaleY: 1 }}
                 
                 this.time += deltaTime
                 const progress = Math.min(this.time / duration, 1)
@@ -246,7 +246,7 @@ export class ProceduralAnimator {
                 const t = progress
                 const p = 0.3
                 const s = p / 4
-                const postFix = Math.pow(2, -10 * t) * Math.sin((t - s) * (2 * Math.PI) / p) + 1
+                const postFix = 2**(-10 * t) * Math.sin((t - s) * (2 * Math.PI) / p) + 1
                 
                 const squash = 1 - postFix * intensity
                 const stretch = 1 + postFix * intensity * 0.5
@@ -296,7 +296,7 @@ export class ProceduralAnimator {
                 this.phase = 'anticipation'
             },
             update(deltaTime) {
-                if (!this.active) return { scaleX: 1, scaleY: 1, offsetX: 0 }
+                if (!this.active) {return { scaleX: 1, scaleY: 1, offsetX: 0 }}
                 
                 this.time += deltaTime
                 
@@ -330,7 +330,7 @@ export class ProceduralAnimator {
                     }
                 } else if (this.phase === 'recovery') {
                     const progress = Math.min(this.time / (duration * 0.4), 1)
-                    const eased = 1 - Math.pow(1 - progress, 3)
+                    const eased = 1 - (1 - progress)**3
                     
                     if (progress >= 1) {
                         this.active = false
@@ -430,7 +430,7 @@ export class CharacterAnimator {
     }
 
     setState(newState) {
-        if (this.state === newState) return
+        if (this.state === newState) {return}
         
         this.state = newState
         

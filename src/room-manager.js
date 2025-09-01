@@ -165,7 +165,7 @@ class RoomManager {
    * Leave the current room
    */
   async leaveRoom() {
-    if (!this.currentRoom) return
+    if (!this.currentRoom) {return}
     
     if (this.isHost) {
       // Announce room closure
@@ -199,7 +199,7 @@ class RoomManager {
    * Set up game room message handlers
    */
   _setupGameRoom() {
-    if (!this.gameRoom) return
+    if (!this.gameRoom) {return}
     
     // Define game actions
     const actions = {
@@ -373,7 +373,7 @@ class RoomManager {
    * Announce room to the lobby
    */
   _announceRoom() {
-    if (!this.isHost || !this.currentRoom || !this.lobbyActions) return
+    if (!this.isHost || !this.currentRoom || !this.lobbyActions) {return}
     
     const roomData = {
       id: this.currentRoom.id,
@@ -390,7 +390,7 @@ class RoomManager {
    * Send game state to all players (host only)
    */
   sendGameState(gameState) {
-    if (!this.isHost || !this.gameActions) return
+    if (!this.isHost || !this.gameActions) {return}
     
     this.gameState = gameState
     this.gameActions.sendGameState[0](gameState)
@@ -400,7 +400,7 @@ class RoomManager {
    * Send player action to host (client only)
    */
   sendPlayerAction(action) {
-    if (this.isHost || !this.gameActions) return
+    if (this.isHost || !this.gameActions) {return}
     
     this.gameActions.sendPlayerAction[0](action)
   }

@@ -440,7 +440,7 @@ export class GameFeelEnhancer {
 
     processBufferedInput() {
         // Average recent inputs for smoother control
-        if (this.inputBuffer.length === 0) return null
+        if (this.inputBuffer.length === 0) {return null}
         
         const averaged = this.inputBuffer.reduce((acc, input) => {
             Object.keys(input).forEach(key => {

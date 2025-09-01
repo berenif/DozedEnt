@@ -106,7 +106,7 @@ export class RoomLobbyUI {
   }
   
   addStyles() {
-    if (document.getElementById('room-lobby-styles')) return
+    if (document.getElementById('room-lobby-styles')) {return}
     
     const style = document.createElement('style')
     style.id = 'room-lobby-styles'
@@ -776,7 +776,7 @@ export class RoomLobbyUI {
   }
   
   async createRoom() {
-    if (!this.roomManager) return
+    if (!this.roomManager) {return}
     
     const roomName = document.getElementById('room-name').value.trim() || 'New Room'
     const maxPlayers = parseInt(document.getElementById('max-players').value)
@@ -792,7 +792,7 @@ export class RoomLobbyUI {
   }
   
   async joinSelectedRoom() {
-    if (!this.roomManager || !this.selectedRoomId) return
+    if (!this.roomManager || !this.selectedRoomId) {return}
     
     try {
       const room = await this.roomManager.joinRoom(this.selectedRoomId)
@@ -805,7 +805,7 @@ export class RoomLobbyUI {
   }
   
   async quickPlay() {
-    if (!this.roomManager) return
+    if (!this.roomManager) {return}
     
     const rooms = this.roomManager.getRoomList()
     const availableRooms = rooms.filter(r => r.playerCount < r.maxPlayers)
@@ -824,7 +824,7 @@ export class RoomLobbyUI {
   }
   
   async leaveRoom() {
-    if (!this.roomManager) return
+    if (!this.roomManager) {return}
     
     await this.roomManager.leaveRoom()
     this.isInRoom = false
@@ -849,7 +849,7 @@ export class RoomLobbyUI {
     const roomListEl = document.getElementById('room-list')
     const roomCountEl = document.querySelector('.room-count')
     
-    if (!roomListEl) return
+    if (!roomListEl) {return}
     
     roomCountEl.textContent = `${rooms.length} ROOMS AVAILABLE`
     
@@ -898,13 +898,13 @@ export class RoomLobbyUI {
   }
   
   updatePlayerList() {
-    if (!this.roomManager?.currentRoom) return
+    if (!this.roomManager?.currentRoom) {return}
     
     const room = this.roomManager.currentRoom
     const playerListEl = document.getElementById('player-list')
     const playerCountEl = document.getElementById('player-count')
     
-    if (!playerListEl) return
+    if (!playerListEl) {return}
     
     playerCountEl.textContent = room.players.length
     
@@ -912,8 +912,8 @@ export class RoomLobbyUI {
       const isHost = playerId === room.hostId
       const isSelf = playerId === this.roomManager.selfId
       const classes = ['player-item']
-      if (isHost) classes.push('host')
-      if (isSelf) classes.push('self')
+      if (isHost) {classes.push('host')}
+      if (isSelf) {classes.push('self')}
       
       return `
         <div class="${classes.join(' ')}">

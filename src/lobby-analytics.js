@@ -379,7 +379,7 @@ export class LobbyAnalytics {
    */
   trackPerformance(metrics) {
     // Update latency
-    if (metrics.latency !== undefined) {
+    if (metrics.latency !== null && metrics.latency !== undefined) {
       this.data.performance.averageLatency = this.calculateRunningAverage(
         this.data.performance.averageLatency,
         metrics.latency,
@@ -652,16 +652,16 @@ export class LobbyAnalytics {
   }
   
   getSkillBracket(rating) {
-    if (rating < 800) return 'bronze'
-    if (rating < 1000) return 'silver'
-    if (rating < 1200) return 'gold'
-    if (rating < 1500) return 'platinum'
+    if (rating < 800) {return 'bronze'}
+    if (rating < 1000) {return 'silver'}
+    if (rating < 1200) {return 'gold'}
+    if (rating < 1500) {return 'platinum'}
     return 'diamond'
   }
   
   isComeback(scores) {
     // Simple comeback detection - can be made more sophisticated
-    if (scores.length < 2) return false
+    if (scores.length < 2) {return false}
     const winner = Math.max(...scores)
     const loser = Math.min(...scores)
     return (winner - loser) < (winner * 0.2) // Close game
@@ -674,15 +674,15 @@ export class LobbyAnalytics {
   
   detectLanguage(text) {
     // Simplified language detection
-    if (/[а-яА-Я]/.test(text)) return 'ru'
-    if (/[一-龯]/.test(text)) return 'zh'
-    if (/[ぁ-ゔ]/.test(text)) return 'ja'
-    if (/[가-힣]/.test(text)) return 'ko'
+    if (/[а-яА-Я]/.test(text)) {return 'ru'}
+    if (/[一-龯]/.test(text)) {return 'zh'}
+    if (/[ぁ-ゔ]/.test(text)) {return 'ja'}
+    if (/[가-힣]/.test(text)) {return 'ko'}
     return 'en'
   }
   
   getMostPopular(map) {
-    if (map.size === 0) return null
+    if (map.size === 0) {return null}
     let maxCount = 0
     let mostPopular = null
     

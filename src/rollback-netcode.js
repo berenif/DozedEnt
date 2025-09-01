@@ -103,7 +103,7 @@ class RollbackNetcode {
    * Add a remote player to the session
    */
   addPlayer(playerId, inputDelay = INPUT_DELAY_FRAMES) {
-    if (this.players.has(playerId)) return
+    if (this.players.has(playerId)) {return}
     
     this.players.set(playerId, {
       id: playerId,
@@ -133,7 +133,7 @@ class RollbackNetcode {
    * Start the game loop
    */
   start() {
-    if (this.running) return
+    if (this.running) {return}
     
     this.running = true
     this.lastFrameTime = performance.now()
@@ -151,7 +151,7 @@ class RollbackNetcode {
    * Main game loop with fixed timestep
    */
   gameLoop() {
-    if (!this.running) return
+    if (!this.running) {return}
     
     const now = performance.now()
     const deltaTime = now - this.lastFrameTime
@@ -297,7 +297,7 @@ class RollbackNetcode {
       const frameInputs = this.inputHistory.get(frame) || new Map()
       
       for (const [playerId, player] of this.players) {
-        if (player.local) continue
+        if (player.local) {continue}
         
         // Check if we have actual input vs predicted
         const actualInput = frameInputs.get(playerId)
