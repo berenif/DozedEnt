@@ -1109,6 +1109,7 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   init_choice_pool();  // Initialize the choice pool
   init_risk_phase();   // Initialize risk phase
   g_time_seconds = 0.f;
+  g_room_count = 0;     // Reset room counter
   g_last_attack_time = -1000.f;
   g_last_roll_time = -1000.f;
   g_enemy_count = 0;
@@ -1155,8 +1156,13 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
     g_exits_y[i] = 0.1f + 0.8f * rng_float01();
   }
 
-  // Spawn initial wolf pack (clustered)
-  spawn_wolf_pack(4);
+  // Spawn initial wolf pack - early rooms have fewer enemies for quick regain of flow
+  unsigned int initial_pack_size = 4;
+  if (g_room_count < 3) {
+    // First 3 rooms are shorter with fewer enemies
+    initial_pack_size = 2 + (g_room_count > 0 ? 1 : 0);  // 2, 3, 3 enemies
+  }
+  spawn_wolf_pack(initial_pack_size);
   // Initial role assignment
   for (int i = 0; i < MAX_ENEMIES; ++i) if (g_enemies[i].active) g_enemy_roles[i] = (unsigned char)PackRole::Harasser;
   // Clear den/danger boards
@@ -1172,6 +1178,9 @@ __attribute__((export_name("get_phase")))
 unsigned int get_phase() {
   return (unsigned int)g_phase;
 }
+
+__attribute__((export_name("get_room_count")))
+unsigned int get_room_count() { return g_room_count; }
 
 // Choice accessors for JS without pointer passing
 __attribute__((export_name("get_choice_count")))
@@ -1201,6 +1210,7 @@ int escape_risk() {
   if (g_phase != GamePhase::Risk) return 0;
   if (attempt_risk_escape()) {
     g_phase = GamePhase::Explore;
+    g_room_count++;  // Increment room count for early room spawn logic
     return 1;
   }
   return 0;
@@ -1211,6 +1221,7 @@ int exit_cashout() {
   if (g_phase != GamePhase::CashOut) return 0;
   g_phase = GamePhase::Explore;
   g_wolf_kills_since_choice = 0;
+  g_room_count++;  // Increment room count for early room spawn logic
   return 1;
 }
 
@@ -1344,6 +1355,7 @@ int commit_choice(unsigned int choice_id) {
   g_phase = GamePhase::Explore;
   g_choice_count = 0;
   g_wolf_kills_since_choice = 0;
+  g_room_count++;  // Increment room count for early room spawn logic
   return 1;
 }
 // Initialize/reset state
@@ -1665,6 +1677,7 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
     if (g_gold < 20.0f && g_essence < 3.0f) {
       g_phase = GamePhase::Explore;
       g_wolf_kills_since_choice = 0;
+      g_room_count++;  // Increment room count for early room spawn logic
     }
   } else if (g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) {
     // Check if should enter risk phase
