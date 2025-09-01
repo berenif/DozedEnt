@@ -1,0 +1,45 @@
+# Jekyll configuration for GitHub Pages
+# This file configures how GitHub Pages serves your site
+
+# Basic site settings
+title: Trystero
+description: Serverless WebRTC matchmaking for painless P2P
+baseurl: "" # Leave empty if serving from root, or set to "/repository-name" if not using custom domain
+url: "" # Your custom domain or leave empty for github.io domain
+
+# Build settings
+theme: null # We're using custom HTML/CSS, so no Jekyll theme
+plugins: []
+
+# Exclude files from being served
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .sass-cache
+  - .jekyll-cache
+  - .jekyll-metadata
+
+# Include specific files/folders
+include:
+  - index.html
+  - site.css
+  - site.js
+  - game.wasm
+  - images
+  - effects
+
+# Disable Jekyll processing for certain files
+defaults:
+  - scope:
+      path: "*.wasm"
+    values:
+      layout: null
+  - scope:
+      path: "effects/*"
+    values:
+      layout: null
