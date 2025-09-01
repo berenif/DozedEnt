@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Vocalization System Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a237e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            margin-bottom: 30px;
+        }
+        
+        .demo-area {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .wolf {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #666 0%, #333 100%);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .wolf:hover {
+            transform: scale(1.1);
+        }
+        
+        .wolf.alpha {
+            background: linear-gradient(135deg, #ff6600 0%, #cc3300 100%);
+            border-color: #ffcc00;
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+        }
+        
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+            border-radius: 50%;
+            border: 2px solid #00ffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        .vocalization {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .vocalization-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid;
+            border-radius: 50%;
+            opacity: 0;
+            animation: vocalizationRing 1s ease-out;
+        }
+        
+        @keyframes vocalizationRing {
+            0% {
+                transform: scale(0.3);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .vocalization-icon {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            animation: vocalizationPulse 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes vocalizationPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        .info-panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .vocalization-type {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border-left: 3px solid;
+        }
+        
+        .vocalization-type.howl { border-color: #00ffff; }
+        .vocalization-type.growl { border-color: #ff6600; }
+        .vocalization-type.bark { border-color: #ffff00; }
+        .vocalization-type.whine { border-color: #9999ff; }
+        .vocalization-type.snarl { border-color: #ff0000; }
+        
+        .vocalization-type h3 {
+            margin: 0 0 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .vocalization-type p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐺 Wolf Vocalization System Demo</h1>
+        
+        <div class="info-panel">
+            <h2>Vocalization Types</h2>
+            <div class="info-grid">
+                <div class="vocalization-type howl">
+                    <h3><span>🌙</span> Howl</h3>
+                    <p>Long-range pack coordination. Rallies pack members and summons reinforcements.</p>
+                </div>
+                <div class="vocalization-type growl">
+                    <h3><span>⚡</span> Growl</h3>
+                    <p>Warning and intimidation. Coordinates pack attacks.</p>
+                </div>
+                <div class="vocalization-type bark">
+                    <h3><span>!</span> Bark</h3>
+                    <p>Alert signal. Notifies pack of player location.</p>
+                </div>
+                <div class="vocalization-type whine">
+                    <h3><span>💔</span> Whine</h3>
+                    <p>Pain or submission. Triggered when wolf is injured.</p>
+                </div>
+                <div class="vocalization-type snarl">
+                    <h3><span>⚔️</span> Snarl</h3>
+                    <p>Attack signal. Indicates imminent lunge.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-area" id="demoArea">
+            <div class="status" id="status">
+                Pack Size: <span id="packSize">3</span> | 
+                Morale: <span id="morale">70%</span>
+            </div>
+            <div class="player" id="player">🎯</div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="triggerHowl()">🌙 Trigger Howl (Alpha)</button>
+            <button class="control-btn" onclick="triggerBark()">! Alert Bark</button>
+            <button class="control-btn" onclick="triggerGrowl()">⚡ Intimidation Growl</button>
+            <button class="control-btn" onclick="triggerSnarl()">⚔️ Attack Snarl</button>
+            <button class="control-btn" onclick="simulateInjury()">💔 Simulate Injury</button>
+            <button class="control-btn" onclick="addWolf()">➕ Add Wolf</button>
+            <button class="control-btn" onclick="removeWolf()">➖ Remove Wolf</button>
+            <button class="control-btn" onclick="movePlayer()">🎮 Move Player</button>
+        </div>
+        
+        <div class="info-panel">
+            <h3>How It Works</h3>
+            <ul>
+                <li>Click on wolves to trigger different vocalizations</li>
+                <li>Vocalizations have visual indicators (colored rings and icons)</li>
+                <li>Each vocalization type has different effects on pack behavior</li>
+                <li>Sounds are synthesized using Web Audio API</li>
+                <li>Visual effects show communication range and type</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Audio context for synthesized sounds
+        let audioContext = null;
+        
+        // Initialize audio on first user interaction
+        function initAudio() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // Wolf entities
+        const wolves = [];
+        let wolfIdCounter = 0;
+        
+        // Player position
+        let playerX = 250;
+        let playerY = 250;
+        
+        // Initialize demo
+        function init() {
+            const demoArea = document.getElementById('demoArea');
+            const player = document.getElementById('player');
+            
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+            
+            // Create initial wolves
+            for (let i = 0; i < 3; i++) {
+                createWolf(i === 0); // First wolf is alpha
+            }
+            
+            // Initialize audio on click
+            document.addEventListener('click', initAudio, { once: true });
+        }
+        
+        function createWolf(isAlpha = false) {
+            const demoArea = document.getElementById('demoArea');
+            const wolf = document.createElement('div');
+            wolf.className = 'wolf' + (isAlpha ? ' alpha' : '');
+            wolf.textContent = '🐺';
+            wolf.id = 'wolf_' + wolfIdCounter++;
+            
+            // Random position
+            const x = 50 + Math.random() * (demoArea.offsetWidth - 100);
+            const y = 50 + Math.random() * (demoArea.offsetHeight - 100);
+            wolf.style.left = x + 'px';
+            wolf.style.top = y + 'px';
+            
+            // Click handler
+            wolf.addEventListener('click', () => {
+                const types = ['bark', 'growl', 'snarl'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                showVocalization(wolf, type);
+            });
+            
+            demoArea.appendChild(wolf);
+            wolves.push(wolf);
+            updateStatus();
+        }
+        
+        function showVocalization(element, type) {
+            // Remove existing vocalization
+            const existing = element.querySelector('.vocalization');
+            if (existing) existing.remove();
+            
+            // Create vocalization visual
+            const visual = document.createElement('div');
+            visual.className = 'vocalization';
+            
+            // Color based on type
+            const colors = {
+                howl: '#00ffff',
+                growl: '#ff6600',
+                bark: '#ffff00',
+                whine: '#9999ff',
+                snarl: '#ff0000'
+            };
+            
+            const icons = {
+                howl: '🌙',
+                growl: '⚡',
+                bark: '!',
+                whine: '💔',
+                snarl: '⚔️'
+            };
+            
+            // Create rings
+            const ringCount = type === 'howl' ? 3 : 2;
+            for (let i = 0; i < ringCount; i++) {
+                const ring = document.createElement('div');
+                ring.className = 'vocalization-ring';
+                ring.style.borderColor = colors[type];
+                ring.style.animationDelay = (i * 0.1) + 's';
+                visual.appendChild(ring);
+            }
+            
+            // Create icon
+            const icon = document.createElement('div');
+            icon.className = 'vocalization-icon';
+            icon.textContent = icons[type];
+            icon.style.color = colors[type];
+            icon.style.textShadow = `0 0 10px ${colors[type]}`;
+            visual.appendChild(icon);
+            
+            element.appendChild(visual);
+            
+            // Play sound
+            playVocalizationSound(type);
+            
+            // Remove after animation
+            setTimeout(() => visual.remove(), 1000);
+            
+            // Trigger pack reaction
+            if (type === 'bark') {
+                // Alert other wolves
+                wolves.forEach(w => {
+                    if (w !== element) {
+                        setTimeout(() => {
+                            w.style.transform = 'scale(1.2)';
+                            setTimeout(() => w.style.transform = 'scale(1)', 300);
+                        }, Math.random() * 500);
+                    }
+                });
+            }
+        }
+        
+        function playVocalizationSound(type) {
+            if (!audioContext) return;
+            
+            const now = audioContext.currentTime;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            // Configure based on type
+            const configs = {
+                howl: { freq: [200, 300, 250], duration: 1.5, volume: 0.3 },
+                growl: { freq: [80, 70, 80], duration: 0.8, volume: 0.4 },
+                bark: { freq: [300, 250], duration: 0.2, volume: 0.5 },
+                whine: { freq: [350, 400, 350], duration: 1, volume: 0.3 },
+                snarl: { freq: [120, 150, 120], duration: 0.5, volume: 0.5 }
+            };
+            
+            const config = configs[type];
+            osc.type = 'sawtooth';
+            
+            // Frequency modulation
+            config.freq.forEach((f, i) => {
+                const time = now + (i * config.duration / config.freq.length);
+                osc.frequency.setValueAtTime(f, time);
+            });
+            
+            // Volume envelope
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(config.volume, now + 0.05);
+            gain.gain.linearRampToValueAtTime(config.volume, now + config.duration - 0.05);
+            gain.gain.linearRampToValueAtTime(0, now + config.duration);
+            
+            osc.start(now);
+            osc.stop(now + config.duration);
+        }
+        
+        function triggerHowl() {
+            const alpha = document.querySelector('.wolf.alpha');
+            if (alpha) showVocalization(alpha, 'howl');
+        }
+        
+        function triggerBark() {
+            const wolf = wolves[Math.floor(Math.random() * wolves.length)];
+            if (wolf) showVocalization(wolf, 'bark');
+        }
+        
+        function triggerGrowl() {
+            const wolf = wolves[Math.floor(Math.random() * wolves.length)];
+            if (wolf) showVocalization(wolf, 'growl');
+        }
+        
+        function triggerSnarl() {
+            const wolf = wolves[Math.floor(Math.random() * wolves.length)];
+            if (wolf) showVocalization(wolf, 'snarl');
+        }
+        
+        function simulateInjury() {
+            const wolf = wolves[Math.floor(Math.random() * wolves.length)];
+            if (wolf) {
+                showVocalization(wolf, 'whine');
+                wolf.style.opacity = '0.7';
+                setTimeout(() => wolf.style.opacity = '1', 2000);
+            }
+        }
+        
+        function addWolf() {
+            if (wolves.length < 8) {
+                createWolf(false);
+            }
+        }
+        
+        function removeWolf() {
+            if (wolves.length > 1) {
+                const wolf = wolves.pop();
+                wolf.remove();
+                updateStatus();
+            }
+        }
+        
+        function movePlayer() {
+            const demoArea = document.getElementById('demoArea');
+            const player = document.getElementById('player');
+            
+            playerX = 50 + Math.random() * (demoArea.offsetWidth - 100);
+            playerY = 50 + Math.random() * (demoArea.offsetHeight - 100);
+            
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+            
+            // Wolves react to player movement
+            wolves.forEach((wolf, i) => {
+                setTimeout(() => {
+                    const dx = playerX - parseInt(wolf.style.left);
+                    const dy = playerY - parseInt(wolf.style.top);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 150) {
+                        // Close to player - bark or growl
+                        showVocalization(wolf, Math.random() > 0.5 ? 'bark' : 'growl');
+                    }
+                }, i * 100);
+            });
+        }
+        
+        function updateStatus() {
+            document.getElementById('packSize').textContent = wolves.length;
+            const morale = Math.min(100, 50 + wolves.length * 10);
+            document.getElementById('morale').textContent = morale + '%';
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
