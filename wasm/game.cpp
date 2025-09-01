@@ -1216,6 +1216,16 @@ int escape_risk() {
   return 0;
 }
 
+__attribute__((export_name("trigger_risk_event")))
+void trigger_risk_event_export() {
+  trigger_risk_event();
+}
+
+__attribute__((export_name("trigger_escalation_event")))
+void trigger_escalation_event_export() {
+  trigger_escalation_event();
+}
+
 __attribute__((export_name("exit_cashout")))
 int exit_cashout() {
   if (g_phase != GamePhase::CashOut) return 0;
