@@ -761,8 +761,34 @@
     </div>
     
     <script>
+        // Game Configuration
+        const WORLD_WIDTH = 3200  // 4x the typical viewport width (800 * 4)
+        const WORLD_HEIGHT = 2400 // 4x the typical viewport height (600 * 4)
+        const VIEWPORT_WIDTH = 800
+        const VIEWPORT_HEIGHT = 600
+        const CAMERA_SMOOTHING = 0.1 // Camera smoothing factor
+        const EDGE_SCROLL_ZONE = 100 // Pixels from edge to start scrolling
+        const EDGE_SCROLL_SPEED = 10 // Speed of edge scrolling
+        
+        // Camera State
+        const camera = {
+            x: 0,
+            y: 0,
+            targetX: 0,
+            targetY: 0,
+            width: VIEWPORT_WIDTH,
+            height: VIEWPORT_HEIGHT
+        }
+        
+        // FPS tracking
+        let fps = 0
+        let frameCount = 0
+        let lastTime = performance.now()
+        
         // Game State
         const gameState = {
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
             players: [
                 {
                     id: 'player1',
@@ -776,8 +802,8 @@
                     score: 2450,
                     kills: 12,
                     deaths: 3,
-                    x: 200,
-                    y: 300,
+                    x: WORLD_WIDTH / 2,  // Start in center of world
+                    y: WORLD_HEIGHT / 2,
                     team: 'blue',
                     isSelf: true
                 },
@@ -793,8 +819,8 @@
                     score: 1890,
                     kills: 8,
                     deaths: 5,
-                    x: 600,
-                    y: 400,
+                    x: Math.random() * WORLD_WIDTH,
+                    y: Math.random() * WORLD_HEIGHT,
                     team: 'red',
                     isSelf: false
                 },
@@ -810,8 +836,8 @@
                     score: 3100,
                     kills: 15,
                     deaths: 2,
-                    x: 400,
-                    y: 200,
+                    x: Math.random() * WORLD_WIDTH,
+                    y: Math.random() * WORLD_HEIGHT,
                     team: 'blue',
                     isSelf: false
                 },
@@ -827,8 +853,8 @@
                     score: 2200,
                     kills: 10,
                     deaths: 4,
-                    x: 800,
-                    y: 500,
+                    x: Math.random() * WORLD_WIDTH,
+                    y: Math.random() * WORLD_HEIGHT,
                     team: 'red',
                     isSelf: false
                 }
@@ -846,10 +872,174 @@
             const container = canvas.parentElement
             canvas.width = container.clientWidth
             canvas.height = container.clientHeight
+            // Update camera dimensions based on canvas size
+            camera.width = canvas.width
+            camera.height = canvas.height
         }
         
         window.addEventListener('resize', resizeCanvas)
         resizeCanvas()
+        
+        // Update Camera Position
+        function updateCamera() {
+            const selfPlayer = gameState.players.find(p => p.isSelf)
+            if (!selfPlayer) return
+            
+            // Center camera on player
+            camera.targetX = selfPlayer.x - camera.width / 2
+            camera.targetY = selfPlayer.y - camera.height / 2
+            
+            // Clamp camera to world bounds
+            camera.targetX = Math.max(0, Math.min(WORLD_WIDTH - camera.width, camera.targetX))
+            camera.targetY = Math.max(0, Math.min(WORLD_HEIGHT - camera.height, camera.targetY))
+            
+            // Smooth camera movement
+            camera.x += (camera.targetX - camera.x) * CAMERA_SMOOTHING
+            camera.y += (camera.targetY - camera.y) * CAMERA_SMOOTHING
+        }
+        
+        // Convert world coordinates to screen coordinates
+        function worldToScreen(worldX, worldY) {
+            return {
+                x: worldX - camera.x,
+                y: worldY - camera.y
+            }
+        }
+        
+        // Convert screen coordinates to world coordinates
+        function screenToWorld(screenX, screenY) {
+            return {
+                x: screenX + camera.x,
+                y: screenY + camera.y
+            }
+        }
+        
+        // Check if position is visible on screen
+        function isVisible(x, y, margin = 50) {
+            const screen = worldToScreen(x, y)
+            return screen.x >= -margin && screen.x <= camera.width + margin &&
+                   screen.y >= -margin && screen.y <= camera.height + margin
+        }
+        
+        // Draw Game World
+        function drawWorld() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw background
+            ctx.fillStyle = '#0a0e27'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw background grid
+            drawGrid()
+            
+            // Draw world boundaries
+            drawWorldBoundaries()
+            
+            // Draw players
+            drawPlayers()
+            
+            // Draw HUD elements
+            drawHUD()
+        }
+        
+        // Draw Grid Background
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'
+            ctx.lineWidth = 1
+            
+            const gridSize = 50
+            const startX = Math.floor(camera.x / gridSize) * gridSize
+            const startY = Math.floor(camera.y / gridSize) * gridSize
+            const endX = startX + camera.width + gridSize
+            const endY = startY + camera.height + gridSize
+            
+            ctx.beginPath()
+            for (let x = startX; x <= endX; x += gridSize) {
+                const screenX = x - camera.x
+                ctx.moveTo(screenX, 0)
+                ctx.lineTo(screenX, camera.height)
+            }
+            for (let y = startY; y <= endY; y += gridSize) {
+                const screenY = y - camera.y
+                ctx.moveTo(0, screenY)
+                ctx.lineTo(camera.width, screenY)
+            }
+            ctx.stroke()
+        }
+        
+        // Draw World Boundaries
+        function drawWorldBoundaries() {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'
+            ctx.lineWidth = 3
+            
+            const topLeft = worldToScreen(0, 0)
+            const bottomRight = worldToScreen(WORLD_WIDTH, WORLD_HEIGHT)
+            
+            ctx.strokeRect(
+                topLeft.x,
+                topLeft.y,
+                bottomRight.x - topLeft.x,
+                bottomRight.y - topLeft.y
+            )
+        }
+        
+        // Draw Players on Canvas
+        function drawPlayers() {
+            gameState.players.forEach(player => {
+                if (!isVisible(player.x, player.y)) return
+                
+                const screen = worldToScreen(player.x, player.y)
+                
+                // Draw player circle
+                ctx.beginPath()
+                ctx.arc(screen.x, screen.y, 20, 0, Math.PI * 2)
+                ctx.fillStyle = player.team === 'blue' ? '#00ffff' : '#ff4444'
+                if (player.isSelf) {
+                    ctx.fillStyle = '#00ff88'
+                }
+                ctx.fill()
+                ctx.strokeStyle = 'white'
+                ctx.lineWidth = 2
+                ctx.stroke()
+                
+                // Draw player name
+                ctx.fillStyle = 'white'
+                ctx.font = '14px Rajdhani'
+                ctx.textAlign = 'center'
+                ctx.fillText(player.name, screen.x, screen.y - 30)
+                
+                // Draw health bar
+                const healthBarWidth = 40
+                const healthBarHeight = 4
+                const healthPercent = player.health / player.maxHealth
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+                ctx.fillRect(screen.x - healthBarWidth/2, screen.y - 25, healthBarWidth, healthBarHeight)
+                
+                ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffff00' : '#ff0000'
+                ctx.fillRect(screen.x - healthBarWidth/2, screen.y - 25, healthBarWidth * healthPercent, healthBarHeight)
+            })
+        }
+        
+        // Draw HUD Elements
+        function drawHUD() {
+            // Draw position indicator
+            const selfPlayer = gameState.players.find(p => p.isSelf)
+            if (selfPlayer) {
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.8)'
+                ctx.font = 'bold 16px Orbitron'
+                ctx.textAlign = 'left'
+                ctx.fillText(`Position: ${Math.floor(selfPlayer.x)}, ${Math.floor(selfPlayer.y)}`, 10, canvas.height - 40)
+                ctx.fillText(`World: ${WORLD_WIDTH}x${WORLD_HEIGHT}`, 10, canvas.height - 20)
+            }
+            
+            // Draw FPS counter
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.8)'
+            ctx.font = '14px Orbitron'
+            ctx.textAlign = 'right'
+            ctx.fillText(`FPS: ${Math.floor(fps)}`, canvas.width - 10, 30)
+        }
         
         // Create Player Cards
         function createPlayerCards() {
@@ -913,8 +1103,9 @@
                 const entity = document.createElement('div')
                 entity.className = `player-entity ${player.isSelf ? 'self' : ''}`
                 entity.id = `entity-${player.id}`
-                entity.style.left = `${player.x}px`
-                entity.style.top = `${player.y}px`
+                const screenPos = worldToScreen(player.x, player.y)
+                entity.style.left = `${screenPos.x}px`
+                entity.style.top = `${screenPos.y}px`
                 entity.innerHTML = `
                     <div class="player-health">
                         <div class="player-health-fill" style="width: ${(player.health / player.maxHealth) * 100}%"></div>
@@ -931,16 +1122,29 @@
             const minimap = document.getElementById('minimap')
             minimap.innerHTML = ''
             
-            const arenaWidth = canvas.width
-            const arenaHeight = canvas.height
             const minimapWidth = 200
             const minimapHeight = 200
+            const scaleX = minimapWidth / WORLD_WIDTH
+            const scaleY = minimapHeight / WORLD_HEIGHT
             
+            // Draw viewport indicator
+            const viewport = document.createElement('div')
+            viewport.style.position = 'absolute'
+            viewport.style.left = `${camera.x * scaleX}px`
+            viewport.style.top = `${camera.y * scaleY}px`
+            viewport.style.width = `${camera.width * scaleX}px`
+            viewport.style.height = `${camera.height * scaleY}px`
+            viewport.style.border = '2px solid rgba(0, 255, 136, 0.5)'
+            viewport.style.backgroundColor = 'rgba(0, 255, 136, 0.1)'
+            viewport.style.pointerEvents = 'none'
+            minimap.appendChild(viewport)
+            
+            // Draw players on minimap
             gameState.players.forEach(player => {
                 const dot = document.createElement('div')
                 dot.className = `minimap-player ${player.isSelf ? 'self' : ''}`
-                dot.style.left = `${(player.x / arenaWidth) * minimapWidth}px`
-                dot.style.top = `${(player.y / arenaHeight) * minimapHeight}px`
+                dot.style.left = `${player.x * scaleX}px`
+                dot.style.top = `${player.y * scaleY}px`
                 minimap.appendChild(dot)
             })
         }
@@ -985,18 +1189,21 @@
             gameState.players.forEach(player => {
                 if (!player.isSelf) {
                     // Random movement for demo
-                    player.x += (Math.random() - 0.5) * 5
-                    player.y += (Math.random() - 0.5) * 5
+                    player.x += (Math.random() - 0.5) * 10
+                    player.y += (Math.random() - 0.5) * 10
                     
-                    // Keep within bounds
-                    player.x = Math.max(40, Math.min(canvas.width - 40, player.x))
-                    player.y = Math.max(40, Math.min(canvas.height - 40, player.y))
+                    // Keep within world bounds
+                    player.x = Math.max(20, Math.min(WORLD_WIDTH - 20, player.x))
+                    player.y = Math.max(20, Math.min(WORLD_HEIGHT - 20, player.y))
                     
-                    // Update entity position
-                    const entity = document.getElementById(`entity-${player.id}`)
-                    if (entity) {
-                        entity.style.left = `${player.x}px`
-                        entity.style.top = `${player.y}px`
+                    // Update entity position only if visible
+                    if (isVisible(player.x, player.y)) {
+                        const entity = document.getElementById(`entity-${player.id}`)
+                        if (entity) {
+                            const screenPos = worldToScreen(player.x, player.y)
+                            entity.style.left = `${screenPos.x}px`
+                            entity.style.top = `${screenPos.y}px`
+                        }
                     }
                 }
             })
@@ -1019,12 +1226,65 @@
             keys[e.key.toLowerCase()] = false
         })
         
+        // Mouse position for edge scrolling
+        let mouseX = 0
+        let mouseY = 0
+        let isMouseInCanvas = false
+        
+        canvas.addEventListener('mouseenter', () => {
+            isMouseInCanvas = true
+        })
+        
+        canvas.addEventListener('mouseleave', () => {
+            isMouseInCanvas = false
+        })
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect()
+            mouseX = e.clientX - rect.left
+            mouseY = e.clientY - rect.top
+        })
+        
+        // Edge Scrolling with Mouse
+        function handleEdgeScrolling() {
+            if (!isMouseInCanvas) return
+            
+            const selfPlayer = gameState.players.find(p => p.isSelf)
+            if (!selfPlayer) return
+            
+            let scrollX = 0
+            let scrollY = 0
+            
+            // Check edges
+            if (mouseX < EDGE_SCROLL_ZONE) {
+                scrollX = -EDGE_SCROLL_SPEED * (1 - mouseX / EDGE_SCROLL_ZONE)
+            } else if (mouseX > canvas.width - EDGE_SCROLL_ZONE) {
+                scrollX = EDGE_SCROLL_SPEED * ((mouseX - (canvas.width - EDGE_SCROLL_ZONE)) / EDGE_SCROLL_ZONE)
+            }
+            
+            if (mouseY < EDGE_SCROLL_ZONE) {
+                scrollY = -EDGE_SCROLL_SPEED * (1 - mouseY / EDGE_SCROLL_ZONE)
+            } else if (mouseY > canvas.height - EDGE_SCROLL_ZONE) {
+                scrollY = EDGE_SCROLL_SPEED * ((mouseY - (canvas.height - EDGE_SCROLL_ZONE)) / EDGE_SCROLL_ZONE)
+            }
+            
+            // Apply scroll to camera target
+            if (scrollX !== 0 || scrollY !== 0) {
+                camera.targetX += scrollX
+                camera.targetY += scrollY
+                
+                // Clamp to world bounds
+                camera.targetX = Math.max(0, Math.min(WORLD_WIDTH - camera.width, camera.targetX))
+                camera.targetY = Math.max(0, Math.min(WORLD_HEIGHT - camera.height, camera.targetY))
+            }
+        }
+        
         // Update Player Position
         function updatePlayerPosition() {
             const selfPlayer = gameState.players.find(p => p.isSelf)
             if (!selfPlayer) return
             
-            const speed = 3
+            const speed = 8  // Increased speed for larger world
             let moved = false
             
             if (keys['w'] || keys['arrowup']) {
@@ -1044,15 +1304,16 @@
                 moved = true
             }
             
-            // Keep within bounds
-            selfPlayer.x = Math.max(40, Math.min(canvas.width - 40, selfPlayer.x))
-            selfPlayer.y = Math.max(40, Math.min(canvas.height - 40, selfPlayer.y))
+            // Keep within world bounds
+            selfPlayer.x = Math.max(20, Math.min(WORLD_WIDTH - 20, selfPlayer.x))
+            selfPlayer.y = Math.max(20, Math.min(WORLD_HEIGHT - 20, selfPlayer.y))
             
-            // Update entity position
+            // Update entity position (convert to screen coordinates)
             const entity = document.getElementById(`entity-${selfPlayer.id}`)
             if (entity) {
-                entity.style.left = `${selfPlayer.x}px`
-                entity.style.top = `${selfPlayer.y}px`
+                const screenPos = worldToScreen(selfPlayer.x, selfPlayer.y)
+                entity.style.left = `${screenPos.x}px`
+                entity.style.top = `${screenPos.y}px`
                 
                 // Add movement trail effect
                 if (moved) {
@@ -1060,8 +1321,11 @@
                     trail.className = 'movement-trail'
                     trail.style.left = '0'
                     trail.style.top = '0'
-                    entity.querySelector('.player-sprite').appendChild(trail)
-                    setTimeout(() => trail.remove(), 500)
+                    const sprite = entity.querySelector('.player-sprite')
+                    if (sprite) {
+                        sprite.appendChild(trail)
+                        setTimeout(() => trail.remove(), 500)
+                    }
                 }
             }
             
@@ -1074,12 +1338,13 @@
         }
         
         // Create Attack Effect
-        function createAttackEffect(x, y) {
+        function createAttackEffect(worldX, worldY) {
             const container = document.getElementById('playerEntities')
             const effect = document.createElement('div')
             effect.className = 'attack-effect'
-            effect.style.left = `${x - 30}px`
-            effect.style.top = `${y - 30}px`
+            const screenPos = worldToScreen(worldX, worldY)
+            effect.style.left = `${screenPos.x - 30}px`
+            effect.style.top = `${screenPos.y - 30}px`
             container.appendChild(effect)
             setTimeout(() => effect.remove(), 300)
         }
@@ -1132,10 +1397,42 @@
         
         // Game Loop
         function gameLoop() {
+            // Update FPS
+            frameCount++
+            const currentTime = performance.now()
+            if (currentTime - lastTime >= 1000) {
+                fps = frameCount
+                frameCount = 0
+                lastTime = currentTime
+            }
+            
+            // Update game state
             updatePlayerPosition()
             simulatePlayerMovement()
+            handleEdgeScrolling()  // Add edge scrolling
+            updateCamera()
+            
+            // Render everything on canvas
+            drawWorld()
+            
+            // Update DOM elements
             updateMinimap()
             simulateHealthChanges()
+            
+            // Update player entity positions for DOM overlay
+            gameState.players.forEach(player => {
+                const entity = document.getElementById(`entity-${player.id}`)
+                if (entity) {
+                    if (isVisible(player.x, player.y)) {
+                        const screenPos = worldToScreen(player.x, player.y)
+                        entity.style.left = `${screenPos.x}px`
+                        entity.style.top = `${screenPos.y}px`
+                        entity.style.display = 'block'
+                    } else {
+                        entity.style.display = 'none'
+                    }
+                }
+            })
             
             requestAnimationFrame(gameLoop)
         }
@@ -1150,8 +1447,25 @@
         createPlayerCards()
         createPlayerEntities()
         createParticles()
+        
+        // Initialize camera position
+        const selfPlayer = gameState.players.find(p => p.isSelf)
+        if (selfPlayer) {
+            camera.x = selfPlayer.x - camera.width / 2
+            camera.y = selfPlayer.y - camera.height / 2
+            camera.targetX = camera.x
+            camera.targetY = camera.y
+            
+            // Clamp to world bounds
+            camera.x = Math.max(0, Math.min(WORLD_WIDTH - camera.width, camera.x))
+            camera.y = Math.max(0, Math.min(WORLD_HEIGHT - camera.height, camera.y))
+            camera.targetX = camera.x
+            camera.targetY = camera.y
+        }
+        
         updateMinimap()
         showNotification('GAME STARTED!')
+        showNotification(`World Size: ${WORLD_WIDTH}x${WORLD_HEIGHT}`)
         
         // Start game loop
         gameLoop()
