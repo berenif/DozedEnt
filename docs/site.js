@@ -1,4 +1,7 @@
 import {joinRoom, selfId} from './dist/trystero-mqtt.min.js'  // MQTT strategy - using local bundle
+import GameRenderer from '../src/game-renderer.js'
+import CameraEffects from '../src/camera-effects.js'
+
 // WASM helpers (browser bundle)
 let wasmExports = null
 let runSeed = 0n
@@ -48,6 +51,25 @@ try {
 
 const byId = document.getElementById.bind(document)
 const canvas = byId('canvas')
+const gameCanvas = byId('gameCanvas')
+
+// Initialize game renderer and camera effects
+let gameRenderer = null
+let cameraEffects = null
+
+// Setup game canvas and renderers
+if (gameCanvas) {
+  const ctx = gameCanvas.getContext('2d')
+  gameCanvas.width = 1280
+  gameCanvas.height = 720
+  
+  gameRenderer = new GameRenderer(ctx, gameCanvas)
+  cameraEffects = new CameraEffects(gameCanvas)
+  
+  // Make globally accessible for debugging
+  window.gameRenderer = gameRenderer
+  window.cameraEffects = cameraEffects
+}
 
 // Wolf Vocalization Audio System
 const VocalizationType = {
@@ -1409,6 +1431,32 @@ function gameLoop(ts) {
   }
 
   updateFromKeyboard()
+  
+  // If GameRenderer is available, use it for enhanced rendering
+  if (gameRenderer && cameraEffects) {
+    // Update camera effects
+    cameraEffects.update(dt)
+    
+    // Prepare input for GameRenderer
+    const gameInput = {
+      left: keyboardInputX < 0 || inputX < 0,
+      right: keyboardInputX > 0 || inputX > 0,
+      up: keyboardInputY < 0 || inputY < 0,
+      down: keyboardInputY > 0 || inputY > 0,
+      sprint: false, // Can be mapped to a key later
+      jump: false
+    }
+    
+    // Update GameRenderer's player
+    gameRenderer.updatePlayer(dt, gameInput)
+    
+    // Sync position from WASM to GameRenderer
+    if (typeof wasmExports.get_x === 'function' && typeof wasmExports.get_y === 'function') {
+      const wasmX = wasmExports.get_x()
+      const wasmY = wasmExports.get_y()
+      gameRenderer.setPlayerPositionFromWasm(wasmX, wasmY)
+    }
+  }
 
   // joystick input already updates inputX/inputY
   // Debug: Log joystick input occasionally
