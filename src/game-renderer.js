@@ -8,28 +8,43 @@ export class GameRenderer {
         
         // Game world
         this.world = {
-            width: 2000,
-            height: 1500,
+            width: 3840,
+            height: 2160,
             tileSize: 32
         }
         
-        // Camera viewport
+        // Camera viewport with improved tracking
         this.camera = {
             x: 0,
             y: 0,
+            targetX: 0,
+            targetY: 0,
             width: canvas.width,
             height: canvas.height,
-            zoom: 1.0
+            zoom: 1.0,
+            smoothing: 0.1,
+            bounds: {
+                minX: 0,
+                minY: 0,
+                maxX: 0,
+                maxY: 0
+            }
         }
         
-        // Player data
+        // Calculate camera bounds
+        this.updateCameraBounds()
+        
+        // Player data with improved physics
         this.player = {
-            x: 640,
-            y: 360,
+            x: this.world.width / 2,
+            y: this.world.height / 2,
             width: 48,
             height: 64,
             velocityX: 0,
             velocityY: 0,
+            maxSpeed: 500,
+            acceleration: 2000,
+            friction: 0.85,
             facing: 1, // 1 for right, -1 for left
             state: 'idle', // idle, running, jumping, attacking, blocking, rolling
             health: 100,
@@ -40,7 +55,9 @@ export class GameRenderer {
             animationTime: 0,
             color: '#4a90e2',
             weaponAngle: 0,
-            isGrounded: true
+            isGrounded: true,
+            jumpPower: -800,
+            gravity: 2000
         }
         
         // Enemies
@@ -204,17 +221,46 @@ export class GameRenderer {
         return colors[type] || '#ffffff'
     }
     
+    // Update camera bounds based on world size
+    updateCameraBounds() {
+        this.camera.bounds.minX = this.camera.width / 2
+        this.camera.bounds.minY = this.camera.height / 2
+        this.camera.bounds.maxX = this.world.width - this.camera.width / 2
+        this.camera.bounds.maxY = this.world.height - this.camera.height / 2
+    }
+    
+    // Update camera to follow target
+    updateCamera(targetX, targetY, deltaTime) {
+        // Set target position
+        this.camera.targetX = targetX
+        this.camera.targetY = targetY
+        
+        // Clamp target to bounds
+        this.camera.targetX = Math.max(this.camera.bounds.minX, 
+                                      Math.min(this.camera.bounds.maxX, this.camera.targetX))
+        this.camera.targetY = Math.max(this.camera.bounds.minY, 
+                                      Math.min(this.camera.bounds.maxY, this.camera.targetY))
+        
+        // Smooth camera movement
+        const smoothing = 1 - Math.pow(1 - this.camera.smoothing, deltaTime * 60)
+        this.camera.x += (this.camera.targetX - this.camera.x) * smoothing
+        this.camera.y += (this.camera.targetY - this.camera.y) * smoothing
+    }
+    
     // Main render method
-    render(cameraX = 0, cameraY = 0) {
-        // Update camera position
-        this.camera.x = cameraX
-        this.camera.y = cameraY
+    render(followPlayer = true) {
+        // Update camera to follow player if enabled
+        if (followPlayer) {
+            this.updateCamera(this.player.x, this.player.y, 1/60)
+        }
         
         // Save context state
         this.ctx.save()
         
         // Apply camera transform
-        this.ctx.translate(-this.camera.x + this.canvas.width / 2, -this.camera.y + this.canvas.height / 2)
+        const offsetX = -this.camera.x + this.canvas.width / 2
+        const offsetY = -this.camera.y + this.canvas.height / 2
+        this.ctx.translate(offsetX, offsetY)
         
         // Render layers in order
         this.renderBackground()
@@ -1078,7 +1124,68 @@ export class GameRenderer {
     }
     
     // Update methods for game logic
-    updatePlayer(deltaTime, input) {
+    updatePlayer(deltaTime, input = {}) {
+        // Handle input
+        let inputX = 0
+        let inputY = 0
+        
+        if (input.left) inputX -= 1
+        if (input.right) inputX += 1
+        if (input.up) inputY -= 1
+        if (input.down) inputY += 1
+        
+        // Normalize diagonal movement
+        if (inputX !== 0 && inputY !== 0) {
+            inputX *= 0.707
+            inputY *= 0.707
+        }
+        
+        // Apply acceleration based on input
+        if (this.player.state !== 'rolling' && this.player.state !== 'attacking') {
+            const speed = input.sprint ? this.player.maxSpeed * 1.5 : this.player.maxSpeed
+            this.player.velocityX += inputX * this.player.acceleration * deltaTime
+            this.player.velocityY += inputY * this.player.acceleration * deltaTime
+            
+            // Clamp to max speed
+            const currentSpeed = Math.sqrt(this.player.velocityX ** 2 + this.player.velocityY ** 2)
+            if (currentSpeed > speed) {
+                const scale = speed / currentSpeed
+                this.player.velocityX *= scale
+                this.player.velocityY *= scale
+            }
+        }
+        
+        // Apply friction
+        const frictionFactor = Math.pow(this.player.friction, deltaTime * 60)
+        this.player.velocityX *= frictionFactor
+        this.player.velocityY *= frictionFactor
+        
+        // Apply gravity if not grounded (for platformer mode)
+        if (!this.player.isGrounded && this.world.hasPlatformPhysics) {
+            this.player.velocityY += this.player.gravity * deltaTime
+        }
+        
+        // Jump handling
+        if (input.jump && this.player.isGrounded && this.world.hasPlatformPhysics) {
+            this.player.velocityY = this.player.jumpPower
+            this.player.isGrounded = false
+        }
+        
+        // Update position
+        this.player.x += this.player.velocityX * deltaTime
+        this.player.y += this.player.velocityY * deltaTime
+        
+        // Keep player in world bounds
+        this.player.x = Math.max(this.player.width / 2, 
+                                Math.min(this.world.width - this.player.width / 2, this.player.x))
+        this.player.y = Math.max(this.player.height / 2, 
+                                Math.min(this.world.height - this.player.height / 2, this.player.y))
+        
+        // Update facing direction
+        if (Math.abs(this.player.velocityX) > 10) {
+            this.player.facing = Math.sign(this.player.velocityX)
+        }
+        
         // Update animation
         this.player.animationTime += deltaTime
         this.player.animationFrame = Math.floor(this.player.animationTime * 10) % 4
@@ -1089,12 +1196,18 @@ export class GameRenderer {
         }
         
         // Handle state transitions
-        if (Math.abs(this.player.velocityX) > 10) {
+        if (Math.abs(this.player.velocityX) > 50 || Math.abs(this.player.velocityY) > 50) {
             if (this.player.state !== 'attacking' && this.player.state !== 'rolling') {
                 this.player.state = 'running'
             }
         } else if (this.player.state === 'running') {
             this.player.state = 'idle'
+        }
+        
+        // Regenerate stamina
+        if (this.player.stamina < this.player.maxStamina) {
+            this.player.stamina = Math.min(this.player.maxStamina, 
+                                          this.player.stamina + 20 * deltaTime)
         }
     }
     
@@ -1288,6 +1401,125 @@ export class GameRenderer {
     
     setAmbientLight(level) {
         this.ambientLight = Math.max(0, Math.min(1, level))
+    }
+    
+    // Player action methods
+    performRoll(direction) {
+        if (this.player.stamina < 30 || this.player.state === 'rolling') return false
+        
+        this.player.state = 'rolling'
+        this.player.stamina -= 30
+        
+        // Apply roll velocity
+        const rollSpeed = 800
+        this.player.velocityX = Math.cos(direction) * rollSpeed
+        this.player.velocityY = Math.sin(direction) * rollSpeed
+        
+        // Reset state after roll duration
+        setTimeout(() => {
+            this.player.state = 'idle'
+        }, 300)
+        
+        return true
+    }
+    
+    performAttack() {
+        if (this.player.state === 'attacking') return false
+        
+        this.player.state = 'attacking'
+        
+        // Reset state after attack duration
+        setTimeout(() => {
+            this.player.state = 'idle'
+        }, 400)
+        
+        return true
+    }
+    
+    performBlock(active) {
+        if (active && this.player.state !== 'blocking') {
+            this.player.state = 'blocking'
+            return true
+        } else if (!active && this.player.state === 'blocking') {
+            this.player.state = 'idle'
+            return false
+        }
+        return this.player.state === 'blocking'
+    }
+    
+    // Get player world position
+    getPlayerPosition() {
+        return { x: this.player.x, y: this.player.y }
+    }
+    
+    // Set player position (for network sync or respawn)
+    setPlayerPosition(x, y) {
+        this.player.x = Math.max(0, Math.min(this.world.width, x))
+        this.player.y = Math.max(0, Math.min(this.world.height, y))
+        this.player.velocityX = 0
+        this.player.velocityY = 0
+    }
+    
+    // Get camera position for external use
+    getCameraPosition() {
+        return { x: this.camera.x, y: this.camera.y }
+    }
+    
+    // WASM coordinate mapping functions
+    // Convert WASM coordinates (0-1 range) to world coordinates
+    wasmToWorld(wasmX, wasmY) {
+        // Map WASM (0-1) to center third of world
+        // This keeps the playable area in the middle of the larger world
+        const playableWidth = this.world.width / 3
+        const playableHeight = this.world.height / 3
+        const offsetX = this.world.width / 3
+        const offsetY = this.world.height / 3
+        
+        return {
+            x: offsetX + wasmX * playableWidth,
+            y: offsetY + wasmY * playableHeight
+        }
+    }
+    
+    // Convert world coordinates to WASM coordinates (0-1 range)
+    worldToWasm(worldX, worldY) {
+        const playableWidth = this.world.width / 3
+        const playableHeight = this.world.height / 3
+        const offsetX = this.world.width / 3
+        const offsetY = this.world.height / 3
+        
+        // Clamp to playable area and normalize
+        const wasmX = Math.max(0, Math.min(1, (worldX - offsetX) / playableWidth))
+        const wasmY = Math.max(0, Math.min(1, (worldY - offsetY) / playableHeight))
+        
+        return { x: wasmX, y: wasmY }
+    }
+    
+    // Set player position from WASM coordinates
+    setPlayerPositionFromWasm(wasmX, wasmY) {
+        const worldPos = this.wasmToWorld(wasmX, wasmY)
+        this.setPlayerPosition(worldPos.x, worldPos.y)
+    }
+    
+    // Get player position in WASM coordinates
+    getPlayerPositionAsWasm() {
+        return this.worldToWasm(this.player.x, this.player.y)
+    }
+    
+    // Convert screen coordinates to world coordinates
+    screenToWorld(screenX, screenY) {
+        return {
+            x: screenX + this.camera.x - this.canvas.width / 2,
+            y: screenY + this.camera.y - this.canvas.height / 2
+        }
+    }
+    
+    // Convert world coordinates to screen coordinates
+    worldToScreen(worldX, worldY) {
+        return {
+            x: worldX - this.camera.x + this.canvas.width / 2,
+            y: worldY - this.camera.y + this.canvas.height / 2
+        }
     }
 }
 

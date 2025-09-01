@@ -101,17 +101,26 @@ export class GameFeelEnhancer {
         // Update player movement with enhanced feel
         this.updateMovement(scaledDelta)
         
-        // Update game renderer entities
-        this.gameRenderer.updatePlayer(scaledDelta, {})
+        // Update game renderer entities with proper input
+        const input = {
+            left: this.playerState.input?.left || false,
+            right: this.playerState.input?.right || false,
+            up: this.playerState.input?.up || false,
+            down: this.playerState.input?.down || false,
+            jump: this.playerState.input?.jump || false,
+            sprint: this.playerState.input?.sprint || false
+        }
+        this.gameRenderer.updatePlayer(scaledDelta, input)
         this.gameRenderer.updateEnemies(scaledDelta)
         this.gameRenderer.updateProjectiles(scaledDelta)
         this.gameRenderer.checkCollisions()
         
-        // Sync player state with renderer
-        this.gameRenderer.player.x = this.playerState.position.x
-        this.gameRenderer.player.y = this.playerState.position.y
-        this.gameRenderer.player.velocityX = this.playerState.velocity.x
-        this.gameRenderer.player.velocityY = this.playerState.velocity.y
+        // Sync player state from renderer (renderer is authoritative)
+        const playerPos = this.gameRenderer.getPlayerPosition()
+        this.playerState.position.x = playerPos.x
+        this.playerState.position.y = playerPos.y
+        this.playerState.velocity.x = this.gameRenderer.player.velocityX
+        this.playerState.velocity.y = this.gameRenderer.player.velocityY
         this.gameRenderer.player.state = this.playerState.isAttacking ? 'attacking' : 
                                           this.playerState.isRolling ? 'rolling' :
                                           this.playerState.isBlocking ? 'blocking' :
@@ -153,8 +162,11 @@ export class GameFeelEnhancer {
         state.position.x += state.velocity.x * deltaTime
         state.position.y += state.velocity.y * deltaTime
         
-        // Camera follow with slight lag for smoother feel
-        this.camera.followTarget(state.position.x, state.position.y, 0.1)
+        // Camera follow is now handled by GameRenderer
+        // Additional camera effects are applied through CameraEffects
+        const cameraPos = this.gameRenderer.getCameraPosition()
+        this.camera.position.x = cameraPos.x
+        this.camera.position.y = cameraPos.y
     }
 
     // Render everything with effects
@@ -166,8 +178,8 @@ export class GameFeelEnhancer {
         this.ctx.fillStyle = '#1a1a2e'
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
         
-        // Render actual game content using the GameRenderer
-        this.gameRenderer.render(this.playerState.position.x, this.playerState.position.y)
+        // Render actual game content using the GameRenderer with proper camera following
+        this.gameRenderer.render(true) // true = follow player automatically
         
         // Render particles (on top of game content)
         this.particles.render(this.ctx)
