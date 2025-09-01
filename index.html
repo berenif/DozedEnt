@@ -2,9 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mobile Game Controls</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="author" content="Dan Motzenbecker">
+    <meta name="description" content="Serverless WebRTC matchmaking for painless P2P mobile game">
+    <title>Dozed Ent - Mobile Game with WebRTC</title>
+    <link href="/DozedEnt/images/favicon.png" rel="icon" type="image/png">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/DozedEnt/site.css">
 </head>
 <body>
     <div class="game-container">
@@ -24,6 +30,12 @@
                 <span class="score">Score: 0</span>
                 <span class="level">Lv. 1</span>
             </div>
+        </div>
+
+        <!-- Connection Status (from docs/index.html) -->
+        <div id="status">
+            <div id="peer-count">Players: 1</div>
+            <div id="connection-status">Connecting...</div>
         </div>
 
         <!-- Settings Panel (Hidden by default) -->
@@ -55,8 +67,22 @@
             </div>
         </div>
 
-        <!-- Game Canvas Area -->
+        <!-- Game Canvas Area with markers support -->
+        <div id="canvas" role="region" aria-label="Game area">
+            <!-- Markers are injected dynamically: .marker.landmark / .marker.exit / .marker.obstacle -->
+        </div>
         <canvas id="gameCanvas"></canvas>
+
+        <!-- Desktop controls tooltip -->
+        <div id="controls-tip" hidden>
+            <div>Controls</div>
+            <ul>
+                <li>Move: WASD / Arrows</li>
+                <li>Roll: K</li>
+                <li>Attack: L</li>
+                <li>Block: M</li>
+            </ul>
+        </div>
 
         <!-- Mobile Controls -->
         <div class="mobile-controls">
@@ -129,14 +155,61 @@
             </div>
         </div>
 
+        <!-- Mobile joystick (from docs/index.html) -->
+        <div id="joystick" hidden>
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+
+        <!-- Mobile actions (from docs/index.html) -->
+        <div id="actions" hidden>
+            <button id="attack-button" type="button" aria-label="Attack">ATTACK</button>
+            <button id="block-button" type="button" aria-label="Block">BLOCK</button>
+            <button id="roll-button" type="button" aria-label="Roll">ROLL</button>
+        </div>
+
         <!-- Mini Map -->
         <div class="minimap">
             <div class="map-container">
                 <div class="player-position"></div>
             </div>
         </div>
+
+        <!-- Orientation / fullscreen overlay for mobile (from docs/index.html) -->
+        <div id="orientation-overlay" hidden>
+            <div class="overlay-box">
+                <p class="overlay-title">Rotate your device</p>
+                <p class="overlay-msg">For the best experience, play in landscape.</p>
+                <button id="overlay-start" type="button">Tap to start</button>
+            </div>
+        </div>
+
+        <!-- Choice overlay (from docs/index.html) -->
+        <div id="choice-overlay" hidden>
+            <div class="overlay-box">
+                <p class="overlay-title">Choose your boon</p>
+                <div class="choices">
+                    <button id="choice-0" type="button">Option A</button>
+                    <button id="choice-1" type="button">Option B</button>
+                    <button id="choice-2" type="button">Option C</button>
+                </div>
+                <button id="restart-button" type="button">Restart (R)</button>
+            </div>
+        </div>
+
+        <!-- Game Over overlay (from docs/index.html) -->
+        <div id="gameover-overlay" hidden>
+            <div class="overlay-box">
+                <p class="overlay-title">Game Over</p>
+                <p class="overlay-msg">You were taken down by the pack.</p>
+                <button id="rematch-button" type="button">Rematch</button>
+            </div>
+        </div>
     </div>
 
+    <!-- Scripts -->
     <script src="controls.js"></script>
+    <script src="/DozedEnt/site.js" type="module"></script>
 </body>
 </html>
