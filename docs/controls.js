@@ -676,5 +676,15 @@ document.addEventListener('touchend', (e) => {
     lastTouchEnd = now;
 }, false);
 
+// Initialize the game controls when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.gameControls = new MobileGameControls();
+    });
+} else {
+    // DOM is already loaded
+    window.gameControls = new MobileGameControls();
+}
+
 // Log initialization
 console.log('Mobile Game Controls initialized successfully!');
