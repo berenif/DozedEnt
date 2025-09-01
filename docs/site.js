@@ -678,6 +678,49 @@ function renderEnemies() {
   }
 }
 
+// Render obstacles from WASM
+const obstacleEls = []
+function ensureObstacleEl(idx) {
+  let el = obstacleEls[idx]
+  if (!el) {
+    el = document.createElement('div')
+    el.className = 'obstacle'
+    el.dataset.idx = String(idx)
+    canvas.appendChild(el)
+    obstacleEls[idx] = el
+  }
+  return el
+}
+
+function setObstaclePos(el, x, y, radius) {
+  const size = radius * 2 * VIRTUAL_WIDTH
+  el.style.left = ((x - radius) * VIRTUAL_WIDTH) + 'px'
+  el.style.top = ((y - radius) * VIRTUAL_HEIGHT) + 'px'
+  el.style.width = size + 'px'
+  el.style.height = size + 'px'
+}
+
+function renderObstacles() {
+  if (!wasmExports || typeof wasmExports.get_obstacle_count !== 'function') return
+  const count = wasmExports.get_obstacle_count() | 0
+  
+  // create/update obstacles
+  for (let i = 0; i < count; i++) {
+    const x = (typeof wasmExports.get_obstacle_x === 'function') ? wasmExports.get_obstacle_x(i) : 0
+    const y = (typeof wasmExports.get_obstacle_y === 'function') ? wasmExports.get_obstacle_y(i) : 0
+    const r = (typeof wasmExports.get_obstacle_r === 'function') ? wasmExports.get_obstacle_r(i) : 0
+    const el = ensureObstacleEl(i)
+    setObstaclePos(el, clamp01(x), clamp01(y), r)
+  }
+  
+  // remove excess DOM nodes
+  for (let i = count; i < obstacleEls.length; i++) {
+    const el = obstacleEls[i]
+    if (el && el.parentNode === canvas) canvas.removeChild(el)
+    obstacleEls[i] = null
+  }
+}
+
 function updateDebugHud() {
   if (!wasmExports) { debugHud.textContent = ''; return }
   try {
@@ -1435,6 +1478,8 @@ function gameLoop(ts) {
   updateShieldVisual()
   // render enemies from WASM snapshot
   renderEnemies()
+  // render obstacles from WASM snapshot
+  renderObstacles()
   // update debug HUD (optional exports)
   updateDebugHud()
   // apply screen shake late in frame for current transform
