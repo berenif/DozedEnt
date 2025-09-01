@@ -26,6 +26,24 @@ export {
   default as GameFeelEnhancerDefault
 } from './game-feel-enhancer.js'
 
+// UI & Feedback Features
+export {
+  DamageNumber,
+  ComboCounter,
+  StatusIndicator,
+  HealthBar,
+  UIFeedbackSystem,
+  default as UIFeedbackSystemDefault
+} from './ui-feedback.js'
+export {
+  EnhancedLobbyUI,
+  default as EnhancedLobbyUIDefault
+} from './enhanced-lobby-ui.js'
+export {
+  LobbyAnalytics,
+  default as LobbyAnalyticsDefault
+} from './lobby-analytics.js'
+
 // Rollback Netcode exports
 export {default as RollbackNetcode} from './rollback-netcode.js'
 export {default as RollbackP2P} from './rollback-p2p.js'
