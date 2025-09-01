@@ -359,6 +359,16 @@ enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass =
 // Pack roles for wolves (optional UI exposure)
 enum class PackRole : unsigned char { Lead = 0, FlankL = 1, FlankR = 2, Harasser = 3, PupGuard = 4, None = 255 };
 
+// Vocalization types for wolf communication
+enum class VocalizationType : unsigned char {
+  None = 0,
+  Howl = 1,      // Long-range pack coordination (rallying call)
+  Growl = 2,     // Warning/threat display (intimidation)
+  Bark = 3,      // Alert pack members (danger/opportunity)
+  Whine = 4,     // Submission/pain (injured/retreating)
+  Snarl = 5      // Aggressive attack signal (about to lunge)
+};
+
 #define MAX_ENEMIES 16
 #define MAX_SOUND_PINGS 32
 
@@ -403,6 +413,12 @@ struct Enemy {
   float fatigue;
   // Search behavior seed
   float searchSeed;
+  // Vocalization system
+  VocalizationType currentVocalization;
+  float vocalizationStartTime;
+  float vocalizationDuration;
+  float lastVocalizationTime;
+  float vocalizationCooldown;
 };
 
 static Enemy g_enemies[MAX_ENEMIES];
@@ -681,6 +697,92 @@ static inline void resolve_player_enemy_collisions(float prevX, float prevY, flo
   }
 }
 
+// Vocalization helper functions
+static void trigger_vocalization(Enemy &e, VocalizationType type, float duration) {
+  // Check cooldown
+  if (g_time_seconds < e.lastVocalizationTime + e.vocalizationCooldown) return;
+  
+  e.currentVocalization = type;
+  e.vocalizationStartTime = g_time_seconds;
+  e.vocalizationDuration = duration;
+  e.lastVocalizationTime = g_time_seconds;
+  
+  // Set cooldown based on vocalization type
+  switch (type) {
+    case VocalizationType::Howl:
+      e.vocalizationCooldown = 8.0f;  // Long cooldown for howls
+      break;
+    case VocalizationType::Growl:
+      e.vocalizationCooldown = 2.0f;  // Medium cooldown for growls
+      break;
+    case VocalizationType::Bark:
+      e.vocalizationCooldown = 1.5f;  // Short cooldown for barks
+      break;
+    case VocalizationType::Whine:
+      e.vocalizationCooldown = 3.0f;  // Medium cooldown for whines
+      break;
+    case VocalizationType::Snarl:
+      e.vocalizationCooldown = 1.0f;  // Very short cooldown for snarls
+      break;
+    default:
+      e.vocalizationCooldown = 1.0f;
+      break;
+  }
+}
+
+static void update_vocalization(Enemy &e, float dt) {
+  // Update current vocalization
+  if (e.currentVocalization != VocalizationType::None) {
+    float elapsed = g_time_seconds - e.vocalizationStartTime;
+    if (elapsed >= e.vocalizationDuration) {
+      e.currentVocalization = VocalizationType::None;
+    }
+  }
+}
+
+static void handle_vocalization_communication(Enemy &e, float range = 0.4f) {
+  // Communicate with nearby pack members
+  if (e.currentVocalization == VocalizationType::None) return;
+  
+  for (int i = 0; i < (int)g_enemy_count; ++i) {
+    Enemy &other = g_enemies[i];
+    if (!other.active || &other == &e) continue;
+    
+    float dx = other.x - e.x;
+    float dy = other.y - e.y;
+    float dist = vec_len(dx, dy);
+    
+    if (dist < range) {
+      // React to vocalization based on type
+      switch (e.currentVocalization) {
+        case VocalizationType::Howl:
+          // Rally call - increase morale and aggression
+          if (other.state == EnemyState::Idle || other.state == EnemyState::Seek) {
+            other.state = EnemyState::Circle;
+          }
+          break;
+        case VocalizationType::Bark:
+          // Alert - make others aware of player
+          if (!other.noticed && e.noticed) {
+            other.mem.lastSeenX = e.mem.lastSeenX;
+            other.mem.lastSeenY = e.mem.lastSeenY;
+            other.mem.lastSeenTime = g_time_seconds;
+            other.mem.lastSeenConfidence = 0.7f;  // Indirect knowledge
+          }
+          break;
+        case VocalizationType::Growl:
+          // Intimidation - coordinate attack
+          if (other.state == EnemyState::Circle) {
+            other.state = EnemyState::Harass;
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
 static void update_enemy_wolf(Enemy &e, float dt) {
   // Sensory inputs and memory update
   float toPlayerX = g_pos_x - e.x;
@@ -700,6 +802,8 @@ static void update_enemy_wolf(Enemy &e, float dt) {
     if (!e.noticed) {
       e.noticed = 1;
       e.noticeAcquiredTime = g_time_seconds;
+      // Bark to alert pack when first spotting player
+      trigger_vocalization(e, VocalizationType::Bark, 0.5f);
     }
   }
 
@@ -836,6 +940,8 @@ static void update_enemy_wolf(Enemy &e, float dt) {
         e.feintEndTime = g_time_seconds + ENEMY_FEINT_DURATION;
       } else {
         e.lungeEndTime = g_time_seconds + ENEMY_LUNGE_DURATION;
+        // Snarl when committing to attack
+        trigger_vocalization(e, VocalizationType::Snarl, 0.3f);
       }
       e.fatigue += FATIGUE_LUNGE_BONUS; if (e.fatigue > 1.f) e.fatigue = 1.f;
       e.lastLungeTime = g_time_seconds;
@@ -844,6 +950,18 @@ static void update_enemy_wolf(Enemy &e, float dt) {
     }
   }
 
+  // Vocalization triggers based on state
+  if (stateOut == EnemyState::Circle && dist < ENEMY_LUNGE_RANGE * 1.5f) {
+    // Growl when circling close to intimidate
+    if (rng_float01() < 0.01f) {  // Small chance per frame
+      trigger_vocalization(e, VocalizationType::Growl, 1.0f);
+    }
+  }
+  
+  // Update vocalization state
+  update_vocalization(e, dt);
+  handle_vocalization_communication(e);
+  
   // Speed selection
   float speed = ENEMY_BASE_SPEED;
   if (stateOut == EnemyState::Harass) speed *= 0.85f;
@@ -974,6 +1092,12 @@ static void enemy_activate(int idx, EnemyType type, float x, float y) {
   e.noticeAcquiredTime = -1000.f;
   e.fatigue = 0.f;
   e.searchSeed = (float)(rng_u32() % 1024) / 1024.0f;
+  // Initialize vocalization system
+  e.currentVocalization = VocalizationType::None;
+  e.vocalizationStartTime = -1000.f;
+  e.vocalizationDuration = 0.f;
+  e.lastVocalizationTime = -1000.f;
+  e.vocalizationCooldown = 0.f;
   if ((unsigned char)(idx + 1) > g_enemy_count) g_enemy_count = (unsigned char)(idx + 1);
 }
 
@@ -1439,6 +1563,12 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
           float prevHealth = e.health;
           e.health -= ATTACK_DAMAGE;
           if (e.health < 0.f) e.health = 0.f;
+          
+          // Whine when hurt
+          if (e.health > 0.f && prevHealth > e.health) {
+            trigger_vocalization(e, VocalizationType::Whine, 0.8f);
+          }
+          
           // Count wolf kills and trigger boon after 3 kills
           if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {
             g_wolf_kills_since_choice += 1u;
@@ -1553,6 +1683,14 @@ void update(float inputX, float inputY, int isRolling, float dtSeconds) {
     // Howl logic
     if (g_time_seconds > g_howl_cooldown_until) {
       if (g_pack_morale > 0.75f) {
+        // Find lead wolf to howl
+        for (int i = 0; i < (int)g_enemy_count; ++i) {
+          if (g_enemies[i].active && g_enemy_roles[i] == (unsigned char)PackRole::Lead) {
+            trigger_vocalization(g_enemies[i], VocalizationType::Howl, 2.0f);
+            break;
+          }
+        }
+        
         if ((1.f - g_hp) > 0.35f) {
           int idx = enemy_alloc_slot();
           if (idx >= 0) {
@@ -1873,6 +2011,21 @@ unsigned int get_pack_plan() { return (unsigned int)g_pack_plan; }
 
 __attribute__((export_name("get_enemy_role")))
 unsigned int get_enemy_role(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemy_roles[idx] : (unsigned int)PackRole::None; }
+
+// Vocalization system exports
+__attribute__((export_name("get_enemy_vocalization")))
+unsigned int get_enemy_vocalization(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemies[idx].currentVocalization : 0u; 
+}
+
+__attribute__((export_name("get_enemy_vocalization_progress")))
+float get_enemy_vocalization_progress(unsigned int idx) { 
+  if (idx >= g_enemy_count || !g_enemies[idx].active) return 0.f;
+  if (g_enemies[idx].currentVocalization == VocalizationType::None) return 0.f;
+  float elapsed = g_time_seconds - g_enemies[idx].vocalizationStartTime;
+  float progress = elapsed / g_enemies[idx].vocalizationDuration;
+  return (progress < 0.f) ? 0.f : (progress > 1.f ? 1.f : progress);
+}
 
 // Debug/admin controls (optional)
 __attribute__((export_name("clear_enemies")))
