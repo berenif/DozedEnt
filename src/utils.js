@@ -43,7 +43,8 @@ export const shuffle = (xs, seed) => {
   let i = a.length
 
   while (i) {
-    const j = floor(rand() * i--)
+    const j = floor(rand() * i)
+    i--
     ;[a[i], a[j]] = [a[j], a[i]]
   }
 

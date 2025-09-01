@@ -51,7 +51,15 @@ export const encrypt = async (keyP, plaintext) => {
 }
 
 export const decrypt = async (keyP, raw) => {
+  if (!raw || typeof raw !== 'string' || !raw.includes(joinChar)) {
+    throw new Error('Invalid encrypted data format')
+  }
+  
   const [iv, c] = raw.split(joinChar)
+  
+  if (!iv || !c) {
+    throw new Error('Missing IV or ciphertext in encrypted data')
+  }
 
   return decodeBytes(
     await crypto.subtle.decrypt(
