@@ -365,21 +365,24 @@ function screenShake(strengthPx = 4, durationMs = 140) {
   shakeEndTimeMs = Math.max(shakeEndTimeMs, now + durationMs)
 }
 function applyScreenShake(nowMs) {
+  const viewport = document.getElementById('viewport')
+  if (!viewport) return
+  
   if (nowMs >= shakeEndTimeMs) {
-    canvas.style.setProperty('--shake-x', '0px')
-    canvas.style.setProperty('--shake-y', '0px')
+    viewport.style.setProperty('--shake-x', '0px')
+    viewport.style.setProperty('--shake-y', '0px')
     return
   }
   const t = (shakeEndTimeMs - nowMs) / 200 // decay factor
   const amp = Math.max(0, shakeStrengthPx) * t * t
   const x = (Math.random() * 2 - 1) * amp
   const y = (Math.random() * 2 - 1) * amp
-  canvas.style.setProperty('--shake-x', x.toFixed(2) + 'px')
-  canvas.style.setProperty('--shake-y', y.toFixed(2) + 'px')
+  viewport.style.setProperty('--shake-x', x.toFixed(2) + 'px')
+  viewport.style.setProperty('--shake-y', y.toFixed(2) + 'px')
 }
 function initAmbientParticles(count = 22) {
-  const w = VIRTUAL_WIDTH
-  const h = VIRTUAL_HEIGHT
+  const w = WORLD_WIDTH
+  const h = WORLD_HEIGHT
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div')
     p.className = 'ambient-particle'
@@ -455,6 +458,13 @@ const config = {
 
 const VIRTUAL_WIDTH = 1280
 const VIRTUAL_HEIGHT = 720
+// World size is larger than viewport for exploration
+const WORLD_WIDTH = 3840  // 3x viewport width
+const WORLD_HEIGHT = 2160  // 3x viewport height
+// Camera system
+let cameraX = 0
+let cameraY = 0
+const CAMERA_SMOOTHING = 0.1  // Smooth camera following
 // normalized margin from edges to keep the player fully visible when spawning
 const SPAWN_MARGIN = 0.06
 
@@ -473,9 +483,12 @@ let footstepAccum = 0
 // device/platform detection
 const isMobile = (matchMedia && matchMedia('(pointer: coarse)').matches) || /Mobi|Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)
 
-// movement state
+// movement state - start at center of world
 let posX = 0.5
 let posY = 0.5
+// Initialize camera to center on starting position
+let selfX = posX
+let selfY = posY
 let inputX = 0
 let inputY = 0
 let keyboardInputX = 0
@@ -571,8 +584,14 @@ function ensureEnemyEl(idx, type) {
   return el
 }
 function setEnemyPos(el, x, y) {
-  el.style.left = (x * VIRTUAL_WIDTH) + 'px'
-  el.style.top = (y * VIRTUAL_HEIGHT) + 'px'
+  // Convert normalized world coordinates to screen coordinates
+  const worldX = x * WORLD_WIDTH
+  const worldY = y * WORLD_HEIGHT
+  // Apply camera offset
+  const screenX = worldX - cameraX
+  const screenY = worldY - cameraY
+  el.style.left = screenX + 'px'
+  el.style.top = screenY + 'px'
 }
 function renderEnemies() {
   if (!wasmExports || typeof wasmExports.get_enemy_count !== 'function') return
@@ -725,8 +744,11 @@ function chooseSpawnCorner() {
   for (const [, el] of peerToEl) {
     const leftPx = parseFloat(el.style.left || '0')
     const topPx = parseFloat(el.style.top || '0')
-    const x = clamp01(leftPx / VIRTUAL_WIDTH || 0.5)
-    const y = clamp01(topPx / VIRTUAL_HEIGHT || 0.5)
+    // Convert screen coordinates back to world coordinates
+    const worldX = leftPx + cameraX
+    const worldY = topPx + cameraY
+    const x = clamp01(worldX / WORLD_WIDTH || 0.5)
+    const y = clamp01(worldY / WORLD_HEIGHT || 0.5)
     peerPositions.push([x, y])
   }
   if (peerPositions.length === 0) {
@@ -759,8 +781,78 @@ function setSpawnPointIfNeeded(force = false) {
 }
 
 function setElPos(el, x, y) {
-  el.style.left = x * VIRTUAL_WIDTH + 'px'
-  el.style.top = y * VIRTUAL_HEIGHT + 'px'
+  // Convert normalized world coordinates to screen coordinates
+  const worldX = x * WORLD_WIDTH
+  const worldY = y * WORLD_HEIGHT
+  // Apply camera offset
+  const screenX = worldX - cameraX
+  const screenY = worldY - cameraY
+  el.style.left = screenX + 'px'
+  el.style.top = screenY + 'px'
+}
+
+// Update camera to follow player smoothly
+function updateCamera() {
+  if (!selfEl) return
+  
+  // Get player's world position
+  const playerWorldX = posX * WORLD_WIDTH
+  const playerWorldY = posY * WORLD_HEIGHT
+  
+  // Calculate desired camera position (center on player)
+  const targetCameraX = playerWorldX - VIRTUAL_WIDTH / 2
+  const targetCameraY = playerWorldY - VIRTUAL_HEIGHT / 2
+  
+  // Clamp camera to world boundaries
+  const clampedCameraX = Math.max(0, Math.min(targetCameraX, WORLD_WIDTH - VIRTUAL_WIDTH))
+  const clampedCameraY = Math.max(0, Math.min(targetCameraY, WORLD_HEIGHT - VIRTUAL_HEIGHT))
+  
+  // Smooth camera movement
+  cameraX += (clampedCameraX - cameraX) * CAMERA_SMOOTHING
+  cameraY += (clampedCameraY - cameraY) * CAMERA_SMOOTHING
+  
+  // Apply camera transform to canvas
+  canvas.style.transform = `translate(-${cameraX}px, -${cameraY}px)`
+}
+
+// Update minimap to show player position in the world
+function updateMinimap() {
+  const playerDot = document.querySelector('.player-position')
+  if (!playerDot) return
+  
+  // Calculate player position on minimap (0-100% of minimap size)
+  const minimapX = posX * 100  // posX is already normalized 0-1
+  const minimapY = posY * 100  // posY is already normalized 0-1
+  
+  playerDot.style.left = `${minimapX}%`
+  playerDot.style.top = `${minimapY}%`
+  
+  // Add viewport indicator if it doesn't exist
+  let viewportIndicator = document.querySelector('.viewport-indicator')
+  if (!viewportIndicator) {
+    viewportIndicator = document.createElement('div')
+    viewportIndicator.className = 'viewport-indicator'
+    viewportIndicator.style.cssText = `
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.1);
+      pointer-events: none;
+    `
+    document.querySelector('.map-container')?.appendChild(viewportIndicator)
+  }
+  
+  // Update viewport indicator position and size
+  if (viewportIndicator) {
+    const viewportWidthRatio = VIRTUAL_WIDTH / WORLD_WIDTH
+    const viewportHeightRatio = VIRTUAL_HEIGHT / WORLD_HEIGHT
+    const viewportX = (cameraX / WORLD_WIDTH) * 100
+    const viewportY = (cameraY / WORLD_HEIGHT) * 100
+    
+    viewportIndicator.style.left = `${viewportX}%`
+    viewportIndicator.style.top = `${viewportY}%`
+    viewportIndicator.style.width = `${viewportWidthRatio * 100}%`
+    viewportIndicator.style.height = `${viewportHeightRatio * 100}%`
+  }
 }
 
 function getOrCreatePeerEl(peerId) {
@@ -997,6 +1089,13 @@ addEventListener('touchend', e => {
 function init(n) {
   connectionStatusEl.innerText = 'Connecting...'
   connectionStatusEl.className = 'connecting'
+  
+  // Initialize camera position to center on player spawn
+  const initialWorldX = posX * WORLD_WIDTH
+  const initialWorldY = posY * WORLD_HEIGHT
+  cameraX = Math.max(0, Math.min(initialWorldX - VIRTUAL_WIDTH / 2, WORLD_WIDTH - VIRTUAL_WIDTH))
+  cameraY = Math.max(0, Math.min(initialWorldY - VIRTUAL_HEIGHT / 2, WORLD_HEIGHT - VIRTUAL_HEIGHT))
+  canvas.style.transform = `translate(-${cameraX}px, -${cameraY}px)`
 
   room = joinRoom(config, 'room' + n)
   const [sendMoveLocal, getMove] = room.makeAction('move')
@@ -1064,8 +1163,11 @@ function init(n) {
         if (wasmExports && typeof wasmExports.handle_incoming_attack === 'function') {
           const leftPx = parseFloat(el.style.left || '0')
           const topPx = parseFloat(el.style.top || '0')
-          const ax = clamp01(leftPx / VIRTUAL_WIDTH || 0.5)
-          const ay = clamp01(topPx / VIRTUAL_HEIGHT || 0.5)
+          // Convert screen coordinates back to world coordinates
+          const worldX = leftPx + cameraX
+          const worldY = topPx + cameraY
+          const ax = clamp01(worldX / WORLD_WIDTH || 0.5)
+          const ay = clamp01(worldY / WORLD_HEIGHT || 0.5)
           // Post an attack sound at peer position
           postSoundAt(ax, ay, 0.8)
           const res = wasmExports.handle_incoming_attack(ax, ay, dir[0] || 1, dir[1] || 0)
@@ -1092,8 +1194,11 @@ function init(n) {
       if (on) {
         const leftPx = parseFloat(el.style.left || '0')
         const topPx = parseFloat(el.style.top || '0')
-        const nx = clamp01(leftPx / VIRTUAL_WIDTH || 0.5)
-        const ny = clamp01(topPx / VIRTUAL_HEIGHT || 0.5)
+        // Convert screen coordinates back to world coordinates
+        const worldX = leftPx + cameraX
+        const worldY = topPx + cameraY
+        const nx = clamp01(worldX / WORLD_WIDTH || 0.5)
+        const ny = clamp01(worldY / WORLD_HEIGHT || 0.5)
         // peer's block spark aligned to their reported direction if provided
         createSparkAt(nx, ny, 'block', dir[0], dir[1])
       }
@@ -1107,8 +1212,11 @@ function init(n) {
       // roll whoosh sound at peer position
       const leftPx = parseFloat(el.style.left || '0')
       const topPx = parseFloat(el.style.top || '0')
-      const nx = clamp01(leftPx / VIRTUAL_WIDTH || 0.5)
-      const ny = clamp01(topPx / VIRTUAL_HEIGHT || 0.5)
+      // Convert screen coordinates back to world coordinates
+      const worldX = leftPx + cameraX
+      const worldY = topPx + cameraY
+      const nx = clamp01(worldX / WORLD_WIDTH || 0.5)
+      const ny = clamp01(worldY / WORLD_HEIGHT || 0.5)
       postSoundAt(nx, ny, 0.45)
       screenShake(2, 100)
     } else if (t === 'posreq') {
@@ -1319,6 +1427,10 @@ function gameLoop(ts) {
   // render self and send throttled movement updates
   ensureSelfEl()
   setElPos(selfEl, posX, posY)
+  // Update camera to follow player
+  updateCamera()
+  // Update minimap
+  updateMinimap()
   // keep shield oriented and offset in front
   updateShieldVisual()
   // render enemies from WASM snapshot
@@ -1361,8 +1473,8 @@ function renderWorldMarkers() {
       const y = wasmExports.get_landmark_y(i)
       const m = document.createElement('div')
       m.className = 'marker landmark'
-      m.style.left = (clamp01(x) * VIRTUAL_WIDTH) + 'px'
-      m.style.top = (clamp01(y) * VIRTUAL_HEIGHT) + 'px'
+      m.style.left = (clamp01(x) * WORLD_WIDTH) + 'px'
+      m.style.top = (clamp01(y) * WORLD_HEIGHT) + 'px'
       canvas.appendChild(m)
     }
     // Add exits
@@ -1371,8 +1483,8 @@ function renderWorldMarkers() {
       const y = wasmExports.get_exit_y(i)
       const m = document.createElement('div')
       m.className = 'marker exit'
-      m.style.left = (clamp01(x) * VIRTUAL_WIDTH) + 'px'
-      m.style.top = (clamp01(y) * VIRTUAL_HEIGHT) + 'px'
+      m.style.left = (clamp01(x) * WORLD_WIDTH) + 'px'
+      m.style.top = (clamp01(y) * WORLD_HEIGHT) + 'px'
       canvas.appendChild(m)
     }
   } catch {}
@@ -1559,8 +1671,11 @@ function createSparkAt(xNorm, yNorm, kind, dirX = faceDirX, dirY = faceDirY) {
   const nx = dirX / len
   const ny = dirY / len
   const pxOffset = 22 // match shield offset in CSS
-  const baseLeft = xNorm * VIRTUAL_WIDTH
-  const baseTop = yNorm * VIRTUAL_HEIGHT
+  // Convert normalized world coordinates to screen coordinates
+  const worldX = xNorm * WORLD_WIDTH
+  const worldY = yNorm * WORLD_HEIGHT
+  const baseLeft = worldX - cameraX
+  const baseTop = worldY - cameraY
   const leftPx = baseLeft + nx * pxOffset
   const topPx = baseTop + ny * pxOffset
   const s = document.createElement('div')
@@ -1628,8 +1743,13 @@ function updatePeerShieldVisual(peerEl, on, dirX, dirY) {
 function createTrailAt(xNorm, yNorm) {
   const t = document.createElement('div')
   t.className = 'trail'
-  t.style.left = (xNorm * VIRTUAL_WIDTH) + 'px'
-  t.style.top = (yNorm * VIRTUAL_HEIGHT) + 'px'
+  // Convert normalized world coordinates to screen coordinates
+  const worldX = xNorm * WORLD_WIDTH
+  const worldY = yNorm * WORLD_HEIGHT
+  const screenX = worldX - cameraX
+  const screenY = worldY - cameraY
+  t.style.left = screenX + 'px'
+  t.style.top = screenY + 'px'
   canvas.appendChild(t)
   setTimeout(() => {
     if (t.parentNode === canvas) canvas.removeChild(t)

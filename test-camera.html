@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Test - Bigger Game World</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        .controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        iframe {
+            width: 100%;
+            height: 80vh;
+            border: 2px solid #444;
+            border-radius: 5px;
+        }
+        .feature-list {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+        }
+        .feature-list h2 {
+            color: #4CAF50;
+        }
+        .feature-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        .feature-list li:before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>🎮 Camera System Test</h3>
+        <div class="controls">
+            <strong>Controls:</strong><br>
+            Desktop: WASD/Arrow Keys to move<br>
+            Mobile: Use on-screen joystick<br>
+            <br>
+            <strong>Features:</strong><br>
+            • World is 3x larger than viewport<br>
+            • Camera follows player smoothly<br>
+            • Minimap shows full world<br>
+            • Grid pattern shows camera movement
+        </div>
+    </div>
+    
+    <iframe src="docs/index.html"></iframe>
+    
+    <div class="feature-list">
+        <h2>✨ Implemented Features</h2>
+        <ul>
+            <li><strong>Bigger Game World:</strong> The game world is now 3840x2160 pixels (3x the viewport size of 1280x720)</li>
+            <li><strong>Camera Following:</strong> Smooth camera that follows the player character with adjustable smoothing factor</li>
+            <li><strong>Viewport Clipping:</strong> Game view is properly clipped to show only the visible portion of the world</li>
+            <li><strong>World Coordinates:</strong> All game objects (players, enemies, particles, effects) use world coordinates</li>
+            <li><strong>Minimap Updates:</strong> Minimap shows player position in the larger world with viewport indicator</li>
+            <li><strong>Boundary Enforcement:</strong> Player movement is clamped to world boundaries (0-1 normalized)</li>
+            <li><strong>Visual Grid:</strong> Background grid pattern helps visualize camera movement</li>
+            <li><strong>Screen Shake:</strong> Screen shake effects properly applied to viewport container</li>
+            <li><strong>Multiplayer Support:</strong> Peer positions correctly converted between world and screen coordinates</li>
+            <li><strong>Effects System:</strong> Particles, trails, and sparks properly positioned in world space</li>
+        </ul>
+        
+        <h2>🎯 Technical Details</h2>
+        <ul>
+            <li><strong>World Size:</strong> WORLD_WIDTH = 3840px, WORLD_HEIGHT = 2160px</li>
+            <li><strong>Viewport Size:</strong> VIRTUAL_WIDTH = 1280px, VIRTUAL_HEIGHT = 720px</li>
+            <li><strong>Camera Smoothing:</strong> CAMERA_SMOOTHING = 0.1 (10% lerp per frame)</li>
+            <li><strong>Coordinate System:</strong> Normalized coordinates (0-1) for game logic, pixel coordinates for rendering</li>
+            <li><strong>Performance:</strong> Efficient camera updates in game loop, CSS transforms for smooth movement</li>
+        </ul>
+    </div>
+</body>
+</html>
