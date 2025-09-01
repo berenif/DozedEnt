@@ -1,0 +1,766 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  color: #000;
+  background-color: #fff;
+}
+
+html {
+  font-size: 10px;
+  font-variant-ligatures: none;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  
+  /* Mobile touch optimizations */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.ready,
+.ready a:hover {
+  cursor: none;
+}
+
+#canvas {
+  position: absolute;
+  width: 1280px;
+  height: 720px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translate(var(--shake-x, 0px), var(--shake-y, 0px)) scale(var(--scale, 1));
+  transform-origin: center center;
+  pointer-events: auto;
+  z-index: 2;
+  user-select: none;
+  /* Make the game area visually distinct */
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.12) inset,
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 128, 255, 0.22);
+  background:
+    radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 60%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 40px);
+  will-change: transform;
+}
+
+/* World markers */
+.marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.marker.landmark {
+  background: #9c27b0; /* purple */
+  box-shadow: 0 0 8px rgba(156, 39, 176, 0.8);
+}
+
+.marker.exit {
+  background: #00e676; /* green */
+  box-shadow: 0 0 10px rgba(0, 230, 118, 0.9);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+/* Subtle corner label to identify the playfield */
+#canvas::after {
+  content: 'GAME AREA';
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  padding: 4px 8px;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Vignette overlay (behind entities) */
+#canvas::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.35) 78%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Central wall */
+.wall {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 20px; /* halved from 40px; ~0.015625 of 1280 width; half used by logic */
+  height: 100%;
+  transform: translateX(-50%);
+  z-index: 1;
+  /* Height of the gap in the middle (tweak as needed) */
+  --hole: 140px;
+}
+
+.wall::before,
+.wall::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #fff;
+}
+
+.wall::before {
+  top: 0;
+  height: calc((100% - var(--hole)) / 2);
+}
+
+.wall::after {
+  bottom: 0;
+  height: calc((100% - var(--hole)) / 2);
+}
+
+/* Status UI */
+#status {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  backdrop-filter: blur(10px);
+}
+
+#peer-count {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 5px;
+}
+
+#connection-status {
+  font-size: 1.4rem;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#connection-status.connected {
+  color: #00ff00;
+}
+
+#connection-status.connecting {
+  color: #ffff00;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+.cursor {
+  position: absolute;
+}
+
+/* player circles */
+.player {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+/* health bar container and fill */
+.player .health {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 36px;
+  height: 6px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.player .health > .fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #00e676, #00c853);
+}
+
+/* stamina bar container and fill (below health) */
+.player .stamina {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  width: 36px;
+  height: 4px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.player .stamina > .fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ffd54f, #ffb300);
+}
+
+/* subtle pulsing for self */
+.player.self {
+  box-shadow: 0 0 10px rgba(0, 128, 255, 0.7), 0 0 20px rgba(0, 128, 255, 0.3);
+  transition: box-shadow 120ms ease, transform 120ms ease;
+}
+
+/* visual feedback during roll */
+.player.self.rolling {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 14px rgba(0, 255, 255, 0.9), 0 0 28px rgba(0, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+/* cursor removed */
+
+/* fruit visuals removed */
+
+/* Orientation overlay */
+#orientation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+}
+
+#orientation-overlay[hidden] {
+  display: none;
+}
+
+#orientation-overlay .overlay-box {
+  width: min(90vw, 420px);
+  padding: 24px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  background: #000;
+  text-align: center;
+}
+
+#orientation-overlay .overlay-title {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+#orientation-overlay .overlay-msg {
+  font-size: 1.4rem;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+#orientation-overlay #overlay-start {
+  font-family: inherit;
+  font-size: 1.6rem;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+/* Game Over overlay shares the same styles */
+#gameover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+}
+
+#gameover-overlay[hidden] { display: none; }
+
+#gameover-overlay .overlay-box {
+  width: min(90vw, 420px);
+  padding: 24px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  background: #000;
+  text-align: center;
+}
+
+#gameover-overlay .overlay-title {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+#gameover-overlay .overlay-msg {
+  font-size: 1.4rem;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+#gameover-overlay #rematch-button {
+  font-family: inherit;
+  font-size: 1.6rem;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+/* Mobile joystick */
+#joystick {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 20;
+}
+
+#joystick[hidden] {
+  display: none;
+}
+
+#joystick-base {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  touch-action: none;
+}
+
+#joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 768px) {
+  #joystick-base {
+    width: 120px;
+    height: 120px;
+  }
+  #joystick-knob {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* Mobile actions panel (bottom-right) */
+#actions {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#actions[hidden] {
+  display: none;
+}
+
+#actions button {
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 1.6rem;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: 10px;
+  min-width: 120px;
+}
+
+#roll-button[disabled] {
+  opacity: 0.5;
+}
+
+#attack-button[disabled] {
+  opacity: 0.5;
+}
+
+@media (max-width: 480px) {
+  #joystick {
+    left: 12px;
+    bottom: 12px;
+  }
+  #joystick-base {
+    width: 100px;
+    height: 100px;
+  }
+  #joystick-knob {
+    width: 48px;
+    height: 48px;
+  }
+  #actions {
+    right: 12px;
+    bottom: 12px;
+    gap: 10px;
+  }
+  #actions button {
+    padding: 8px 12px;
+    font-size: 1.4rem;
+    min-width: 100px;
+  }
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  html {
+    font-size: 8px;
+  }
+  
+  #status {
+    top: 10px;
+    left: 10px;
+    padding: 10px 15px;
+  }
+  
+  #peer-count {
+    font-size: 1.6rem;
+  }
+  
+  #connection-status {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 7px;
+  }
+  
+  #status {
+    top: 5px;
+    left: 5px;
+    padding: 8px 12px;
+  }
+  
+  .cursor img {
+    width: 24px;
+    height: 32px;
+  }
+  
+  /* removed fruit size */
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  #status {
+    top: 5px;
+    left: 5px;
+    padding: 5px 10px;
+  }
+  
+  #peer-count {
+    font-size: 1.4rem;
+  }
+  
+  #connection-status {
+    font-size: 1rem;
+  }
+}
+
+/* Self state feedback */
+.player.self.attacking {
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 0 14px rgba(255, 64, 64, 0.9), 0 0 28px rgba(255, 64, 64, 0.5);
+}
+
+.player.self.blocking {
+  transform: translate(-50%, -50%) scale(0.98);
+  box-shadow: 0 0 14px rgba(64, 224, 255, 0.9), 0 0 28px rgba(64, 224, 255, 0.5);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+/* Enemies (rendered from WASM snapshot) */
+.enemy {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #9e9e9e; /* default grey */
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Soft dynamic shadow under entities */
+.player .shadow,
+.enemy .shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 10px;
+  transform: translate(-50%, calc(-50% + 16px)) scale(var(--shadow-scale, 1));
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.0) 70%);
+  filter: blur(2px);
+  opacity: var(--shadow-opacity, 0.6);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Wolf-specific tint */
+.enemy.wolf {
+  background: #b0bec5; /* blue-grey */
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 10px rgba(176, 190, 197, 0.6);
+}
+
+/* Quick state glows (Idle/Seek/Circle/Harass/Recover) */
+.enemy.idle { opacity: 0.95; }
+.enemy.seek { box-shadow: 0 0 12px rgba(250, 219, 20, 0.8); }
+.enemy.circle { box-shadow: 0 0 12px rgba(156, 39, 176, 0.8); }
+.enemy.harass { box-shadow: 0 0 12px rgba(255, 82, 82, 0.9); }
+.enemy.recover { box-shadow: 0 0 12px rgba(64, 224, 255, 0.8); filter: saturate(0.85); }
+
+/* Sword (attack) */
+.player .sword {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.2));
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  transform-origin: center left;
+  z-index: 3;
+  animation: sword-slash 0.22s ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+@keyframes sword-slash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) rotate(-50deg) translateX(24px) scaleX(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--angle)) rotate(0deg) translateX(28px) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) rotate(40deg) translateX(24px) scaleX(0.6);
+  }
+}
+
+/* Shield (block) */
+.player .shield {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform-origin: center center;
+  background-image: url('effects/block-stance.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 6px rgba(64, 224, 255, 0.7));
+  transform: translate(calc(-50% + var(--dirX, 1) * 22px), calc(-50% + var(--dirY, 0) * 22px)) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1));
+  z-index: 2;
+}
+
+/* Block/Parry spark */
+.spark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(0.6);
+  pointer-events: none;
+  z-index: 4;
+  animation: spark-pop 0.42s ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.spark.block {
+  width: 40px;
+  height: 40px;
+  background: url('effects/block.png') center/contain no-repeat;
+  box-shadow: none;
+}
+
+.spark.parry {
+  width: 64px;
+  height: 64px;
+  background: url('effects/perfect-block.png') center/contain no-repeat;
+  box-shadow: none;
+}
+
+@keyframes spark-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(0.5); }
+  35% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(0.9); }
+}
+
+/* Roll trail */
+.trail {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 200, 255, 0.5);
+  filter: blur(2px);
+  transform: translate(-50%, -50%) scale(1);
+  animation: trail-fade 0.45s ease-out forwards;
+  z-index: 1;
+}
+
+/* Ambient particles */
+.ambient-particle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  mix-blend-mode: screen;
+  filter: blur(0.5px);
+  transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1));
+  opacity: var(--op, 0.45);
+  animation: dust-drift var(--dur, 18s) linear infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes dust-drift {
+  0% { transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1)); }
+  100% { transform: translate(calc(var(--x, 0px) + var(--dx, 40px)), calc(var(--y, 0px) + var(--dy, -60px))) scale(var(--s, 1)); }
+}
+
+@keyframes trail-fade {
+  0% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+}
+
+/* Desktop controls tooltip */
+#controls-tip {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  backdrop-filter: blur(10px);
+  font-size: 1.2rem;
+}
+
+#controls-tip ul {
+  list-style: none;
+  margin-top: 6px;
+}
+
+#controls-tip li + li {
+  margin-top: 2px;
+}
+
+/* Choice overlay polish */
+#choice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+}
+
+#choice-overlay[hidden] { display: none; }
+
+#choice-overlay .overlay-box {
+  width: min(92vw, 560px);
+  padding: 24px;
+  border: 2px solid rgba(255,255,255,0.7);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.8);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 30px rgba(0, 128, 255, 0.18) inset;
+  text-align: center;
+}
+
+#choice-overlay .choices {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 16px 0 10px;
+}
+
+#choice-overlay .choices button,
+#choice-overlay #restart-button {
+  font-family: inherit;
+  font-size: 1.6rem;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.85);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88));
+  color: #000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 22px rgba(64, 224, 255, 0.25);
+}
+
+#choice-overlay .choices button:hover {
+  box-shadow: 0 8px 22px rgba(0,0,0,0.5), 0 0 26px rgba(64, 224, 255, 0.4);
+}
