@@ -1,6 +1,6 @@
 import {joinRoom, selfId} from './dist/trystero-mqtt.min.js'  // MQTT strategy - using local bundle
-import GameRenderer from '../src/game-renderer.js'
-import CameraEffects from '../src/camera-effects.js'
+import GameRenderer from './game-renderer.js'
+import CameraEffects from './camera-effects.js'
 
 // WASM helpers (browser bundle)
 let wasmExports = null
@@ -16,6 +16,7 @@ try {
   const {loadWasm} = wasmHelperModule
   const {exports} = await loadWasm('./game.wasm')
   wasmExports = exports
+  window.wasmExports = wasmExports // Make globally accessible for debugging
   if (typeof wasmExports.start === 'function') wasmExports.start()
   // Seed and initialize a run inside WASM (logic stays in WASM)
   try {
@@ -1492,7 +1493,12 @@ function gameLoop(ts) {
               maxHealth: 50,
               state: 'idle',
               type: 'wolf',
-              color: '#8b4513'
+              color: '#8b4513',
+              ai: {
+                patrolStart: worldPos.x - 100,
+                patrolEnd: worldPos.x + 100,
+                patrolDirection: 1
+              }
             })
           }
         }
@@ -1638,10 +1644,7 @@ function gameLoop(ts) {
     // Post-render camera effects
     cameraEffects.postRender(ctx)
     
-    // Apply camera shake if needed
-    if (screenShakeIntensity > 0) {
-      cameraEffects.shake(screenShakeIntensity * 0.5, 0.9)
-    }
+    // Camera effects are handled by the CameraEffects class internally
   } else {
     // Fallback to original rendering
     updateCamera()
