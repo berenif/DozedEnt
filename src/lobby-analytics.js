@@ -379,7 +379,7 @@ export class LobbyAnalytics {
    */
   trackPerformance(metrics) {
     // Update latency
-    if (metrics.latency !== null && metrics.latency !== undefined) {
+    if (metrics.latency !== null && metrics.latency !== void 0) {
       this.data.performance.averageLatency = this.calculateRunningAverage(
         this.data.performance.averageLatency,
         metrics.latency,

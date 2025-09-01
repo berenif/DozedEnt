@@ -649,7 +649,6 @@ export class AlphaWolf {
     
     // Check and use abilities
     checkAbilityUsage(player) {
-        const now = Date.now()
         const distanceToPlayer = this.getDistanceTo(player)
         
         // Use abilities based on situation
@@ -884,7 +883,7 @@ export class ScentTrackingSystem {
         const now = Date.now()
         
         // Check all scent trails
-        this.scentTrails.forEach((trail, entityId) => {
+        this.scentTrails.forEach((trail) => {
             trail.forEach(point => {
                 // Filter by scent type if specified
                 if (scentType && point.type !== scentType) {return}

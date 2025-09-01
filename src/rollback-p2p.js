@@ -274,12 +274,13 @@ class RollbackP2P {
           }
           break
           
-        case 'heartbeat':
+        case 'heartbeat': {
           const peerInfo = this.peers.get(peerId)
           if (peerInfo) {
             peerInfo.lastHeartbeat = Date.now()
           }
           break
+        }
           
         default:
           this.logger.warn('Unknown message type', { type: message.type, peerId })

@@ -4,7 +4,6 @@
  */
 
 import { createLogger } from './logger.js'
-import { toJson, fromJson, genId } from './utils.js'
 
 // Constants for rollback system
 const MAX_ROLLBACK_FRAMES = 8  // Maximum frames we can roll back
@@ -348,7 +347,7 @@ class RollbackNetcode {
     const frameInputs = new Map()
     const inputData = this.inputHistory.get(frame) || new Map()
     
-    for (const [playerId, player] of this.players) {
+    for (const [playerId] of this.players) {
       let input = inputData.get(playerId)
       
       // Use prediction if no actual input
@@ -409,7 +408,7 @@ class RollbackNetcode {
   updateConfirmedFrame() {
     let minConfirmed = this.currentFrame
     
-    for (const [playerId, player] of this.players) {
+    for (const [, player] of this.players) {
       if (!player.local) {
         minConfirmed = Math.min(minConfirmed, player.lastConfirmedFrame)
       }

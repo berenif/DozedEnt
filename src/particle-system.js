@@ -153,8 +153,8 @@ export class Particle {
 
     drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
         let rot = Math.PI / 2 * 3
-        let x = cx
-        let y = cy
+        let x
+        let y
         const step = Math.PI / spikes
 
         ctx.beginPath()
@@ -206,7 +206,7 @@ export class ParticleSystem {
         })
         
         // Render particles grouped by blend mode
-        for (const [blendMode, particles] of Object.entries(particlesByBlendMode)) {
+        for (const [, particles] of Object.entries(particlesByBlendMode)) {
             particles.forEach(particle => particle.render(ctx))
         }
     }

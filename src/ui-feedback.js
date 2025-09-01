@@ -402,7 +402,7 @@ export class HealthBar {
         this.currentHealth = Math.min(this.maxHealth, this.currentHealth + amount)
     }
 
-    update(deltaTime) {
+    update() {
         // Animate display health
         const diff = this.currentHealth - this.displayHealth
         this.displayHealth += diff * 0.1

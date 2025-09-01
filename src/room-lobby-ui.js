@@ -741,15 +741,15 @@ export class RoomLobbyUI {
       this.updateRoomList(rooms)
     })
     
-    roomManager.on('onPlayerJoin', (playerId) => {
+    roomManager.on('onPlayerJoin', () => {
       this.updatePlayerList()
     })
     
-    roomManager.on('onPlayerLeave', (playerId) => {
+    roomManager.on('onPlayerLeave', () => {
       this.updatePlayerList()
     })
     
-    roomManager.on('onHostMigration', (newHostId) => {
+    roomManager.on('onHostMigration', () => {
       this.updatePlayerList()
     })
   }

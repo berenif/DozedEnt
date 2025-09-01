@@ -192,7 +192,7 @@ export class GameFeelEnhancer {
     }
 
     // Combat enhancement methods
-    onPlayerAttack(x, y, direction) {
+    onPlayerAttack(x, y) {
         // Visual effects
         this.particles.createHitSpark(x, y)
         

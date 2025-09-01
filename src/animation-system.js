@@ -15,7 +15,7 @@ export class Animation {
     constructor(name, frames, options = {}) {
         this.name = name
         this.frames = frames
-        this.loop = options.loop !== null && options.loop !== undefined ? options.loop : true
+        this.loop = options.loop !== null && options.loop !== void 0 ? options.loop : true
         this.pingPong = options.pingPong || false
         this.speed = options.speed || 1.0
         this.onComplete = options.onComplete || null

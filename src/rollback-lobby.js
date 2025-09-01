@@ -7,7 +7,7 @@
 
 import RollbackNetcode from './rollback-netcode.js'
 import RollbackP2P from './rollback-p2p.js'
-import { joinRoom as joinNostrRoom, selfId } from './nostr.js'
+import { joinRoom as joinNostrRoom } from './nostr.js'
 import { createLogger } from './logger.js'
 import { toJson, fromJson, genId } from './utils.js'
 
@@ -190,7 +190,7 @@ class RollbackLobby {
   /**
    * Join an existing lobby
    */
-  async joinLobby(lobbyId, playerName = 'Player') {
+  joinLobby(lobbyId, playerName = 'Player') {
     if (this.lobbyId) {
       throw new Error('Already in a lobby')
     }
@@ -330,7 +330,7 @@ class RollbackLobby {
   /**
    * Start the game (host only)
    */
-  async startGame(gameCallbacks) {
+  startGame(gameCallbacks) {
     if (!this.isHost) {
       throw new Error('Only the host can start the game')
     }
@@ -371,7 +371,7 @@ class RollbackLobby {
   /**
    * Setup dedicated host signaling
    */
-  async _setupDedicatedHostSignaling() {
+  _setupDedicatedHostSignaling() {
     const gameRoomId = this._getGameRoomId()
     
     this.gameRoom = joinNostrRoom(
@@ -380,9 +380,9 @@ class RollbackLobby {
     )
     
     // Set up WebRTC signaling actions
-    const [sendOffer, onOffer] = this.gameRoom.makeAction('webrtc_offer')
-    const [sendAnswer, onAnswer] = this.gameRoom.makeAction('webrtc_answer')
-    const [sendIceCandidate, onIceCandidate] = this.gameRoom.makeAction('webrtc_ice')
+    const [sendOffer] = this.gameRoom.makeAction('webrtc_offer')
+    const [sendAnswer] = this.gameRoom.makeAction('webrtc_answer')
+    const [sendIceCandidate] = this.gameRoom.makeAction('webrtc_ice')
     const [sendGameStart, onGameStart] = this.gameRoom.makeAction('game_start')
     
     // Initialize P2P with signaling
@@ -420,7 +420,7 @@ class RollbackLobby {
   /**
    * Setup mesh P2P signaling
    */
-  async _setupMeshP2PSignaling() {
+  _setupMeshP2PSignaling() {
     const gameRoomId = this._getGameRoomId()
     
     this.gameRoom = joinNostrRoom(
@@ -429,9 +429,9 @@ class RollbackLobby {
     )
     
     // Set up WebRTC signaling actions for mesh topology
-    const [sendOffer, onOffer] = this.gameRoom.makeAction('mesh_offer')
-    const [sendAnswer, onAnswer] = this.gameRoom.makeAction('mesh_answer')
-    const [sendIceCandidate, onIceCandidate] = this.gameRoom.makeAction('mesh_ice')
+    const [sendOffer] = this.gameRoom.makeAction('mesh_offer')
+    const [sendAnswer] = this.gameRoom.makeAction('mesh_answer')
+    const [sendIceCandidate] = this.gameRoom.makeAction('mesh_ice')
     const [sendPlayerReady, onPlayerReady] = this.gameRoom.makeAction('player_ready')
     const [sendGameStart, onGameStart] = this.gameRoom.makeAction('game_start')
     
