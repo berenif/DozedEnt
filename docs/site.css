@@ -412,14 +412,34 @@ body {
   border: none;
   border-radius: 10px;
   min-width: 120px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#actions button:active {
+  transform: scale(0.95);
+  background: #e0e0e0;
+}
+
+#actions button:hover:not([disabled]) {
+  background: #f0f0f0;
 }
 
 #roll-button[disabled] {
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #attack-button[disabled] {
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#block-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 480px) {
