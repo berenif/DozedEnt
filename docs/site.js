@@ -298,31 +298,43 @@ vocalizationStyles.textContent = `
 `
 document.head.appendChild(vocalizationStyles)
 
-// Add test panel for vocalizations
-function addVocalizationTestPanel() {
-  const testPanel = document.createElement('div')
-  testPanel.id = 'vocalization-test-panel'
-  testPanel.style.cssText = `
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #00ffff;
-    border-radius: 8px;
-    padding: 10px;
-    z-index: 10000;
-    font-family: monospace;
-    color: #00ffff;
+// Add vocalization test controls to settings panel
+function addVocalizationTestToSettings() {
+  const settingsContent = document.querySelector('.settings-content')
+  if (!settingsContent) return
+  
+  // Create vocalization test section
+  const vocalTestSection = document.createElement('div')
+  vocalTestSection.className = 'setting-item vocalization-test-section'
+  vocalTestSection.style.cssText = `
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10px;
+    padding-top: 10px;
   `
-  testPanel.innerHTML = `
-    <div style="margin-bottom: 5px; font-size: 12px;">🎵 Vocalization Test</div>
-    <button onclick="window.testVocalization(1)" style="margin: 2px; padding: 5px; background: #111; color: #0ff; border: 1px solid #0ff; cursor: pointer;">🌙 Howl</button>
-    <button onclick="window.testVocalization(2)" style="margin: 2px; padding: 5px; background: #111; color: #f60; border: 1px solid #f60; cursor: pointer;">⚡ Growl</button>
-    <button onclick="window.testVocalization(3)" style="margin: 2px; padding: 5px; background: #111; color: #ff0; border: 1px solid #ff0; cursor: pointer;">! Bark</button>
-    <button onclick="window.testVocalization(4)" style="margin: 2px; padding: 5px; background: #111; color: #99f; border: 1px solid #99f; cursor: pointer;">💔 Whine</button>
-    <button onclick="window.testVocalization(5)" style="margin: 2px; padding: 5px; background: #111; color: #f00; border: 1px solid #f00; cursor: pointer;">⚔️ Snarl</button>
+  vocalTestSection.innerHTML = `
+    <label style="display: block; margin-bottom: 10px; font-size: 14px; color: #00ffff;">🎵 Vocalization Test</label>
+    <div class="vocalization-buttons" style="display: flex; flex-wrap: wrap; gap: 5px;">
+      <button onclick="window.testVocalization(1)" class="vocal-test-btn" style="flex: 1; min-width: 80px; padding: 8px 5px; background: rgba(0, 255, 255, 0.1); color: #0ff; border: 1px solid #0ff; border-radius: 4px; cursor: pointer; font-size: 12px;">🌙 Howl</button>
+      <button onclick="window.testVocalization(2)" class="vocal-test-btn" style="flex: 1; min-width: 80px; padding: 8px 5px; background: rgba(255, 102, 0, 0.1); color: #f60; border: 1px solid #f60; border-radius: 4px; cursor: pointer; font-size: 12px;">⚡ Growl</button>
+      <button onclick="window.testVocalization(3)" class="vocal-test-btn" style="flex: 1; min-width: 80px; padding: 8px 5px; background: rgba(255, 255, 0, 0.1); color: #ff0; border: 1px solid #ff0; border-radius: 4px; cursor: pointer; font-size: 12px;">! Bark</button>
+      <button onclick="window.testVocalization(4)" class="vocal-test-btn" style="flex: 1; min-width: 80px; padding: 8px 5px; background: rgba(153, 153, 255, 0.1); color: #99f; border: 1px solid #99f; border-radius: 4px; cursor: pointer; font-size: 12px;">💔 Whine</button>
+      <button onclick="window.testVocalization(5)" class="vocal-test-btn" style="flex: 1; min-width: 80px; padding: 8px 5px; background: rgba(255, 0, 0, 0.1); color: #f00; border: 1px solid #f00; border-radius: 4px; cursor: pointer; font-size: 12px;">⚔️ Snarl</button>
+    </div>
   `
-  document.body.appendChild(testPanel)
+  settingsContent.appendChild(vocalTestSection)
+  
+  // Add hover effects for vocalization buttons
+  const style = document.createElement('style')
+  style.textContent = `
+    .vocal-test-btn:hover {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+    .vocal-test-btn:active {
+      transform: scale(0.95);
+    }
+  `
+  document.head.appendChild(style)
 }
 
 // Test vocalization function
@@ -347,9 +359,9 @@ window.testVocalization = function(type) {
   }
 }
 
-// Add test panel after page loads
+// Add vocalization test to settings panel after page loads
 setTimeout(() => {
-  addVocalizationTestPanel()
+  addVocalizationTestToSettings()
 }, 1000)
 
 // Central wall (UI-only)
