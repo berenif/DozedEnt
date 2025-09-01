@@ -77,6 +77,21 @@ body {
   transition: none; /* Disable transitions for smooth camera movement */
 }
 
+/* Visual boundary for the actual playable area (center third) */
+.game-boundary {
+  position: absolute;
+  left: 1280px;  /* Start of center third */
+  top: 720px;   /* Start of center third */
+  width: 1280px;  /* WASM playable area width */
+  height: 720px;  /* WASM playable area height */
+  border: 3px dashed rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    inset 0 0 20px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* World markers */
 .marker {
   position: absolute;

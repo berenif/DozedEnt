@@ -496,8 +496,9 @@ let footstepAccum = 0
 const isMobile = (matchMedia && matchMedia('(pointer: coarse)').matches) || /Mobi|Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)
 
 // movement state - start at center of world
-let posX = 0.5
-let posY = 0.5
+// WASM uses normalized 0-1 coords, but we scale to 0-3 for the larger world
+let posX = 0.5  // This will be scaled when rendering
+let posY = 0.5  // This will be scaled when rendering
 // Initialize camera to center on starting position
 let selfX = posX
 let selfY = posY
@@ -597,8 +598,11 @@ function ensureEnemyEl(idx, type) {
 }
 function setEnemyPos(el, x, y) {
   // Convert normalized world coordinates to screen coordinates
-  const worldX = x * WORLD_WIDTH
-  const worldY = y * WORLD_HEIGHT
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + x  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + y  // Maps 0-1 to 1-2 (center third of 0-3)
+  const worldX = scaledX * (WORLD_WIDTH / 3)
+  const worldY = scaledY * (WORLD_HEIGHT / 3)
   // Apply camera offset
   const screenX = worldX - cameraX
   const screenY = worldY - cameraY
@@ -705,9 +709,20 @@ function ensureObstacleEl(idx) {
 }
 
 function setObstaclePos(el, x, y, radius) {
-  const size = radius * 2 * VIRTUAL_WIDTH
-  el.style.left = ((x - radius) * VIRTUAL_WIDTH) + 'px'
-  el.style.top = ((y - radius) * VIRTUAL_HEIGHT) + 'px'
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + x  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + y  // Maps 0-1 to 1-2 (center third of 0-3)
+  const worldX = scaledX * (WORLD_WIDTH / 3)
+  const worldY = scaledY * (WORLD_HEIGHT / 3)
+  const worldRadius = radius * (WORLD_WIDTH / 3)
+  
+  // Apply camera offset
+  const screenX = worldX - worldRadius - cameraX
+  const screenY = worldY - worldRadius - cameraY
+  const size = worldRadius * 2
+  
+  el.style.left = screenX + 'px'
+  el.style.top = screenY + 'px'
   el.style.width = size + 'px'
   el.style.height = size + 'px'
 }
@@ -802,8 +817,11 @@ function chooseSpawnCorner() {
     // Convert screen coordinates back to world coordinates
     const worldX = leftPx + cameraX
     const worldY = topPx + cameraY
-    const x = clamp01(worldX / WORLD_WIDTH || 0.5)
-    const y = clamp01(worldY / WORLD_HEIGHT || 0.5)
+    // Unscale from world to WASM's 0-1 range
+    const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
+    const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+    const x = clamp01(unscaledX)
+    const y = clamp01(unscaledY)
     peerPositions.push([x, y])
   }
   if (peerPositions.length === 0) {
@@ -837,8 +855,11 @@ function setSpawnPointIfNeeded(force = false) {
 
 function setElPos(el, x, y) {
   // Convert normalized world coordinates to screen coordinates
-  const worldX = x * WORLD_WIDTH
-  const worldY = y * WORLD_HEIGHT
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + x  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + y  // Maps 0-1 to 1-2 (center third of 0-3)
+  const worldX = scaledX * (WORLD_WIDTH / 3)
+  const worldY = scaledY * (WORLD_HEIGHT / 3)
   // Apply camera offset
   const screenX = worldX - cameraX
   const screenY = worldY - cameraY
@@ -850,9 +871,12 @@ function setElPos(el, x, y) {
 function updateCamera() {
   if (!selfEl) return
   
-  // Get player's world position
-  const playerWorldX = posX * WORLD_WIDTH
-  const playerWorldY = posY * WORLD_HEIGHT
+  // Get player's world position - scale from normalized 0-1 to world size
+  // Since WASM uses 0-1 range, we map it to the center third of our 3x world
+  const scaledX = 1.0 + posX  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + posY  // Maps 0-1 to 1-2 (center third of 0-3)
+  const playerWorldX = scaledX * (WORLD_WIDTH / 3)
+  const playerWorldY = scaledY * (WORLD_HEIGHT / 3)
   
   // Calculate desired camera position (center on player)
   const targetCameraX = playerWorldX - VIRTUAL_WIDTH / 2
@@ -876,8 +900,11 @@ function updateMinimap() {
   if (!playerDot) return
   
   // Calculate player position on minimap (0-100% of minimap size)
-  const minimapX = posX * 100  // posX is already normalized 0-1
-  const minimapY = posY * 100  // posY is already normalized 0-1
+  // Scale from WASM's 0-1 to position in 3x world
+  const scaledX = (1.0 + posX) / 3  // Maps to center third of 0-1 range for minimap
+  const scaledY = (1.0 + posY) / 3  // Maps to center third of 0-1 range for minimap
+  const minimapX = scaledX * 100
+  const minimapY = scaledY * 100
   
   playerDot.style.left = `${minimapX}%`
   playerDot.style.top = `${minimapY}%`
@@ -1096,6 +1123,11 @@ setTimeout(updateOverlayVisibility, 100)
 // ambient visuals init
 initAmbientParticles(26)
 
+// Add visual boundary for the playable area
+const gameBoundary = document.createElement('div')
+gameBoundary.className = 'game-boundary'
+canvas.appendChild(gameBoundary)
+
 function getViewportSize() {
   if (window.visualViewport) {
     return { width: visualViewport.width, height: visualViewport.height }
@@ -1146,8 +1178,11 @@ function init(n) {
   connectionStatusEl.className = 'connecting'
   
   // Initialize camera position to center on player spawn
-  const initialWorldX = posX * WORLD_WIDTH
-  const initialWorldY = posY * WORLD_HEIGHT
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + posX  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + posY  // Maps 0-1 to 1-2 (center third of 0-3)
+  const initialWorldX = scaledX * (WORLD_WIDTH / 3)
+  const initialWorldY = scaledY * (WORLD_HEIGHT / 3)
   cameraX = Math.max(0, Math.min(initialWorldX - VIRTUAL_WIDTH / 2, WORLD_WIDTH - VIRTUAL_WIDTH))
   cameraY = Math.max(0, Math.min(initialWorldY - VIRTUAL_HEIGHT / 2, WORLD_HEIGHT - VIRTUAL_HEIGHT))
   canvas.style.transform = `translate(-${cameraX}px, -${cameraY}px)`
@@ -1221,8 +1256,11 @@ function init(n) {
           // Convert screen coordinates back to world coordinates
           const worldX = leftPx + cameraX
           const worldY = topPx + cameraY
-          const ax = clamp01(worldX / WORLD_WIDTH || 0.5)
-          const ay = clamp01(worldY / WORLD_HEIGHT || 0.5)
+          // Unscale from world to WASM's 0-1 range
+          const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
+          const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+          const ax = clamp01(unscaledX)
+          const ay = clamp01(unscaledY)
           // Post an attack sound at peer position
           postSoundAt(ax, ay, 0.8)
           const res = wasmExports.handle_incoming_attack(ax, ay, dir[0] || 1, dir[1] || 0)
@@ -1252,8 +1290,11 @@ function init(n) {
         // Convert screen coordinates back to world coordinates
         const worldX = leftPx + cameraX
         const worldY = topPx + cameraY
-        const nx = clamp01(worldX / WORLD_WIDTH || 0.5)
-        const ny = clamp01(worldY / WORLD_HEIGHT || 0.5)
+        // Unscale from world to WASM's 0-1 range
+        const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
+        const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+        const nx = clamp01(unscaledX)
+        const ny = clamp01(unscaledY)
         // peer's block spark aligned to their reported direction if provided
         createSparkAt(nx, ny, 'block', dir[0], dir[1])
       }
@@ -1270,8 +1311,11 @@ function init(n) {
       // Convert screen coordinates back to world coordinates
       const worldX = leftPx + cameraX
       const worldY = topPx + cameraY
-      const nx = clamp01(worldX / WORLD_WIDTH || 0.5)
-      const ny = clamp01(worldY / WORLD_HEIGHT || 0.5)
+      // Unscale from world to WASM's 0-1 range
+      const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
+      const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+      const nx = clamp01(unscaledX)
+      const ny = clamp01(unscaledY)
       postSoundAt(nx, ny, 0.45)
       screenShake(2, 100)
     } else if (t === 'posreq') {
@@ -1380,8 +1424,9 @@ function gameLoop(ts) {
   if (isRolling) {
     rollTimeLeft -= dt
     wasmExports.update(rollDirX, rollDirY, 1, dt)
-    posX = clamp01(wasmExports.get_x?.() ?? posX)
-    posY = clamp01(wasmExports.get_y?.() ?? posY)
+    // Don't clamp to 0-1, WASM already handles boundaries
+    posX = wasmExports.get_x?.() ?? posX
+    posY = wasmExports.get_y?.() ?? posY
     // keep facing along roll direction and spawn trail
     faceDirX = rollDirX
     faceDirY = rollDirY
@@ -1404,8 +1449,9 @@ function gameLoop(ts) {
       dirY = moveY / mag
     }
     wasmExports.update(dirX, dirY, 0, dt)
-    posX = clamp01(wasmExports.get_x?.() ?? posX)
-    posY = clamp01(wasmExports.get_y?.() ?? posY)
+    // Don't clamp to 0-1, WASM already handles boundaries
+    posX = wasmExports.get_x?.() ?? posX
+    posY = wasmExports.get_y?.() ?? posY
     // update facing when moving and reset trail accumulator
     if (dirX !== 0 || dirY !== 0) {
       const len2 = Math.hypot(dirX, dirY) || 1
@@ -1530,8 +1576,11 @@ function renderWorldMarkers() {
       const y = wasmExports.get_landmark_y(i)
       const m = document.createElement('div')
       m.className = 'marker landmark'
-      m.style.left = (clamp01(x) * WORLD_WIDTH) + 'px'
-      m.style.top = (clamp01(y) * WORLD_HEIGHT) + 'px'
+      // Scale from WASM's 0-1 range to center third of world
+      const scaledX = 1.0 + clamp01(x)  // Maps 0-1 to 1-2 (center third of 0-3)
+      const scaledY = 1.0 + clamp01(y)  // Maps 0-1 to 1-2 (center third of 0-3)
+      m.style.left = (scaledX * (WORLD_WIDTH / 3)) + 'px'
+      m.style.top = (scaledY * (WORLD_HEIGHT / 3)) + 'px'
       canvas.appendChild(m)
     }
     // Add exits
@@ -1540,8 +1589,11 @@ function renderWorldMarkers() {
       const y = wasmExports.get_exit_y(i)
       const m = document.createElement('div')
       m.className = 'marker exit'
-      m.style.left = (clamp01(x) * WORLD_WIDTH) + 'px'
-      m.style.top = (clamp01(y) * WORLD_HEIGHT) + 'px'
+      // Scale from WASM's 0-1 range to center third of world
+      const scaledX = 1.0 + clamp01(x)  // Maps 0-1 to 1-2 (center third of 0-3)
+      const scaledY = 1.0 + clamp01(y)  // Maps 0-1 to 1-2 (center third of 0-3)
+      m.style.left = (scaledX * (WORLD_WIDTH / 3)) + 'px'
+      m.style.top = (scaledY * (WORLD_HEIGHT / 3)) + 'px'
       canvas.appendChild(m)
     }
   } catch {}
@@ -1729,8 +1781,11 @@ function createSparkAt(xNorm, yNorm, kind, dirX = faceDirX, dirY = faceDirY) {
   const ny = dirY / len
   const pxOffset = 22 // match shield offset in CSS
   // Convert normalized world coordinates to screen coordinates
-  const worldX = xNorm * WORLD_WIDTH
-  const worldY = yNorm * WORLD_HEIGHT
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + xNorm  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + yNorm  // Maps 0-1 to 1-2 (center third of 0-3)
+  const worldX = scaledX * (WORLD_WIDTH / 3)
+  const worldY = scaledY * (WORLD_HEIGHT / 3)
   const baseLeft = worldX - cameraX
   const baseTop = worldY - cameraY
   const leftPx = baseLeft + nx * pxOffset
@@ -1801,8 +1856,11 @@ function createTrailAt(xNorm, yNorm) {
   const t = document.createElement('div')
   t.className = 'trail'
   // Convert normalized world coordinates to screen coordinates
-  const worldX = xNorm * WORLD_WIDTH
-  const worldY = yNorm * WORLD_HEIGHT
+  // Scale from WASM's 0-1 range to center third of world
+  const scaledX = 1.0 + xNorm  // Maps 0-1 to 1-2 (center third of 0-3)
+  const scaledY = 1.0 + yNorm  // Maps 0-1 to 1-2 (center third of 0-3)
+  const worldX = scaledX * (WORLD_WIDTH / 3)
+  const worldY = scaledY * (WORLD_HEIGHT / 3)
   const screenX = worldX - cameraX
   const screenY = worldY - cameraY
   t.style.left = screenX + 'px'
