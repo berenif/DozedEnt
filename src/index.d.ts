@@ -128,4 +128,22 @@ declare module 'trystero' {
   export {default as RoomManager} from './room-manager'
   export {default as HostAuthority} from './host-authority'
   export {default as RoomLobbyUI} from './room-lobby-ui'
+  
+  // Rollback Netcode exports
+  export {default as RollbackNetcode} from './rollback-netcode'
+  export {default as RollbackP2P} from './rollback-p2p'
+  export {RollbackLobby, HOSTING_MODE} from './rollback-lobby'
+  export {
+    DeterministicGame,
+    DeterministicRandom,
+    toFixed,
+    fromFixed,
+    fixedAdd,
+    fixedSub,
+    fixedMul,
+    fixedDiv,
+    fixedSqrt,
+    fixedSin,
+    fixedCos
+  } from './deterministic-game'
 }

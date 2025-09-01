@@ -2,3 +2,21 @@ export {getRelaySockets, joinRoom, selfId} from './nostr.js'
 export {default as RoomManager} from './room-manager.js'
 export {default as HostAuthority} from './host-authority.js'
 export {default as RoomLobbyUI} from './room-lobby-ui.js'
+
+// Rollback Netcode exports
+export {default as RollbackNetcode} from './rollback-netcode.js'
+export {default as RollbackP2P} from './rollback-p2p.js'
+export {RollbackLobby, HOSTING_MODE} from './rollback-lobby.js'
+export {
+  DeterministicGame,
+  DeterministicRandom,
+  toFixed,
+  fromFixed,
+  fixedAdd,
+  fixedSub,
+  fixedMul,
+  fixedDiv,
+  fixedSqrt,
+  fixedSin,
+  fixedCos
+} from './deterministic-game.js'
