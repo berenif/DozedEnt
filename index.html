@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile Game Controls</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Top HUD -->
+        <div class="top-hud">
+            <div class="player-info">
+                <div class="health-bar">
+                    <div class="health-fill"></div>
+                    <span class="health-text">100/100</span>
+                </div>
+                <div class="energy-bar">
+                    <div class="energy-fill"></div>
+                    <span class="energy-text">50/50</span>
+                </div>
+            </div>
+            <div class="score-info">
+                <span class="score">Score: 0</span>
+                <span class="level">Lv. 1</span>
+            </div>
+        </div>
+
+        <!-- Settings Panel (Hidden by default) -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3>Settings</h3>
+                <button class="close-btn" onclick="toggleSettings()">×</button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <label>Sound</label>
+                    <input type="range" min="0" max="100" value="50">
+                </div>
+                <div class="setting-item">
+                    <label>Vibration</label>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>Control Size</label>
+                    <select>
+                        <option>Small</option>
+                        <option selected>Medium</option>
+                        <option>Large</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Canvas Area -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <!-- Left Side: D-Pad -->
+            <div class="left-controls">
+                <div class="dpad-container">
+                    <div class="dpad">
+                        <button class="dpad-btn dpad-up" data-direction="up">▲</button>
+                        <button class="dpad-btn dpad-right" data-direction="right">▶</button>
+                        <button class="dpad-btn dpad-down" data-direction="down">▼</button>
+                        <button class="dpad-btn dpad-left" data-direction="left">◀</button>
+                        <div class="dpad-center"></div>
+                    </div>
+                </div>
+                
+                <!-- Settings Button -->
+                <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+            </div>
+
+            <!-- Right Side: Action Buttons -->
+            <div class="right-controls">
+                <!-- Main Action Buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn primary" data-action="attack">
+                        <span class="btn-icon">⚔️</span>
+                        <span class="cooldown"></span>
+                    </button>
+                    <button class="action-btn secondary" data-action="jump">
+                        <span class="btn-icon">↑</span>
+                        <span class="cooldown"></span>
+                    </button>
+                    <button class="action-btn tertiary" data-action="dodge">
+                        <span class="btn-icon">💨</span>
+                        <span class="cooldown"></span>
+                    </button>
+                </div>
+
+                <!-- Skill Buttons -->
+                <div class="skill-buttons">
+                    <button class="skill-btn" data-skill="1">
+                        <span class="skill-icon">🔥</span>
+                        <span class="skill-cooldown">3</span>
+                    </button>
+                    <button class="skill-btn" data-skill="2">
+                        <span class="skill-icon">❄️</span>
+                        <span class="skill-cooldown"></span>
+                    </button>
+                    <button class="skill-btn" data-skill="3">
+                        <span class="skill-icon">⚡</span>
+                        <span class="skill-cooldown"></span>
+                    </button>
+                    <button class="skill-btn ultimate" data-skill="ultimate">
+                        <span class="skill-icon">💥</span>
+                        <span class="skill-cooldown"></span>
+                        <div class="ultimate-glow"></div>
+                    </button>
+                </div>
+
+                <!-- Quick Items -->
+                <div class="quick-items">
+                    <button class="item-btn" data-item="potion">
+                        <span class="item-icon">🧪</span>
+                        <span class="item-count">5</span>
+                    </button>
+                    <button class="item-btn" data-item="bomb">
+                        <span class="item-icon">💣</span>
+                        <span class="item-count">3</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mini Map -->
+        <div class="minimap">
+            <div class="map-container">
+                <div class="player-position"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="controls.js"></script>
+</body>
+</html>
