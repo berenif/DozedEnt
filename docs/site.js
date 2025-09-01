@@ -555,13 +555,13 @@ function updateOverlayVisibility() {
     if (controlsTip) controlsTip.hidden = false
     return
   }
-  const shouldShow = !isLandscape()
-  orientationOverlay.hidden = !shouldShow
-  joystick.hidden = shouldShow
-  if (actions) actions.hidden = shouldShow
+  const inLandscape = isLandscape()
+  orientationOverlay.hidden = inLandscape
+  joystick.hidden = !inLandscape
+  if (actions) actions.hidden = !inLandscape
   if (controlsTip) controlsTip.hidden = true
   // If on mobile in landscape, attempt to enter fullscreen automatically
-  if (!shouldShow) {
+  if (inLandscape) {
     requestFullscreenSafe(document.documentElement)
   }
 }
@@ -573,7 +573,11 @@ overlayStartBtn?.addEventListener('click', async () => {
 
 addEventListener('orientationchange', updateOverlayVisibility)
 addEventListener('resize', updateOverlayVisibility)
+
+// Initial visibility update - call immediately and after a short delay to ensure proper initialization
 updateOverlayVisibility()
+setTimeout(updateOverlayVisibility, 100)
+
 // ambient visuals init
 initAmbientParticles(26)
 
@@ -1022,9 +1026,6 @@ function resetKnob() {
 
 function attachJoystick() {
   if (!isMobile) return
-  const showControls = isLandscape()
-  joystick.hidden = !showControls
-  if (actions) actions.hidden = !showControls
   const onStart = e => {
     const t = (e.touches ? e.touches[0] : e)
     joystickTouchId = t.identifier ?? 'mouse'
@@ -1066,8 +1067,29 @@ function attachJoystick() {
 attachJoystick()
 
 // Mobile roll button events
+// Helper function to add both touch and click handlers
+function addButtonHandler(button, handler) {
+  if (!button) return
+  
+  // Prevent double-firing on devices that emit both touch and click
+  let touchHandled = false
+  
+  button.addEventListener('touchstart', (e) => {
+    e.preventDefault()
+    touchHandled = true
+    handler()
+    setTimeout(() => { touchHandled = false }, 300)
+  }, {passive: false})
+  
+  button.addEventListener('click', (e) => {
+    if (!touchHandled) {
+      handler()
+    }
+  })
+}
+
 if (rollButton) {
-  rollButton.addEventListener('click', () => {
+  addButtonHandler(rollButton, () => {
     tryStartRoll()
   })
 }
@@ -1080,13 +1102,13 @@ function flashClass(el, className, ms) {
 }
 
 if (attackButton) {
-  attackButton.addEventListener('click', () => {
+  addButtonHandler(attackButton, () => {
     performAttack()
   })
 }
 
 if (blockButton) {
-  blockButton.addEventListener('click', () => {
+  addButtonHandler(blockButton, () => {
     ensureSelfEl()
     const wantOn = !blocking
     if (typeof wasmExports?.set_blocking === 'function') {
