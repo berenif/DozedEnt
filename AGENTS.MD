@@ -1,48 +1,327 @@
-## Agent guide (WASM-first)
+# 🎮 Agent Development Guide (WASM-First Architecture)
 
-### Scope
-- This repo hosts a tiny multiplayer playground with all game logic in WebAssembly (C++). JavaScript handles only rendering, input, and networking.
-- Golden rule: keep every piece of game logic in the WASM module, not in JS. UI may read snapshots/exports and forward inputs. [[All logic in WASM]]
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Architecture Principles](#architecture-principles)
+- [WASM API Reference](#wasm-api-reference)
+- [JavaScript Integration](#javascript-integration)
+- [Build Process](#build-process)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
 
-### Current WASM API surface
-- Core sim:
-  - `start()` — zeroes runtime state for dev.
-  - `update(dirX, dirY, isRolling, dtSeconds)` — deterministic tick.
-  - `get_x()`, `get_y()` — player position (normalized 0..1).
-  - `get_stamina()` — stamina 0..1.
-  - `on_attack()` — spends stamina; returns 1 if accepted.
-  - `on_roll_start()` — applies roll start cost; 1 if accepted.
-  - `set_blocking(on, faceX, faceY, nowSeconds)` — toggles/updates block; returns 1 if active.
-  - `get_block_state()` — 1 if blocking, else 0.
-  - `handle_incoming_attack(ax, ay, dirX, dirY, nowSeconds)` — -1 ignore, 0 hit, 1 block, 2 perfect parry.
-- Run/loop scaffold:
-  - `init_run(seed, start_weapon)` — deterministic run init.
-  - `reset_run(new_seed)` — instant reseed/restart.
-  - `get_phase()` — returns phase enum: Explore=0, Fight=1, Choose=2, PowerUp=3, Risk=4, Escalate=5, CashOut=6, Reset=7.
-  - Choice getters: `get_choice_count()`, `get_choice_id(i)`, `get_choice_type(i)`, `get_choice_rarity(i)`, `get_choice_tags(i)`.
-  - `commit_choice(choice_id)` — applies selection, exits Choose.
+## Overview
 
-### JS contract (UI only)
-- Per frame: call `update(...)`, then read `get_x/get_y`, `get_stamina` for HUD.
-- Show choice overlay when `get_phase() === 2` (Choose). Populate from choice getters; invoke `commit_choice(id)` on click.
-- Restart uses `reset_run(seed)`; JS must not change gameplay outcomes.
+This repository implements a **WebAssembly-first multiplayer game architecture** where all game logic resides in WASM (C++) modules, while JavaScript handles only rendering, input capture, and networking.
 
-### Build
-- PowerShell (Windows):
-  ```powershell
-  . .\emsdk\emsdk_env.ps1; em++ wasm\game.cpp -O3 -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o docs\game.wasm
-  ```
+## Architecture Principles
 
-### Determinism rules
-- RNG lives in WASM; seed passed from JS. No `Math.random` in JS for gameplay.
-- JS time is only for UI timers/animation; gameplay uses inputs and WASM’s deterministic timers.
+### 🏗️ Core Design Philosophy
+- **WASM-First**: All game logic, state management, and calculations in WebAssembly
+- **JavaScript as UI Layer**: JS handles only rendering, input forwarding, and network communication
+- **Deterministic Execution**: Identical inputs produce identical outputs across all clients
+- **Performance Optimized**: Native-speed game logic with minimal JS overhead
 
-### Extending choices/boons
-- Add data and effect application in WASM. JS only renders labels and forwards `commit_choice(id)`.
-- Keep snapshots/exports flat and compact; avoid JSON for runtime UI except behind debug flags.
+### 🔑 Golden Rules
+1. **Keep ALL game logic in WASM** - No gameplay decisions in JavaScript
+2. **UI reads state snapshots** - JS only visualizes WASM-exported data
+3. **Inputs flow through WASM** - All player actions processed by WASM first
+4. **Deterministic by design** - Same seed + inputs = same outcome everywhere
 
-### PR checklist
-- Logic resides in WASM; JS only forwards inputs and renders.
-- Deterministic with identical seed+inputs.
-- Build command succeeds; `docs/game.wasm` updated.
-- No regressions in `update`, stamina, roll, block/parry.
+## WASM API Reference
+
+### 📦 Current API Surface
+#### ⚙️ Core Simulation Functions
+
+| Function | Description | Parameters | Returns |
+|----------|-------------|------------|----------|
+| `start()` | Initializes/resets runtime state | None | `void` |
+| `update(dirX, dirY, isRolling, dtSeconds)` | Main game tick (deterministic) | `dirX`: -1 to 1<br>`dirY`: -1 to 1<br>`isRolling`: 0 or 1<br>`dtSeconds`: delta time | `void` |
+| `get_x()` | Get player X position | None | `float` (0..1) |
+| `get_y()` | Get player Y position | None | `float` (0..1) |
+| `get_stamina()` | Get current stamina | None | `float` (0..1) |
+| `on_attack()` | Execute attack action | None | `1` if successful, `0` if failed |
+| `on_roll_start()` | Start dodge roll | None | `1` if successful, `0` if failed |
+| `set_blocking(on, faceX, faceY, nowSeconds)` | Toggle/update block state | `on`: 0 or 1<br>`faceX`: direction<br>`faceY`: direction<br>`nowSeconds`: timestamp | `1` if active, `0` if not |
+| `get_block_state()` | Query blocking status | None | `1` if blocking, `0` otherwise |
+| `handle_incoming_attack(ax, ay, dirX, dirY, nowSeconds)` | Process incoming attack | Attack parameters | `-1`: ignore<br>`0`: hit<br>`1`: block<br>`2`: perfect parry |
+#### 🔄 Game Loop & State Management
+
+| Function | Description | Parameters | Returns |
+|----------|-------------|------------|----------|
+| `init_run(seed, start_weapon)` | Initialize new run | `seed`: RNG seed<br>`start_weapon`: weapon ID | `void` |
+| `reset_run(new_seed)` | Instant restart with new seed | `new_seed`: RNG seed | `void` |
+| `get_phase()` | Get current game phase | None | Phase enum (see below) |
+| `get_choice_count()` | Number of available choices | None | `int` |
+| `get_choice_id(i)` | Get choice ID at index | `i`: index | `int` |
+| `get_choice_type(i)` | Get choice type at index | `i`: index | `int` |
+| `get_choice_rarity(i)` | Get choice rarity at index | `i`: index | `int` |
+| `get_choice_tags(i)` | Get choice tags at index | `i`: index | `int` |
+| `commit_choice(choice_id)` | Apply selected choice | `choice_id`: selected ID | `void` |
+
+##### 📊 Game Phases
+```cpp
+enum Phase {
+    Explore  = 0,  // Exploration phase
+    Fight    = 1,  // Combat encounter
+    Choose   = 2,  // Choice/reward selection
+    PowerUp  = 3,  // Power-up application
+    Risk     = 4,  // Risk/reward decision
+    Escalate = 5,  // Difficulty escalation
+    CashOut  = 6,  // Shop/exchange phase
+    Reset    = 7   // Run reset/restart
+}
+```
+
+## JavaScript Integration
+
+### 🎨 UI Layer Contract
+
+#### Frame Update Loop
+```javascript
+// Main game loop (60 FPS)
+function gameLoop(deltaTime) {
+    // 1. Forward inputs to WASM
+    wasmModule.update(inputX, inputY, isRolling, deltaTime);
+    
+    // 2. Read state for rendering
+    const playerX = wasmModule.get_x();
+    const playerY = wasmModule.get_y();
+    const stamina = wasmModule.get_stamina();
+    
+    // 3. Update UI/HUD
+    renderPlayer(playerX, playerY);
+    updateStaminaBar(stamina);
+    
+    requestAnimationFrame(gameLoop);
+}
+```
+
+#### Choice System Integration
+```javascript
+// Monitor phase changes
+if (wasmModule.get_phase() === 2) { // Choose phase
+    const choiceCount = wasmModule.get_choice_count();
+    const choices = [];
+    
+    for (let i = 0; i < choiceCount; i++) {
+        choices.push({
+            id: wasmModule.get_choice_id(i),
+            type: wasmModule.get_choice_type(i),
+            rarity: wasmModule.get_choice_rarity(i),
+            tags: wasmModule.get_choice_tags(i)
+        });
+    }
+    
+    showChoiceOverlay(choices);
+}
+
+// Handle choice selection
+function onChoiceSelected(choiceId) {
+    wasmModule.commit_choice(choiceId);
+    hideChoiceOverlay();
+}
+```
+
+#### Game Restart
+```javascript
+function restartGame() {
+    const newSeed = generateSeed(); // Deterministic seed generation
+    wasmModule.reset_run(newSeed);
+    // UI will update automatically on next frame
+}
+```
+
+### ⚠️ JavaScript Restrictions
+- **NO gameplay logic** - All decisions in WASM
+- **NO Math.random()** for gameplay - Use WASM RNG only
+- **NO state mutations** - JS is read-only observer
+- **NO timing-based gameplay** - Use deterministic WASM timers
+
+## Build Process
+
+### 🛠️ Prerequisites
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+- C++17 compatible compiler
+- Node.js 16+ (for build tools)
+
+### 📦 Build Commands
+
+#### Windows (PowerShell)
+```powershell
+# Initialize Emscripten environment
+. .\emsdk\emsdk_env.ps1
+
+# Build optimized WASM module
+em++ wasm\game.cpp \
+    -O3 \
+    -s STANDALONE_WASM=1 \
+    -s WASM_BIGINT=1 \
+    -s EXPORT_ALL=0 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -o docs\game.wasm
+```
+
+#### Linux/macOS (Bash)
+```bash
+# Initialize Emscripten environment
+source ./emsdk/emsdk_env.sh
+
+# Build optimized WASM module
+em++ wasm/game.cpp \
+    -O3 \
+    -s STANDALONE_WASM=1 \
+    -s WASM_BIGINT=1 \
+    -s EXPORT_ALL=0 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -o docs/game.wasm
+```
+
+#### Build Flags Explained
+- `-O3`: Maximum optimization level
+- `-s STANDALONE_WASM=1`: Generate standalone WASM without JS glue
+- `-s WASM_BIGINT=1`: Enable BigInt support for 64-bit integers
+- `-s EXPORT_ALL=0`: Export only marked functions (reduces size)
+- `-s ALLOW_MEMORY_GROWTH=1`: Dynamic memory allocation support
+
+## Best Practices
+
+### 🎲 Determinism Rules
+
+#### RNG Management
+```cpp
+// WASM side - deterministic RNG
+class GameRNG {
+    uint32_t seed;
+public:
+    void init(uint32_t s) { seed = s; }
+    uint32_t next() {
+        seed = seed * 1664525 + 1013904223; // LCG
+        return seed;
+    }
+};
+```
+
+```javascript
+// JS side - seed management only
+const gameSeed = Date.now(); // Or from server
+wasmModule.init_run(gameSeed, startWeapon);
+// Never use Math.random() for gameplay!
+```
+
+#### Time Management
+- **UI Animations**: Use `performance.now()` in JavaScript
+- **Game Logic**: Use deterministic frame counters in WASM
+- **Network Sync**: Pass tick numbers, not timestamps
+
+### 🚀 Performance Guidelines
+1. **Batch State Reads**: Read all WASM state once per frame
+2. **Minimize Calls**: Group related operations
+3. **Use Flat Data**: Avoid complex object serialization
+4. **Profile Regular**: Monitor WASM/JS boundary overhead
+
+### 🔧 Extending the System
+
+#### Adding New Choices/Boons
+
+1. **Define in WASM** (game.cpp):
+```cpp
+struct Choice {
+    uint32_t id;
+    uint8_t type;
+    uint8_t rarity;
+    uint32_t tags;
+    
+    void apply(GameState* state) {
+        // Apply choice effects
+        switch(type) {
+            case CHOICE_WEAPON:
+                state->weapon = id;
+                break;
+            case CHOICE_BUFF:
+                state->applyBuff(id);
+                break;
+        }
+    }
+};
+```
+
+2. **Export Getters**:
+```cpp
+extern "C" {
+    int get_choice_count() { return choices.size(); }
+    int get_choice_id(int i) { return choices[i].id; }
+    // ... other getters
+}
+```
+
+3. **Render in JS**:
+```javascript
+function renderChoice(choice) {
+    // Only visual representation
+    const element = createChoiceCard(choice);
+    element.onclick = () => wasmModule.commit_choice(choice.id);
+}
+```
+
+#### Data Structure Guidelines
+- **Keep exports flat**: Primitives over objects
+- **Use bit flags**: Pack booleans into integers
+- **Avoid strings**: Use enums/IDs instead
+- **Minimize allocations**: Pre-allocate buffers
+
+## 📝 Pull Request Checklist
+
+### Required Checks
+- [ ] **All game logic in WASM** - No gameplay code in JavaScript
+- [ ] **Deterministic execution** - Same seed + inputs = same result
+- [ ] **Build successful** - `docs/game.wasm` updated and tested
+- [ ] **No regressions** - Core systems still functional:
+  - [ ] Movement (`update` function)
+  - [ ] Stamina system
+  - [ ] Roll/dodge mechanics
+  - [ ] Block/parry system
+- [ ] **Memory safe** - No leaks or buffer overflows
+- [ ] **Performance maintained** - Frame time ≤ 16ms
+- [ ] **Documentation updated** - API changes documented
+
+### Testing Requirements
+- [ ] **Golden test passes** - Replay produces identical results
+- [ ] **Cross-platform** - Works on Windows/Mac/Linux
+- [ ] **Browser compatibility** - Chrome, Firefox, Safari tested
+- [ ] **Network sync** - Multiplayer stays synchronized
+
+## Troubleshooting
+
+### Common Issues
+
+#### WASM Module Won't Load
+```javascript
+// Check for CORS issues
+fetch('game.wasm')
+    .then(response => response.arrayBuffer())
+    .then(bytes => WebAssembly.instantiate(bytes))
+    .catch(error => console.error('WASM load failed:', error));
+```
+
+#### Desync in Multiplayer
+- Verify all clients use same WASM version
+- Check seed synchronization
+- Ensure no `Math.random()` in gameplay path
+- Validate input timestamps
+
+#### Performance Issues
+- Profile WASM/JS boundary calls
+- Reduce state export frequency
+- Use `requestAnimationFrame` properly
+- Check for memory leaks
+
+## 📚 Additional Resources
+
+- [WebAssembly MDN Documentation](https://developer.mozilla.org/en-US/docs/WebAssembly)
+- [Emscripten Documentation](https://emscripten.org/docs/)
+- [Game Networking Resources](https://gafferongames.com/)
+- [Deterministic Simulation Guide](https://gafferongames.com/post/deterministic_lockstep/)
+
+---
+
+*Last updated: January 2025*

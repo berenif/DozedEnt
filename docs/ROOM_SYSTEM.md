@@ -1,10 +1,22 @@
-# Lightweight Room Hosting System
+# 🏠 Lightweight Room Hosting System
 
-## Overview
+<div align="center">
+  <h2>🎮 Multiplayer Room Management with Host Authority</h2>
+  <p><strong>P2P room system • Automatic host migration • WASM integration • Real-time updates</strong></p>
+</div>
 
-The room hosting system provides a complete multiplayer room management solution with host authority. It allows players to create/join rooms, with the room creator becoming the authoritative server for game state management.
+---
 
-## Features
+## 📌 Overview
+
+A complete multiplayer room management solution built on Trystero's P2P infrastructure, featuring:
+- 🌐 **Serverless Architecture** - No backend required
+- 👑 **Host Authority** - Room creator manages game state
+- 🔄 **Automatic Migration** - Seamless host handoff
+- ⚡ **WASM Performance** - Game logic in WebAssembly
+- 🎆 **Live Updates** - Real-time room discovery
+
+## ✨ Features
 
 - **Room Management**: Create, join, and leave rooms with automatic room discovery
 - **Host Authority**: Room creator runs authoritative game logic in WASM
@@ -13,9 +25,9 @@ The room hosting system provides a complete multiplayer room management solution
 - **WASM Integration**: Game state managed in WebAssembly for performance
 - **Dark UI Theme**: Lobby UI aligned with the current game's aesthetic
 
-## Architecture
+## 🏗️ Architecture
 
-### Components
+### 📦 Core Components
 
 1. **RoomManager** (`src/room-manager.js`)
    - Handles room lifecycle (create, join, leave)
@@ -35,9 +47,9 @@ The room hosting system provides a complete multiplayer room management solution
    - Manages room creation and joining
    - Dark theme matching game aesthetic
 
-## Usage
+## 🚀 Usage
 
-### Basic Setup
+### 🔧 Basic Setup
 
 ```javascript
 import { RoomManager, HostAuthority, RoomLobbyUI } from 'trystero'
@@ -60,7 +72,7 @@ lobbyUI.setRoomManager(roomManager)
 lobbyUI.show()
 ```
 
-### Creating a Room
+### 🏠 Creating a Room
 
 ```javascript
 // Create a room (becomes host)
@@ -78,7 +90,7 @@ if (roomManager.isHost) {
 }
 ```
 
-### Joining a Room
+### 🚪 Joining a Room
 
 ```javascript
 // Get available rooms
@@ -94,7 +106,7 @@ if (availableRoom) {
 }
 ```
 
-### Handling Game State
+### 🎮 Handling Game State
 
 ```javascript
 // Host sends game state
@@ -118,7 +130,7 @@ hostAuthority.sendInput({
 })
 ```
 
-### WASM Game Interface
+### 📦 WASM Game Interface
 
 The WASM game module should export these functions:
 
@@ -147,9 +159,9 @@ void game_apply_state(void* state, const char* state_json, int len);
 void game_destroy(void* state);
 ```
 
-## Room Events
+## 📡 Room Events
 
-### RoomManager Events
+### 📋 RoomManager Events
 
 ```javascript
 roomManager.on('onRoomListUpdate', (rooms) => {
@@ -173,7 +185,7 @@ roomManager.on('onGameStateUpdate', (state) => {
 })
 ```
 
-## Host Migration
+## 🔄 Host Migration
 
 When the current host leaves, the system automatically migrates host responsibilities:
 
@@ -182,7 +194,7 @@ When the current host leaves, the system automatically migrates host responsibil
 3. All players are notified of the change
 4. Game state continuity is maintained
 
-## Security Considerations
+## 🔒 Security Considerations
 
 - Room creators have full authority over game state
 - All game logic runs on the host's machine
@@ -190,7 +202,7 @@ When the current host leaves, the system automatically migrates host responsibil
 - Use password option for private rooms
 - Consider implementing anti-cheat measures in WASM
 
-## Performance Tips
+## 🚀 Performance Tips
 
 - Keep state updates small and frequent (10-30 Hz)
 - Use delta compression for state updates
@@ -198,7 +210,7 @@ When the current host leaves, the system automatically migrates host responsibil
 - Buffer and interpolate on clients
 - Implement client-side prediction for responsiveness
 
-## Demo Application
+## 🎮 Demo Application
 
 See `/demo/room-demo.html` for a complete working example with:
 - Room creation and joining
@@ -207,7 +219,7 @@ See `/demo/room-demo.html` for a complete working example with:
 - Host authority game state
 - Responsive controls
 
-## Building WASM Games
+## 🔨 Building WASM Games
 
 To compile your C++ game to WASM:
 
@@ -222,7 +234,9 @@ emcc game.cpp -O3 \
   -o game.wasm
 ```
 
-## Browser Compatibility
+## 🌐 Browser Compatibility
+
+### ✅ Supported Browsers
 
 - Requires WebRTC support
 - Works in all modern browsers
