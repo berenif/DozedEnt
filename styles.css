@@ -386,6 +386,67 @@ body {
     text-align: center;
 }
 
+/* Mobile joystick */
+#joystick {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    z-index: 20;
+}
+
+#joystick[hidden] {
+    display: none;
+}
+
+#joystick-base {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    touch-action: none;
+}
+
+#joystick-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: none;
+}
+
+@media (max-width: 768px) {
+    #joystick-base {
+        width: 120px;
+        height: 120px;
+    }
+    #joystick-knob {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+@media (max-width: 480px) {
+    #joystick {
+        left: 12px;
+        bottom: 12px;
+    }
+    #joystick-base {
+        width: 100px;
+        height: 100px;
+    }
+    #joystick-knob {
+        width: 48px;
+        height: 48px;
+    }
+}
+
 /* Minimap */
 .minimap {
     position: absolute;

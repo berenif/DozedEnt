@@ -114,6 +114,129 @@ class MobileGameControls {
                 this.handleItem(btn.dataset.item);
             });
         });
+
+        // Setup joystick
+        this.setupJoystick();
+    }
+
+    setupJoystick() {
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        
+        if (!joystickBase || !joystickKnob) return;
+
+        let isJoystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+        let currentDirection = null;
+
+        const getJoystickCenter = () => {
+            const rect = joystickBase.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        };
+
+        const handleJoystickMove = (clientX, clientY) => {
+            if (!isJoystickActive) return;
+
+            const center = getJoystickCenter();
+            const dx = clientX - center.x;
+            const dy = clientY - center.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = joystickBase.offsetWidth / 2 - joystickKnob.offsetWidth / 2;
+
+            let knobX = dx;
+            let knobY = dy;
+
+            if (distance > maxDistance) {
+                const angle = Math.atan2(dy, dx);
+                knobX = Math.cos(angle) * maxDistance;
+                knobY = Math.sin(angle) * maxDistance;
+            }
+
+            joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+            // Determine direction
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            let newDirection = null;
+
+            if (distance > 20) {
+                if (angle > -45 && angle <= 45) {
+                    newDirection = 'right';
+                } else if (angle > 45 && angle <= 135) {
+                    newDirection = 'down';
+                } else if (angle > -135 && angle <= -45) {
+                    newDirection = 'up';
+                } else {
+                    newDirection = 'left';
+                }
+            }
+
+            if (newDirection !== currentDirection) {
+                if (currentDirection) {
+                    this.handleDirectionRelease(currentDirection);
+                }
+                if (newDirection) {
+                    this.handleDirectionPress(newDirection);
+                }
+                currentDirection = newDirection;
+            }
+        };
+
+        const resetJoystick = () => {
+            isJoystickActive = false;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            if (currentDirection) {
+                this.handleDirectionRelease(currentDirection);
+                currentDirection = null;
+            }
+        };
+
+        // Touch events
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isJoystickActive = true;
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        });
+
+        joystickBase.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        });
+
+        joystickBase.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            resetJoystick();
+        });
+
+        joystickBase.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            resetJoystick();
+        });
+
+        // Mouse events for testing
+        joystickBase.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isJoystickActive = true;
+            handleJoystickMove(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isJoystickActive) {
+                e.preventDefault();
+                handleJoystickMove(e.clientX, e.clientY);
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (isJoystickActive) {
+                e.preventDefault();
+                resetJoystick();
+            }
+        });
     }
 
     setupTouchHandlers() {
@@ -168,13 +291,13 @@ class MobileGameControls {
                 this.performAttack();
                 this.setCooldown(action, 500);
                 break;
-            case 'jump':
-                this.performJump();
-                this.setCooldown(action, 1000);
+            case 'roll':
+                this.performRoll();
+                this.setCooldown(action, 1500);
                 break;
-            case 'dodge':
-                this.performDodge();
-                this.setCooldown(action, 2000);
+            case 'block':
+                this.performBlock();
+                this.setCooldown(action, 1000);
                 break;
         }
     }
@@ -225,17 +348,22 @@ class MobileGameControls {
         this.updateScore(10);
     }
 
-    performJump() {
-        this.createVisualEffect('jump');
-    }
-
-    performDodge() {
-        this.createVisualEffect('dodge');
-        // Add invulnerability frames
+    performRoll() {
+        this.createVisualEffect('roll');
+        // Add invulnerability frames during roll
         this.gameState.invulnerable = true;
         setTimeout(() => {
             this.gameState.invulnerable = false;
-        }, 500);
+        }, 800);
+    }
+
+    performBlock() {
+        this.createVisualEffect('block');
+        // Add damage reduction while blocking
+        this.gameState.blocking = true;
+        setTimeout(() => {
+            this.gameState.blocking = false;
+        }, 1000);
     }
 
     activateSkill(skill) {
@@ -386,11 +514,11 @@ class MobileGameControls {
             case 'attack':
                 this.drawAttackEffect(x, y);
                 break;
-            case 'jump':
-                this.drawJumpEffect(x, y);
+            case 'roll':
+                this.drawRollEffect(x, y);
                 break;
-            case 'dodge':
-                this.drawDodgeEffect(x, y);
+            case 'block':
+                this.drawBlockEffect(x, y);
                 break;
             default:
                 if (type.startsWith('skill-')) {
@@ -413,31 +541,52 @@ class MobileGameControls {
         }, 200);
     }
 
-    drawJumpEffect(x, y) {
-        this.ctx.fillStyle = 'rgba(100, 255, 100, 0.3)';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, 20, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        setTimeout(() => {
-            this.ctx.clearRect(x - 25, y - 25, 50, 50);
-        }, 300);
-    }
-
-    drawDodgeEffect(x, y) {
-        this.ctx.strokeStyle = 'rgba(100, 100, 255, 0.5)';
+    drawRollEffect(x, y) {
+        // Spinning roll effect
+        this.ctx.strokeStyle = 'rgba(150, 150, 255, 0.6)';
         this.ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             setTimeout(() => {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate((Math.PI / 2) * i);
                 this.ctx.beginPath();
-                this.ctx.arc(x - i * 10, y, 15, 0, Math.PI * 2);
+                this.ctx.arc(0, 0, 25, 0, Math.PI);
                 this.ctx.stroke();
-            }, i * 50);
+                this.ctx.restore();
+            }, i * 100);
         }
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 50, y - 20, 100, 40);
-        }, 400);
+            this.ctx.clearRect(x - 30, y - 30, 60, 60);
+        }, 500);
+    }
+
+    drawBlockEffect(x, y) {
+        // Shield/barrier effect
+        this.ctx.strokeStyle = '#4488ff';
+        this.ctx.fillStyle = 'rgba(68, 136, 255, 0.2)';
+        this.ctx.lineWidth = 3;
+        
+        // Draw hexagonal shield
+        this.ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const px = x + Math.cos(angle) * 35;
+            const py = y + Math.sin(angle) * 35;
+            if (i === 0) {
+                this.ctx.moveTo(px, py);
+            } else {
+                this.ctx.lineTo(px, py);
+            }
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        setTimeout(() => {
+            this.ctx.clearRect(x - 40, y - 40, 80, 80);
+        }, 600);
     }
 
     drawSkillEffect(x, y, skill) {
