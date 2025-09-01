@@ -56,7 +56,6 @@
   "scripts": {
     "build": "rollup -c",
     "build:docs": "npm run build && cp -r dist docs/ && cp index.html styles.css controls.js docs/",
-    "deploy:index": "mkdir -p docs && cp index.html docs/",
     "wasm:build": "em++ wasm/game.cpp -O3 -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o docs/game.wasm",
     "get-bundle-sizes": "node scripts/get-bundle-sizes.js",
     "test": "playwright test ./test",
