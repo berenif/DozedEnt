@@ -1,4 +1,7 @@
 import {joinRoom, selfId} from './dist/trystero-mqtt.min.js'  // MQTT strategy - using local bundle
+import GameRenderer from '../src/game-renderer.js'
+import CameraEffects from '../src/camera-effects.js'
+
 // WASM helpers (browser bundle)
 let wasmExports = null
 let runSeed = 0n
@@ -48,6 +51,25 @@ try {
 
 const byId = document.getElementById.bind(document)
 const canvas = byId('canvas')
+const gameCanvas = byId('gameCanvas')
+
+// Initialize game renderer and camera effects
+let gameRenderer = null
+let cameraEffects = null
+
+// Setup game canvas and renderers
+if (gameCanvas) {
+  const ctx = gameCanvas.getContext('2d')
+  gameCanvas.width = 1280
+  gameCanvas.height = 720
+  
+  gameRenderer = new GameRenderer(ctx, gameCanvas)
+  cameraEffects = new CameraEffects(gameCanvas)
+  
+  // Make globally accessible for debugging
+  window.gameRenderer = gameRenderer
+  window.cameraEffects = cameraEffects
+}
 
 // Wolf Vocalization Audio System
 const VocalizationType = {
@@ -1378,6 +1400,18 @@ function tryStartRoll() {
   rollDirY = moveY / len
   faceDirX = rollDirX
   faceDirY = rollDirY
+  
+  // Use GameRenderer roll if available
+  if (gameRenderer) {
+    const rollAngle = Math.atan2(rollDirY, rollDirX)
+    if (gameRenderer.performRoll(rollAngle)) {
+      // Trigger camera effects
+      if (cameraEffects) {
+        cameraEffects.rollDodge()
+      }
+    }
+  }
+  
   isRolling = true
   rollTimeLeft = ROLL_DURATION
   rollCooldownLeft = ROLL_COOLDOWN
@@ -1409,6 +1443,62 @@ function gameLoop(ts) {
   }
 
   updateFromKeyboard()
+  
+  // If GameRenderer is available, use it for enhanced rendering
+  if (gameRenderer && cameraEffects) {
+    // Update camera effects
+    cameraEffects.update(dt)
+    
+    // Prepare input for GameRenderer
+    const gameInput = {
+      left: keyboardInputX < 0 || inputX < 0,
+      right: keyboardInputX > 0 || inputX > 0,
+      up: keyboardInputY < 0 || inputY < 0,
+      down: keyboardInputY > 0 || inputY > 0,
+      sprint: false, // Can be mapped to a key later
+      jump: false
+    }
+    
+    // Update GameRenderer's player
+    gameRenderer.updatePlayer(dt, gameInput)
+    
+    // Sync position from WASM to GameRenderer
+    if (typeof wasmExports.get_x === 'function' && typeof wasmExports.get_y === 'function') {
+      const wasmX = wasmExports.get_x()
+      const wasmY = wasmExports.get_y()
+      gameRenderer.setPlayerPositionFromWasm(wasmX, wasmY)
+      
+      // Also sync enemies from WASM if available
+      if (typeof wasmExports.get_enemy_count === 'function') {
+        const enemyCount = wasmExports.get_enemy_count()
+        gameRenderer.enemies = [] // Clear existing enemies
+        
+        for (let i = 0; i < enemyCount && i < 50; i++) {
+          if (typeof wasmExports.get_enemy_x === 'function' && 
+              typeof wasmExports.get_enemy_y === 'function') {
+            const enemyWasmX = wasmExports.get_enemy_x(i)
+            const enemyWasmY = wasmExports.get_enemy_y(i)
+            const worldPos = gameRenderer.wasmToWorld(enemyWasmX, enemyWasmY)
+            
+            // Add enemy to GameRenderer
+            gameRenderer.enemies.push({
+              x: worldPos.x,
+              y: worldPos.y,
+              width: 40,
+              height: 56,
+              velocityX: 0,
+              velocityY: 0,
+              health: 50,
+              maxHealth: 50,
+              state: 'idle',
+              type: 'wolf',
+              color: '#8b4513'
+            })
+          }
+        }
+      }
+    }
+  }
 
   // joystick input already updates inputX/inputY
   // Debug: Log joystick input occasionally
@@ -1528,20 +1618,44 @@ function gameLoop(ts) {
   // render self and send throttled movement updates
   ensureSelfEl()
   setElPos(selfEl, posX, posY)
-  // Update camera to follow player
-  updateCamera()
+  
+  // Use GameRenderer for enhanced rendering if available
+  if (gameRenderer && cameraEffects) {
+    // Clear and render with GameRenderer
+    const ctx = gameCanvas.getContext('2d')
+    
+    // Pre-render camera effects
+    cameraEffects.preRender(ctx)
+    
+    // Render game world with GameRenderer
+    gameRenderer.render(true) // true = follow player
+    
+    // Render enemies and obstacles from GameRenderer
+    gameRenderer.updateEnemies(dt)
+    gameRenderer.updateProjectiles(dt)
+    gameRenderer.checkCollisions()
+    
+    // Post-render camera effects
+    cameraEffects.postRender(ctx)
+    
+    // Apply camera shake if needed
+    if (screenShakeIntensity > 0) {
+      cameraEffects.shake(screenShakeIntensity * 0.5, 0.9)
+    }
+  } else {
+    // Fallback to original rendering
+    updateCamera()
+    renderEnemies()
+    renderObstacles()
+    applyScreenShake(performance.now())
+  }
+  
   // Update minimap
   updateMinimap()
   // keep shield oriented and offset in front
   updateShieldVisual()
-  // render enemies from WASM snapshot
-  renderEnemies()
-  // render obstacles from WASM snapshot
-  renderObstacles()
   // update debug HUD (optional exports)
   updateDebugHud()
-  // apply screen shake late in frame for current transform
-  applyScreenShake(performance.now())
   const timeSinceSend = (performance.now() - lastMoveSendTs)
   const movedEnough = Math.hypot(posX - lastSentX, posY - lastSentY) > 0.002
   if (room && sendMove && (timeSinceSend > 50) && movedEnough) {
@@ -1749,6 +1863,17 @@ function performAttack() {
     const ok = wasmExports.on_attack()
     if (ok === 0) return
   }
+  
+  // Use GameRenderer attack if available
+  if (gameRenderer) {
+    if (gameRenderer.performAttack()) {
+      // Trigger camera effects for attack
+      if (cameraEffects) {
+        cameraEffects.smallImpact()
+      }
+    }
+  }
+  
   ensureSelfEl()
   flashClass(selfEl, 'attacking', 200)
   const sword = document.createElement('div')

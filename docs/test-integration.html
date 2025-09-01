@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Test - Camera & Movement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .test-container {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            border: 2px solid #333;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: crisp-edges;
+        }
+        
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            min-width: 250px;
+        }
+        
+        .info-panel h3 {
+            color: #4a90e2;
+            margin-bottom: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .info-label {
+            color: #94a3b8;
+        }
+        
+        .info-value {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        
+        .controls-info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 30px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-indicator.success {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .status-indicator.error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status-indicator.loading {
+            background: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div class="info-panel">
+        <h3>System Status</h3>
+        <div class="info-row">
+            <span class="info-label">GameRenderer:</span>
+            <span class="info-value" id="rendererStatus">Not Loaded</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">CameraEffects:</span>
+            <span class="info-value" id="cameraStatus">Not Loaded</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Player Position:</span>
+            <span class="info-value" id="playerPos">0, 0</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Camera Position:</span>
+            <span class="info-value" id="cameraPos">0, 0</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">World Size:</span>
+            <span class="info-value" id="worldSize">0 x 0</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">FPS:</span>
+            <span class="info-value" id="fps">0</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Player State:</span>
+            <span class="info-value" id="playerState">idle</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Velocity:</span>
+            <span class="info-value" id="velocity">0, 0</span>
+        </div>
+    </div>
+    
+    <div class="controls-info">
+        <div class="control-item">
+            <span class="key">WASD</span>
+            <span>Move</span>
+        </div>
+        <div class="control-item">
+            <span class="key">Shift</span>
+            <span>Sprint</span>
+        </div>
+        <div class="control-item">
+            <span class="key">Space</span>
+            <span>Roll</span>
+        </div>
+        <div class="control-item">
+            <span class="key">Click</span>
+            <span>Attack</span>
+        </div>
+        <div class="control-item">
+            <span class="key">Right Click</span>
+            <span>Block</span>
+        </div>
+    </div>
+    
+    <div class="status-indicator loading" id="statusIndicator">
+        Loading Systems...
+    </div>
+    
+    <script type="module">
+        // Import the game systems
+        import GameRenderer from '../src/game-renderer.js'
+        import CameraEffects from '../src/camera-effects.js'
+        
+        let gameRenderer = null
+        let cameraEffects = null
+        let systemsReady = false
+        
+        // Performance tracking
+        let lastTime = performance.now()
+        let frameCount = 0
+        let fpsTime = 0
+        let currentFPS = 0
+        
+        // Input state
+        const keys = {}
+        const mouse = { x: 0, y: 0 }
+        
+        // Initialize systems
+        async function initSystems() {
+            try {
+                const canvas = document.getElementById('gameCanvas')
+                const ctx = canvas.getContext('2d')
+                
+                // Set canvas size
+                canvas.width = 1280
+                canvas.height = 720
+                
+                // Initialize GameRenderer
+                gameRenderer = new GameRenderer(ctx, canvas)
+                document.getElementById('rendererStatus').textContent = 'Loaded'
+                document.getElementById('rendererStatus').style.color = '#22c55e'
+                
+                // Initialize CameraEffects
+                cameraEffects = new CameraEffects(canvas)
+                document.getElementById('cameraStatus').textContent = 'Loaded'
+                document.getElementById('cameraStatus').style.color = '#22c55e'
+                
+                // Update world size display
+                document.getElementById('worldSize').textContent = 
+                    `${gameRenderer.world.width} x ${gameRenderer.world.height}`
+                
+                // Make globally accessible for debugging
+                window.gameRenderer = gameRenderer
+                window.cameraEffects = cameraEffects
+                
+                systemsReady = true
+                
+                // Update status indicator
+                const indicator = document.getElementById('statusIndicator')
+                indicator.textContent = 'Systems Ready!'
+                indicator.className = 'status-indicator success'
+                
+                setTimeout(() => {
+                    indicator.style.display = 'none'
+                }, 3000)
+                
+                // Spawn some test enemies
+                for (let i = 0; i < 5; i++) {
+                    gameRenderer.enemies.push({
+                        x: 1000 + Math.random() * 1000,
+                        y: 500 + Math.random() * 1000,
+                        width: 40,
+                        height: 56,
+                        velocityX: 0,
+                        velocityY: 0,
+                        health: 50,
+                        maxHealth: 50,
+                        state: 'idle',
+                        type: 'wolf',
+                        color: '#8b4513',
+                        facing: -1,
+                        isGrounded: true,
+                        ai: {
+                            patrolStart: 1000,
+                            patrolEnd: 2000,
+                            patrolDirection: 1
+                        },
+                        alertRadius: 200,
+                        attackRadius: 60,
+                        speed: 150,
+                        damage: 10,
+                        lastAttackTime: 0,
+                        attackCooldown: 1000,
+                        animationFrame: 0,
+                        animationTime: 0,
+                        isAlerted: false
+                    })
+                }
+                
+                console.log('✅ All systems initialized successfully')
+                console.log('GameRenderer:', gameRenderer)
+                console.log('CameraEffects:', cameraEffects)
+                
+                return true
+            } catch (error) {
+                console.error('Failed to initialize systems:', error)
+                
+                const indicator = document.getElementById('statusIndicator')
+                indicator.textContent = 'Error: ' + error.message
+                indicator.className = 'status-indicator error'
+                
+                document.getElementById('rendererStatus').textContent = 'Error'
+                document.getElementById('rendererStatus').style.color = '#ef4444'
+                
+                return false
+            }
+        }
+        
+        // Setup input handlers
+        function setupInput() {
+            window.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true
+                
+                // Handle special actions
+                if (e.key === ' ' && gameRenderer) {
+                    const angle = Math.atan2(
+                        gameRenderer.player.velocityY,
+                        gameRenderer.player.velocityX
+                    ) || 0
+                    
+                    if (gameRenderer.performRoll(angle)) {
+                        cameraEffects.rollDodge()
+                    }
+                }
+            })
+            
+            window.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false
+            })
+            
+            const canvas = document.getElementById('gameCanvas')
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect()
+                mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width)
+                mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height)
+            })
+            
+            canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault()
+                if (!gameRenderer) return
+                
+                if (e.button === 0) {
+                    // Left click - Attack
+                    if (gameRenderer.performAttack()) {
+                        cameraEffects.smallImpact()
+                    }
+                } else if (e.button === 2) {
+                    // Right click - Block
+                    gameRenderer.performBlock(true)
+                    cameraEffects.blockSuccess()
+                }
+            })
+            
+            canvas.addEventListener('mouseup', (e) => {
+                if (!gameRenderer) return
+                
+                if (e.button === 2) {
+                    gameRenderer.performBlock(false)
+                }
+            })
+            
+            canvas.addEventListener('contextmenu', (e) => {
+                e.preventDefault()
+            })
+        }
+        
+        // Update info display
+        function updateInfo() {
+            if (!gameRenderer) return
+            
+            const playerPos = gameRenderer.getPlayerPosition()
+            document.getElementById('playerPos').textContent = 
+                `${Math.round(playerPos.x)}, ${Math.round(playerPos.y)}`
+            
+            const cameraPos = gameRenderer.getCameraPosition()
+            document.getElementById('cameraPos').textContent = 
+                `${Math.round(cameraPos.x)}, ${Math.round(cameraPos.y)}`
+            
+            document.getElementById('fps').textContent = currentFPS
+            
+            document.getElementById('playerState').textContent = gameRenderer.player.state
+            
+            document.getElementById('velocity').textContent = 
+                `${Math.round(gameRenderer.player.velocityX)}, ${Math.round(gameRenderer.player.velocityY)}`
+        }
+        
+        // Game loop
+        function gameLoop(timestamp) {
+            if (!systemsReady) {
+                requestAnimationFrame(gameLoop)
+                return
+            }
+            
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1)
+            lastTime = timestamp
+            
+            // Update FPS
+            frameCount++
+            fpsTime += deltaTime
+            if (fpsTime >= 1) {
+                currentFPS = frameCount
+                frameCount = 0
+                fpsTime = 0
+            }
+            
+            // Prepare input
+            const input = {
+                left: keys['a'] || keys['arrowleft'],
+                right: keys['d'] || keys['arrowright'],
+                up: keys['w'] || keys['arrowup'],
+                down: keys['s'] || keys['arrowdown'],
+                sprint: keys['shift'],
+                jump: keys[' ']
+            }
+            
+            // Update game systems
+            gameRenderer.updatePlayer(deltaTime, input)
+            gameRenderer.updateEnemies(deltaTime)
+            gameRenderer.updateProjectiles(deltaTime)
+            gameRenderer.checkCollisions()
+            
+            // Update camera effects
+            cameraEffects.update(deltaTime)
+            
+            // Render
+            const ctx = gameRenderer.ctx
+            
+            // Pre-render camera effects
+            cameraEffects.preRender(ctx)
+            
+            // Render game world
+            gameRenderer.render(true) // Follow player
+            
+            // Post-render camera effects
+            cameraEffects.postRender(ctx)
+            
+            // Update info display
+            updateInfo()
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        // Initialize and start
+        async function start() {
+            console.log('Starting integration test...')
+            
+            setupInput()
+            
+            if (await initSystems()) {
+                console.log('Starting game loop...')
+                requestAnimationFrame(gameLoop)
+            }
+        }
+        
+        // Start when page loads
+        start()
+    </script>
+</body>
+</html>

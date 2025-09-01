@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Camera and Movement Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: monospace;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #333;
+        }
+        
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 1px solid #444;
+            z-index: 1000;
+        }
+        
+        .info h3 {
+            color: #4a90e2;
+            margin-bottom: 10px;
+        }
+        
+        .info p {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 1px solid #444;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>Camera & Movement Test</h3>
+        <p>Player Position: <span id="playerPos">0, 0</span></p>
+        <p>Player Velocity: <span id="playerVel">0, 0</span></p>
+        <p>Camera Position: <span id="cameraPos">0, 0</span></p>
+        <p>World Size: <span id="worldSize">0 x 0</span></p>
+        <p>FPS: <span id="fps">0</span></p>
+        <p>State: <span id="state">idle</span></p>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="controls">
+        <div class="control-group">
+            <span class="key">WASD</span>
+            <span>Move</span>
+        </div>
+        <div class="control-group">
+            <span class="key">Shift</span>
+            <span>Sprint</span>
+        </div>
+        <div class="control-group">
+            <span class="key">Space</span>
+            <span>Roll</span>
+        </div>
+        <div class="control-group">
+            <span class="key">Click</span>
+            <span>Attack</span>
+        </div>
+        <div class="control-group">
+            <span class="key">Right Click</span>
+            <span>Block</span>
+        </div>
+    </div>
+    
+    <script type="module">
+        import GameRenderer from './src/game-renderer.js'
+        import CameraEffects from './src/camera-effects.js'
+        
+        // Setup canvas
+        const canvas = document.getElementById('gameCanvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Set canvas size
+        canvas.width = 1280
+        canvas.height = 720
+        
+        // Initialize systems
+        const gameRenderer = new GameRenderer(ctx, canvas)
+        const cameraEffects = new CameraEffects(canvas)
+        
+        // Input state
+        const keys = {}
+        const mouse = { x: 0, y: 0, left: false, right: false }
+        
+        // Performance tracking
+        let lastTime = performance.now()
+        let frameCount = 0
+        let fpsTime = 0
+        let currentFPS = 0
+        
+        // Setup input handlers
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true
+            
+            // Handle special actions
+            if (e.key === ' ' && !keys[' ']) {
+                const angle = Math.atan2(
+                    gameRenderer.player.velocityY,
+                    gameRenderer.player.velocityX
+                ) || gameRenderer.player.facing * Math.PI / 2
+                
+                if (gameRenderer.performRoll(angle)) {
+                    cameraEffects.rollDodge()
+                }
+            }
+        })
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false
+        })
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect()
+            mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width)
+            mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height)
+        })
+        
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+            if (e.button === 0) {
+                mouse.left = true
+                if (gameRenderer.performAttack()) {
+                    cameraEffects.smallImpact()
+                }
+            } else if (e.button === 2) {
+                mouse.right = true
+                gameRenderer.performBlock(true)
+                cameraEffects.blockSuccess()
+            }
+        })
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                mouse.left = false
+            } else if (e.button === 2) {
+                mouse.right = false
+                gameRenderer.performBlock(false)
+            }
+        })
+        
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault()
+        })
+        
+        // Update UI info
+        function updateInfo() {
+            const playerPos = gameRenderer.getPlayerPosition()
+            document.getElementById('playerPos').textContent = 
+                `${Math.round(playerPos.x)}, ${Math.round(playerPos.y)}`
+            
+            document.getElementById('playerVel').textContent = 
+                `${Math.round(gameRenderer.player.velocityX)}, ${Math.round(gameRenderer.player.velocityY)}`
+            
+            const cameraPos = gameRenderer.getCameraPosition()
+            document.getElementById('cameraPos').textContent = 
+                `${Math.round(cameraPos.x)}, ${Math.round(cameraPos.y)}`
+            
+            document.getElementById('worldSize').textContent = 
+                `${gameRenderer.world.width} x ${gameRenderer.world.height}`
+            
+            document.getElementById('fps').textContent = currentFPS
+            
+            document.getElementById('state').textContent = gameRenderer.player.state
+        }
+        
+        // Game loop
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1)
+            lastTime = timestamp
+            
+            // Update FPS
+            frameCount++
+            fpsTime += deltaTime
+            if (fpsTime >= 1) {
+                currentFPS = frameCount
+                frameCount = 0
+                fpsTime = 0
+            }
+            
+            // Prepare input
+            const input = {
+                left: keys['a'] || keys['arrowleft'],
+                right: keys['d'] || keys['arrowright'],
+                up: keys['w'] || keys['arrowup'],
+                down: keys['s'] || keys['arrowdown'],
+                sprint: keys['shift'],
+                jump: keys[' ']
+            }
+            
+            // Update game
+            gameRenderer.updatePlayer(deltaTime, input)
+            gameRenderer.updateEnemies(deltaTime)
+            gameRenderer.updateProjectiles(deltaTime)
+            gameRenderer.checkCollisions()
+            
+            // Update camera effects
+            cameraEffects.update(deltaTime)
+            
+            // Render
+            cameraEffects.preRender(ctx)
+            gameRenderer.render(true) // Follow player
+            cameraEffects.postRender(ctx)
+            
+            // Update UI
+            updateInfo()
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        // Start game loop
+        requestAnimationFrame(gameLoop)
+        
+        // Initial spawn some enemies for testing
+        for (let i = 0; i < 5; i++) {
+            const enemy = {
+                x: Math.random() * gameRenderer.world.width,
+                y: Math.random() * gameRenderer.world.height,
+                health: 50,
+                maxHealth: 50,
+                type: 'wolf'
+            }
+            gameRenderer.enemies.push(enemy)
+        }
+        
+        console.log('Game initialized!')
+        console.log('World size:', gameRenderer.world.width, 'x', gameRenderer.world.height)
+        console.log('Player starting position:', gameRenderer.getPlayerPosition())
+    </script>
+</body>
+</html>
