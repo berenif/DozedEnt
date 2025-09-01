@@ -600,6 +600,43 @@ body {
 .enemy.harass { box-shadow: 0 0 12px rgba(255, 82, 82, 0.9); }
 .enemy.recover { box-shadow: 0 0 12px rgba(64, 224, 255, 0.8); filter: saturate(0.85); }
 
+/* Obstacles (static collision objects) */
+.obstacle {
+  position: absolute;
+  background: radial-gradient(circle, #4a4a4a, #2a2a2a);
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    0 0 20px rgba(0, 0, 0, 0.3);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Add a subtle rock/stone texture effect */
+.obstacle::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 30%;
+  height: 30%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1), transparent);
+  border-radius: 50%;
+}
+
+.obstacle::after {
+  content: '';
+  position: absolute;
+  bottom: 20%;
+  right: 20%;
+  width: 20%;
+  height: 20%;
+  background: radial-gradient(circle, rgba(0,0,0,0.3), transparent);
+  border-radius: 50%;
+}
+
 /* Sword (attack) */
 .player .sword {
   position: absolute;

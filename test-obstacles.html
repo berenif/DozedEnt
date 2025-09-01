@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obstacle Rendering Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+        }
+        #status {
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 2px solid #444;
+            background: #2a2a3e;
+        }
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Obstacle Rendering Test</h1>
+    <div id="status">Loading WASM module...</div>
+    <canvas id="testCanvas" width="800" height="600"></canvas>
+    <div class="info" id="info"></div>
+
+    <script type="module">
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const infoEl = document.getElementById('info');
+
+        async function loadWasm() {
+            try {
+                const response = await fetch('./docs/game.wasm');
+                const bytes = await response.arrayBuffer();
+                
+                const importObject = {
+                    env: {
+                        memory: new WebAssembly.Memory({ initial: 256 }),
+                        __memory_base: 0,
+                        __table_base: 0,
+                        abort: () => console.error('abort called'),
+                        emscripten_resize_heap: () => 0,
+                        emscripten_memcpy_js: () => {},
+                        emscripten_random: () => Math.random(),
+                        emscripten_date_now: () => Date.now(),
+                        emscripten_get_now: () => performance.now(),
+                    },
+                    wasi_snapshot_preview1: {
+                        proc_exit: () => {},
+                        fd_close: () => 0,
+                        fd_write: () => 0,
+                        fd_seek: () => 0,
+                    }
+                };
+
+                const result = await WebAssembly.instantiate(bytes, importObject);
+                return result.instance.exports;
+            } catch (error) {
+                console.error('Failed to load WASM:', error);
+                statusEl.textContent = 'Failed to load WASM: ' + error.message;
+                return null;
+            }
+        }
+
+        async function init() {
+            const wasmExports = await loadWasm();
+            
+            if (!wasmExports) {
+                return;
+            }
+
+            statusEl.textContent = 'WASM loaded successfully!';
+
+            // Initialize the game
+            if (typeof wasmExports.start === 'function') {
+                wasmExports.start();
+            }
+            
+            // Initialize a run with a seed
+            if (typeof wasmExports.init_run === 'function') {
+                wasmExports.init_run(BigInt(12345), 0);
+            }
+
+            // Get obstacle information
+            let obstacleInfo = 'Obstacles:\n';
+            if (typeof wasmExports.get_obstacle_count === 'function') {
+                const obstacleCount = wasmExports.get_obstacle_count();
+                obstacleInfo += `Count: ${obstacleCount}\n\n`;
+
+                // Render obstacles
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw grid for reference
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 10; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * canvas.width / 10, 0);
+                    ctx.lineTo(i * canvas.width / 10, canvas.height);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * canvas.height / 10);
+                    ctx.lineTo(canvas.width, i * canvas.height / 10);
+                    ctx.stroke();
+                }
+
+                // Draw obstacles
+                ctx.fillStyle = '#666';
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+
+                for (let i = 0; i < obstacleCount; i++) {
+                    const x = wasmExports.get_obstacle_x(i) * canvas.width;
+                    const y = wasmExports.get_obstacle_y(i) * canvas.height;
+                    const r = wasmExports.get_obstacle_r(i) * canvas.width;
+                    
+                    obstacleInfo += `Obstacle ${i}: x=${(x/canvas.width).toFixed(3)}, y=${(y/canvas.height).toFixed(3)}, r=${(r/canvas.width).toFixed(3)}\n`;
+                    
+                    // Draw obstacle
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw obstacle number
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(i.toString(), x, y);
+                    ctx.fillStyle = '#666';
+                }
+
+                // Draw player starting positions for reference
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+                ctx.strokeStyle = 'green';
+                ctx.lineWidth = 2;
+                
+                // Player 1 start position (usually bottom-left)
+                ctx.beginPath();
+                ctx.arc(canvas.width * 0.1, canvas.height * 0.9, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = 'white';
+                ctx.fillText('P1', canvas.width * 0.1, canvas.height * 0.9);
+                
+                // Player 2 start position (usually top-right)
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+                ctx.strokeStyle = 'blue';
+                ctx.beginPath();
+                ctx.arc(canvas.width * 0.9, canvas.height * 0.1, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = 'white';
+                ctx.fillText('P2', canvas.width * 0.9, canvas.height * 0.1);
+
+            } else {
+                obstacleInfo += 'get_obstacle_count function not found in WASM exports';
+            }
+
+            infoEl.textContent = obstacleInfo;
+        }
+
+        init();
+    </script>
+</body>
+</html>
