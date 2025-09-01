@@ -48,6 +48,310 @@ try {
 
 const byId = document.getElementById.bind(document)
 const canvas = byId('canvas')
+
+// Wolf Vocalization Audio System
+const VocalizationType = {
+  None: 0,
+  Howl: 1,
+  Growl: 2,
+  Bark: 3,
+  Whine: 4,
+  Snarl: 5
+}
+
+// Audio context for web audio API
+let audioContext = null
+const wolfSounds = {}
+
+// Initialize audio context on first user interaction
+function initAudioContext() {
+  if (audioContext) return
+  audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  
+  // Create synthesized wolf sounds using Web Audio API
+  createWolfSounds()
+}
+
+// Create synthesized wolf vocalizations
+function createWolfSounds() {
+  // Helper to create a basic wolf sound
+  function createSound(frequencies, durations, gains) {
+    return () => {
+      const now = audioContext.currentTime
+      const gainNode = audioContext.createGain()
+      gainNode.connect(audioContext.destination)
+      
+      let totalDuration = 0
+      frequencies.forEach((freq, i) => {
+        const osc = audioContext.createOscillator()
+        const oscGain = audioContext.createGain()
+        
+        osc.type = 'sawtooth'
+        osc.frequency.setValueAtTime(freq, now + totalDuration)
+        
+        // Add some vibrato for realism
+        const vibrato = audioContext.createOscillator()
+        vibrato.frequency.value = 5 + Math.random() * 3
+        const vibratoGain = audioContext.createGain()
+        vibratoGain.gain.value = freq * 0.02
+        vibrato.connect(vibratoGain)
+        vibratoGain.connect(osc.frequency)
+        
+        oscGain.gain.setValueAtTime(0, now + totalDuration)
+        oscGain.gain.linearRampToValueAtTime(gains[i], now + totalDuration + 0.05)
+        oscGain.gain.linearRampToValueAtTime(0, now + totalDuration + durations[i])
+        
+        osc.connect(oscGain)
+        oscGain.connect(gainNode)
+        
+        osc.start(now + totalDuration)
+        osc.stop(now + totalDuration + durations[i])
+        vibrato.start(now + totalDuration)
+        vibrato.stop(now + totalDuration + durations[i])
+        
+        totalDuration += durations[i] * 0.8 // Slight overlap
+      })
+      
+      // Master envelope
+      gainNode.gain.setValueAtTime(0, now)
+      gainNode.gain.linearRampToValueAtTime(0.3, now + 0.1)
+      gainNode.gain.linearRampToValueAtTime(0.3, now + totalDuration - 0.2)
+      gainNode.gain.linearRampToValueAtTime(0, now + totalDuration)
+    }
+  }
+  
+  // Define sound parameters for each vocalization type
+  wolfSounds[VocalizationType.Howl] = createSound(
+    [150, 200, 250, 300, 280, 250, 200, 150], // Rising and falling pitch
+    [0.3, 0.3, 0.4, 0.5, 0.4, 0.3, 0.3, 0.3],
+    [0.2, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.2]
+  )
+  
+  wolfSounds[VocalizationType.Growl] = createSound(
+    [80, 75, 70, 75, 80], // Low rumbling
+    [0.2, 0.2, 0.3, 0.2, 0.2],
+    [0.4, 0.5, 0.6, 0.5, 0.4]
+  )
+  
+  wolfSounds[VocalizationType.Bark] = createSound(
+    [200, 300, 250], // Sharp burst
+    [0.1, 0.05, 0.1],
+    [0.6, 0.8, 0.4]
+  )
+  
+  wolfSounds[VocalizationType.Whine] = createSound(
+    [300, 350, 400, 350, 300], // High pitched, plaintive
+    [0.2, 0.2, 0.3, 0.2, 0.2],
+    [0.3, 0.4, 0.5, 0.4, 0.3]
+  )
+  
+  wolfSounds[VocalizationType.Snarl] = createSound(
+    [100, 120, 150, 120, 100], // Aggressive, rising
+    [0.15, 0.1, 0.2, 0.1, 0.15],
+    [0.5, 0.6, 0.7, 0.6, 0.5]
+  )
+}
+
+// Play a wolf vocalization
+function playWolfSound(type, x, y) {
+  if (!audioContext) return
+  if (!wolfSounds[type]) return
+  
+  // Calculate volume based on distance from player
+  const dx = x - (selfX || 0.5)
+  const dy = y - (selfY || 0.5)
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  const maxDistance = 0.5 // Maximum hearing distance
+  
+  if (distance > maxDistance) return
+  
+  // Volume falls off with distance
+  const volume = Math.max(0, 1 - (distance / maxDistance))
+  
+  // Play the sound
+  try {
+    wolfSounds[type]()
+    
+    // Create panning effect based on position
+    if (audioContext.listener && audioContext.listener.positionX) {
+      const panning = dx * 2 // -1 to 1 range
+      audioContext.listener.positionX.value = -panning
+    }
+  } catch (e) {
+    console.warn('Failed to play wolf sound:', e)
+  }
+}
+
+// Track active vocalizations to avoid duplicate sounds
+const activeVocalizations = new Map()
+
+// Visual indicators for vocalizations
+function addVocalizationVisual(el, type) {
+  // Remove any existing vocalization visual
+  const existing = el.querySelector('.vocalization')
+  if (existing) existing.remove()
+  
+  // Create new visual indicator
+  const visual = document.createElement('div')
+  visual.className = 'vocalization'
+  visual.style.cssText = `
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 100;
+  `
+  
+  // Create animated rings based on vocalization type
+  const ringCount = type === VocalizationType.Howl ? 3 : 2
+  const colors = {
+    [VocalizationType.Howl]: '#00ffff',
+    [VocalizationType.Growl]: '#ff6600',
+    [VocalizationType.Bark]: '#ffff00',
+    [VocalizationType.Whine]: '#9999ff',
+    [VocalizationType.Snarl]: '#ff0000'
+  }
+  const color = colors[type] || '#ffffff'
+  
+  for (let i = 0; i < ringCount; i++) {
+    const ring = document.createElement('div')
+    ring.style.cssText = `
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 2px solid ${color};
+      border-radius: 50%;
+      opacity: 0;
+      animation: vocalizationRing ${0.8 + i * 0.2}s ease-out ${i * 0.1}s;
+    `
+    visual.appendChild(ring)
+  }
+  
+  // Add icon based on type
+  const icon = document.createElement('div')
+  icon.style.cssText = `
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: ${color};
+    text-shadow: 0 0 10px ${color};
+    animation: vocalizationPulse 0.5s ease-in-out infinite;
+  `
+  
+  const icons = {
+    [VocalizationType.Howl]: '🌙',
+    [VocalizationType.Growl]: '⚡',
+    [VocalizationType.Bark]: '!',
+    [VocalizationType.Whine]: '💔',
+    [VocalizationType.Snarl]: '⚔️'
+  }
+  icon.textContent = icons[type] || '🔊'
+  visual.appendChild(icon)
+  
+  el.appendChild(visual)
+}
+
+function updateVocalizationVisual(el, progress) {
+  const visual = el.querySelector('.vocalization')
+  if (!visual) return
+  
+  // Fade out as vocalization ends
+  if (progress > 0.8) {
+    visual.style.opacity = 1 - ((progress - 0.8) / 0.2)
+  }
+  
+  // Remove when complete
+  if (progress >= 1) {
+    visual.remove()
+  }
+}
+
+// Add CSS animations for vocalizations
+const vocalizationStyles = document.createElement('style')
+vocalizationStyles.textContent = `
+  @keyframes vocalizationRing {
+    0% {
+      transform: scale(0.3);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes vocalizationPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+  }
+`
+document.head.appendChild(vocalizationStyles)
+
+// Add test panel for vocalizations
+function addVocalizationTestPanel() {
+  const testPanel = document.createElement('div')
+  testPanel.id = 'vocalization-test-panel'
+  testPanel.style.cssText = `
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 10000;
+    font-family: monospace;
+    color: #00ffff;
+  `
+  testPanel.innerHTML = `
+    <div style="margin-bottom: 5px; font-size: 12px;">🎵 Vocalization Test</div>
+    <button onclick="window.testVocalization(1)" style="margin: 2px; padding: 5px; background: #111; color: #0ff; border: 1px solid #0ff; cursor: pointer;">🌙 Howl</button>
+    <button onclick="window.testVocalization(2)" style="margin: 2px; padding: 5px; background: #111; color: #f60; border: 1px solid #f60; cursor: pointer;">⚡ Growl</button>
+    <button onclick="window.testVocalization(3)" style="margin: 2px; padding: 5px; background: #111; color: #ff0; border: 1px solid #ff0; cursor: pointer;">! Bark</button>
+    <button onclick="window.testVocalization(4)" style="margin: 2px; padding: 5px; background: #111; color: #99f; border: 1px solid #99f; cursor: pointer;">💔 Whine</button>
+    <button onclick="window.testVocalization(5)" style="margin: 2px; padding: 5px; background: #111; color: #f00; border: 1px solid #f00; cursor: pointer;">⚔️ Snarl</button>
+  `
+  document.body.appendChild(testPanel)
+}
+
+// Test vocalization function
+window.testVocalization = function(type) {
+  initAudioContext()
+  // Play at random position near player
+  const x = (selfX || 0.5) + (Math.random() - 0.5) * 0.3
+  const y = (selfY || 0.5) + (Math.random() - 0.5) * 0.3
+  playWolfSound(type, x, y)
+  
+  // Add visual indicator to a random enemy if any exist
+  if (enemyEls && enemyEls.length > 0) {
+    const validEnemies = enemyEls.filter(el => el && el.parentNode)
+    if (validEnemies.length > 0) {
+      const enemy = validEnemies[Math.floor(Math.random() * validEnemies.length)]
+      addVocalizationVisual(enemy, type)
+      setTimeout(() => {
+        const visual = enemy.querySelector('.vocalization')
+        if (visual) visual.remove()
+      }, 1000)
+    }
+  }
+}
+
+// Add test panel after page loads
+setTimeout(() => {
+  addVocalizationTestPanel()
+}, 1000)
+
 // Central wall (UI-only)
 const wallEl = document.createElement('div')
 wallEl.className = 'wall'
@@ -294,10 +598,57 @@ function renderEnemies() {
       shadow.style.setProperty('--shadow-opacity', moving ? '0.55' : '0.65')
     }
     // optional enemy role label
+    let role = 255 // Default to no role
     if (typeof wasmExports.get_enemy_role === 'function') {
-      const role = (wasmExports.get_enemy_role(i) | 0)
+      role = (wasmExports.get_enemy_role(i) | 0)
       const tag = ensureRoleTag(el)
       tag.textContent = enemyRoleLabel(role)
+    }
+    
+    // Process vocalizations - simulated triggers since WASM integration pending
+    const enemyKey = `enemy_${i}`
+    const lastState = el.dataset.lastVocalState || ''
+    const currentState = String(state)
+    
+    // Trigger vocalizations on state changes
+    if (currentState !== lastState) {
+      el.dataset.lastVocalState = currentState
+      
+      // Random chance to vocalize based on state
+      const rand = Math.random()
+      
+      if (state === 1 && rand < 0.15) { // Seek state - bark to alert pack
+        playWolfSound(VocalizationType.Bark, x, y)
+        addVocalizationVisual(el, VocalizationType.Bark)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 500)
+      } else if (state === 2 && rand < 0.1) { // Circle state - growl to intimidate
+        playWolfSound(VocalizationType.Growl, x, y)
+        addVocalizationVisual(el, VocalizationType.Growl)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 1000)
+      } else if (state === 3 && rand < 0.2) { // Harass state - snarl before attack
+        playWolfSound(VocalizationType.Snarl, x, y)
+        addVocalizationVisual(el, VocalizationType.Snarl)
+        setTimeout(() => {
+          const visual = el.querySelector('.vocalization')
+          if (visual) visual.remove()
+        }, 300)
+      }
+    }
+    
+    // Occasional howl from lead wolf
+    if (role === 0 && Math.random() < 0.0005) { // Lead role, very rare howl
+      playWolfSound(VocalizationType.Howl, x, y)
+      addVocalizationVisual(el, VocalizationType.Howl)
+      setTimeout(() => {
+        const visual = el.querySelector('.vocalization')
+        if (visual) visual.remove()
+      }, 2000)
     }
   }
   // remove excess DOM nodes
@@ -490,6 +841,8 @@ addEventListener('keydown', e => {
   const k = (e.key || '').toLowerCase()
   if (['w', 'a', 's', 'd', 'z', 'q', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright', 'shift', 'k', 'l', 'm'].includes(k)) {
     keyDown.add(k)
+    // Initialize audio context on first user interaction
+    initAudioContext()
     if (k === 'shift' || k === 'k') {
       // Try to start a roll in current movement direction
       tryStartRoll()
