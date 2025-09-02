@@ -20,10 +20,14 @@ export class WolfCharacter {
         this.size = this.getWolfSize()
         
         // Animation states
-        this.state = 'idle' // idle, prowling, running, lunging, attacking, howling, hurt
+        this.state = 'idle' // idle, prowling, running, lunging, attacking, howling, hurt, death, packRun
         this.animationFrame = 0
         this.animationTime = 0
         this.animationSpeed = 0.1
+        this.howlCooldown = 0
+        this.lastHowlTime = 0
+        this.packFormationOffset = { x: 0, y: 0 }
+        this.packFormationAngle = 0
         
         // Lunge attack properties
         this.lungeState = {
@@ -92,7 +96,7 @@ export class WolfCharacter {
         this.chestExpansion = 1
         this.bellyOffset = 0
         this.mouthVibration = 0
-        this.soundWavePhase = undefined
+        this.soundWavePhase = null
         this.soundWaveAmplitude = 0
         this.flinchOffset = 0
         this.bodyShake = 0
@@ -230,7 +234,7 @@ export class WolfCharacter {
             } else {
                 // Continue lunge movement
                 const progress = this.lungeState.lungeProgress / this.lungeState.lungeDuration
-                const easeOut = 1 - Math.pow(1 - progress, 3) // Cubic ease-out
+                const easeOut = 1 - (1 - progress)**3 // Cubic ease-out
                 
                 // Interpolate position
                 if (this.lungeState.startPosition && this.lungeState.targetPosition) {
@@ -296,7 +300,7 @@ export class WolfCharacter {
     }
     
     getDistanceTo(target) {
-        if (!target || !target.position) return Infinity
+        if (!target || !target.position) {return Infinity}
         const dx = this.position.x - target.position.x
         const dy = this.position.y - target.position.y
         return Math.sqrt(dx * dx + dy * dy)
@@ -597,7 +601,7 @@ export class WolfCharacter {
     }
     
     drawHealthBar(ctx) {
-        if (this.health >= this.maxHealth) return
+        if (this.health >= this.maxHealth) {return}
         
         ctx.save()
         ctx.scale(1 / this.size, 1 / this.size)
@@ -678,8 +682,50 @@ export class WolfCharacter {
         
         if (this.health <= 0) {
             this.health = 0
-            // Handle death
+            this.setState('death')
         }
+    }
+    
+    // Howl to call pack or buff allies
+    howl() {
+        const now = Date.now()
+        if (now - this.lastHowlTime > 10000) { // 10 second cooldown
+            this.setState('howling')
+            this.lastHowlTime = now
+            this.velocity.x = 0
+            this.velocity.y = 0
+            
+            // Return howl data for pack coordination
+            return {
+                position: { ...this.position },
+                type: this.type,
+                isAlpha: this.isAlpha,
+                packId: this.packId,
+                effect: this.isAlpha ? 'rally' : 'call'
+            }
+        }
+        return null
+    }
+    
+    // Update pack formation position
+    updatePackFormation(leaderPosition, formationIndex, totalPack) {
+        if (this.state !== 'packRun') {
+            this.setState('packRun')
+        }
+        
+        // Calculate formation offset based on index
+        const angle = (formationIndex / totalPack) * Math.PI * 2
+        const radius = 100 + (formationIndex % 2) * 50 // Stagger formation
+        
+        this.packFormationOffset.x = Math.cos(angle) * radius
+        this.packFormationOffset.y = Math.sin(angle) * radius * 0.5 // Elliptical formation
+        this.packFormationAngle = angle
+        
+        // Move towards formation position
+        const targetX = leaderPosition.x + this.packFormationOffset.x
+        const targetY = leaderPosition.y + this.packFormationOffset.y
+        
+        this.moveTowards({ x: targetX, y: targetY }, this.speed * 1.2)
     }
 }
 

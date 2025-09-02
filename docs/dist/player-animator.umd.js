@@ -1,12 +1,13 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('./animation-system.js'), require('./sound-system.js'), require('./particle-system.js')) :
-    typeof define === 'function' && define.amd ? define(['exports', './animation-system', './sound-system', './particle-system'], factory) :
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('./animation-system.js')) :
+    typeof define === 'function' && define.amd ? define(['exports', './animation-system'], factory) :
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.AnimatedPlayer = {}, global.animationSystem_js));
 })(this, (function (exports, animationSystem_js) { 'use strict';
 
     // Enhanced Player with Animation System Integration
     // Provides a complete player character with roll, attack, block, and hurt animations
 
+    // SoundSystem and ParticleSystem imports removed - not used in this file
 
     class AnimatedPlayer {
         constructor(x = 400, y = 300, options = {}) {
@@ -26,11 +27,18 @@
             this.rollSpeed = options.rollSpeed || 500;
             
             // State management
-            this.state = 'idle'; // idle, running, attacking, blocking, rolling, hurt, dead
+            this.state = 'idle'; // idle, running, attacking, blocking, rolling, hurt, dead, jumping, doubleJumping, landing, wallSliding, dashing, chargingAttack
             this.previousState = 'idle';
             this.stateTimer = 0;
             this.invulnerable = false;
             this.invulnerabilityTimer = 0;
+            this.isGrounded = true;
+            this.jumpCount = 0;
+            this.maxJumps = 2;
+            this.nearWall = false;
+            this.dashCooldown = 0;
+            this.chargeTime = 0;
+            this.maxChargeTime = 1.5;
             
             // Animation system
             this.animator = new animationSystem_js.CharacterAnimator();
@@ -102,10 +110,10 @@
         
         handleStateTransitions(input) {
             // Don't transition if in the middle of an action
-            if (this.state === 'attacking' && this.stateTimer > 0) return
-            if (this.state === 'rolling' && this.stateTimer > 0) return
-            if (this.state === 'hurt' && this.stateTimer > 0) return
-            if (this.state === 'dead') return
+            if (this.state === 'attacking' && this.stateTimer > 0) {return}
+            if (this.state === 'rolling' && this.stateTimer > 0) {return}
+            if (this.state === 'hurt' && this.stateTimer > 0) {return}
+            if (this.state === 'dead') {return}
             
             // Check for roll input (highest priority)
             if (input.roll && this.canRoll()) {
@@ -168,19 +176,19 @@
                     
                 case 'hurt':
                     // Knockback effect
-                    this.vx *= Math.pow(0.5, deltaTime);
-                    this.vy *= Math.pow(0.5, deltaTime);
+                    this.vx *= 0.5**deltaTime;
+                    this.vy *= 0.5**deltaTime;
                     break
             }
         }
         
         handleMovement(deltaTime, input, speedMultiplier = 1) {
-            let inputX = 0, inputY = 0;
+            let inputX = 0; let inputY = 0;
             
-            if (input.left) inputX -= 1;
-            if (input.right) inputX += 1;
-            if (input.up) inputY -= 1;
-            if (input.down) inputY += 1;
+            if (input.left) {inputX -= 1;}
+            if (input.right) {inputX += 1;}
+            if (input.up) {inputY -= 1;}
+            if (input.down) {inputY += 1;}
             
             // Normalize diagonal movement
             if (inputX !== 0 && inputY !== 0) {
@@ -209,8 +217,8 @@
         applyPhysics(deltaTime) {
             // Apply friction
             if (this.state !== 'rolling') {
-                this.vx *= Math.pow(0.1, deltaTime);
-                this.vy *= Math.pow(0.1, deltaTime);
+                this.vx *= 0.1**deltaTime;
+                this.vy *= 0.1**deltaTime;
             }
             
             // Update position
@@ -220,12 +228,12 @@
         
         startRoll(input) {
             // Determine roll direction
-            let dirX = 0, dirY = 0;
+            let dirX = 0; let dirY = 0;
             
-            if (input.left) dirX -= 1;
-            if (input.right) dirX += 1;
-            if (input.up) dirY -= 1;
-            if (input.down) dirY += 1;
+            if (input.left) {dirX -= 1;}
+            if (input.right) {dirX += 1;}
+            if (input.up) {dirY -= 1;}
+            if (input.down) {dirY += 1;}
             
             // If no direction input, roll in facing direction
             if (dirX === 0 && dirY === 0) {
@@ -312,7 +320,7 @@
         }
         
         takeDamage(damage, knockbackX = 0, knockbackY = 0) {
-            if (this.invulnerable || this.state === 'dead') return false
+            if (this.invulnerable || this.state === 'dead') {return false}
             
             let actualDamage = damage;
             
@@ -399,7 +407,7 @@
         }
         
         setState(newState) {
-            if (this.state === newState) return
+            if (this.state === newState) {return}
             
             this.previousState = this.state;
             this.state = newState;
@@ -428,8 +436,25 @@
                     this.animator.controller.play('hurt', { transition: 0 });
                     break
                 case 'dead':
-                    // No animation for dead state yet, player stays in last frame
-                    this.animator.controller.stop();
+                    this.animator.controller.play('death', { transition: 0 });
+                    break
+                case 'jumping':
+                    this.animator.controller.play('jump', { transition: 50 });
+                    break
+                case 'doubleJumping':
+                    this.animator.controller.play('doubleJump', { transition: 0 });
+                    break
+                case 'landing':
+                    this.animator.controller.play('land', { transition: 0 });
+                    break
+                case 'wallSliding':
+                    this.animator.controller.play('wallSlide', { transition: 100 });
+                    break
+                case 'dashing':
+                    this.animator.controller.play('dash', { transition: 0 });
+                    break
+                case 'chargingAttack':
+                    this.animator.controller.play('chargeAttack', { transition: 100 });
                     break
             }
         }
@@ -558,13 +583,156 @@
         // Input helper to convert keyboard to player input
         static createInputFromKeys(keys) {
             return {
-                left: keys['a'] || keys['arrowleft'],
-                right: keys['d'] || keys['arrowright'],
-                up: keys['w'] || keys['arrowup'],
-                down: keys['s'] || keys['arrowdown'],
-                attack: keys[' '] || keys['j'],
-                block: keys['shift'] || keys['k'],
-                roll: keys['control'] || keys['l']
+                left: keys.a || keys.arrowleft,
+                right: keys.d || keys.arrowright,
+                up: keys.w || keys.arrowup,
+                down: keys.s || keys.arrowdown,
+                attack: keys[' '] || keys.j,
+                block: keys.shift || keys.k,
+                roll: keys.control || keys.l,
+                jump: keys.space || keys.z,
+                dash: keys.x || keys.shift,
+                chargeAttack: keys.c || keys.h
+            }
+        }
+        
+        // New movement methods for enhanced animations
+        jump() {
+            if (this.isGrounded && this.jumpCount === 0) {
+                this.setState('jumping');
+                this.isGrounded = false;
+                this.jumpCount = 1;
+                this.vy = -400;
+                
+                if (this.particleSystem) {
+                    this.particleSystem.createDustCloud(this.x, this.y + this.height/2);
+                }
+                
+                if (this.soundSystem) {
+                    this.soundSystem.play('jump');
+                }
+            } else if (this.jumpCount === 1 && this.jumpCount < this.maxJumps) {
+                this.triggerDoubleJump();
+            }
+        }
+        
+        triggerDoubleJump() {
+            this.setState('doubleJumping');
+            this.jumpCount = 2;
+            this.vy = -350;
+            
+            if (this.particleSystem) {
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    this.particleSystem.createSparkle(
+                        this.x + Math.cos(angle) * 20,
+                        this.y + Math.sin(angle) * 20
+                    );
+                }
+            }
+            
+            if (this.soundSystem) {
+                this.soundSystem.play('doubleJump');
+            }
+        }
+        
+        land() {
+            if (!this.isGrounded && this.vy > 100) {
+                this.setState('landing');
+                this.stateTimer = 0.2;
+                this.isGrounded = true;
+                this.jumpCount = 0;
+                
+                const impactStrength = Math.min(this.vy / 500, 1);
+                if (this.particleSystem) {
+                    this.particleSystem.createLandingImpact(this.x, this.y + this.height/2, impactStrength);
+                }
+                
+                if (this.soundSystem) {
+                    this.soundSystem.play('land', { volume: 0.3 + impactStrength * 0.7 });
+                }
+            } else {
+                this.isGrounded = true;
+                this.jumpCount = 0;
+            }
+        }
+        
+        dash(direction = null) {
+            if (this.dashCooldown <= 0 && this.stamina >= 20) {
+                this.setState('dashing');
+                this.stateTimer = 0.3;
+                this.dashCooldown = 1.0;
+                this.stamina -= 20;
+                this.invulnerable = true;
+                this.invulnerabilityTimer = 0.3;
+                
+                let dashX = direction?.x || this.facing;
+                let dashY = direction?.y || 0;
+                
+                const length = Math.sqrt(dashX * dashX + dashY * dashY);
+                if (length > 0) {
+                    dashX /= length;
+                    dashY /= length;
+                }
+                
+                this.vx = dashX * 600;
+                this.vy = dashY * 600;
+                
+                if (this.particleSystem) {
+                    this.particleSystem.createDashTrail(this.x, this.y, dashX, dashY);
+                }
+                
+                if (this.soundSystem) {
+                    this.soundSystem.play('dash');
+                }
+            }
+        }
+        
+        startChargeAttack() {
+            if (this.canAttack() && this.stamina >= 30) {
+                this.setState('chargingAttack');
+                this.chargeTime = 0;
+                
+                if (this.particleSystem) {
+                    this.particleSystem.startChargingEffect(this.x, this.y);
+                }
+                
+                if (this.soundSystem) {
+                    this.soundSystem.play('chargeStart');
+                }
+            }
+        }
+        
+        releaseChargeAttack() {
+            if (this.state === 'chargingAttack') {
+                const chargePercent = Math.min(this.chargeTime / this.maxChargeTime, 1);
+                const damage = this.attackDamage * (1 + chargePercent * 2);
+                
+                this.setState('attacking');
+                this.stateTimer = 0.5;
+                this.attackCooldown = 0.8;
+                this.stamina -= 30;
+                
+                const hitboxX = this.x + (this.facing * this.attackRange * (1 + chargePercent));
+                const hitboxY = this.y;
+                
+                if (this.particleSystem) {
+                    this.particleSystem.createChargedSlash(
+                        hitboxX, hitboxY, this.facing, chargePercent
+                    );
+                }
+                
+                if (this.soundSystem) {
+                    this.soundSystem.play('chargedAttack', { volume: 0.5 + chargePercent * 0.5 });
+                }
+                
+                return {
+                    x: hitboxX,
+                    y: hitboxY,
+                    width: this.attackRange * (1 + chargePercent),
+                    height: this.height,
+                    damage: damage
+                }
             }
         }
     }

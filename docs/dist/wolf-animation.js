@@ -1,4 +1,3 @@
-import './animation-system.js';
 import { ParticleSystem } from './particle-system.js';
 
 // Enhanced Wolf Animation System
@@ -228,7 +227,7 @@ class WolfAnimationSystem {
         this.proceduralAnimations.set('legIK', {
             calculateLegPosition: (wolf, legIndex, time) => {
                 const anim = this.animations.get(wolf.state);
-                if (!anim || !anim.legCycle) return { x: 0, y: 0 }
+                if (!anim || !anim.legCycle) {return { x: 0, y: 0 }}
                 
                 const cycle = anim.legCycle;
                 const phase = legIndex % 2 === 0 ? 0 : cycle.phaseOffset;
@@ -375,7 +374,7 @@ class WolfAnimationSystem {
         const state = wolf.state;
         const animation = this.animations.get(state);
         
-        if (!animation) return
+        if (!animation) {return}
         
         // Apply procedural animations
         this.applyProceduralAnimations(wolf, time);
@@ -494,7 +493,7 @@ class WolfAnimationSystem {
         const progress = wolf.lungeState.lungeProgress / wolf.lungeState.lungeDuration;
         
         // Body stretch effect
-        let stretch = 1;
+        let stretch = 1; // eslint-disable-line no-useless-assignment
         if (progress < 0.2) {
             // Compression phase
             stretch = 1 - (progress / 0.2) * (1 - animation.bodyStretch.compressionStart);
@@ -521,8 +520,8 @@ class WolfAnimationSystem {
     
     applyAttackingAnimation(wolf, animation, time) {
         // Bite sequence
-        if (!wolf.biteSequenceIndex) wolf.biteSequenceIndex = 0;
-        if (!wolf.biteSequenceTime) wolf.biteSequenceTime = time;
+        if (!wolf.biteSequenceIndex) {wolf.biteSequenceIndex = 0;}
+        if (!wolf.biteSequenceTime) {wolf.biteSequenceTime = time;}
         
         const currentBite = animation.biteSequence[wolf.biteSequenceIndex];
         const elapsed = time - wolf.biteSequenceTime;
@@ -542,7 +541,7 @@ class WolfAnimationSystem {
     }
     
     applyHowlingAnimation(wolf, animation, time) {
-        if (!wolf.howlStartTime) wolf.howlStartTime = time;
+        if (!wolf.howlStartTime) {wolf.howlStartTime = time;}
         
         const howlProgress = Math.min((time - wolf.howlStartTime) / animation.headTilt.duration, 1);
         
@@ -566,7 +565,7 @@ class WolfAnimationSystem {
     }
     
     applyHurtAnimation(wolf, animation, time) {
-        if (!wolf.hurtStartTime) wolf.hurtStartTime = time;
+        if (!wolf.hurtStartTime) {wolf.hurtStartTime = time;}
         
         const hurtElapsed = time - wolf.hurtStartTime;
         
@@ -577,7 +576,7 @@ class WolfAnimationSystem {
         }
         
         // Body shake with dampening
-        const shakeFactor = Math.pow(animation.bodyShake.dampening, hurtElapsed / 100);
+        const shakeFactor = animation.bodyShake.dampening**(hurtElapsed / 100);
         wolf.bodyShake = Math.sin(time * animation.bodyShake.frequency) * 
                         animation.bodyShake.amplitude * shakeFactor;
         
@@ -677,7 +676,7 @@ class WolfAnimationSystem {
         ctx.save();
         
         // Base tail position
-        let baseTailX = -wolf.width * 0.35;
+        const baseTailX = -wolf.width * 0.35;
         let baseTailY = -wolf.height * 0.1;
         
         // Adjust for body lowered (prowling)
@@ -869,7 +868,7 @@ class WolfAnimationSystem {
         this.drawAnimatedEyes(ctx, wolf);
         
         // Sound waves for howling
-        if (wolf.soundWavePhase !== undefined) {
+        if (wolf.soundWavePhase !== null) {
             this.drawSoundWaves(ctx, wolf);
         }
         
