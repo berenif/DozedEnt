@@ -48,6 +48,7 @@
     "playwright": "^1.52.0",
     "prettier": "^3.5.2",
     "proxy-check": "^1.0.8",
+    "puppeteer": "^24.18.0",
     "rollup": "^4.49.0",
     "serve": "^14.2.4",
     "stun": "^1.1.0",
