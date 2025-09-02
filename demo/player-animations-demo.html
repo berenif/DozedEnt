@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Animations Demo - Roll, Attack, Block, Hurt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .game-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        canvas {
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            display: block;
+            background: #1a1a2e;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .control-section {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .control-section h3 {
+            margin-bottom: 10px;
+            color: #00ff88;
+            font-size: 18px;
+        }
+        
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-item:last-child {
+            border-bottom: none;
+        }
+        
+        .key {
+            background: #00ff88;
+            color: #1a1a2e;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            color: #00ff88;
+        }
+        
+        .stat-value {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .animation-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .animation-state {
+            color: #ffff00;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .test-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .test-btn:hover {
+            background: #00cc70;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn:active {
+            transform: translateY(0);
+        }
+        
+        .enemy {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #ff4444;
+            border-radius: 50%;
+            border: 2px solid #ff8888;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .attacking {
+            animation: pulse 0.3s ease-in-out;
+        }
+        
+        .rolling {
+            animation: spin 0.4s linear;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div style="position: relative;">
+            <canvas id="gameCanvas" width="1000" height="600"></canvas>
+            
+            <div class="stats">
+                <h3 style="color: #00ff88; margin-bottom: 10px;">Player Stats</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Health:</span>
+                    <span class="stat-value" id="health">100/100</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Stamina:</span>
+                    <span class="stat-value" id="stamina">100/100</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Position:</span>
+                    <span class="stat-value" id="position">500, 300</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">State:</span>
+                    <span class="stat-value" id="state">idle</span>
+                </div>
+            </div>
+            
+            <div class="animation-info">
+                <h3 style="color: #00ff88; margin-bottom: 10px;">Animation Info</h3>
+                <div class="animation-state" id="animationState">IDLE</div>
+                <div class="stat-item">
+                    <span class="stat-label">Animation:</span>
+                    <span class="stat-value" id="currentAnimation">idle</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Invulnerable:</span>
+                    <span class="stat-value" id="invulnerable">No</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cooldowns:</span>
+                    <span class="stat-value" id="cooldowns">Ready</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-section">
+                <h3>Movement Controls</h3>
+                <div class="control-item">
+                    <span>Move Up</span>
+                    <span><span class="key">W</span> or <span class="key">↑</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Move Down</span>
+                    <span><span class="key">S</span> or <span class="key">↓</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Move Left</span>
+                    <span><span class="key">A</span> or <span class="key">←</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Move Right</span>
+                    <span><span class="key">D</span> or <span class="key">→</span></span>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>Action Controls</h3>
+                <div class="control-item">
+                    <span>Attack</span>
+                    <span><span class="key">Space</span> or <span class="key">J</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Block (Hold)</span>
+                    <span><span class="key">Shift</span> or <span class="key">K</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Roll/Dodge</span>
+                    <span><span class="key">Ctrl</span> or <span class="key">L</span></span>
+                </div>
+                <div class="control-item">
+                    <span>Take Damage (Test)</span>
+                    <span><span class="key">H</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="spawnEnemy()">Spawn Enemy</button>
+            <button class="test-btn" onclick="clearEnemies()">Clear Enemies</button>
+            <button class="test-btn" onclick="restoreHealth()">Restore Health</button>
+            <button class="test-btn" onclick="restoreStamina()">Restore Stamina</button>
+            <button class="test-btn" onclick="toggleInvulnerability()">Toggle Invulnerability</button>
+            <button class="test-btn" onclick="respawnPlayer()">Respawn Player</button>
+        </div>
+    </div>
+    
+    <script type="module">
+        import AnimatedPlayer from '../src/player-animator.js'
+        import { ParticleSystem } from '../src/particle-system.js'
+        
+        const canvas = document.getElementById('gameCanvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Create particle system
+        const particleSystem = new ParticleSystem()
+        
+        // Create player
+        const player = new AnimatedPlayer(500, 300, {
+            particleSystem: particleSystem,
+            color: '#00ff88'
+        })
+        
+        // Enemies array
+        let enemies = []
+        
+        // Input handling
+        const keys = {}
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true
+            e.preventDefault()
+        })
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false
+            e.preventDefault()
+        })
+        
+        // Test functions
+        window.spawnEnemy = function() {
+            enemies.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: 0,
+                vy: 0,
+                health: 50,
+                maxHealth: 50,
+                radius: 20,
+                color: '#ff4444'
+            })
+        }
+        
+        window.clearEnemies = function() {
+            enemies = []
+        }
+        
+        window.restoreHealth = function() {
+            player.health = player.maxHealth
+        }
+        
+        window.restoreStamina = function() {
+            player.stamina = player.maxStamina
+        }
+        
+        window.toggleInvulnerability = function() {
+            player.invulnerable = !player.invulnerable
+            player.invulnerabilityTimer = player.invulnerable ? 999 : 0
+        }
+        
+        window.respawnPlayer = function() {
+            player.respawn(500, 300)
+        }
+        
+        // Update enemies
+        function updateEnemies(deltaTime) {
+            enemies.forEach(enemy => {
+                // Simple AI - move towards player
+                const dx = player.x - enemy.x
+                const dy = player.y - enemy.y
+                const dist = Math.hypot(dx, dy)
+                
+                if (dist > 50 && dist < 300) {
+                    enemy.vx += (dx / dist) * 200 * deltaTime
+                    enemy.vy += (dy / dist) * 200 * deltaTime
+                }
+                
+                // Apply friction
+                enemy.vx *= Math.pow(0.5, deltaTime)
+                enemy.vy *= Math.pow(0.5, deltaTime)
+                
+                // Update position
+                enemy.x += enemy.vx * deltaTime
+                enemy.y += enemy.vy * deltaTime
+                
+                // Keep in bounds
+                enemy.x = Math.max(enemy.radius, Math.min(canvas.width - enemy.radius, enemy.x))
+                enemy.y = Math.max(enemy.radius, Math.min(canvas.height - enemy.radius, enemy.y))
+                
+                // Check collision with player attack
+                if (player.state === 'attacking' && player.attackExecuted) {
+                    const attackRange = 60
+                    const attackDist = Math.hypot(enemy.x - player.x, enemy.y - player.y)
+                    
+                    if (attackDist < attackRange + enemy.radius) {
+                        enemy.health -= 20
+                        // Knockback
+                        const knockbackAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x)
+                        enemy.vx = Math.cos(knockbackAngle) * 300
+                        enemy.vy = Math.sin(knockbackAngle) * 300
+                    }
+                }
+                
+                // Attack player if close
+                if (dist < 40 && Math.random() < 0.01) {
+                    const knockbackAngle = Math.atan2(player.y - enemy.y, player.x - enemy.x)
+                    player.takeDamage(10, Math.cos(knockbackAngle), Math.sin(knockbackAngle))
+                }
+            })
+            
+            // Remove dead enemies
+            enemies = enemies.filter(e => e.health > 0)
+        }
+        
+        // Render enemies
+        function renderEnemies(ctx) {
+            enemies.forEach(enemy => {
+                ctx.save()
+                
+                // Draw enemy
+                ctx.beginPath()
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2)
+                ctx.fillStyle = enemy.color
+                ctx.fill()
+                ctx.strokeStyle = '#ff8888'
+                ctx.lineWidth = 2
+                ctx.stroke()
+                
+                // Draw health bar
+                const barWidth = 30
+                const barHeight = 4
+                const barY = enemy.y - enemy.radius - 10
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+                ctx.fillRect(enemy.x - barWidth/2, barY, barWidth, barHeight)
+                
+                const healthPercent = enemy.health / enemy.maxHealth
+                ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : '#ff0000'
+                ctx.fillRect(enemy.x - barWidth/2, barY, barWidth * healthPercent, barHeight)
+                
+                ctx.restore()
+            })
+        }
+        
+        // Update UI
+        function updateUI() {
+            // Update stats
+            document.getElementById('health').textContent = `${Math.floor(player.health)}/${player.maxHealth}`
+            document.getElementById('stamina').textContent = `${Math.floor(player.stamina)}/${player.maxStamina}`
+            document.getElementById('position').textContent = `${Math.floor(player.x)}, ${Math.floor(player.y)}`
+            document.getElementById('state').textContent = player.state
+            
+            // Update animation info
+            document.getElementById('animationState').textContent = player.state.toUpperCase()
+            document.getElementById('currentAnimation').textContent = 
+                player.animator.controller.currentAnimation?.name || 'none'
+            document.getElementById('invulnerable').textContent = player.invulnerable ? 'Yes' : 'No'
+            
+            // Update cooldowns
+            let cooldownText = 'Ready'
+            if (player.attackCooldown > 0 || player.rollCooldown > 0) {
+                cooldownText = ''
+                if (player.attackCooldown > 0) cooldownText += `Atk: ${player.attackCooldown.toFixed(1)}s `
+                if (player.rollCooldown > 0) cooldownText += `Roll: ${player.rollCooldown.toFixed(1)}s`
+            }
+            document.getElementById('cooldowns').textContent = cooldownText
+        }
+        
+        // Game loop
+        let lastTime = 0
+        
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1)
+            lastTime = timestamp
+            
+            // Convert keys to player input
+            const input = AnimatedPlayer.createInputFromKeys(keys)
+            
+            // Test hurt animation with H key
+            if (keys['h']) {
+                keys['h'] = false
+                player.takeDamage(15, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2)
+            }
+            
+            // Update
+            player.update(deltaTime, input)
+            updateEnemies(deltaTime)
+            particleSystem.update(deltaTime)
+            
+            // Keep player in bounds
+            player.x = Math.max(20, Math.min(canvas.width - 20, player.x))
+            player.y = Math.max(20, Math.min(canvas.height - 20, player.y))
+            
+            // Clear canvas
+            ctx.fillStyle = '#1a1a2e'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
+            ctx.lineWidth = 1
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath()
+                ctx.moveTo(x, 0)
+                ctx.lineTo(x, canvas.height)
+                ctx.stroke()
+            }
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath()
+                ctx.moveTo(0, y)
+                ctx.lineTo(canvas.width, y)
+                ctx.stroke()
+            }
+            
+            // Render
+            renderEnemies(ctx)
+            particleSystem.render(ctx)
+            player.render(ctx)
+            
+            // Update UI
+            updateUI()
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        // Start game
+        requestAnimationFrame(gameLoop)
+        
+        // Spawn initial enemies
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy()
+        }
+    </script>
+</body>
+</html>
