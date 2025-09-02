@@ -731,7 +731,8 @@ export class LobbyAnalytics {
   }
   
   startAggregation() {
-    setInterval(() => {
+    // Store interval for cleanup
+    this.aggregationInterval = setInterval(() => {
       // Reset per-minute counters
       this.data.performance.apiCallsPerMinute = 0
       
@@ -898,6 +899,21 @@ export class LobbyAnalytics {
     
     // Reset event log
     this.eventLog = []
+  }
+  
+  /**
+   * Clean up resources
+   */
+  destroy() {
+    // Clear aggregation interval
+    if (this.aggregationInterval) {
+      clearInterval(this.aggregationInterval)
+      this.aggregationInterval = null
+    }
+    
+    // Clear any stored data
+    this.eventLog = []
+    this.timeSeries = {}
   }
 }
 

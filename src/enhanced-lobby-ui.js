@@ -696,7 +696,7 @@ export class EnhancedLobbyUI {
     
     // Add click handlers for menu cards
     content.querySelectorAll('[data-action]').forEach(card => {
-      card.addEventListener('click', () => {
+      const handler = () => {
         const action = card.dataset.action
         if (action === 'quick-play') {
           this.handleQuickPlay()
@@ -707,7 +707,8 @@ export class EnhancedLobbyUI {
         } else if (action === 'matchmaking') {
           this.showView('matchmaking')
         }
-      })
+      }
+      this.addEventListener(card, 'click', handler)
     })
   }
   
@@ -749,9 +750,11 @@ export class EnhancedLobbyUI {
     this.refreshRoomList()
     
     // Setup refresh button
-    document.getElementById('refresh-rooms-btn')?.addEventListener('click', () => {
-      this.refreshRoomList()
-    })
+    const refreshBtn = document.getElementById('refresh-rooms-btn')
+    if (refreshBtn) {
+      const handler = () => this.refreshRoomList()
+      this.addEventListener(refreshBtn, 'click', handler)
+    }
   }
   
   showCreateRoom(content, headerActions) {
@@ -841,20 +844,30 @@ export class EnhancedLobbyUI {
     `
     
     // Handle password toggle
-    document.getElementById('password-protected').addEventListener('change', (e) => {
-      document.getElementById('room-password').style.display = e.target.checked ? 'block' : 'none'
-    })
+    const passwordToggle = document.getElementById('password-protected')
+    if (passwordToggle) {
+      const handler = (e) => {
+        document.getElementById('room-password').style.display = e.target.checked ? 'block' : 'none'
+      }
+      this.addEventListener(passwordToggle, 'change', handler)
+    }
     
     // Handle form submission
-    document.getElementById('create-room-form').addEventListener('submit', (e) => {
-      e.preventDefault()
-      this.handleCreateRoom()
-    })
+    const createForm = document.getElementById('create-room-form')
+    if (createForm) {
+      const handler = (e) => {
+        e.preventDefault()
+        this.handleCreateRoom()
+      }
+      this.addEventListener(createForm, 'submit', handler)
+    }
     
     // Handle cancel
-    document.getElementById('cancel-create').addEventListener('click', () => {
-      this.showView('main-menu')
-    })
+    const cancelBtn = document.getElementById('cancel-create')
+    if (cancelBtn) {
+      const handler = () => this.showView('main-menu')
+      this.addEventListener(cancelBtn, 'click', handler)
+    }
   }
   
   showQuickPlay(content, headerActions) {

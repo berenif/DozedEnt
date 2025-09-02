@@ -240,7 +240,7 @@ export class SoundSystem {
             // Sound system initialized
             
         } catch (error) {
-            // Failed to initialize sound system
+            console.error('Failed to initialize sound system:', error)
             this.initialized = false
         }
     }
