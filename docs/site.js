@@ -5,6 +5,11 @@ import { WolfCharacter } from './wolf-character.js'
 import { EnhancedWolfAISystem } from './wolf-ai-enhanced.js'
 import EnhancedRoomManager from './enhanced-room-manager.js'
 
+// Timing constants (will be loaded from WASM if available)
+let ROLL_DURATION = 0.18 // seconds
+let ROLL_COOLDOWN = 0.8 // seconds
+let ATTACK_COOLDOWN = 0.35 // seconds between attacks
+
 // WASM helpers (browser bundle)
 let wasmExports = null
 let runSeed = 0n
@@ -26,7 +31,7 @@ try {
     if (typeof wasmExports.init_run === 'function') {
       const usp = new URLSearchParams(location.search)
       const urlSeed = usp.get('seed')
-      if (urlSeed != null && /^\d+$/.test(urlSeed)) {
+      if (urlSeed !== null && /^\d+$/.test(urlSeed)) {
         runSeed = BigInt(urlSeed)
       } else {
         runSeed = BigInt(Date.now())
@@ -62,7 +67,7 @@ let gameRenderer = null
 let cameraEffects = null
 let wolfAISystem = null
 let roomManager = null
-let wolfCharacters = []
+const wolfCharacters = []
 
 // Setup game canvas and renderers
 if (gameCanvas) {
@@ -97,7 +102,7 @@ window.toggleLobby = function() {
   if (lobbyPanel) {
     lobbyPanel.style.display = lobbyPanel.style.display === 'none' ? 'block' : 'none'
     if (lobbyPanel.style.display === 'block') {
-      updateRoomsList()
+      if (typeof updateRoomsList === 'function') updateRoomsList()
     }
   }
 }
@@ -139,8 +144,8 @@ window.createRoom = async function() {
     })
     
     console.log('Room created:', room)
-    updateRoomsList()
-    showRoomInfo(room)
+    if (typeof updateRoomsList === 'function') updateRoomsList()
+    if (typeof showRoomInfo === 'function') showRoomInfo(room)
   } catch (error) {
     console.error('Failed to create room:', error)
     alert('Failed to create room: ' + error.message)
@@ -157,7 +162,7 @@ window.quickPlay = async function() {
     })
     
     console.log('Joined room:', room)
-    showRoomInfo(room)
+    if (typeof showRoomInfo === 'function') showRoomInfo(room)
   } catch (error) {
     console.error('Quick play failed:', error)
     alert('Quick play failed: ' + error.message)
@@ -205,7 +210,7 @@ window.joinRoom = async function(roomId) {
   try {
     const room = await roomManager.joinRoom(roomId)
     console.log('Joined room:', room)
-    showRoomInfo(room)
+    if (typeof showRoomInfo === 'function') showRoomInfo(room)
   } catch (error) {
     console.error('Failed to join room:', error)
     alert('Failed to join room: ' + error.message)
@@ -274,7 +279,7 @@ if (roomManager) {
   roomManager.on('onRoomStateChange', (state) => {
     if (state === 'in_progress') {
       // Hide lobby and start game
-      toggleLobby()
+      window.toggleLobby()
       console.log('Game starting!')
     }
   })
@@ -312,7 +317,7 @@ function initAudioContext() {
   audioContext = new (window.AudioContext || window.webkitAudioContext)()
   
   // Create synthesized wolf sounds using Web Audio API
-  createWolfSounds()
+  if (typeof createWolfSounds === 'function') createWolfSounds()
 }
 
 // Create synthesized wolf vocalizations
@@ -866,10 +871,7 @@ let rollDirX = 0
 let rollDirY = 0
 let rollTimeLeft = 0
 let rollCooldownLeft = 0
-let ROLL_DURATION = 0.18 // seconds (will be loaded from WASM)
-let ROLL_COOLDOWN = 0.8 // seconds (will be loaded from WASM)
 const ROLL_SPEED_MULTIPLIER = 2.6
-let ATTACK_COOLDOWN = 0.35 // seconds between attacks (will be loaded from WASM)
 // no networked movement messages; only clicks are shared
 // facing + visuals state
 let faceDirX = 1
