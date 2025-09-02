@@ -4,42 +4,470 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="author" content="Dan Motzenbecker">
-    <meta name="description" content="Serverless WebRTC matchmaking for painless P2P mobile game">
-    <title>Dozed Ent - Mobile Game with WebRTC</title>
+    <meta name="description" content="Serverless WebRTC matchmaking for painless P2P multiplayer game">
+    <title>Complete Game - 8 Phase Core Loop with P2P Multiplayer</title>
     <link href="images/favicon.png" rel="icon" type="image/png">
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="site.css">
+    <style>
+        /* Additional styles for complete implementation */
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 1280px;
+            height: auto;
+            aspect-ratio: 16/9;
+            max-height: 100vh;
+        }
+        
+        /* Phase Indicator */
+        .phase-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 30px;
+            padding: 10px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 101;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        /* Enhanced HUD */
+        .top-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            pointer-events: none;
+        }
+        
+        .top-hud > * {
+            pointer-events: auto;
+        }
+        
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .health-bar, .energy-bar {
+            width: 250px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff6b6b);
+            transition: width 0.3s ease;
+            box-shadow: inset 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+        
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00bcd4, #00e5ff);
+            transition: width 0.3s ease;
+            box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+        
+        .health-text, .energy-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        .score-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .score, .level {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+        }
+        
+        /* Currency Display */
+        .currency-display {
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .gold {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .essence {
+            color: #00e5ff;
+            font-weight: bold;
+        }
+        
+        /* Mobile Controls Enhancement */
+        .mobile-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 200;
+            pointer-events: none;
+        }
+        
+        .mobile-controls > * {
+            pointer-events: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6));
+            border: 3px solid rgba(0, 255, 255, 0.5);
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn:active {
+            transform: scale(0.9);
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+        
+        .cooldown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            transform-origin: center;
+            transform: scale(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .cooldown.active {
+            transform: scale(1);
+        }
+        
+        /* Enhanced Minimap */
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 100;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .player-position {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #00ff88;
+            z-index: 2;
+            transform: translate(-50%, -50%);
+        }
+        
+        .enemy-position {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #ff4444;
+            border-radius: 50%;
+            opacity: 0.8;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Enhanced Overlays */
+        .overlay-box {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            border: 3px solid rgba(0, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);
+            animation: overlayFadeIn 0.3s ease;
+        }
+        
+        @keyframes overlayFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .overlay-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            background: linear-gradient(45deg, #00ffff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Choice System Styling */
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .choice-btn {
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+        
+        .choice-btn:hover {
+            transform: translateX(10px);
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .choice-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .choice-safe {
+            background: #4ade80;
+            color: #000;
+        }
+        
+        .choice-spicy {
+            background: #ff6b6b;
+            color: #000;
+        }
+        
+        .choice-weird {
+            background: #a78bfa;
+            color: #000;
+        }
+        
+        /* Shop System */
+        .shop-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .shop-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .shop-item:hover {
+            transform: scale(1.05);
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+        
+        .shop-item-icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+        
+        .shop-item-cost {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #0a0e27;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: #00ffff;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Game...</div>
+    </div>
+
     <div class="game-container">
+        <!-- Phase Indicator -->
+        <div class="phase-indicator" id="phaseIndicator">EXPLORE</div>
+        
         <!-- Top HUD -->
         <div class="top-hud">
             <div class="player-info">
                 <div class="health-bar">
-                    <div class="health-fill"></div>
-                    <span class="health-text">100/100</span>
+                    <div class="health-fill" id="healthFill"></div>
+                    <span class="health-text" id="healthText">100/100</span>
                 </div>
                 <div class="energy-bar">
-                    <div class="energy-fill"></div>
-                    <span class="energy-text">50/50</span>
+                    <div class="energy-fill" id="energyFill"></div>
+                    <span class="energy-text" id="energyText">50/50</span>
                 </div>
             </div>
             <div class="score-info">
-                <span class="score">Score: 0</span>
-                <span class="level">Lv. 1</span>
+                <span class="score">Score: <span id="scoreValue">0</span></span>
+                <span class="level">Lv. <span id="levelValue">1</span></span>
+                <div class="currency-display">
+                    <span class="gold">🔶 <span id="goldValue">0</span></span>
+                    <span class="essence">🔷 <span id="essenceValue">0</span></span>
+                </div>
             </div>
         </div>
 
-        <!-- Connection Status (from docs/index.html) -->
+        <!-- Connection Status -->
         <div id="status">
             <div id="peer-count">Players: 1</div>
             <div id="connection-status">Connecting...</div>
         </div>
 
-        <!-- Settings Panel (Hidden by default) -->
-        <div class="settings-panel" id="settingsPanel">
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel" hidden>
             <div class="settings-header">
                 <h3>Settings</h3>
                 <button class="close-btn" onclick="toggleSettings()">×</button>
@@ -47,18 +475,18 @@
             <div class="settings-content">
                 <div class="setting-item">
                     <label>Sound</label>
-                    <input type="range" min="0" max="100" value="50">
+                    <input type="range" min="0" max="100" value="50" id="soundVolume">
                 </div>
                 <div class="setting-item">
                     <label>Vibration</label>
                     <label class="switch">
-                        <input type="checkbox" checked>
+                        <input type="checkbox" checked id="vibrationEnabled">
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="setting-item">
                     <label>Control Size</label>
-                    <select>
+                    <select id="controlSize">
                         <option>Small</option>
                         <option selected>Medium</option>
                         <option>Large</option>
@@ -67,12 +495,9 @@
             </div>
         </div>
 
-        <!-- Game Viewport Container -->
+        <!-- Game Viewport -->
         <div id="viewport" class="viewport-container">
-            <!-- Game Canvas Area with markers support -->
-            <div id="canvas" role="region" aria-label="Game area">
-                <!-- Markers are injected dynamically: .marker.landmark / .marker.exit / .marker.obstacle -->
-            </div>
+            <div id="canvas" role="region" aria-label="Game area"></div>
         </div>
         <canvas id="gameCanvas"></canvas>
 
@@ -81,23 +506,21 @@
             <div>Controls</div>
             <ul>
                 <li>Move: WASD / Arrows</li>
-                <li>Roll: K</li>
-                <li>Attack: L</li>
-                <li>Block: M</li>
+                <li>Roll: Space / K</li>
+                <li>Attack: Click / L</li>
+                <li>Block: Right-click / M</li>
             </ul>
         </div>
 
         <!-- Mobile Controls -->
         <div class="mobile-controls">
-            <!-- Left Side: Settings Button -->
+            <!-- Left Side: Settings -->
             <div class="left-controls">
-                <!-- Settings Button -->
                 <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
             </div>
 
             <!-- Right Side: Action Buttons -->
             <div class="right-controls">
-                <!-- Main Action Buttons -->
                 <div class="action-buttons">
                     <button class="action-btn primary" data-action="attack">
                         <span class="btn-icon">⚔️</span>
@@ -115,14 +538,12 @@
             </div>
         </div>
 
-        <!-- Mobile joystick (from docs/index.html) -->
+        <!-- Mobile joystick -->
         <div id="joystick">
             <div id="joystick-base">
                 <div id="joystick-knob"></div>
             </div>
         </div>
-
-
 
         <!-- Mini Map -->
         <div class="minimap">
@@ -131,7 +552,7 @@
             </div>
         </div>
 
-        <!-- Orientation / fullscreen overlay for mobile (from docs/index.html) -->
+        <!-- Orientation overlay for mobile -->
         <div id="orientation-overlay" hidden>
             <div class="overlay-box">
                 <p class="overlay-title">Rotate your device</p>
@@ -140,25 +561,25 @@
             </div>
         </div>
 
-        <!-- Choice overlay (from docs/index.html) -->
+        <!-- Choice overlay -->
         <div id="choice-overlay" hidden>
             <div class="overlay-box">
-                <p class="overlay-title">Choose your boon</p>
+                <p class="overlay-title">Choose Your Path</p>
                 <div class="choices">
-                    <button id="choice-0" type="button">Option A</button>
-                    <button id="choice-1" type="button">Option B</button>
-                    <button id="choice-2" type="button">Option C</button>
+                    <button id="choice-0" type="button" class="choice-btn">
+                        <span class="choice-type choice-safe">Safe</span>
+                        <span id="choice-0-text">Option A</span>
+                    </button>
+                    <button id="choice-1" type="button" class="choice-btn">
+                        <span class="choice-type choice-spicy">Spicy</span>
+                        <span id="choice-1-text">Option B</span>
+                    </button>
+                    <button id="choice-2" type="button" class="choice-btn">
+                        <span class="choice-type choice-weird">Weird</span>
+                        <span id="choice-2-text">Option C</span>
+                    </button>
                 </div>
                 <button id="restart-button" type="button">Restart (R)</button>
-            </div>
-        </div>
-
-        <!-- Game Over overlay (from docs/index.html) -->
-        <div id="gameover-overlay" hidden>
-            <div class="overlay-box">
-                <p class="overlay-title">Game Over</p>
-                <p class="overlay-msg">You were taken down by the pack.</p>
-                <button id="rematch-button" type="button">Rematch</button>
             </div>
         </div>
 
@@ -209,27 +630,38 @@
         <div id="cashout-overlay" hidden>
             <div class="overlay-box cashout-phase">
                 <p class="overlay-title">💰 SHOP</p>
-                <div class="currency-display">
+                <div class="currency-display" style="justify-content: center; margin-bottom: 20px;">
                     <span class="gold">🔶 Gold: <span id="gold-amount">0</span></span>
                     <span class="essence">🔷 Essence: <span id="essence-amount">0</span></span>
                 </div>
                 <div class="shop-items" id="shop-items">
-                    <!-- Shop items will be populated dynamically -->
+                    <!-- Shop items populated dynamically -->
                 </div>
-                <div class="shop-actions">
-                    <button id="heal-button" type="button">Heal (50🔶 5🔷)</button>
-                    <button id="reroll-button" type="button">Reroll Shop (20🔶)</button>
-                    <button id="exit-shop-button" type="button">Leave Shop</button>
+                <div class="shop-actions" style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <button id="heal-button" type="button" class="choice-btn">Heal (50🔶 5🔷)</button>
+                    <button id="reroll-button" type="button" class="choice-btn">Reroll (20🔶)</button>
+                    <button id="exit-shop-button" type="button" class="choice-btn">Leave Shop</button>
                 </div>
-                <div class="forge-section">
-                    <p>⚒️ Forge</p>
-                    <div class="forge-options" id="forge-options">
-                        <button class="forge-btn" data-forge="0">Sharpen (30🔶)</button>
-                        <button class="forge-btn" data-forge="1">Reinforce (25🔶)</button>
-                        <button class="forge-btn" data-forge="2">Enchant (50🔶 8🔷)</button>
-                        <button class="forge-btn" data-forge="3">Reroll (40🔶 5🔷)</button>
+                <div class="forge-section" style="margin-top: 20px;">
+                    <p style="text-align: center; font-weight: bold;">⚒️ Forge</p>
+                    <div class="forge-options" id="forge-options" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button class="choice-btn" data-forge="0">Sharpen (30🔶)</button>
+                        <button class="choice-btn" data-forge="1">Reinforce (25🔶)</button>
+                        <button class="choice-btn" data-forge="2">Enchant (50🔶 8🔷)</button>
+                        <button class="choice-btn" data-forge="3">Reroll (40🔶 5🔷)</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Game Over overlay -->
+        <div id="gameover-overlay" hidden>
+            <div class="overlay-box">
+                <p class="overlay-title">Game Over</p>
+                <p class="overlay-msg">You were taken down by the pack.</p>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <p>Rooms Cleared: <span id="rooms-cleared">0</span></p>
+                <button id="rematch-button" type="button" class="choice-btn">Rematch</button>
             </div>
         </div>
     </div>
