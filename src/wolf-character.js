@@ -18,10 +18,14 @@ export class WolfCharacter {
         this.size = this.getWolfSize()
         
         // Animation states
-        this.state = 'idle' // idle, prowling, running, lunging, attacking, howling, hurt
+        this.state = 'idle' // idle, prowling, running, lunging, attacking, howling, hurt, death, packRun
         this.animationFrame = 0
         this.animationTime = 0
         this.animationSpeed = 0.1
+        this.howlCooldown = 0
+        this.lastHowlTime = 0
+        this.packFormationOffset = { x: 0, y: 0 }
+        this.packFormationAngle = 0
         
         // Lunge attack properties
         this.lungeState = {
@@ -689,8 +693,50 @@ export class WolfCharacter {
         
         if (this.health <= 0) {
             this.health = 0
-            // Handle death
+            this.setState('death')
         }
+    }
+    
+    // Howl to call pack or buff allies
+    howl() {
+        const now = Date.now()
+        if (now - this.lastHowlTime > 10000) { // 10 second cooldown
+            this.setState('howling')
+            this.lastHowlTime = now
+            this.velocity.x = 0
+            this.velocity.y = 0
+            
+            // Return howl data for pack coordination
+            return {
+                position: { ...this.position },
+                type: this.type,
+                isAlpha: this.isAlpha,
+                packId: this.packId,
+                effect: this.isAlpha ? 'rally' : 'call'
+            }
+        }
+        return null
+    }
+    
+    // Update pack formation position
+    updatePackFormation(leaderPosition, formationIndex, totalPack) {
+        if (this.state !== 'packRun') {
+            this.setState('packRun')
+        }
+        
+        // Calculate formation offset based on index
+        const angle = (formationIndex / totalPack) * Math.PI * 2
+        const radius = 100 + (formationIndex % 2) * 50 // Stagger formation
+        
+        this.packFormationOffset.x = Math.cos(angle) * radius
+        this.packFormationOffset.y = Math.sin(angle) * radius * 0.5 // Elliptical formation
+        this.packFormationAngle = angle
+        
+        // Move towards formation position
+        const targetX = leaderPosition.x + this.packFormationOffset.x
+        const targetY = leaderPosition.y + this.packFormationOffset.y
+        
+        this.moveTowards({ x: targetX, y: targetY }, this.speed * 1.2)
     }
 }
 

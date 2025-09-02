@@ -518,6 +518,15 @@ export class UIFeedbackSystem {
         this.healthBar = new HealthBar()
         this.notifications = []
         this.screenFlash = null
+        
+        // UI Transition animations
+        this.transitions = []
+        this.menuTransition = null
+        this.sceneTransition = null
+        this.fadeTransition = { active: false, fadeIn: true, alpha: 0, speed: 1, callback: null }
+        this.slideTransition = { active: false, progress: 0, direction: 'left', speed: 1 }
+        this.zoomTransition = { active: false, scale: 1, targetScale: 1, speed: 1 }
+        this.curtainTransition = { active: false, progress: 0, closing: true, speed: 1 }
     }
 
     update(deltaTime) {
@@ -670,6 +679,140 @@ export class UIFeedbackSystem {
 
     achievementUnlocked(achievementName) {
         this.showNotification(`Achievement: ${achievementName}`, 3, '#a78bfa')
+    }
+    
+    // UI Transition Animation Methods
+    startFadeTransition(fadeIn = true, duration = 1, callback = null) {
+        this.fadeTransition.active = true
+        this.fadeTransition.fadeIn = fadeIn
+        this.fadeTransition.alpha = fadeIn ? 0 : 1
+        this.fadeTransition.speed = 1 / duration
+        this.fadeTransition.callback = callback
+    }
+    
+    startSlideTransition(direction = 'left', duration = 0.5) {
+        this.slideTransition.active = true
+        this.slideTransition.progress = 0
+        this.slideTransition.direction = direction
+        this.slideTransition.speed = 1 / duration
+    }
+    
+    startZoomTransition(fromScale = 1, toScale = 0, duration = 0.5) {
+        this.zoomTransition.active = true
+        this.zoomTransition.scale = fromScale
+        this.zoomTransition.targetScale = toScale
+        this.zoomTransition.speed = 1 / duration
+    }
+    
+    startCurtainTransition(closing = true, duration = 0.8) {
+        this.curtainTransition.active = true
+        this.curtainTransition.progress = closing ? 0 : 1
+        this.curtainTransition.closing = closing
+        this.curtainTransition.speed = 1 / duration
+    }
+    
+    renderTransitions(ctx) {
+        const canvas = ctx.canvas
+        
+        // Update transitions
+        const deltaTime = 1/60 // Assume 60fps for now
+        
+        // Fade transition
+        if (this.fadeTransition.active) {
+            if (this.fadeTransition.fadeIn) {
+                this.fadeTransition.alpha += this.fadeTransition.speed * deltaTime
+                if (this.fadeTransition.alpha >= 1) {
+                    this.fadeTransition.alpha = 1
+                    this.fadeTransition.active = false
+                    if (this.fadeTransition.callback) this.fadeTransition.callback()
+                }
+            } else {
+                this.fadeTransition.alpha -= this.fadeTransition.speed * deltaTime
+                if (this.fadeTransition.alpha <= 0) {
+                    this.fadeTransition.alpha = 0
+                    this.fadeTransition.active = false
+                    if (this.fadeTransition.callback) this.fadeTransition.callback()
+                }
+            }
+        }
+        
+        if (this.fadeTransition.alpha < 1) {
+            ctx.save()
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - this.fadeTransition.alpha})`
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.restore()
+        }
+        
+        // Slide transition
+        if (this.slideTransition.active) {
+            this.slideTransition.progress += this.slideTransition.speed * deltaTime
+            if (this.slideTransition.progress >= 1) {
+                this.slideTransition.progress = 1
+                this.slideTransition.active = false
+            }
+            
+            ctx.save()
+            const offset = this.slideTransition.progress * canvas.width
+            ctx.fillStyle = '#000'
+            
+            switch(this.slideTransition.direction) {
+                case 'left':
+                    ctx.fillRect(canvas.width - offset, 0, offset, canvas.height)
+                    break
+                case 'right':
+                    ctx.fillRect(0, 0, offset, canvas.height)
+                    break
+                case 'up':
+                    ctx.fillRect(0, canvas.height - offset * canvas.height / canvas.width, canvas.width, offset * canvas.height / canvas.width)
+                    break
+                case 'down':
+                    ctx.fillRect(0, 0, canvas.width, offset * canvas.height / canvas.width)
+                    break
+            }
+            ctx.restore()
+        }
+        
+        // Curtain transition
+        if (this.curtainTransition.active) {
+            if (this.curtainTransition.closing) {
+                this.curtainTransition.progress += this.curtainTransition.speed * deltaTime
+                if (this.curtainTransition.progress >= 1) {
+                    this.curtainTransition.progress = 1
+                    this.curtainTransition.active = false
+                }
+            } else {
+                this.curtainTransition.progress -= this.curtainTransition.speed * deltaTime
+                if (this.curtainTransition.progress <= 0) {
+                    this.curtainTransition.progress = 0
+                    this.curtainTransition.active = false
+                }
+            }
+        }
+        
+        if (this.curtainTransition.progress > 0) {
+            ctx.save()
+            const curtainHeight = canvas.height * this.curtainTransition.progress / 2
+            
+            // Top curtain
+            ctx.fillStyle = '#000'
+            ctx.fillRect(0, 0, canvas.width, curtainHeight)
+            
+            // Bottom curtain
+            ctx.fillRect(0, canvas.height - curtainHeight, canvas.width, curtainHeight)
+            
+            // Curtain edge decoration
+            if (curtainHeight > 2) {
+                ctx.strokeStyle = '#333'
+                ctx.lineWidth = 2
+                ctx.beginPath()
+                ctx.moveTo(0, curtainHeight)
+                ctx.lineTo(canvas.width, curtainHeight)
+                ctx.moveTo(0, canvas.height - curtainHeight)
+                ctx.lineTo(canvas.width, canvas.height - curtainHeight)
+                ctx.stroke()
+            }
+            ctx.restore()
+        }
     }
 }
 
