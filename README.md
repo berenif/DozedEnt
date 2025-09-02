@@ -2,7 +2,8 @@
 
 **Build instant multiplayer web apps, no server required**
 
-👉 **[TRY THE DEMO](https://oxism.com/trystero)** 👈
+👉 **[TRY THE DEMO](https://oxism.com/trystero)** 👈  
+🎮 **[ANIMATION SHOWCASE](docs/animations-showcase.html)** 🎮
 
 Trystero manages a clandestine courier network that lets your application's
 users talk directly with one another, encrypted and without a server middleman.
@@ -28,6 +29,7 @@ on top of WebRTC:
 - 🔐📝 Session data encryption
 - 🏭⚡ Runs server-side
 - ⚛️🪝 React hooks
+- 🎮✨ **NEW:** Advanced player animation system with combat mechanics
 
 You can see what people are building with Trystero [here](https://github.com/jeremyckahn/awesome-trystero).
 
@@ -40,6 +42,7 @@ You can see what people are building with Trystero [here](https://github.com/jer
 - [Listen for events](#listen-for-events)
 - [Broadcast events](#broadcast-events)
 - [Audio and video](#audio-and-video)
+- [Player Animation System](#player-animation-system) 🎮
 - [Advanced](#advanced)
   - [Binary metadata](#binary-metadata)
   - [Action promises](#action-promises)
@@ -294,6 +297,68 @@ room.onPeerStream((stream, peerId) => {
   peerVideos[peerId] = video
 })
 ```
+
+## Player Animation System
+
+The included player animation system provides a complete character controller with smooth animations and combat mechanics, perfect for multiplayer games.
+
+### Features
+
+- 🎮 **7 Animation States**: Idle, Running, Attack, Block, Roll, Hurt, Death
+- ⚔️ **Combat System**: Melee attacks with hitboxes, blocking with damage reduction
+- 🌀 **Evasion Mechanics**: Roll/dodge with invulnerability frames
+- ✨ **Visual Effects**: Particle systems for all actions
+- 🎯 **Input Management**: Keyboard controls with customizable bindings
+- 📊 **State Machine**: Smooth transitions between animations
+
+### Quick Start
+
+```javascript
+import AnimatedPlayer from './dist/player-animator.js'
+
+// Create an animated player
+const player = new AnimatedPlayer(x, y, {
+  health: 100,
+  stamina: 100,
+  speed: 250,
+  attackDamage: 20
+})
+
+// In your game loop
+function update(deltaTime) {
+  const input = AnimatedPlayer.createInputFromKeys(keys)
+  player.update(deltaTime, input)
+}
+
+function render(ctx) {
+  player.render(ctx)
+}
+```
+
+### Controls
+
+| Action | Primary | Alternative |
+|--------|---------|-------------|
+| Move | WASD | Arrow Keys |
+| Attack | Space | J |
+| Block | Shift (hold) | K |
+| Roll | Ctrl | L |
+
+### Building
+
+```bash
+# Build the animation system
+npm run build:animations
+
+# Build everything for production
+npm run build:docs
+```
+
+### Documentation
+
+- 📖 [Full Animation Documentation](docs/PLAYER_ANIMATIONS.md)
+- 🎮 [Live Demo](docs/animations-showcase.html)
+- 🔧 [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
 
 ## Advanced
 
