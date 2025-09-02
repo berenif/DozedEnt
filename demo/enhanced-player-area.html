@@ -1120,6 +1120,8 @@
         // Update Minimap
         function updateMinimap() {
             const minimap = document.getElementById('minimap')
+            if (!minimap) return
+            
             minimap.innerHTML = ''
             
             const minimapWidth = 200
@@ -1130,21 +1132,22 @@
             // Draw viewport indicator
             const viewport = document.createElement('div')
             viewport.style.position = 'absolute'
-            viewport.style.left = `${camera.x * scaleX}px`
-            viewport.style.top = `${camera.y * scaleY}px`
-            viewport.style.width = `${camera.width * scaleX}px`
-            viewport.style.height = `${camera.height * scaleY}px`
+            viewport.style.left = `${Math.max(0, camera.x * scaleX)}px`
+            viewport.style.top = `${Math.max(0, camera.y * scaleY)}px`
+            viewport.style.width = `${Math.min(minimapWidth, camera.width * scaleX)}px`
+            viewport.style.height = `${Math.min(minimapHeight, camera.height * scaleY)}px`
             viewport.style.border = '2px solid rgba(0, 255, 136, 0.5)'
             viewport.style.backgroundColor = 'rgba(0, 255, 136, 0.1)'
             viewport.style.pointerEvents = 'none'
+            viewport.style.boxSizing = 'border-box'
             minimap.appendChild(viewport)
             
             // Draw players on minimap
             gameState.players.forEach(player => {
                 const dot = document.createElement('div')
                 dot.className = `minimap-player ${player.isSelf ? 'self' : ''}`
-                dot.style.left = `${player.x * scaleX}px`
-                dot.style.top = `${player.y * scaleY}px`
+                dot.style.left = `${Math.max(0, Math.min(minimapWidth - 6, player.x * scaleX))}px`
+                dot.style.top = `${Math.max(0, Math.min(minimapHeight - 6, player.y * scaleY))}px`
                 minimap.appendChild(dot)
             })
         }
@@ -1370,6 +1373,36 @@
             })
         }
         
+        // Update Player Cards
+        function updatePlayerCards() {
+            gameState.players.forEach(player => {
+                const cards = document.querySelectorAll('.player-card')
+                cards.forEach(card => {
+                    const playerName = card.querySelector('.player-name')
+                    if (playerName && playerName.textContent.includes(player.name)) {
+                        // Update health bar
+                        const healthFill = card.querySelector('.health-fill')
+                        if (healthFill) {
+                            healthFill.style.width = `${(player.health / player.maxHealth) * 100}%`
+                        }
+                        // Update energy bar
+                        const energyFill = card.querySelector('.energy-fill')
+                        if (energyFill) {
+                            energyFill.style.width = `${(player.energy / player.maxEnergy) * 100}%`
+                        }
+                        // Update stats
+                        const statValues = card.querySelectorAll('.stat-value')
+                        if (statValues.length >= 4) {
+                            statValues[0].textContent = player.kills
+                            statValues[1].textContent = player.deaths
+                            statValues[2].textContent = player.score
+                            statValues[3].textContent = (player.kills / Math.max(player.deaths, 1)).toFixed(2)
+                        }
+                    }
+                })
+            })
+        }
+        
         // Simulate Health Changes
         function simulateHealthChanges() {
             gameState.players.forEach(player => {
@@ -1415,9 +1448,14 @@
             // Render everything on canvas
             drawWorld()
             
-            // Update DOM elements
-            updateMinimap()
-            simulateHealthChanges()
+            // Update DOM elements (less frequently for performance)
+            if (frameCount % 3 === 0) {  // Update every 3rd frame
+                updateMinimap()
+            }
+            
+            if (frameCount % 60 === 0) {  // Check health changes less frequently
+                simulateHealthChanges()
+            }
             
             // Update player entity positions for DOM overlay
             gameState.players.forEach(player => {
