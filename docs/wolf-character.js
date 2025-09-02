@@ -1,6 +1,8 @@
 // Wolf Character Class - Realistic wolf appearance and animations
 // Implements proper wolf visuals with ears, snout, tail, and fur texture
 
+import WolfAnimationSystem from './wolf-animation.js'
+
 export class WolfCharacter {
     constructor(x, y, type = 'normal') {
         // Position and physics
@@ -63,6 +65,41 @@ export class WolfCharacter {
         this.packId = null
         this.isAlpha = type === 'alpha'
         this.packRole = this.getPackRole()
+        
+        // Animation system
+        this.animationSystem = new WolfAnimationSystem()
+        
+        // Additional animation properties
+        this.legPositions = []
+        this.tailSegments = []
+        this.bodyBob = 0
+        this.headBob = 0
+        this.bodyLowered = 0
+        this.bodySway = 0
+        this.headScan = 0
+        this.headTilt = 0
+        this.headShake = 0
+        this.bodyStretch = 1
+        this.frontLegExtension = 0
+        this.rearLegExtension = 0
+        this.clawsOut = false
+        this.mouthOpen = 0
+        this.jawOpen = 0
+        this.teethVisible = false
+        this.furRipple = 0
+        this.furMovement = null
+        this.bodyTension = 0
+        this.chestExpansion = 1
+        this.bellyOffset = 0
+        this.mouthVibration = 0
+        this.soundWavePhase = undefined
+        this.soundWaveAmplitude = 0
+        this.flinchOffset = 0
+        this.bodyShake = 0
+        this.tailTucked = 0
+        this.earAlertness = 0
+        this.isBlinking = false
+        this.particleSystem = null
     }
     
     getWolfSize() {
@@ -125,30 +162,12 @@ export class WolfCharacter {
     
     // Update wolf state and animations
     update(deltaTime, player) {
-        // Update animations
+        // Update animation time
         this.animationTime += deltaTime
         this.animationFrame = Math.floor(this.animationTime / this.animationSpeed)
         
-        // Update breathing for idle animation
-        this.breathingOffset = Math.sin(this.animationTime * 0.002) * 2
-        
-        // Update tail animation
-        if (this.state === 'running' || this.state === 'lunging') {
-            this.tailPosition = Math.sin(this.animationTime * 0.01) * 0.3
-        } else if (this.state === 'attacking') {
-            this.tailPosition = 0.5 // Tail up when attacking
-        } else {
-            this.tailPosition = Math.sin(this.animationTime * 0.003) * 0.1 // Gentle wag
-        }
-        
-        // Update ear animation based on state
-        if (this.state === 'prowling' || this.state === 'lunging') {
-            this.earRotation = -0.3 // Ears forward when hunting
-        } else if (this.state === 'hurt') {
-            this.earRotation = 0.5 // Ears back when hurt
-        } else {
-            this.earRotation = Math.sin(this.animationTime * 0.004) * 0.1 // Slight movement
-        }
+        // Apply advanced animation system
+        this.animationSystem.applyAnimation(this, deltaTime)
         
         // Handle lunge attack
         this.updateLungeAttack(deltaTime, player)
@@ -285,38 +304,8 @@ export class WolfCharacter {
     
     // Render the wolf with realistic features
     render(ctx, camera) {
-        ctx.save()
-        
-        // Calculate screen position
-        const screenX = this.position.x - camera.x
-        const screenY = this.position.y - camera.y
-        
-        // Apply wolf scale
-        ctx.translate(screenX, screenY)
-        ctx.scale(this.size * this.facing, this.size)
-        
-        // Add shadow
-        this.drawShadow(ctx)
-        
-        // Draw wolf body parts in order
-        this.drawTail(ctx)
-        this.drawHindLegs(ctx)
-        this.drawBody(ctx)
-        this.drawFrontLegs(ctx)
-        this.drawNeck(ctx)
-        this.drawHead(ctx)
-        
-        // Draw effects based on state
-        if (this.state === 'lunging') {
-            this.drawLungeEffect(ctx)
-        }
-        
-        // Draw health bar for alpha wolves
-        if (this.isAlpha) {
-            this.drawHealthBar(ctx)
-        }
-        
-        ctx.restore()
+        // Use the advanced animation system for rendering
+        this.animationSystem.renderAnimatedWolf(ctx, this, camera)
     }
     
     drawShadow(ctx) {
