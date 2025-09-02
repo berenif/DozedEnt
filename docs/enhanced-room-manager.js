@@ -148,13 +148,13 @@ export class EnhancedRoomManager {
       lobbyRoomId
     )
     
-    // Set up lobby actions
-    const [sendRoomAnnounce, onRoomAnnounce] = this.lobbyRoom.makeAction('room_announce')
-    const [sendRoomClose, onRoomClose] = this.lobbyRoom.makeAction('room_close')
-    const [sendRoomUpdate, onRoomUpdate] = this.lobbyRoom.makeAction('room_update')
-    const [sendPlayerUpdate, onPlayerUpdate] = this.lobbyRoom.makeAction('player_update')
-    const [sendMatchmakingRequest, onMatchmakingRequest] = this.lobbyRoom.makeAction('matchmaking_request')
-    const [sendMatchmakingResponse, onMatchmakingResponse] = this.lobbyRoom.makeAction('matchmaking_response')
+    // Set up lobby actions (using shorter names to stay under byte limit)
+    const [sendRoomAnnounce, onRoomAnnounce] = this.lobbyRoom.makeAction('r_announce')
+    const [sendRoomClose, onRoomClose] = this.lobbyRoom.makeAction('r_close')
+    const [sendRoomUpdate, onRoomUpdate] = this.lobbyRoom.makeAction('r_update')
+    const [sendPlayerUpdate, onPlayerUpdate] = this.lobbyRoom.makeAction('p_update')
+    const [sendMatchmakingRequest, onMatchmakingRequest] = this.lobbyRoom.makeAction('mm_req')
+    const [sendMatchmakingResponse, onMatchmakingResponse] = this.lobbyRoom.makeAction('mm_resp')
     
     this.lobbyActions = {
       sendRoomAnnounce,
