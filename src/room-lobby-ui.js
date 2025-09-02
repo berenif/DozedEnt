@@ -786,7 +786,7 @@ export class RoomLobbyUI {
       this.isInRoom = true
       this.showInRoomView(room)
     } catch (error) {
-      console.error('Failed to create room:', error)
+      // Failed to create room
       alert('Failed to create room: ' + error.message)
     }
   }
@@ -799,7 +799,7 @@ export class RoomLobbyUI {
       this.isInRoom = true
       this.showInRoomView(room)
     } catch (error) {
-      console.error('Failed to join room:', error)
+      // Failed to join room
       alert('Failed to join room: ' + error.message)
     }
   }

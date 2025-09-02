@@ -96,7 +96,7 @@ export class WolfCharacter {
         this.chestExpansion = 1
         this.bellyOffset = 0
         this.mouthVibration = 0
-        this.soundWavePhase = undefined
+        this.soundWavePhase = null
         this.soundWaveAmplitude = 0
         this.flinchOffset = 0
         this.bodyShake = 0
@@ -234,7 +234,7 @@ export class WolfCharacter {
             } else {
                 // Continue lunge movement
                 const progress = this.lungeState.lungeProgress / this.lungeState.lungeDuration
-                const easeOut = 1 - Math.pow(1 - progress, 3) // Cubic ease-out
+                const easeOut = 1 - (1 - progress)**3 // Cubic ease-out
                 
                 // Interpolate position
                 if (this.lungeState.startPosition && this.lungeState.targetPosition) {
@@ -300,7 +300,7 @@ export class WolfCharacter {
     }
     
     getDistanceTo(target) {
-        if (!target || !target.position) return Infinity
+        if (!target || !target.position) {return Infinity}
         const dx = this.position.x - target.position.x
         const dy = this.position.y - target.position.y
         return Math.sqrt(dx * dx + dy * dy)
@@ -601,7 +601,7 @@ export class WolfCharacter {
     }
     
     drawHealthBar(ctx) {
-        if (this.health >= this.maxHealth) return
+        if (this.health >= this.maxHealth) {return}
         
         ctx.save()
         ctx.scale(1 / this.size, 1 / this.size)

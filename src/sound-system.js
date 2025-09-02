@@ -237,10 +237,11 @@ export class SoundSystem {
             await this.generateProceduralSounds()
             
             this.initialized = true
-            console.log('Sound system initialized')
+            // Sound system initialized
             
         } catch (error) {
-            console.error('Failed to initialize sound system:', error)
+            // Failed to initialize sound system
+            this.initialized = false
         }
     }
 
@@ -464,7 +465,7 @@ export class SoundSystem {
         
         const soundDef = this.soundLibrary[soundName]
         if (!soundDef) {
-            console.warn(`Sound not found: ${soundName}`)
+            // Sound not found: ${soundName}
             return null
         }
         
@@ -475,7 +476,7 @@ export class SoundSystem {
         const buffer = this.sounds.get(bufferKey)
         
         if (!buffer) {
-            console.warn(`Sound buffer not found: ${bufferKey}`)
+            // Sound buffer not found: ${bufferKey}
             return null
         }
         
@@ -675,7 +676,7 @@ export class SoundSystem {
     // Music playback (would need actual music files in production)
     playMusic(trackName) {
         // Placeholder for music playback
-        console.log(`Playing music: ${trackName}`)
+        // Playing music: ${trackName}
     }
 
     stopMusic(fadeOut = 2) {

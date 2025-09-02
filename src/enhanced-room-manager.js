@@ -1011,7 +1011,7 @@ export class EnhancedRoomManager {
         this.playerInfo.stats = data.playerStats || this.playerInfo.stats
       }
     } catch (err) {
-      console.warn('Failed to load persisted data:', err)
+      // Failed to load persisted data
     }
   }
   
@@ -1029,7 +1029,7 @@ export class EnhancedRoomManager {
       }
       localStorage.setItem(`${this.appId}_room_data`, JSON.stringify(data))
     } catch (err) {
-      console.warn('Failed to persist room data:', err)
+      // Failed to persist room data
     }
   }
   

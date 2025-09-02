@@ -120,7 +120,7 @@ export class AnimationController {
     play(animationName, options = {}) {
         const animation = this.animations.get(animationName)
         if (!animation) {
-            console.warn(`Animation not found: ${animationName}`)
+            // Animation not found: ${animationName}
             return
         }
 
