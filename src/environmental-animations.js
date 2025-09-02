@@ -122,7 +122,7 @@ export class EnvironmentalObject {
         // Update type-specific animations
         switch(this.type) {
             case 'chest':
-                this.updateChest(deltaTime, player)
+                this.updateChest(deltaTime)
                 break
             case 'door':
                 this.updateDoor(deltaTime, player)
@@ -137,7 +137,7 @@ export class EnvironmentalObject {
                 this.updatePortal(deltaTime, player)
                 break
             case 'torch':
-                this.updateTorch(deltaTime)
+                this.updateTorch()
                 break
             case 'breakable':
                 this.updateBreakable(deltaTime)
@@ -164,7 +164,7 @@ export class EnvironmentalObject {
         }
     }
     
-    updateChest(deltaTime, player) {
+    updateChest(deltaTime) {
         // Sparkle effect when closed and has loot
         if (!this.activated && this.hasLoot) {
             this.sparkleTimer += deltaTime
@@ -252,7 +252,7 @@ export class EnvironmentalObject {
     }
     
     updatePortal(deltaTime, player) {
-        if (!this.isActive) return
+        if (!this.isActive) {return}
         
         // Swirling effect
         this.swirling += deltaTime * 2
@@ -283,7 +283,7 @@ export class EnvironmentalObject {
         this.scale = 1 + Math.sin(this.swirling * 2) * 0.05
     }
     
-    updateTorch(deltaTime) {
+    updateTorch() {
         if (this.isLit) {
             // Flame animation
             this.flameWave = Math.sin(this.animationTime * 10) * 0.3 + 
@@ -400,10 +400,10 @@ export class EnvironmentalObject {
     }
     
     interact(player) {
-        if (this.activated) return false
+        if (this.activated) {return false}
         
         const dist = this.getDistanceTo(player)
-        if (dist > this.interactionRadius) return false
+        if (dist > this.interactionRadius) {return false}
         
         switch(this.type) {
             case 'chest':
@@ -576,7 +576,7 @@ export class GameOverAnimation {
         
         // Update each element based on its animation
         this.elements.forEach(element => {
-            if (this.time < element.delay) return
+            if (this.time < element.delay) {return}
             
             const localTime = this.time - element.delay
             

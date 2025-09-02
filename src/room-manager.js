@@ -269,7 +269,7 @@ class RoomManager {
             this.listeners.onGameStateUpdate(response.gameState)
           }
         } else {
-          console.error('Failed to join room:', response.reason)
+          // Failed to join room: response.reason
           this.leaveRoom()
         }
       })

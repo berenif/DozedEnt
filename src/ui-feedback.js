@@ -249,12 +249,12 @@ export class ComboCounter {
 
     onMilestone(milestone) {
         // Override this to trigger special effects
-        console.log(`Combo milestone reached: ${milestone}!`)
+        // Milestone reached: ${milestone}
     }
 
     onComboEnd(finalCount) {
         // Override this to trigger end effects
-        console.log(`Combo ended at ${finalCount} hits`)
+        // Combo ended at ${finalCount} hits
     }
 }
 
@@ -724,14 +724,14 @@ export class UIFeedbackSystem {
                 if (this.fadeTransition.alpha >= 1) {
                     this.fadeTransition.alpha = 1
                     this.fadeTransition.active = false
-                    if (this.fadeTransition.callback) this.fadeTransition.callback()
+                    if (this.fadeTransition.callback) {this.fadeTransition.callback()}
                 }
             } else {
                 this.fadeTransition.alpha -= this.fadeTransition.speed * deltaTime
                 if (this.fadeTransition.alpha <= 0) {
                     this.fadeTransition.alpha = 0
                     this.fadeTransition.active = false
-                    if (this.fadeTransition.callback) this.fadeTransition.callback()
+                    if (this.fadeTransition.callback) {this.fadeTransition.callback()}
                 }
             }
         }

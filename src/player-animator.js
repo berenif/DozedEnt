@@ -2,8 +2,7 @@
 // Provides a complete player character with roll, attack, block, and hurt animations
 
 import { CharacterAnimator, AnimationPresets } from './animation-system.js'
-import { SoundSystem } from './sound-system.js'
-import { ParticleSystem } from './particle-system.js'
+// SoundSystem and ParticleSystem imports removed - not used in this file
 
 export class AnimatedPlayer {
     constructor(x = 400, y = 300, options = {}) {
@@ -106,10 +105,10 @@ export class AnimatedPlayer {
     
     handleStateTransitions(input) {
         // Don't transition if in the middle of an action
-        if (this.state === 'attacking' && this.stateTimer > 0) return
-        if (this.state === 'rolling' && this.stateTimer > 0) return
-        if (this.state === 'hurt' && this.stateTimer > 0) return
-        if (this.state === 'dead') return
+        if (this.state === 'attacking' && this.stateTimer > 0) {return}
+        if (this.state === 'rolling' && this.stateTimer > 0) {return}
+        if (this.state === 'hurt' && this.stateTimer > 0) {return}
+        if (this.state === 'dead') {return}
         
         // Check for roll input (highest priority)
         if (input.roll && this.canRoll()) {
@@ -172,19 +171,19 @@ export class AnimatedPlayer {
                 
             case 'hurt':
                 // Knockback effect
-                this.vx *= Math.pow(0.5, deltaTime)
-                this.vy *= Math.pow(0.5, deltaTime)
+                this.vx *= 0.5**deltaTime
+                this.vy *= 0.5**deltaTime
                 break
         }
     }
     
     handleMovement(deltaTime, input, speedMultiplier = 1) {
-        let inputX = 0, inputY = 0
+        let inputX = 0; let inputY = 0
         
-        if (input.left) inputX -= 1
-        if (input.right) inputX += 1
-        if (input.up) inputY -= 1
-        if (input.down) inputY += 1
+        if (input.left) {inputX -= 1}
+        if (input.right) {inputX += 1}
+        if (input.up) {inputY -= 1}
+        if (input.down) {inputY += 1}
         
         // Normalize diagonal movement
         if (inputX !== 0 && inputY !== 0) {
@@ -213,8 +212,8 @@ export class AnimatedPlayer {
     applyPhysics(deltaTime) {
         // Apply friction
         if (this.state !== 'rolling') {
-            this.vx *= Math.pow(0.1, deltaTime)
-            this.vy *= Math.pow(0.1, deltaTime)
+            this.vx *= 0.1**deltaTime
+            this.vy *= 0.1**deltaTime
         }
         
         // Update position
@@ -224,12 +223,12 @@ export class AnimatedPlayer {
     
     startRoll(input) {
         // Determine roll direction
-        let dirX = 0, dirY = 0
+        let dirX = 0; let dirY = 0
         
-        if (input.left) dirX -= 1
-        if (input.right) dirX += 1
-        if (input.up) dirY -= 1
-        if (input.down) dirY += 1
+        if (input.left) {dirX -= 1}
+        if (input.right) {dirX += 1}
+        if (input.up) {dirY -= 1}
+        if (input.down) {dirY += 1}
         
         // If no direction input, roll in facing direction
         if (dirX === 0 && dirY === 0) {
@@ -316,7 +315,7 @@ export class AnimatedPlayer {
     }
     
     takeDamage(damage, knockbackX = 0, knockbackY = 0) {
-        if (this.invulnerable || this.state === 'dead') return false
+        if (this.invulnerable || this.state === 'dead') {return false}
         
         let actualDamage = damage
         
@@ -403,7 +402,7 @@ export class AnimatedPlayer {
     }
     
     setState(newState) {
-        if (this.state === newState) return
+        if (this.state === newState) {return}
         
         this.previousState = this.state
         this.state = newState
@@ -579,16 +578,16 @@ export class AnimatedPlayer {
     // Input helper to convert keyboard to player input
     static createInputFromKeys(keys) {
         return {
-            left: keys['a'] || keys['arrowleft'],
-            right: keys['d'] || keys['arrowright'],
-            up: keys['w'] || keys['arrowup'],
-            down: keys['s'] || keys['arrowdown'],
-            attack: keys[' '] || keys['j'],
-            block: keys['shift'] || keys['k'],
-            roll: keys['control'] || keys['l'],
-            jump: keys['space'] || keys['z'],
-            dash: keys['x'] || keys['shift'],
-            chargeAttack: keys['c'] || keys['h']
+            left: keys.a || keys.arrowleft,
+            right: keys.d || keys.arrowright,
+            up: keys.w || keys.arrowup,
+            down: keys.s || keys.arrowdown,
+            attack: keys[' '] || keys.j,
+            block: keys.shift || keys.k,
+            roll: keys.control || keys.l,
+            jump: keys.space || keys.z,
+            dash: keys.x || keys.shift,
+            chargeAttack: keys.c || keys.h
         }
     }
     

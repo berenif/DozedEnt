@@ -15,6 +15,10 @@ export class EnhancedLobbyUI {
     this.chatEnabled = config.enableChat !== false
     this.voiceEnabled = config.enableVoice === true
     
+    // Track event listeners for cleanup
+    this.eventListeners = []
+    this.boundHandlers = new Map()
+    
     this.initializeStyles()
     this.initializeUI()
     this.setupEventListeners()
@@ -1411,8 +1415,13 @@ export class EnhancedLobbyUI {
   }
   
   async handleLeaveRoom() {
-    await this.roomManager.leaveRoom()
-    this.showView('main-menu')
+    try {
+      await this.roomManager.leaveRoom()
+      this.showView('main-menu')
+    } catch (error) {
+      // Failed to leave room gracefully, force cleanup
+      this.showView('main-menu')
+    }
   }
   
   sendChatMessage() {
@@ -1473,8 +1482,31 @@ export class EnhancedLobbyUI {
     if (this.roomManager.currentRoom) {
       this.roomManager.leaveRoom()
     }
+    
+    // Clean up all event listeners
+    this.cleanupEventListeners()
+    
     this.container.innerHTML = ''
     this.roomManager.destroy()
+  }
+  
+  cleanupEventListeners() {
+    // Remove all tracked event listeners
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      if (element && typeof element.removeEventListener === 'function') {
+        element.removeEventListener(event, handler)
+      }
+    })
+    this.eventListeners = []
+    this.boundHandlers.clear()
+  }
+  
+  addEventListener(element, event, handler) {
+    // Helper method to add event listeners with tracking
+    if (element && typeof element.addEventListener === 'function') {
+      element.addEventListener(event, handler)
+      this.eventListeners.push({ element, event, handler })
+    }
   }
   
   show() {
