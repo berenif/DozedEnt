@@ -63,9 +63,11 @@
     "build": "rollup -c",
     "build:animations": "rollup -c rollup.config.animations.js",
     "build:wolf": "rollup -c rollup.config.wolf.js",
-    "build:docs": "npm run build && npm run build:animations && npm run build:wolf && cp -r dist docs/ 2>/dev/null || true && cp src/wolf-animation.js docs/ && cp src/wolf-character.js docs/ && cp demo-wolf-animation.html docs/wolf-animation-demo.html",
+    "build:docs": "npm run build && npm run build:animations && npm run build:wolf && cp -r dist docs/ 2>/dev/null || true && cp src/wolf-animation.js docs/ && cp src/wolf-character.js docs/ && cp demo-wolf-animation.html docs/wolf-animation-demo.html && cp -r demo/* docs/ 2>/dev/null || true",
     "build:all": "npm run build && npm run build:animations && npm run build:wolf",
     "build:check": "node scripts/pre-build-check.js",
+    "validate:github-pages": "node scripts/validate-github-pages.js",
+    "predeploy": "npm run build:docs && npm run validate:github-pages",
     "wasm:build": "em++ wasm/game.cpp -O3 -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o docs/game.wasm",
     "get-bundle-sizes": "node scripts/get-bundle-sizes.js",
     "test": "playwright test ./test",
@@ -74,7 +76,8 @@
     "test-relays": "node scripts/test-relays.js",
     "test:unit": "mocha 'test/unit/**/*.test.js' --recursive",
     "test:coverage": "nyc --reporter=text --reporter=html npm run test:unit",
-    "test:build": "mocha 'test/unit/build.test.js' 'test/unit/dependencies.test.js'"
+    "test:build": "mocha 'test/unit/build.test.js' 'test/unit/dependencies.test.js'",
+    "test:github-pages": "mocha 'test/unit/github-pages-deployment.test.js'"
   },
   "keywords": [
     "webrtc",
