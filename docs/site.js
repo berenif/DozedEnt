@@ -1,6 +1,9 @@
 import {joinRoom, selfId} from './dist/trystero-mqtt.min.js'  // MQTT strategy - using local bundle
 import GameRenderer from './game-renderer.js'
 import CameraEffects from './camera-effects.js'
+import { WolfCharacter } from './wolf-character.js'
+import { EnhancedWolfAISystem } from './wolf-ai-enhanced.js'
+import EnhancedRoomManager from './enhanced-room-manager.js'
 
 // WASM helpers (browser bundle)
 let wasmExports = null
@@ -57,6 +60,9 @@ const gameCanvas = byId('gameCanvas')
 // Initialize game renderer and camera effects
 let gameRenderer = null
 let cameraEffects = null
+let wolfAISystem = null
+let roomManager = null
+let wolfCharacters = []
 
 // Setup game canvas and renderers
 if (gameCanvas) {
@@ -67,9 +73,223 @@ if (gameCanvas) {
   gameRenderer = new GameRenderer(ctx, gameCanvas)
   cameraEffects = new CameraEffects(gameCanvas)
   
+  // Initialize wolf AI system
+  wolfAISystem = new EnhancedWolfAISystem(null) // No sound system for now
+  
+  // Initialize room manager for multiplayer
+  roomManager = new EnhancedRoomManager('wolf-game', {
+    enableChat: true,
+    enableSpectators: true,
+    enableMatchmaking: true,
+    maxRooms: 50
+  })
+  
   // Make globally accessible for debugging
   window.gameRenderer = gameRenderer
   window.cameraEffects = cameraEffects
+  window.wolfAISystem = wolfAISystem
+  window.roomManager = roomManager
+}
+
+// Lobby UI Functions
+window.toggleLobby = function() {
+  const lobbyPanel = document.getElementById('lobbyPanel')
+  if (lobbyPanel) {
+    lobbyPanel.style.display = lobbyPanel.style.display === 'none' ? 'block' : 'none'
+    if (lobbyPanel.style.display === 'block') {
+      updateRoomsList()
+    }
+  }
+}
+
+window.showLobbyTab = function(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none'
+  })
+  
+  // Show selected tab
+  const tab = document.getElementById(tabName + 'Tab')
+  if (tab) {
+    tab.style.display = 'block'
+  }
+  
+  // Update button styles
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.style.background = '#333'
+    btn.classList.remove('active')
+  })
+  event.target.style.background = '#4a90e2'
+  event.target.classList.add('active')
+}
+
+window.createRoom = async function() {
+  if (!roomManager) return
+  
+  const roomName = document.getElementById('roomName').value || 'New Room'
+  const gameMode = document.getElementById('gameMode').value
+  
+  try {
+    const room = await roomManager.createRoom({
+      name: roomName,
+      type: 'public',
+      gameMode: gameMode,
+      maxPlayers: 4,
+      allowSpectators: true
+    })
+    
+    console.log('Room created:', room)
+    updateRoomsList()
+    showRoomInfo(room)
+  } catch (error) {
+    console.error('Failed to create room:', error)
+    alert('Failed to create room: ' + error.message)
+  }
+}
+
+window.quickPlay = async function() {
+  if (!roomManager) return
+  
+  try {
+    const room = await roomManager.quickPlay({
+      gameMode: 'default',
+      maxPlayers: 4
+    })
+    
+    console.log('Joined room:', room)
+    showRoomInfo(room)
+  } catch (error) {
+    console.error('Quick play failed:', error)
+    alert('Quick play failed: ' + error.message)
+  }
+}
+
+window.sendChat = function() {
+  if (!roomManager || !roomManager.currentRoom) return
+  
+  const input = document.getElementById('chatInput')
+  const message = input.value.trim()
+  
+  if (message) {
+    roomManager.sendChatMessage(message)
+    input.value = ''
+  }
+}
+
+function updateRoomsList() {
+  if (!roomManager) return
+  
+  const roomsList = document.getElementById('roomsList')
+  const rooms = roomManager.getRoomList({ hasSpace: true })
+  
+  if (rooms.length === 0) {
+    roomsList.innerHTML = '<p style="color: #888;">No rooms available. Create one!</p>'
+  } else {
+    roomsList.innerHTML = rooms.map(room => `
+      <div style="border: 1px solid #333; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+        <h4 style="margin: 0; color: #4a90e2;">${room.name}</h4>
+        <p style="margin: 5px 0; color: #888;">
+          ${room.players.length}/${room.maxPlayers} players | 
+          Mode: ${room.gameMode} | 
+          Code: ${room.code}
+        </p>
+        <button onclick="joinRoom('${room.id}')" style="padding: 5px 10px; background: #4a90e2; border: none; color: white; border-radius: 3px; cursor: pointer;">Join</button>
+      </div>
+    `).join('')
+  }
+}
+
+window.joinRoom = async function(roomId) {
+  if (!roomManager) return
+  
+  try {
+    const room = await roomManager.joinRoom(roomId)
+    console.log('Joined room:', room)
+    showRoomInfo(room)
+  } catch (error) {
+    console.error('Failed to join room:', error)
+    alert('Failed to join room: ' + error.message)
+  }
+}
+
+function showRoomInfo(room) {
+  const roomsList = document.getElementById('roomsList')
+  roomsList.innerHTML = `
+    <div style="border: 2px solid #4a90e2; padding: 15px; border-radius: 5px;">
+      <h3 style="margin: 0; color: #4a90e2;">Current Room: ${room.name}</h3>
+      <p style="color: #888;">Code: ${room.code}</p>
+      <div style="margin: 10px 0;">
+        <h4 style="color: #fff;">Players:</h4>
+        ${room.players.map(p => `
+          <div style="color: #888;">
+            ${p.name} ${p.role === 'host' ? '👑' : ''} ${p.isReady ? '✅' : '⏳'}
+          </div>
+        `).join('')}
+      </div>
+      <button onclick="leaveRoom()" style="padding: 5px 10px; background: #e74c3c; border: none; color: white; border-radius: 3px; cursor: pointer;">Leave Room</button>
+      ${room.host === roomManager.localPlayer.id ? 
+        '<button onclick="startGame()" style="margin-left: 10px; padding: 5px 10px; background: #27ae60; border: none; color: white; border-radius: 3px; cursor: pointer;">Start Game</button>' : 
+        '<button onclick="toggleReady()" style="margin-left: 10px; padding: 5px 10px; background: #f39c12; border: none; color: white; border-radius: 3px; cursor: pointer;">Ready</button>'
+      }
+    </div>
+  `
+}
+
+window.leaveRoom = function() {
+  if (!roomManager) return
+  roomManager.leaveRoom()
+  updateRoomsList()
+}
+
+window.startGame = function() {
+  if (!roomManager) return
+  try {
+    roomManager.startGame()
+  } catch (error) {
+    alert(error.message)
+  }
+}
+
+window.toggleReady = function() {
+  if (!roomManager) return
+  roomManager.toggleReady()
+  if (roomManager.currentRoom) {
+    showRoomInfo(roomManager.currentRoom)
+  }
+}
+
+// Set up room manager event listeners
+if (roomManager) {
+  roomManager.on('onChatMessage', (message) => {
+    const chatMessages = document.getElementById('chatMessages')
+    if (chatMessages) {
+      const messageEl = document.createElement('div')
+      messageEl.style.marginBottom = '5px'
+      messageEl.innerHTML = `<strong style="color: #4a90e2;">${message.playerName}:</strong> ${message.text}`
+      chatMessages.appendChild(messageEl)
+      chatMessages.scrollTop = chatMessages.scrollHeight
+    }
+  })
+  
+  roomManager.on('onRoomStateChange', (state) => {
+    if (state === 'in_progress') {
+      // Hide lobby and start game
+      toggleLobby()
+      console.log('Game starting!')
+    }
+  })
+  
+  roomManager.on('onPlayerJoin', (player) => {
+    if (roomManager.currentRoom) {
+      showRoomInfo(roomManager.currentRoom)
+    }
+  })
+  
+  roomManager.on('onPlayerLeave', (player) => {
+    if (roomManager.currentRoom) {
+      showRoomInfo(roomManager.currentRoom)
+    }
+  })
 }
 
 // Wolf Vocalization Audio System
@@ -825,6 +1045,74 @@ function renderEnemies() {
     const el = enemyEls[i]
     if (el && el.parentNode === canvas) canvas.removeChild(el)
     enemyEls[i] = null
+  }
+}
+
+// Enhanced wolf rendering using WolfCharacter class
+function renderWolvesEnhanced() {
+  if (!gameCanvas || !wasmExports || typeof wasmExports.get_enemy_count !== 'function') return
+  
+  const ctx = gameCanvas.getContext('2d')
+  const count = wasmExports.get_enemy_count() | 0
+  
+  // Ensure we have enough wolf characters
+  while (wolfCharacters.length < count) {
+    const wolfType = Math.random() < 0.1 ? 'alpha' : 
+                     Math.random() < 0.3 ? 'scout' : 
+                     Math.random() < 0.5 ? 'hunter' : 'normal'
+    wolfCharacters.push(new WolfCharacter(0, 0, wolfType))
+  }
+  
+  // Update and render wolves
+  for (let i = 0; i < count; i++) {
+    const type = (typeof wasmExports.get_enemy_type === 'function') ? (wasmExports.get_enemy_type(i) | 0) : 0
+    
+    // Only use WolfCharacter for wolf enemies (type 0)
+    if (type === 0 && wolfCharacters[i]) {
+      const wolf = wolfCharacters[i]
+      const x = (typeof wasmExports.get_enemy_x === 'function') ? wasmExports.get_enemy_x(i) : 0
+      const y = (typeof wasmExports.get_enemy_y === 'function') ? wasmExports.get_enemy_y(i) : 0
+      const state = (typeof wasmExports.get_enemy_state === 'function') ? (wasmExports.get_enemy_state(i) | 0) : 0
+      
+      // Convert normalized coordinates to world coordinates
+      const worldX = (1.0 + x) * (WORLD_WIDTH / 3)
+      const worldY = (1.0 + y) * (WORLD_HEIGHT / 3)
+      
+      // Update wolf position
+      wolf.position.x = worldX
+      wolf.position.y = worldY
+      
+      // Map WASM state to wolf state
+      switch(state) {
+        case 1: wolf.setState('running'); break // seek
+        case 2: wolf.setState('prowling'); break // circle
+        case 3: wolf.setState('attacking'); break // harass
+        case 4: wolf.setState('hurt'); break // recover
+        default: wolf.setState('idle'); break
+      }
+      
+      // Update wolf (deltaTime is approximated)
+      const deltaTime = 0.016 // 60 FPS
+      const player = {
+        position: {
+          x: (selfX || 0.5) * WORLD_WIDTH,
+          y: (selfY || 0.5) * WORLD_HEIGHT
+        }
+      }
+      wolf.update(deltaTime, player)
+      
+      // Render wolf with camera offset
+      const camera = {
+        x: cameraX || 0,
+        y: cameraY || 0
+      }
+      wolf.render(ctx, camera)
+    }
+  }
+  
+  // Remove excess wolves
+  if (wolfCharacters.length > count) {
+    wolfCharacters.splice(count)
   }
 }
 
@@ -1799,7 +2087,14 @@ function gameLoop(ts) {
   } else {
     // Fallback to original rendering
     updateCamera()
-    renderEnemies()
+    
+    // Use enhanced wolf rendering if game canvas is available
+    if (gameCanvas && wolfCharacters) {
+      renderWolvesEnhanced()
+    } else {
+      renderEnemies()
+    }
+    
     renderObstacles()
     applyScreenShake(performance.now())
   }

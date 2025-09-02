@@ -1,6 +1,8 @@
 // Game Renderer - Actual game content rendering implementation
 // Provides sprites, characters, environment, and interactive elements
 
+import { WolfCharacter } from './wolf-character.js'
+
 export class GameRenderer {
     constructor(ctx, canvas) {
         this.ctx = ctx
@@ -99,44 +101,54 @@ export class GameRenderer {
     initializeEnemies() {
         // Create various enemy types
         const enemyTypes = [
-            { type: 'wolf', x: 900, y: 350, color: '#8b4513' },
-            { type: 'wolf', x: 1200, y: 340, color: '#696969' },
+            { type: 'wolf', x: 900, y: 350, wolfType: 'normal' },
+            { type: 'wolf', x: 1200, y: 340, wolfType: 'scout' },
+            { type: 'wolf', x: 1500, y: 330, wolfType: 'alpha' },
             { type: 'bandit', x: 400, y: 360, color: '#8b0000' },
             { type: 'archer', x: 1400, y: 300, color: '#2f4f4f' },
             { type: 'heavy', x: 1600, y: 350, color: '#4b0082' }
         ]
         
         enemyTypes.forEach((config, index) => {
-            this.enemies.push({
-                id: `enemy_${index}`,
-                type: config.type,
-                x: config.x,
-                y: config.y,
-                width: config.type === 'heavy' ? 56 : 40,
-                height: config.type === 'heavy' ? 72 : 56,
-                velocityX: 0,
-                velocityY: 0,
-                health: config.type === 'heavy' ? 150 : 50,
-                maxHealth: config.type === 'heavy' ? 150 : 50,
-                state: 'idle',
-                facing: -1,
-                color: config.color,
-                alertRadius: 200,
-                attackRadius: 60,
-                speed: config.type === 'heavy' ? 80 : 150,
-                damage: config.type === 'heavy' ? 20 : 10,
-                lastAttackTime: 0,
-                attackCooldown: config.type === 'archer' ? 2000 : 1000,
-                animationFrame: 0,
-                animationTime: 0,
-                isAlerted: false,
-                isGrounded: true,
-                ai: {
-                    patrolStart: config.x - 100,
-                    patrolEnd: config.x + 100,
-                    patrolDirection: 1
-                }
-            })
+            if (config.type === 'wolf') {
+                // Create wolf using WolfCharacter class
+                const wolf = new WolfCharacter(config.x, config.y, config.wolfType)
+                wolf.id = `enemy_${index}`
+                this.enemies.push(wolf)
+            } else {
+                // Create other enemy types
+                this.enemies.push({
+                    id: `enemy_${index}`,
+                    type: config.type,
+                    x: config.x,
+                    y: config.y,
+                    position: { x: config.x, y: config.y },
+                    width: config.type === 'heavy' ? 56 : 40,
+                    height: config.type === 'heavy' ? 72 : 56,
+                    velocityX: 0,
+                    velocityY: 0,
+                    health: config.type === 'heavy' ? 150 : 50,
+                    maxHealth: config.type === 'heavy' ? 150 : 50,
+                    state: 'idle',
+                    facing: -1,
+                    color: config.color,
+                    alertRadius: 200,
+                    attackRadius: 60,
+                    speed: config.type === 'heavy' ? 80 : 150,
+                    damage: config.type === 'heavy' ? 20 : 10,
+                    lastAttackTime: 0,
+                    attackCooldown: config.type === 'archer' ? 2000 : 1000,
+                    animationFrame: 0,
+                    animationTime: 0,
+                    isAlerted: false,
+                    isGrounded: true,
+                    ai: {
+                        patrolStart: config.x - 100,
+                        patrolEnd: config.x + 100,
+                        patrolDirection: 1
+                    }
+                })
+            }
         })
     }
     
@@ -713,48 +725,59 @@ export class GameRenderer {
         this.enemies.forEach(enemy => {
             if (enemy.health <= 0) {return}
             
-            this.ctx.save()
-            
-            // Enemy body
-            this.drawCharacter(
-                enemy.x,
-                enemy.y,
-                enemy.width,
-                enemy.height,
-                enemy.color,
-                enemy.facing,
-                enemy.state,
-                enemy.animationFrame
-            )
-            
-            // Alert indicator
-            if (enemy.isAlerted) {
-                this.ctx.fillStyle = '#ff0000'
-                this.ctx.font = 'bold 16px Arial'
-                this.ctx.textAlign = 'center'
-                this.ctx.fillText('!', enemy.x + enemy.width / 2, enemy.y - 10)
-            }
-            
-            // Health bar
-            if (enemy.health < enemy.maxHealth) {
-                this.drawHealthBar(
-                    enemy.x,
-                    enemy.y - 15,
+            // Check if this is a wolf enemy
+            if (enemy instanceof WolfCharacter) {
+                // Use wolf's own render method
+                enemy.render(this.ctx, this.camera)
+            } else {
+                // Render other enemy types
+                this.ctx.save()
+                
+                // Get position (handle both old and new formats)
+                const x = enemy.position ? enemy.position.x : enemy.x
+                const y = enemy.position ? enemy.position.y : enemy.y
+                
+                // Enemy body
+                this.drawCharacter(
+                    x,
+                    y,
                     enemy.width,
-                    8,
-                    enemy.health,
-                    enemy.maxHealth
+                    enemy.height,
+                    enemy.color,
+                    enemy.facing,
+                    enemy.state,
+                    enemy.animationFrame
                 )
+                
+                // Alert indicator
+                if (enemy.isAlerted) {
+                    this.ctx.fillStyle = '#ff0000'
+                    this.ctx.font = 'bold 16px Arial'
+                    this.ctx.textAlign = 'center'
+                    this.ctx.fillText('!', x + enemy.width / 2, y - 10)
+                }
+                
+                // Health bar
+                if (enemy.health < enemy.maxHealth) {
+                    this.drawHealthBar(
+                        x,
+                        y - 15,
+                        enemy.width,
+                        8,
+                        enemy.health,
+                        enemy.maxHealth
+                    )
+                }
+                
+                // Special enemy features
+                if (enemy.type === 'archer') {
+                    this.drawBow(enemy)
+                } else if (enemy.type === 'heavy') {
+                    this.drawShield(enemy)
+                }
+                
+                this.ctx.restore()
             }
-            
-            // Special enemy features
-            if (enemy.type === 'archer') {
-                this.drawBow(enemy)
-            } else if (enemy.type === 'heavy') {
-                this.drawShield(enemy)
-            }
-            
-            this.ctx.restore()
         })
     }
     
@@ -1223,60 +1246,86 @@ export class GameRenderer {
         this.enemies.forEach(enemy => {
             if (enemy.health <= 0) {return}
             
-            // Update animation
-            enemy.animationTime += deltaTime
-            enemy.animationFrame = Math.floor(enemy.animationTime * 10) % 4
-            
-            // Simple AI behavior
-            const distToPlayer = Math.sqrt(
-                (this.player.x - enemy.x)**2 +
-                (this.player.y - enemy.y)**2
-            )
-            
-            // Alert state
-            if (distToPlayer < enemy.alertRadius) {
-                enemy.isAlerted = true
+            // Check if this is a wolf enemy
+            if (enemy instanceof WolfCharacter) {
+                // Update wolf using its own update method
+                enemy.update(deltaTime, this.player)
                 
-                // Move towards player
-                if (distToPlayer > enemy.attackRadius) {
-                    const dx = this.player.x - enemy.x
-                    enemy.velocityX = Math.sign(dx) * enemy.speed
-                    enemy.facing = Math.sign(dx)
-                    enemy.state = 'running'
-                } else {
-                    // Attack
-                    enemy.velocityX = 0
-                    if (Date.now() - enemy.lastAttackTime > enemy.attackCooldown) {
-                        enemy.state = 'attacking'
-                        enemy.lastAttackTime = Date.now()
-                        
-                        // Create projectile for archers
-                        if (enemy.type === 'archer') {
-                            this.createProjectile(
-                                enemy.x + (enemy.facing === 1 ? enemy.width : 0),
-                                enemy.y + enemy.height * 0.4,
-                                enemy.facing * 300,
-                                0,
-                                'arrow'
-                            )
-                        }
-                    } else {
-                        enemy.state = 'idle'
-                    }
+                // Simple AI for wolf movement towards player
+                const distToPlayer = enemy.getDistanceTo(this.player)
+                
+                if (distToPlayer < enemy.detectionRange && distToPlayer > enemy.attackRange) {
+                    // Move towards player if in detection range but not attack range
+                    enemy.moveTowards(this.player.position)
+                } else if (distToPlayer <= enemy.attackRange) {
+                    // Attack if in range
+                    enemy.attack(this.player)
                 }
             } else {
-                // Patrol behavior
-                enemy.isAlerted = false
-                if (enemy.x <= enemy.ai.patrolStart || enemy.x >= enemy.ai.patrolEnd) {
-                    enemy.ai.patrolDirection *= -1
+                // Original enemy update logic for non-wolf enemies
+                const x = enemy.position ? enemy.position.x : enemy.x
+                const y = enemy.position ? enemy.position.y : enemy.y
+                
+                // Update animation
+                enemy.animationTime += deltaTime
+                enemy.animationFrame = Math.floor(enemy.animationTime * 10) % 4
+                
+                // Simple AI behavior
+                const distToPlayer = Math.sqrt(
+                    (this.player.x - x)**2 +
+                    (this.player.y - y)**2
+                )
+                
+                // Alert state
+                if (distToPlayer < enemy.alertRadius) {
+                    enemy.isAlerted = true
+                    
+                    // Move towards player
+                    if (distToPlayer > enemy.attackRadius) {
+                        const dx = this.player.x - x
+                        enemy.velocityX = Math.sign(dx) * enemy.speed
+                        enemy.facing = Math.sign(dx)
+                        enemy.state = 'running'
+                    } else {
+                        // Attack
+                        enemy.velocityX = 0
+                        if (Date.now() - enemy.lastAttackTime > enemy.attackCooldown) {
+                            enemy.state = 'attacking'
+                            enemy.lastAttackTime = Date.now()
+                            
+                            // Create projectile for archers
+                            if (enemy.type === 'archer') {
+                                this.createProjectile(
+                                    x + (enemy.facing === 1 ? enemy.width : 0),
+                                    y + enemy.height * 0.4,
+                                    enemy.facing * 300,
+                                    0,
+                                    'arrow'
+                                )
+                            }
+                        } else {
+                            enemy.state = 'idle'
+                        }
+                    }
+                } else {
+                    // Patrol behavior
+                    enemy.isAlerted = false
+                    if (x <= enemy.ai.patrolStart || x >= enemy.ai.patrolEnd) {
+                        enemy.ai.patrolDirection *= -1
+                    }
+                    enemy.velocityX = enemy.ai.patrolDirection * enemy.speed * 0.5
+                    enemy.facing = enemy.ai.patrolDirection
+                    enemy.state = 'running'
                 }
-                enemy.velocityX = enemy.ai.patrolDirection * enemy.speed * 0.5
-                enemy.facing = enemy.ai.patrolDirection
-                enemy.state = 'running'
+                
+                // Update position
+                if (enemy.position) {
+                    enemy.position.x += enemy.velocityX * deltaTime
+                    enemy.x = enemy.position.x
+                } else {
+                    enemy.x += enemy.velocityX * deltaTime
+                }
             }
-            
-            // Update position
-            enemy.x += enemy.velocityX * deltaTime
         })
     }
     

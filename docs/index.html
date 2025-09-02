@@ -38,6 +38,41 @@
             <div id="connection-status">Connecting...</div>
         </div>
 
+        <!-- Lobby Panel (Hidden by default) -->
+        <div class="lobby-panel" id="lobbyPanel" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.95); border: 2px solid #4a90e2; border-radius: 10px; padding: 20px; z-index: 1000; min-width: 400px; max-width: 600px;">
+            <div class="lobby-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #4a90e2; margin: 0;">🎮 Game Lobby</h3>
+                <button class="close-btn" onclick="toggleLobby()" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+            <div class="lobby-content">
+                <div class="lobby-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="tab-btn active" onclick="showLobbyTab('rooms')" style="padding: 8px 16px; background: #4a90e2; border: none; color: white; border-radius: 5px; cursor: pointer;">Rooms</button>
+                    <button class="tab-btn" onclick="showLobbyTab('create')" style="padding: 8px 16px; background: #333; border: none; color: white; border-radius: 5px; cursor: pointer;">Create</button>
+                    <button class="tab-btn" onclick="showLobbyTab('quick')" style="padding: 8px 16px; background: #333; border: none; color: white; border-radius: 5px; cursor: pointer;">Quick Play</button>
+                </div>
+                <div class="tab-content" id="roomsTab">
+                    <div id="roomsList" style="color: #fff; max-height: 300px; overflow-y: auto;">Loading rooms...</div>
+                </div>
+                <div class="tab-content" id="createTab" style="display: none;">
+                    <input type="text" id="roomName" placeholder="Room Name" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;" />
+                    <select id="gameMode" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;">
+                        <option value="default">Default</option>
+                        <option value="deathmatch">Deathmatch</option>
+                        <option value="team">Team Battle</option>
+                        <option value="survival">Survival</option>
+                    </select>
+                    <button onclick="createRoom()" style="width: 100%; padding: 10px; background: #4a90e2; border: none; color: white; border-radius: 5px; cursor: pointer;">Create Room</button>
+                </div>
+                <div class="tab-content" id="quickTab" style="display: none;">
+                    <button onclick="quickPlay()" style="width: 100%; padding: 20px; background: #4a90e2; border: none; color: white; border-radius: 5px; cursor: pointer; font-size: 18px;">🎯 Find Match</button>
+                </div>
+                <div class="chat-section" id="lobbyChat" style="margin-top: 20px;">
+                    <div id="chatMessages" style="height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #1a1a1a; color: #fff; border-radius: 5px; margin-bottom: 10px;"></div>
+                    <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendChat()" style="width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;" />
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Panel (Hidden by default) -->
         <div class="settings-panel" id="settingsPanel">
             <div class="settings-header">
@@ -93,6 +128,8 @@
             <div class="left-controls">
                 <!-- Settings Button -->
                 <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+                <!-- Lobby Button -->
+                <button class="lobby-btn" onclick="toggleLobby()" style="margin-left: 10px;">🏠</button>
             </div>
 
             <!-- Right Side: Action Buttons -->
