@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Complete Game - 8 Phase Core Loop with Multiplayer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #0a0e27;
+            background-image: 
+                radial-gradient(ellipse at top, #1a237e 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, #0d47a1 0%, transparent 50%);
+            min-height: 100vh;
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Game Container */
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Main Canvas */
+        #gameCanvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1280px;
+            height: 720px;
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: crisp-edges;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+        
+        /* Top HUD */
+        .top-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            pointer-events: none;
+        }
+        
+        .top-hud > * {
+            pointer-events: auto;
+        }
+        
+        /* Player Info */
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .health-bar, .stamina-bar {
+            width: 250px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff6b6b);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+        
+        .stamina-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00bcd4, #00e5ff);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+        
+        .bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        /* Score and Currency */
+        .score-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .score, .currency {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+        }
+        
+        .gold {
+            color: #ffd700;
+        }
+        
+        .essence {
+            color: #00e5ff;
+        }
+        
+        /* Phase Indicator */
+        .phase-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 30px;
+            padding: 10px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 101;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        /* Bottom Controls */
+        .bottom-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 100;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .action-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6));
+            border: 3px solid rgba(0, 255, 255, 0.5);
+            color: white;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.1);
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .cooldown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        /* Minimap */
+        .minimap {
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .minimap-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .minimap-player {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #00ff88;
+            z-index: 2;
+        }
+        
+        .minimap-enemy {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #ff4444;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        
+        /* Overlays */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .overlay.active {
+            display: flex;
+        }
+        
+        .overlay-content {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            border: 3px solid rgba(0, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);
+            animation: overlayFadeIn 0.3s ease;
+        }
+        
+        @keyframes overlayFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .overlay-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            background: linear-gradient(45deg, #00ffff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Choice Overlay */
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .choice-btn {
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .choice-btn:hover {
+            transform: translateX(10px);
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .choice-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .choice-safe {
+            background: #4ade80;
+            color: #000;
+        }
+        
+        .choice-spicy {
+            background: #ff6b6b;
+            color: #000;
+        }
+        
+        .choice-weird {
+            background: #a78bfa;
+            color: #000;
+        }
+        
+        .choice-rarity {
+            float: right;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        /* Shop Overlay */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .shop-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .shop-item:hover {
+            transform: scale(1.05);
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+        
+        .shop-item-icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+        
+        .shop-item-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .shop-item-cost {
+            font-size: 14px;
+        }
+        
+        /* Mobile Controls */
+        #joystick {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            display: none;
+            z-index: 200;
+        }
+        
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+        }
+        
+        #joystick-knob {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #00ffff, #0080ff);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-size: 14px;
+            z-index: 101;
+        }
+        
+        .status-online {
+            color: #4ade80;
+        }
+        
+        .status-offline {
+            color: #ff6b6b;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #gameCanvas {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+            
+            .top-hud {
+                padding: 10px;
+            }
+            
+            .health-bar, .stamina-bar {
+                width: 150px;
+                height: 20px;
+            }
+            
+            .action-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+            
+            .minimap {
+                width: 100px;
+                height: 100px;
+            }
+            
+            #joystick {
+                display: block;
+            }
+            
+            .phase-indicator {
+                font-size: 14px;
+                padding: 8px 20px;
+            }
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #0a0e27;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: #00ffff;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Game...</div>
+    </div>
+    
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Main Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Phase Indicator -->
+        <div class="phase-indicator" id="phaseIndicator">EXPLORE</div>
+        
+        <!-- Top HUD -->
+        <div class="top-hud">
+            <div class="player-info">
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill" style="width: 100%"></div>
+                    <span class="bar-text" id="healthText">100/100</span>
+                </div>
+                <div class="stamina-bar">
+                    <div class="stamina-fill" id="staminaFill" style="width: 100%"></div>
+                    <span class="bar-text" id="staminaText">50/50</span>
+                </div>
+            </div>
+            
+            <div class="score-info">
+                <div class="score">Score: <span id="scoreValue">0</span></div>
+                <div class="currency">
+                    <span class="gold">🔶 <span id="goldValue">0</span></span>
+                    <span class="essence">🔷 <span id="essenceValue">0</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="connection-status">
+            <span id="connectionStatus" class="status-offline">● Offline</span>
+            <span id="playerCount"> (1 player)</span>
+        </div>
+        
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
+            <div class="action-buttons">
+                <button class="action-btn" id="attackBtn" data-action="attack">
+                    ⚔️
+                    <div class="cooldown" id="attackCooldown"></div>
+                </button>
+                <button class="action-btn" id="rollBtn" data-action="roll">
+                    🌀
+                    <div class="cooldown" id="rollCooldown"></div>
+                </button>
+                <button class="action-btn" id="blockBtn" data-action="block">
+                    🛡️
+                    <div class="cooldown" id="blockCooldown"></div>
+                </button>
+            </div>
+            
+            <div class="minimap">
+                <div class="minimap-content" id="minimapContent">
+                    <div class="minimap-player" id="minimapPlayer"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Joystick -->
+        <div id="joystick">
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Choice Overlay -->
+        <div class="overlay" id="choiceOverlay">
+            <div class="overlay-content">
+                <h2 class="overlay-title">Choose Your Path</h2>
+                <div class="choices" id="choiceContainer"></div>
+            </div>
+        </div>
+        
+        <!-- Risk Phase Overlay -->
+        <div class="overlay" id="riskOverlay">
+            <div class="overlay-content">
+                <h2 class="overlay-title">⚠️ Risk Phase</h2>
+                <div style="text-align: center;">
+                    <p>Risk Multiplier: <span id="riskMultiplier">1.0x</span></p>
+                    <div id="curseList" style="margin: 20px 0;"></div>
+                    <div id="timedChallenge" style="display: none;">
+                        <p>Challenge: <span id="challengeProgress">0</span>/<span id="challengeTarget">5</span></p>
+                        <p>Time: <span id="challengeTime">30</span>s</p>
+                    </div>
+                    <button class="choice-btn" onclick="escapeRisk()">Escape (Cost: 10 Stamina)</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Escalate Phase Overlay -->
+        <div class="overlay" id="escalateOverlay">
+            <div class="overlay-content">
+                <h2 class="overlay-title">📈 Escalation</h2>
+                <div style="text-align: center;">
+                    <p>Escalation Level: <span id="escalationLevel">0%</span></p>
+                    <div style="margin: 20px 0;">
+                        <p>Enemy Modifiers:</p>
+                        <p>Speed: <span id="enemySpeed">1.0x</span></p>
+                        <p>Damage: <span id="enemyDamage">1.0x</span></p>
+                        <p>Spawn Rate: <span id="spawnRate">1.0x</span></p>
+                    </div>
+                    <div id="minibossAlert" style="display: none;">
+                        <p style="color: #ff6b6b; font-size: 20px;">⚔️ MINIBOSS ACTIVE!</p>
+                        <div style="width: 100%; height: 20px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden;">
+                            <div id="minibossHealth" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff4444, #ff6b6b);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CashOut Phase Overlay -->
+        <div class="overlay" id="cashoutOverlay">
+            <div class="overlay-content">
+                <h2 class="overlay-title">💰 Shop</h2>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span class="gold" style="margin-right: 20px;">🔶 Gold: <span id="shopGold">0</span></span>
+                    <span class="essence">🔷 Essence: <span id="shopEssence">0</span></span>
+                </div>
+                <div class="shop-grid" id="shopItems"></div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <button class="choice-btn" onclick="buyHeal()">Heal (50🔶 5🔷)</button>
+                    <button class="choice-btn" onclick="rerollShop()">Reroll (20🔶)</button>
+                    <button class="choice-btn" onclick="exitShop()">Leave Shop</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Over Overlay -->
+        <div class="overlay" id="gameOverOverlay">
+            <div class="overlay-content">
+                <h2 class="overlay-title">Game Over</h2>
+                <div style="text-align: center;">
+                    <p style="font-size: 20px; margin: 20px 0;">You were defeated!</p>
+                    <p>Final Score: <span id="finalScore">0</span></p>
+                    <p>Rooms Cleared: <span id="roomsCleared">0</span></p>
+                    <button class="choice-btn" onclick="restartGame()">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import game modules
+        import { GameRenderer } from '../src/game-renderer.js';
+        import { AnimationSystem } from '../src/animation-system.js';
+        import { ParticleSystem } from '../src/particle-system.js';
+        import { SoundSystem } from '../src/sound-system.js';
+        import { UIFeedback } from '../src/ui-feedback.js';
+        import { CameraEffects } from '../src/camera-effects.js';
+        import { GameFeelEnhancer } from '../src/game-feel-enhancer.js';
+        
+        // Game State
+        let wasmModule = null;
+        let gameRenderer = null;
+        let animationSystem = null;
+        let particleSystem = null;
+        let soundSystem = null;
+        let uiFeedback = null;
+        let cameraEffects = null;
+        let gameFeelEnhancer = null;
+        
+        let canvas = null;
+        let ctx = null;
+        let gameRunning = false;
+        let currentPhase = 'explore';
+        let inputState = { dx: 0, dy: 0, rolling: false };
+        
+        // Initialize Game
+        async function initGame() {
+            try {
+                // Get canvas
+                canvas = document.getElementById('gameCanvas');
+                ctx = canvas.getContext('2d');
+                
+                // Set canvas size
+                canvas.width = 1280;
+                canvas.height = 720;
+                
+                // Load WASM module
+                const response = await fetch('../docs/game.wasm');
+                const wasmBytes = await response.arrayBuffer();
+                const wasmImports = {
+                    env: {
+                        memory: new WebAssembly.Memory({ initial: 256, maximum: 256 }),
+                        abort: () => console.error('WASM abort'),
+                        trace: (msg) => console.log('WASM:', msg),
+                        seed: () => Date.now()
+                    }
+                };
+                
+                const wasmResult = await WebAssembly.instantiate(wasmBytes, wasmImports);
+                wasmModule = wasmResult.instance.exports;
+                
+                // Initialize game systems
+                gameRenderer = new GameRenderer(canvas);
+                animationSystem = new AnimationSystem();
+                particleSystem = new ParticleSystem();
+                soundSystem = new SoundSystem();
+                uiFeedback = new UIFeedback();
+                cameraEffects = new CameraEffects();
+                gameFeelEnhancer = new GameFeelEnhancer();
+                
+                // Initialize WASM game
+                if (wasmModule.init_run) {
+                    wasmModule.init_run(Date.now(), 0); // seed, weapon
+                }
+                
+                // Setup input handlers
+                setupInputHandlers();
+                
+                // Hide loading screen
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+                // Start game loop
+                gameRunning = true;
+                requestAnimationFrame(gameLoop);
+                
+            } catch (error) {
+                console.error('Failed to initialize game:', error);
+                document.querySelector('.loading-text').textContent = 'Failed to load game';
+            }
+        }
+        
+        // Game Loop
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+            
+            // Update WASM game
+            if (wasmModule && wasmModule.update) {
+                wasmModule.update(inputState.dx, inputState.dy, inputState.rolling ? 1 : 0, deltaTime);
+            }
+            
+            // Get game state
+            updateGameState();
+            
+            // Render game
+            renderGame();
+            
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update Game State from WASM
+        function updateGameState() {
+            if (!wasmModule) return;
+            
+            // Get phase
+            if (wasmModule.get_phase) {
+                const phaseNum = wasmModule.get_phase();
+                const phases = ['explore', 'fight', 'choose', 'powerup', 'risk', 'escalate', 'cashout', 'reset'];
+                currentPhase = phases[phaseNum] || 'explore';
+                updatePhaseIndicator(currentPhase);
+            }
+            
+            // Update player stats
+            if (wasmModule.get_player_health) {
+                const health = wasmModule.get_player_health();
+                const maxHealth = wasmModule.get_player_max_health ? wasmModule.get_player_max_health() : 100;
+                updateHealthBar(health, maxHealth);
+            }
+            
+            if (wasmModule.get_player_stamina) {
+                const stamina = wasmModule.get_player_stamina();
+                const maxStamina = wasmModule.get_player_max_stamina ? wasmModule.get_player_max_stamina() : 50;
+                updateStaminaBar(stamina, maxStamina);
+            }
+            
+            // Update currency
+            if (wasmModule.get_gold) {
+                document.getElementById('goldValue').textContent = wasmModule.get_gold();
+            }
+            if (wasmModule.get_essence) {
+                document.getElementById('essenceValue').textContent = wasmModule.get_essence();
+            }
+            
+            // Handle phase-specific overlays
+            handlePhaseOverlays();
+        }
+        
+        // Render Game
+        function renderGame() {
+            if (!ctx) return;
+            
+            // Clear canvas
+            ctx.fillStyle = '#0a0e27';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            drawGrid();
+            
+            // Draw game entities (placeholder)
+            drawEntities();
+            
+            // Update minimap
+            updateMinimap();
+        }
+        
+        // Draw Grid
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            const gridSize = 50;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // Draw Entities (placeholder)
+        function drawEntities() {
+            // Draw player
+            ctx.fillStyle = '#00ff88';
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw some enemies (placeholder)
+            ctx.fillStyle = '#ff4444';
+            for (let i = 0; i < 3; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Update UI Elements
+        function updatePhaseIndicator(phase) {
+            const indicator = document.getElementById('phaseIndicator');
+            indicator.textContent = phase.toUpperCase();
+            
+            // Update color based on phase
+            const colors = {
+                explore: '#4ade80',
+                fight: '#ff6b6b',
+                choose: '#a78bfa',
+                powerup: '#ffd700',
+                risk: '#ff4444',
+                escalate: '#ff8844',
+                cashout: '#00e5ff',
+                reset: '#888888'
+            };
+            indicator.style.borderColor = colors[phase] || '#00ffff';
+        }
+        
+        function updateHealthBar(current, max) {
+            const fill = document.getElementById('healthFill');
+            const text = document.getElementById('healthText');
+            const percent = (current / max) * 100;
+            fill.style.width = percent + '%';
+            text.textContent = `${Math.floor(current)}/${max}`;
+        }
+        
+        function updateStaminaBar(current, max) {
+            const fill = document.getElementById('staminaFill');
+            const text = document.getElementById('staminaText');
+            const percent = (current / max) * 100;
+            fill.style.width = percent + '%';
+            text.textContent = `${Math.floor(current)}/${max}`;
+        }
+        
+        function updateMinimap() {
+            const player = document.getElementById('minimapPlayer');
+            // Update player position on minimap
+            player.style.left = '50%';
+            player.style.top = '50%';
+        }
+        
+        // Handle Phase Overlays
+        function handlePhaseOverlays() {
+            // Hide all overlays first
+            document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+            
+            switch(currentPhase) {
+                case 'choose':
+                    showChoiceOverlay();
+                    break;
+                case 'risk':
+                    showRiskOverlay();
+                    break;
+                case 'escalate':
+                    showEscalateOverlay();
+                    break;
+                case 'cashout':
+                    showCashoutOverlay();
+                    break;
+            }
+        }
+        
+        // Show Choice Overlay
+        function showChoiceOverlay() {
+            if (!wasmModule || !wasmModule.get_choice_count) return;
+            
+            const count = wasmModule.get_choice_count();
+            if (count === 0) return;
+            
+            const container = document.getElementById('choiceContainer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < count; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                
+                const type = wasmModule.get_choice_type ? wasmModule.get_choice_type(i) : 0;
+                const types = ['safe', 'spicy', 'weird'];
+                const typeClass = `choice-${types[type] || 'safe'}`;
+                
+                btn.innerHTML = `
+                    <span class="choice-type ${typeClass}">${types[type] || 'safe'}</span>
+                    Choice ${i + 1}
+                    <span class="choice-rarity">Common</span>
+                `;
+                
+                btn.onclick = () => selectChoice(i);
+                container.appendChild(btn);
+            }
+            
+            document.getElementById('choiceOverlay').classList.add('active');
+        }
+        
+        // Show Risk Overlay
+        function showRiskOverlay() {
+            if (!wasmModule) return;
+            
+            if (wasmModule.get_risk_multiplier) {
+                document.getElementById('riskMultiplier').textContent = 
+                    wasmModule.get_risk_multiplier().toFixed(1) + 'x';
+            }
+            
+            // Show curses
+            const curseList = document.getElementById('curseList');
+            curseList.innerHTML = '<p>Active Curses:</p>';
+            
+            if (wasmModule.get_curse_count) {
+                const count = wasmModule.get_curse_count();
+                for (let i = 0; i < count; i++) {
+                    const p = document.createElement('p');
+                    p.textContent = `Curse ${i + 1}`;
+                    curseList.appendChild(p);
+                }
+            }
+            
+            document.getElementById('riskOverlay').classList.add('active');
+        }
+        
+        // Show Escalate Overlay
+        function showEscalateOverlay() {
+            if (!wasmModule) return;
+            
+            if (wasmModule.get_escalation_level) {
+                const level = wasmModule.get_escalation_level();
+                document.getElementById('escalationLevel').textContent = 
+                    Math.floor(level * 100) + '%';
+            }
+            
+            if (wasmModule.get_enemy_speed_modifier) {
+                document.getElementById('enemySpeed').textContent = 
+                    wasmModule.get_enemy_speed_modifier().toFixed(1) + 'x';
+            }
+            
+            if (wasmModule.get_enemy_damage_modifier) {
+                document.getElementById('enemyDamage').textContent = 
+                    wasmModule.get_enemy_damage_modifier().toFixed(1) + 'x';
+            }
+            
+            if (wasmModule.get_spawn_rate_modifier) {
+                document.getElementById('spawnRate').textContent = 
+                    wasmModule.get_spawn_rate_modifier().toFixed(1) + 'x';
+            }
+            
+            document.getElementById('escalateOverlay').classList.add('active');
+        }
+        
+        // Show Cashout Overlay
+        function showCashoutOverlay() {
+            if (!wasmModule) return;
+            
+            document.getElementById('shopGold').textContent = 
+                wasmModule.get_gold ? wasmModule.get_gold() : 0;
+            document.getElementById('shopEssence').textContent = 
+                wasmModule.get_essence ? wasmModule.get_essence() : 0;
+            
+            // Populate shop items
+            const container = document.getElementById('shopItems');
+            container.innerHTML = '';
+            
+            if (wasmModule.get_shop_item_count) {
+                const count = wasmModule.get_shop_item_count();
+                for (let i = 0; i < count; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'shop-item';
+                    item.innerHTML = `
+                        <div class="shop-item-icon">📦</div>
+                        <div class="shop-item-name">Item ${i + 1}</div>
+                        <div class="shop-item-cost">50🔶</div>
+                    `;
+                    item.onclick = () => buyShopItem(i);
+                    container.appendChild(item);
+                }
+            }
+            
+            document.getElementById('cashoutOverlay').classList.add('active');
+        }
+        
+        // Input Handlers
+        function setupInputHandlers() {
+            // Keyboard controls
+            const keys = {};
+            
+            document.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                updateInput();
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+                updateInput();
+            });
+            
+            function updateInput() {
+                inputState.dx = 0;
+                inputState.dy = 0;
+                
+                if (keys['w'] || keys['arrowup']) inputState.dy = -1;
+                if (keys['s'] || keys['arrowdown']) inputState.dy = 1;
+                if (keys['a'] || keys['arrowleft']) inputState.dx = -1;
+                if (keys['d'] || keys['arrowright']) inputState.dx = 1;
+                
+                inputState.rolling = keys[' '] || keys['shift'];
+            }
+            
+            // Action buttons
+            document.getElementById('attackBtn').addEventListener('click', () => {
+                // Attack action
+                console.log('Attack!');
+            });
+            
+            document.getElementById('rollBtn').addEventListener('click', () => {
+                inputState.rolling = true;
+                setTimeout(() => inputState.rolling = false, 500);
+            });
+            
+            document.getElementById('blockBtn').addEventListener('click', () => {
+                // Block action
+                console.log('Block!');
+            });
+            
+            // Mobile joystick
+            setupJoystick();
+        }
+        
+        // Setup Mobile Joystick
+        function setupJoystick() {
+            const joystick = document.getElementById('joystick');
+            const knob = document.getElementById('joystick-knob');
+            const base = document.getElementById('joystick-base');
+            
+            let touching = false;
+            let centerX = 0;
+            let centerY = 0;
+            
+            function handleStart(e) {
+                touching = true;
+                const rect = base.getBoundingClientRect();
+                centerX = rect.left + rect.width / 2;
+                centerY = rect.top + rect.height / 2;
+                handleMove(e);
+            }
+            
+            function handleMove(e) {
+                if (!touching) return;
+                
+                const touch = e.touches ? e.touches[0] : e;
+                const dx = touch.clientX - centerX;
+                const dy = touch.clientY - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxDistance = 50;
+                
+                if (distance < maxDistance) {
+                    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+                    inputState.dx = dx / maxDistance;
+                    inputState.dy = dy / maxDistance;
+                } else {
+                    const angle = Math.atan2(dy, dx);
+                    const x = Math.cos(angle) * maxDistance;
+                    const y = Math.sin(angle) * maxDistance;
+                    knob.style.transform = `translate(${x}px, ${y}px)`;
+                    inputState.dx = Math.cos(angle);
+                    inputState.dy = Math.sin(angle);
+                }
+            }
+            
+            function handleEnd() {
+                touching = false;
+                knob.style.transform = 'translate(0, 0)';
+                inputState.dx = 0;
+                inputState.dy = 0;
+            }
+            
+            base.addEventListener('touchstart', handleStart);
+            base.addEventListener('touchmove', handleMove);
+            base.addEventListener('touchend', handleEnd);
+            base.addEventListener('mousedown', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+        }
+        
+        // Game Actions
+        window.selectChoice = function(index) {
+            if (wasmModule && wasmModule.commit_choice) {
+                wasmModule.commit_choice(index);
+            }
+            document.getElementById('choiceOverlay').classList.remove('active');
+        };
+        
+        window.escapeRisk = function() {
+            if (wasmModule && wasmModule.escape_risk) {
+                wasmModule.escape_risk();
+            }
+            document.getElementById('riskOverlay').classList.remove('active');
+        };
+        
+        window.buyShopItem = function(index) {
+            if (wasmModule && wasmModule.buy_shop_item) {
+                wasmModule.buy_shop_item(index);
+            }
+        };
+        
+        window.buyHeal = function() {
+            if (wasmModule && wasmModule.buy_heal) {
+                wasmModule.buy_heal();
+            }
+        };
+        
+        window.rerollShop = function() {
+            if (wasmModule && wasmModule.reroll_shop_items) {
+                wasmModule.reroll_shop_items();
+            }
+            showCashoutOverlay();
+        };
+        
+        window.exitShop = function() {
+            if (wasmModule && wasmModule.exit_cashout) {
+                wasmModule.exit_cashout();
+            }
+            document.getElementById('cashoutOverlay').classList.remove('active');
+        };
+        
+        window.restartGame = function() {
+            if (wasmModule && wasmModule.reset_run) {
+                wasmModule.reset_run(Date.now());
+            }
+            document.getElementById('gameOverOverlay').classList.remove('active');
+        };
+        
+        // Initialize on load
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>

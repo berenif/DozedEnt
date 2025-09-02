@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movement Physics Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+        }
+        
+        .debug-panel {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 1px solid #444;
+            min-width: 300px;
+        }
+        
+        .debug-panel h3 {
+            color: #4a90e2;
+            margin-bottom: 15px;
+        }
+        
+        .debug-section {
+            margin-bottom: 20px;
+        }
+        
+        .debug-section h4 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .debug-value {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 12px;
+        }
+        
+        .debug-value label {
+            color: #94a3b8;
+        }
+        
+        .debug-value span {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        
+        .controls-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+        
+        .indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            margin-left: 5px;
+        }
+        
+        .indicator.active {
+            background: #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="debug-panel">
+            <h3>Movement Physics Debug</h3>
+            
+            <div class="debug-section">
+                <h4>Player Position</h4>
+                <div class="debug-value">
+                    <label>World X:</label>
+                    <span id="worldX">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>World Y:</label>
+                    <span id="worldY">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>WASM X (0-1):</label>
+                    <span id="wasmX">0.5</span>
+                </div>
+                <div class="debug-value">
+                    <label>WASM Y (0-1):</label>
+                    <span id="wasmY">0.5</span>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h4>Velocity</h4>
+                <div class="debug-value">
+                    <label>X Velocity:</label>
+                    <span id="velX">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Y Velocity:</label>
+                    <span id="velY">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Speed:</label>
+                    <span id="speed">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Max Speed:</label>
+                    <span id="maxSpeed">500</span>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h4>Camera</h4>
+                <div class="debug-value">
+                    <label>Camera X:</label>
+                    <span id="camX">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Camera Y:</label>
+                    <span id="camY">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Target X:</label>
+                    <span id="camTargetX">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Target Y:</label>
+                    <span id="camTargetY">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Smoothing:</label>
+                    <span id="camSmoothing">0.1</span>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h4>Physics</h4>
+                <div class="debug-value">
+                    <label>Acceleration:</label>
+                    <span id="acceleration">2000</span>
+                </div>
+                <div class="debug-value">
+                    <label>Friction:</label>
+                    <span id="friction">0.85</span>
+                </div>
+                <div class="debug-value">
+                    <label>State:</label>
+                    <span id="state">idle</span>
+                </div>
+                <div class="debug-value">
+                    <label>Grounded:</label>
+                    <span id="grounded">true</span>
+                    <span class="indicator" id="groundedIndicator"></span>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h4>Input State</h4>
+                <div class="debug-value">
+                    <label>Movement:</label>
+                    <span id="inputDir">None</span>
+                </div>
+                <div class="debug-value">
+                    <label>Sprint:</label>
+                    <span id="sprintState">No</span>
+                    <span class="indicator" id="sprintIndicator"></span>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <h4>Performance</h4>
+                <div class="debug-value">
+                    <label>FPS:</label>
+                    <span id="fps">0</span>
+                </div>
+                <div class="debug-value">
+                    <label>Frame Time:</label>
+                    <span id="frameTime">0ms</span>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <h4>Test Controls</h4>
+                <div class="control-row">
+                    <button onclick="resetPosition()">Reset Position</button>
+                    <button onclick="teleportRandom()">Random Teleport</button>
+                </div>
+                <div class="control-row">
+                    <button onclick="testWASMMapping()">Test WASM Map</button>
+                    <button onclick="togglePhysics()">Toggle Physics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import GameRenderer from './src/game-renderer.js'
+        
+        // Setup canvas
+        const canvas = document.getElementById('gameCanvas')
+        const ctx = canvas.getContext('2d')
+        canvas.width = 1280
+        canvas.height = 720
+        
+        // Initialize game renderer
+        const gameRenderer = new GameRenderer(ctx, canvas)
+        window.gameRenderer = gameRenderer // For console debugging
+        
+        // Input state
+        const keys = {}
+        
+        // Performance tracking
+        let lastTime = performance.now()
+        let frameCount = 0
+        let fpsTime = 0
+        let currentFPS = 0
+        let frameTimeMs = 0
+        
+        // Setup input
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true
+            
+            if (e.key === ' ') {
+                const angle = Math.atan2(
+                    gameRenderer.player.velocityY,
+                    gameRenderer.player.velocityX
+                ) || 0
+                gameRenderer.performRoll(angle)
+            }
+        })
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false
+        })
+        
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                gameRenderer.performAttack()
+            } else if (e.button === 2) {
+                gameRenderer.performBlock(true)
+            }
+        })
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                gameRenderer.performBlock(false)
+            }
+        })
+        
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault())
+        
+        // Update debug display
+        function updateDebug() {
+            // Position
+            const pos = gameRenderer.getPlayerPosition()
+            document.getElementById('worldX').textContent = Math.round(pos.x)
+            document.getElementById('worldY').textContent = Math.round(pos.y)
+            
+            const wasmPos = gameRenderer.getPlayerPositionAsWasm()
+            document.getElementById('wasmX').textContent = wasmPos.x.toFixed(3)
+            document.getElementById('wasmY').textContent = wasmPos.y.toFixed(3)
+            
+            // Velocity
+            document.getElementById('velX').textContent = Math.round(gameRenderer.player.velocityX)
+            document.getElementById('velY').textContent = Math.round(gameRenderer.player.velocityY)
+            const speed = Math.sqrt(
+                gameRenderer.player.velocityX ** 2 + 
+                gameRenderer.player.velocityY ** 2
+            )
+            document.getElementById('speed').textContent = Math.round(speed)
+            document.getElementById('maxSpeed').textContent = gameRenderer.player.maxSpeed
+            
+            // Camera
+            const camPos = gameRenderer.getCameraPosition()
+            document.getElementById('camX').textContent = Math.round(camPos.x)
+            document.getElementById('camY').textContent = Math.round(camPos.y)
+            document.getElementById('camTargetX').textContent = Math.round(gameRenderer.camera.targetX)
+            document.getElementById('camTargetY').textContent = Math.round(gameRenderer.camera.targetY)
+            document.getElementById('camSmoothing').textContent = gameRenderer.camera.smoothing
+            
+            // Physics
+            document.getElementById('acceleration').textContent = gameRenderer.player.acceleration
+            document.getElementById('friction').textContent = gameRenderer.player.friction
+            document.getElementById('state').textContent = gameRenderer.player.state
+            document.getElementById('grounded').textContent = gameRenderer.player.isGrounded
+            document.getElementById('groundedIndicator').classList.toggle('active', gameRenderer.player.isGrounded)
+            
+            // Input
+            let inputDir = 'None'
+            if (keys['w'] && keys['a']) inputDir = 'NW'
+            else if (keys['w'] && keys['d']) inputDir = 'NE'
+            else if (keys['s'] && keys['a']) inputDir = 'SW'
+            else if (keys['s'] && keys['d']) inputDir = 'SE'
+            else if (keys['w']) inputDir = 'N'
+            else if (keys['s']) inputDir = 'S'
+            else if (keys['a']) inputDir = 'W'
+            else if (keys['d']) inputDir = 'E'
+            document.getElementById('inputDir').textContent = inputDir
+            
+            document.getElementById('sprintState').textContent = keys['shift'] ? 'Yes' : 'No'
+            document.getElementById('sprintIndicator').classList.toggle('active', keys['shift'])
+            
+            // Performance
+            document.getElementById('fps').textContent = currentFPS
+            document.getElementById('frameTime').textContent = frameTimeMs.toFixed(1) + 'ms'
+        }
+        
+        // Test functions
+        window.resetPosition = function() {
+            gameRenderer.setPlayerPosition(
+                gameRenderer.world.width / 2,
+                gameRenderer.world.height / 2
+            )
+        }
+        
+        window.teleportRandom = function() {
+            gameRenderer.setPlayerPosition(
+                Math.random() * gameRenderer.world.width,
+                Math.random() * gameRenderer.world.height
+            )
+        }
+        
+        window.testWASMMapping = function() {
+            console.log('Testing WASM coordinate mapping...')
+            const tests = [
+                { wasm: { x: 0, y: 0 }, desc: 'Top-left' },
+                { wasm: { x: 0.5, y: 0.5 }, desc: 'Center' },
+                { wasm: { x: 1, y: 1 }, desc: 'Bottom-right' },
+                { wasm: { x: 0.25, y: 0.75 }, desc: 'Quarter' }
+            ]
+            
+            tests.forEach(test => {
+                const world = gameRenderer.wasmToWorld(test.wasm.x, test.wasm.y)
+                const backToWasm = gameRenderer.worldToWasm(world.x, world.y)
+                console.log(`${test.desc}:`)
+                console.log(`  WASM: (${test.wasm.x}, ${test.wasm.y})`)
+                console.log(`  World: (${world.x.toFixed(1)}, ${world.y.toFixed(1)})`)
+                console.log(`  Back to WASM: (${backToWasm.x.toFixed(3)}, ${backToWasm.y.toFixed(3)})`)
+                console.log(`  Match: ${Math.abs(backToWasm.x - test.wasm.x) < 0.01 && Math.abs(backToWasm.y - test.wasm.y) < 0.01 ? '✓' : '✗'}`)
+            })
+        }
+        
+        window.togglePhysics = function() {
+            gameRenderer.world.hasPlatformPhysics = !gameRenderer.world.hasPlatformPhysics
+            console.log('Platform physics:', gameRenderer.world.hasPlatformPhysics ? 'ON' : 'OFF')
+        }
+        
+        // Game loop
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1)
+            frameTimeMs = timestamp - lastTime
+            lastTime = timestamp
+            
+            // Update FPS
+            frameCount++
+            fpsTime += deltaTime
+            if (fpsTime >= 1) {
+                currentFPS = frameCount
+                frameCount = 0
+                fpsTime = 0
+            }
+            
+            // Prepare input
+            const input = {
+                left: keys['a'] || keys['arrowleft'],
+                right: keys['d'] || keys['arrowright'],
+                up: keys['w'] || keys['arrowup'],
+                down: keys['s'] || keys['arrowdown'],
+                sprint: keys['shift'],
+                jump: keys[' ']
+            }
+            
+            // Update game
+            gameRenderer.updatePlayer(deltaTime, input)
+            gameRenderer.updateEnemies(deltaTime)
+            gameRenderer.updateProjectiles(deltaTime)
+            gameRenderer.checkCollisions()
+            
+            // Render
+            gameRenderer.render(true)
+            
+            // Update debug info
+            updateDebug()
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        // Start game
+        requestAnimationFrame(gameLoop)
+        
+        console.log('Movement Physics Test Started')
+        console.log('World Size:', gameRenderer.world.width, 'x', gameRenderer.world.height)
+        console.log('Use WASD to move, Shift to sprint, Space to roll')
+    </script>
+</body>
+</html>

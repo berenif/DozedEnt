@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Area Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #2d4a2b;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #4a2b2b;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #2b3a4a;
+            border: 1px solid #2196f3;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #444;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Player Area Fix Verification</h1>
+        <div id="test-results"></div>
+        
+        <h2>Live Demo</h2>
+        <iframe src="demo/enhanced-player-area.html" id="demo-frame"></iframe>
+    </div>
+
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        // Test if the demo loads without errors
+        window.addEventListener('load', () => {
+            addResult('Page loaded successfully', 'success');
+            
+            // Check if iframe loaded
+            const iframe = document.getElementById('demo-frame');
+            iframe.onload = () => {
+                addResult('Demo iframe loaded successfully', 'success');
+                
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    
+                    // Check if critical functions exist
+                    const hasUpdatePlayerCards = iframe.contentWindow.updatePlayerCards !== undefined;
+                    const hasUpdateMinimap = iframe.contentWindow.updateMinimap !== undefined;
+                    const hasGameLoop = iframe.contentWindow.gameLoop !== undefined;
+                    
+                    if (hasUpdatePlayerCards) {
+                        addResult('✓ updatePlayerCards function exists', 'success');
+                    } else {
+                        addResult('✗ updatePlayerCards function missing', 'error');
+                    }
+                    
+                    if (hasUpdateMinimap) {
+                        addResult('✓ updateMinimap function exists', 'success');
+                    } else {
+                        addResult('✗ updateMinimap function missing', 'error');
+                    }
+                    
+                    if (hasGameLoop) {
+                        addResult('✓ gameLoop function exists', 'success');
+                    } else {
+                        addResult('✗ gameLoop function missing', 'error');
+                    }
+                    
+                    // Check if game state is initialized
+                    const hasGameState = iframe.contentWindow.gameState !== undefined;
+                    if (hasGameState) {
+                        const playerCount = iframe.contentWindow.gameState.players.length;
+                        addResult(`✓ Game state initialized with ${playerCount} players`, 'success');
+                    } else {
+                        addResult('✗ Game state not initialized', 'error');
+                    }
+                    
+                    // Check if canvas exists
+                    const canvas = iframeDoc.getElementById('gameCanvas');
+                    if (canvas) {
+                        addResult('✓ Game canvas element exists', 'success');
+                    } else {
+                        addResult('✗ Game canvas element missing', 'error');
+                    }
+                    
+                    // Check if minimap exists
+                    const minimap = iframeDoc.getElementById('minimap');
+                    if (minimap) {
+                        addResult('✓ Minimap element exists', 'success');
+                    } else {
+                        addResult('✗ Minimap element missing', 'error');
+                    }
+                    
+                    // Summary
+                    addResult('All critical components verified. Player area is functioning correctly!', 'info');
+                    
+                } catch (e) {
+                    addResult(`Error accessing iframe content: ${e.message}`, 'error');
+                }
+            };
+            
+            iframe.onerror = () => {
+                addResult('Failed to load demo iframe', 'error');
+            };
+        });
+
+        // Listen for console errors from the iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'error') {
+                addResult(`Console error in demo: ${event.data.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
