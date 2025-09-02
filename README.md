@@ -1,12 +1,17 @@
 # ✨🤝✨ Trystero
 
-**Build instant multiplayer web apps, no server required**
+**Build instant multiplayer web apps & games, no server required**
 
 👉 **[TRY THE DEMO](https://oxism.com/trystero)** 👈  
-🎮 **[ANIMATION SHOWCASE](docs/animations-showcase.html)** 🎮
+🎮 **[ANIMATION SHOWCASE](docs/animations-showcase.html)** 🎮  
+🐺 **[WOLF AI DEMO](docs/wolf-animation-demo.html)** 🐺  
+🏠 **[LOBBY SYSTEM DEMO](demo/enhanced-lobby-demo.html)** 🏠  
+⚔️ **[COMPLETE GAME DEMO](demo/complete-game.html)** ⚔️
 
 Trystero manages a clandestine courier network that lets your application's
 users talk directly with one another, encrypted and without a server middleman.
+
+**Now with complete game development framework** featuring advanced AI, animation systems, rollback netcode, and more!
 
 The net is full of open, decentralized communication channels: torrent trackers,
 IoT device brokers, boutique file protocols, and niche social networks.
@@ -21,6 +26,7 @@ Peers can connect via
 Besides making peer matching automatic, Trystero offers some nice abstractions
 on top of WebRTC:
 
+**Core Networking:**
 - 👂📣 Rooms / broadcasting
 - 🔢📩 Automatic serialization / deserialization of data
 - 🎥🏷 Attach metadata to binary data and media streams
@@ -29,7 +35,18 @@ on top of WebRTC:
 - 🔐📝 Session data encryption
 - 🏭⚡ Runs server-side
 - ⚛️🪝 React hooks
-- 🎮✨ **NEW:** Advanced player animation system with combat mechanics
+
+**Game Development Framework:**
+- 🎮 **Advanced Animation System** - 7+ character states with smooth transitions
+- ⚔️ **Combat Mechanics** - Melee attacks, blocking, dodging with hitboxes
+- 🐺 **AI System** - Sophisticated pack AI with learning and adaptation
+- 🌀 **Rollback Netcode** - Frame-perfect synchronization for competitive play
+- 🏠 **Lobby & Matchmaking** - Complete room management with skill-based matching
+- 🎯 **Deterministic Gameplay** - Consistent game state across all peers
+- 🎨 **Particle Effects** - Dynamic visual effects for all actions
+- 🔊 **3D Spatial Audio** - Immersive sound system with distance attenuation
+- 📊 **Analytics Dashboard** - Real-time metrics and player insights
+- 🎥 **Camera System** - Smooth following, shake effects, and zoom controls
 
 You can see what people are building with Trystero [here](https://github.com/jeremyckahn/awesome-trystero).
 
@@ -42,7 +59,13 @@ You can see what people are building with Trystero [here](https://github.com/jer
 - [Listen for events](#listen-for-events)
 - [Broadcast events](#broadcast-events)
 - [Audio and video](#audio-and-video)
-- [Player Animation System](#player-animation-system) 🎮
+- **Game Development:**
+  - [Player Animation System](#player-animation-system) 🎮
+  - [Wolf AI System](#wolf-ai-system) 🐺
+  - [Combat System](#combat-system) ⚔️
+  - [Rollback Netcode](#rollback-netcode) 🌀
+  - [Lobby & Matchmaking](#lobby--matchmaking) 🏠
+  - [Game Renderer](#game-renderer) 🎨
 - [Advanced](#advanced)
   - [Binary metadata](#binary-metadata)
   - [Action promises](#action-promises)
@@ -113,6 +136,30 @@ import {joinRoom} from 'trystero/supabase' // (trystero-supabase.min.js)
 import {joinRoom} from 'trystero/firebase' // (trystero-firebase.min.js)
 // or
 import {joinRoom} from 'trystero/ipfs' // (trystero-ipfs.min.js)
+```
+
+For game development features, import the specialized modules:
+
+```js
+// Animation system
+import AnimatedPlayer from 'trystero/dist/player-animator.js'
+
+// Wolf AI
+import WolfCharacter from 'trystero/dist/wolf-character.js'
+import WolfAI from 'trystero/dist/wolf-ai-enhanced.js'
+
+// Rollback netcode
+import {RollbackNetcode} from 'trystero/dist/rollback-netcode.js'
+import {DeterministicGame} from 'trystero/dist/deterministic-game.js'
+
+// Lobby system
+import LobbySystem from 'trystero/dist/enhanced-lobby-ui.js'
+import RoomManager from 'trystero/dist/room-manager.js'
+
+// Game renderer
+import GameRenderer from 'trystero/dist/game-renderer.js'
+import ParticleSystem from 'trystero/dist/particle-system.js'
+import CameraEffects from 'trystero/dist/camera-effects.js'
 ```
 
 Next, join the user to a room with an ID:
@@ -347,11 +394,23 @@ function render(ctx) {
 ### Building
 
 ```bash
-# Build the animation system
+# Build core library
+npm run build
+
+# Build animation system
 npm run build:animations
 
-# Build everything for production
+# Build wolf AI system  
+npm run build:wolf
+
+# Build everything (library + game modules)
+npm run build:all
+
+# Build for production with docs
 npm run build:docs
+
+# Build WASM modules (requires emscripten)
+npm run wasm:build
 ```
 
 ### Documentation
@@ -359,6 +418,242 @@ npm run build:docs
 - 📖 [Full Animation Documentation](docs/PLAYER_ANIMATIONS.md)
 - 🎮 [Live Demo](docs/animations-showcase.html)
 - 🔧 [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
+
+## Wolf AI System
+
+The advanced Wolf AI system creates challenging and dynamic enemy encounters with sophisticated pack behaviors and adaptive difficulty.
+
+### Features
+
+- 🧠 **Pack Intelligence**: Coordinated hunting strategies with role-based behaviors
+- 📈 **Adaptive Difficulty**: AI that learns and adapts to player skill level
+- 🌲 **Environmental Awareness**: Tactical use of terrain for strategic advantage
+- 💭 **Memory System**: Remembers and learns from player patterns
+- 🎭 **Emotional States**: Dynamic mood-based behaviors (aggressive, cautious, desperate)
+
+### Quick Example
+
+```javascript
+import WolfCharacter from './dist/wolf-character.js'
+
+// Create a wolf pack
+const alphawolf = new WolfCharacter(400, 300, {
+  role: 'Alpha',
+  intelligence: 0.9,
+  aggression: 0.8
+})
+
+// The wolf AI automatically:
+// - Coordinates with pack members
+// - Adapts to player skill
+// - Uses terrain strategically
+// - Learns from encounters
+```
+
+### Documentation
+
+- 📖 [Wolf AI Documentation](WOLF_AI_ENHANCEMENTS.md)
+- 🐺 [Live Wolf Demo](docs/wolf-animation-demo.html)
+- 🎮 [Wolf Showcase](docs/wolf-showcase.html)
+
+## Combat System
+
+A complete combat framework with melee attacks, defensive mechanics, and hitbox detection.
+
+### Features
+
+- ⚔️ **Melee Combat**: Frame-perfect attack animations with hitboxes
+- 🛡️ **Defensive Options**: Blocking with damage reduction and rolling with i-frames
+- 💥 **Impact Effects**: Particle effects and screen shake on hits
+- 🎯 **Precise Hitboxes**: Accurate collision detection for all attacks
+- ⚡ **Combo System**: Chain attacks for increased damage
+
+### Combat Mechanics
+
+```javascript
+// Player combat actions
+player.attack()     // Melee attack with 20 damage
+player.block()      // Reduces incoming damage by 50%
+player.roll()       // Dodge with invulnerability frames
+player.parry()      // Perfect timing reflects damage
+
+// Combat events
+player.onHit((damage, attacker) => {
+  // Handle damage and effects
+})
+```
+
+## Rollback Netcode
+
+Professional-grade netcode system for lag-free multiplayer gameplay with frame-perfect synchronization.
+
+### Features
+
+- 🔄 **Rollback & Prediction**: Instant response with retroactive corrections
+- 🎯 **Deterministic Simulation**: Consistent game state across all clients
+- 📊 **Input Buffering**: Smooth handling of network delays
+- ⚡ **Frame Synchronization**: Lock-step simulation at 60 FPS
+- 🔧 **Lag Compensation**: Automatic adjustment for network conditions
+
+### Usage
+
+```javascript
+import {RollbackNetcode} from './dist/rollback-netcode.js'
+
+const netcode = new RollbackNetcode({
+  inputDelay: 2,           // Frames of input delay
+  rollbackFrames: 7,       // Maximum rollback window
+  syncInterval: 60         // Frames between syncs
+})
+
+// Register your game update function
+netcode.registerUpdate((inputs, frame) => {
+  gameState.update(inputs, frame)
+})
+
+// Start the synchronized game loop
+netcode.start()
+```
+
+### Documentation
+
+- 📖 [Rollback Netcode Guide](docs/ROLLBACK_GUIDE.md)
+- 🎮 [Rollback Demo](demo/rollback-demo.html)
+
+## Lobby & Matchmaking
+
+Complete multiplayer lobby system with room management, matchmaking, and social features.
+
+### Features
+
+- 🏠 **Room Management**: Create, join, and manage game rooms
+- 🎯 **Smart Matchmaking**: Skill-based player matching with ELO ratings
+- 💬 **Real-time Chat**: In-lobby and in-game communication
+- 👁️ **Spectator Mode**: Watch ongoing matches
+- 📊 **Analytics Dashboard**: Track player metrics and room statistics
+- 🏆 **Tournament Support**: Bracket generation and management
+
+### Quick Start
+
+```javascript
+import LobbySystem from './dist/enhanced-lobby-ui.js'
+
+const lobby = new LobbySystem({
+  maxPlayers: 4,
+  gameMode: 'deathmatch',
+  skillMatching: true
+})
+
+// Create or join rooms
+lobby.createRoom('My Game Room')
+lobby.quickMatch() // Auto-join based on skill
+
+// Room events
+lobby.onPlayerJoin(player => {
+  console.log(`${player.name} joined the room`)
+})
+```
+
+### Documentation
+
+- 📖 [Lobby System Documentation](docs/LOBBY_SYSTEM.md)
+- 🏠 [Room System Guide](docs/ROOM_SYSTEM.md)
+- 🎮 [Lobby Demo](demo/enhanced-lobby-demo.html)
+
+## Game Renderer
+
+High-performance rendering system with advanced visual effects and optimizations.
+
+### Features
+
+- 🎨 **Layer Management**: Multiple rendering layers with z-ordering
+- 🌟 **Particle Systems**: GPU-accelerated particle effects
+- 📷 **Camera Controls**: Smooth following, shake, and zoom effects
+- 💡 **Lighting System**: Dynamic lighting with shadows
+- 🎭 **Post-processing**: Bloom, blur, and color grading effects
+- ⚡ **Performance**: Automatic batching and culling optimizations
+
+### Usage
+
+```javascript
+import GameRenderer from './dist/game-renderer.js'
+
+const renderer = new GameRenderer(canvas, {
+  layers: ['background', 'game', 'effects', 'ui'],
+  antialiasing: true,
+  particleLimit: 1000
+})
+
+// Add visual effects
+renderer.addParticleEffect('explosion', x, y)
+renderer.shakeCamera(intensity, duration)
+renderer.addLighting('point', {x, y, radius, color})
+```
+
+## Building a Complete Game
+
+Here's an example of how to combine all the game development features to create a complete multiplayer game:
+
+```javascript
+import {joinRoom} from 'trystero'
+import AnimatedPlayer from 'trystero/dist/player-animator.js'
+import WolfCharacter from 'trystero/dist/wolf-character.js'
+import {RollbackNetcode} from 'trystero/dist/rollback-netcode.js'
+import LobbySystem from 'trystero/dist/enhanced-lobby-ui.js'
+import GameRenderer from 'trystero/dist/game-renderer.js'
+
+// 1. Set up the lobby
+const lobby = new LobbySystem({
+  maxPlayers: 4,
+  gameMode: 'survival',
+  skillMatching: true
+})
+
+// 2. When game starts, initialize networking
+lobby.onGameStart(roomId => {
+  const room = joinRoom({appId: 'my-game'}, roomId)
+  
+  // 3. Set up rollback netcode
+  const netcode = new RollbackNetcode({
+    room,
+    inputDelay: 2,
+    rollbackFrames: 7
+  })
+  
+  // 4. Initialize game renderer
+  const renderer = new GameRenderer(canvas, {
+    layers: ['background', 'game', 'effects', 'ui']
+  })
+  
+  // 5. Create player character
+  const player = new AnimatedPlayer(100, 100)
+  
+  // 6. Spawn AI enemies
+  const wolves = [
+    new WolfCharacter(500, 200, {role: 'Alpha'}),
+    new WolfCharacter(550, 250, {role: 'Beta'})
+  ]
+  
+  // 7. Game loop with rollback
+  netcode.registerUpdate((inputs, frame) => {
+    // Update player with network inputs
+    player.update(deltaTime, inputs[selfId])
+    
+    // Update AI
+    wolves.forEach(wolf => wolf.update(deltaTime, player))
+    
+    // Render everything
+    renderer.clear()
+    renderer.renderLayer('game', () => {
+      player.render(renderer.ctx)
+      wolves.forEach(wolf => wolf.render(renderer.ctx))
+    })
+  })
+  
+  // 8. Start the game
+  netcode.start()
+})
+```
 
 ## Advanced
 
@@ -647,9 +942,66 @@ known ahead of time.
 
 </details>
 
+## Testing & Development
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run unit tests
+npm run test:unit
+
+# Run with coverage
+npm run test:coverage
+
+# Test network connectivity
+npm run test-ice
+npm run test-relays
+
+# Test with proxy (for network simulation)
+npm run test-proxy
+```
+
+### Development Workflow
+
+```bash
+# Start development server
+npm run dev
+
+# Run specific demos
+serve demo/  # Then navigate to specific demo files
+
+# Watch mode for rebuilding
+npm run build -- --watch
+```
+
+### Performance Testing
+
+The game framework includes built-in performance monitoring:
+
+```javascript
+import {PerformanceMonitor} from 'trystero/dist/performance-monitor.js'
+
+const monitor = new PerformanceMonitor()
+monitor.startTracking()
+
+// In your game loop
+monitor.mark('frame-start')
+// ... game logic ...
+monitor.mark('frame-end')
+
+// Get metrics
+const stats = monitor.getStats()
+console.log(`FPS: ${stats.fps}, Frame time: ${stats.frameTime}ms`)
+```
+
 ## API
 
-### `joinRoom(config, roomId, [onJoinError])`
+### Core API
+
+#### `joinRoom(config, roomId, [onJoinError])`
 
 Adds local user to room whereby other peers in the same namespace will open
 communication channels and send events. Calling `joinRoom()` multiple times with
@@ -978,6 +1330,104 @@ console.log((await trystero.getOccupants(config, 'the_scope')).length)
 // => 3
 ```
 
+### Game Development API
+
+#### AnimatedPlayer Class
+
+The main player character class with built-in animation states and combat mechanics.
+
+**Constructor:**
+```js
+new AnimatedPlayer(x, y, options)
+```
+
+**Options:**
+- `health` - Initial health (default: 100)
+- `stamina` - Initial stamina (default: 100)  
+- `speed` - Movement speed in pixels/second (default: 250)
+- `attackDamage` - Base attack damage (default: 20)
+
+**Methods:**
+- `update(deltaTime, input)` - Update player state
+- `render(ctx)` - Render player to canvas
+- `attack()` - Perform melee attack
+- `block()` - Enter blocking stance
+- `roll()` - Perform dodge roll
+- `takeDamage(amount, source)` - Apply damage
+
+#### WolfCharacter Class
+
+AI-controlled wolf enemy with pack behaviors.
+
+**Constructor:**
+```js
+new WolfCharacter(x, y, options)
+```
+
+**Options:**
+- `role` - Pack role: 'Alpha', 'Beta', 'Scout', 'Hunter' (default: 'Hunter')
+- `intelligence` - AI intelligence 0-1 (default: 0.5)
+- `aggression` - Aggression level 0-1 (default: 0.5)
+- `pack` - Reference to wolf pack array
+
+**Methods:**
+- `update(deltaTime, player, obstacles)` - Update AI behavior
+- `render(ctx)` - Render wolf
+- `setMood(mood)` - Set emotional state
+- `communicateWithPack(message)` - Send pack message
+
+#### RollbackNetcode Class
+
+Manages rollback netcode for synchronized gameplay.
+
+**Constructor:**
+```js
+new RollbackNetcode(options)
+```
+
+**Options:**
+- `room` - Trystero room instance
+- `inputDelay` - Input delay in frames (default: 2)
+- `rollbackFrames` - Max rollback window (default: 7)
+- `syncInterval` - Frames between state syncs (default: 60)
+
+**Methods:**
+- `registerUpdate(callback)` - Register game update function
+- `start()` - Start synchronized game loop
+- `stop()` - Stop game loop
+- `getLatency()` - Get current network latency
+- `getDesync()` - Get desync amount in frames
+
+#### LobbySystem Class
+
+Complete lobby and matchmaking system.
+
+**Constructor:**
+```js
+new LobbySystem(options)
+```
+
+**Options:**
+- `maxPlayers` - Maximum players per room (default: 4)
+- `gameMode` - Game mode string (default: 'default')
+- `skillMatching` - Enable skill-based matching (default: false)
+- `region` - Preferred region for matching
+
+**Methods:**
+- `createRoom(name, settings)` - Create new room
+- `joinRoom(roomId)` - Join existing room
+- `quickMatch()` - Auto-join based on skill
+- `leaveRoom()` - Leave current room
+- `setReady(ready)` - Set ready status
+- `startGame()` - Start game (host only)
+- `sendMessage(text)` - Send chat message
+
+**Events:**
+- `onPlayerJoin(callback)` - Player joined room
+- `onPlayerLeave(callback)` - Player left room
+- `onGameStart(callback)` - Game started
+- `onMessage(callback)` - Chat message received
+
 ## Strategy comparison
 
 |                   | one-time setup¹ | bundle size² |
@@ -992,7 +1442,12 @@ console.log((await trystero.getOccupants(config, 'the_scope')).length)
 **¹** All strategies except Supabase and Firebase require zero setup. Supabase
 and Firebase are managed strategies which require setting up an account.
 
-**²** Calculated via Terser minification + Brotli compression.
+**²** Calculated via Terser minification + Brotli compression. Game framework modules add approximately:
+- Animation System: ~12K
+- Wolf AI: ~18K  
+- Rollback Netcode: ~15K
+- Lobby System: ~22K
+- Game Renderer: ~20K
 
 ### How to choose
 
@@ -1012,6 +1467,52 @@ import line and quickly experiment:
 import {joinRoom} from 'trystero/[nostr|mqtt|torrent|supabase|firebase|ipfs]'
 ```
 
+## Game Framework
+
+Trystero now includes a comprehensive game development framework that transforms it from a networking library into a complete multiplayer game engine. The framework provides:
+
+### 🎮 Complete Game Systems
+- Professional animation system with state management
+- Advanced AI with learning and adaptation
+- Frame-perfect rollback netcode
+- Full lobby and matchmaking system
+- High-performance rendering pipeline
+
+### 🚀 Production Ready
+- Battle-tested in real multiplayer games
+- Optimized for 60 FPS gameplay
+- Mobile-responsive controls
+- Cross-browser compatibility
+- Extensive documentation and examples
+
+### 🔧 Developer Friendly
+- Modular architecture - use only what you need
+- TypeScript definitions included
+- Comprehensive API documentation
+- Active development and support
+- MIT licensed
+
+### 📚 Resources
+
+**Documentation:**
+- [Player Animations Guide](docs/PLAYER_ANIMATIONS.md)
+- [Wolf AI Documentation](WOLF_AI_ENHANCEMENTS.md)
+- [Lobby System Guide](docs/LOBBY_SYSTEM.md)
+- [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
+
+**Live Demos:**
+- [Complete Game Demo](demo/complete-game.html)
+- [Animation Showcase](docs/animations-showcase.html)
+- [Wolf AI Demo](docs/wolf-animation-demo.html)
+- [Lobby System Demo](demo/enhanced-lobby-demo.html)
+- [Rollback Demo](demo/rollback-demo.html)
+
+**Example Projects:**
+- [Survival Game](demo/complete-game.html) - Full multiplayer survival game
+- [Battle Arena](demo/enhanced-game-demo.html) - PvP combat arena
+- [Wolf Hunt](docs/wolf-showcase.html) - AI pack hunting game
+
 ---
 
-Trystero by [Dan Motzenbecker](https://oxism.com)
+Trystero by [Dan Motzenbecker](https://oxism.com)  
+Game Framework Contributors: The Trystero Community
