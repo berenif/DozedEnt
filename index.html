@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Launcher - Trystero P2P Games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #0a0e27;
+            background-image: 
+                radial-gradient(ellipse at top, #1a237e 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, #0d47a1 0%, transparent 50%);
+            min-height: 100vh;
+            color: white;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #64b5f6;
+            margin-bottom: 50px;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2em;
+            color: #00ffff;
+            margin: 40px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .game-card {
+            background: linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(156, 39, 176, 0.1));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+            border-radius: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 255, 255, 0.3);
+        }
+        
+        .game-card:hover::before {
+            opacity: 0.5;
+        }
+        
+        .game-card h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .game-card p {
+            color: #b3e5fc;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .game-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .game-card .tag {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+        }
+        
+        .game-card .play-btn {
+            display: inline-block;
+            background: linear-gradient(45deg, #00ffff, #0099cc);
+            color: #0a0e27;
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        
+        .game-card .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .info-box {
+            background: rgba(0, 150, 255, 0.1);
+            border: 2px solid rgba(0, 150, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .info-box h3 {
+            color: #64b5f6;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .info-box li::before {
+            content: "▸ ";
+            color: #00ffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">✅ Server Running</div>
+    
+    <div class="container">
+        <h1>🎮 Trystero Game Hub</h1>
+        <p class="subtitle">Serverless P2P Multiplayer Games</p>
+        
+        <div class="section-title">🎯 Main Games</div>
+        <div class="games-grid">
+            <div class="game-card" onclick="window.location.href='demo/complete-game.html'">
+                <h3>Complete Game</h3>
+                <p>Full-featured multiplayer game with 8-phase core loop, enemies, and progression system.</p>
+                <div class="tags">
+                    <span class="tag">Multiplayer</span>
+                    <span class="tag">Action</span>
+                    <span class="tag">Core Loop</span>
+                </div>
+                <a href="demo/complete-game.html" class="play-btn">Play Now →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/enhanced-game-demo.html'">
+                <h3>Enhanced Game Demo</h3>
+                <p>Advanced gameplay features with enhanced mechanics and visual effects.</p>
+                <div class="tags">
+                    <span class="tag">Enhanced</span>
+                    <span class="tag">Demo</span>
+                </div>
+                <a href="demo/enhanced-game-demo.html" class="play-btn">Play Now →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/room-demo.html'">
+                <h3>Room Demo</h3>
+                <p>Multiplayer room system with real-time synchronization.</p>
+                <div class="tags">
+                    <span class="tag">Rooms</span>
+                    <span class="tag">P2P</span>
+                </div>
+                <a href="demo/room-demo.html" class="play-btn">Play Now →</a>
+            </div>
+        </div>
+        
+        <div class="section-title">🧪 Feature Demos</div>
+        <div class="games-grid">
+            <div class="game-card" onclick="window.location.href='demo/enhanced-lobby-demo.html'">
+                <h3>Enhanced Lobby</h3>
+                <p>Advanced lobby system with matchmaking and room management.</p>
+                <div class="tags">
+                    <span class="tag">Lobby</span>
+                    <span class="tag">Matchmaking</span>
+                </div>
+                <a href="demo/enhanced-lobby-demo.html" class="play-btn">Try Demo →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/player-animations-demo.html'">
+                <h3>Player Animations</h3>
+                <p>Smooth character animations and movement system.</p>
+                <div class="tags">
+                    <span class="tag">Animation</span>
+                    <span class="tag">Movement</span>
+                </div>
+                <a href="demo/player-animations-demo.html" class="play-btn">Try Demo →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/hazards-demo.html'">
+                <h3>Hazards System</h3>
+                <p>Environmental hazards and obstacle mechanics.</p>
+                <div class="tags">
+                    <span class="tag">Hazards</span>
+                    <span class="tag">Physics</span>
+                </div>
+                <a href="demo/hazards-demo.html" class="play-btn">Try Demo →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/rollback-demo.html'">
+                <h3>Rollback Netcode</h3>
+                <p>Advanced rollback networking for smooth online play.</p>
+                <div class="tags">
+                    <span class="tag">Netcode</span>
+                    <span class="tag">Rollback</span>
+                </div>
+                <a href="demo/rollback-demo.html" class="play-btn">Try Demo →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo-wolf-animation.html'">
+                <h3>Wolf Animation</h3>
+                <p>Advanced wolf character with AI and animation system.</p>
+                <div class="tags">
+                    <span class="tag">AI</span>
+                    <span class="tag">Animation</span>
+                </div>
+                <a href="demo-wolf-animation.html" class="play-btn">Try Demo →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='demo/enhanced-player-area.html'">
+                <h3>Enhanced Player Area</h3>
+                <p>Advanced player zone with improved collision detection.</p>
+                <div class="tags">
+                    <span class="tag">Collision</span>
+                    <span class="tag">Player Area</span>
+                </div>
+                <a href="demo/enhanced-player-area.html" class="play-btn">Try Demo →</a>
+            </div>
+        </div>
+        
+        <div class="section-title">🔬 Test Environments</div>
+        <div class="games-grid">
+            <div class="game-card" onclick="window.location.href='test-camera.html'">
+                <h3>Camera Test</h3>
+                <p>Test and debug camera movement and tracking.</p>
+                <div class="tags">
+                    <span class="tag">Camera</span>
+                    <span class="tag">Debug</span>
+                </div>
+                <a href="test-camera.html" class="play-btn">Test →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='test-movement-physics.html'">
+                <h3>Movement Physics</h3>
+                <p>Physics engine testing for player movement.</p>
+                <div class="tags">
+                    <span class="tag">Physics</span>
+                    <span class="tag">Testing</span>
+                </div>
+                <a href="test-movement-physics.html" class="play-btn">Test →</a>
+            </div>
+            
+            <div class="game-card" onclick="window.location.href='test-obstacles.html'">
+                <h3>Obstacle System</h3>
+                <p>Test collision detection with obstacles.</p>
+                <div class="tags">
+                    <span class="tag">Obstacles</span>
+                    <span class="tag">Collision</span>
+                </div>
+                <a href="test-obstacles.html" class="play-btn">Test →</a>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>📖 Documentation & Resources</h3>
+            <ul>
+                <li><a href="docs/" style="color: #64b5f6;">Documentation Portal</a></li>
+                <li><a href="README.md" style="color: #64b5f6;">Project README</a></li>
+                <li><a href="docs/wolf-showcase.html" style="color: #64b5f6;">Wolf Character Showcase</a></li>
+                <li><a href="docs/animations-showcase.html" style="color: #64b5f6;">Animations Showcase</a></li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h3>🚀 Quick Start</h3>
+            <ul>
+                <li>Server is running on <strong>http://localhost:8080</strong></li>
+                <li>Click any game card to launch the game</li>
+                <li>Most games support multiplayer via P2P connections</li>
+                <li>Open multiple browser tabs to test multiplayer locally</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
