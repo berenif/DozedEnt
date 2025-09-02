@@ -42,15 +42,19 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-terser": "^0.4.4",
+    "chai": "^6.0.1",
     "chalk": "^5.6.0",
     "eslint": "^9.27.0",
     "globals": "^16.2.0",
+    "mocha": "^11.7.2",
+    "nyc": "^17.1.0",
     "playwright": "^1.52.0",
     "prettier": "^3.5.2",
     "proxy-check": "^1.0.8",
     "puppeteer": "^24.18.0",
     "rollup": "^4.49.0",
     "serve": "^14.2.4",
+    "sinon": "^21.0.0",
     "stun": "^1.1.0",
     "ws": "^8.18.2"
   },
@@ -64,7 +68,9 @@
     "test": "playwright test ./test",
     "test-proxy": "PROXY=$(node scripts/find-proxy.js) npm run test",
     "test-ice": "node scripts/test-ice.js",
-    "test-relays": "node scripts/test-relays.js"
+    "test-relays": "node scripts/test-relays.js",
+    "test:unit": "mocha 'test/unit/**/*.test.js' --recursive",
+    "test:coverage": "nyc --reporter=text --reporter=html npm run test:unit"
   },
   "keywords": [
     "webrtc",
