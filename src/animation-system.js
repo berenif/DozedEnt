@@ -414,6 +414,13 @@ export class CharacterAnimator {
         this.blocking = false
         this.rolling = false
         this.hurt = false
+        this.jumping = false
+        this.doubleJumping = false
+        this.wallSliding = false
+        this.dashing = false
+        this.charging = false
+        this.dead = false
+        this.landing = false
         
         // Animation blending
         this.blendFactors = {
@@ -422,7 +429,14 @@ export class CharacterAnimator {
             attack: 0,
             block: 0,
             roll: 0,
-            hurt: 0
+            hurt: 0,
+            jump: 0,
+            doubleJump: 0,
+            land: 0,
+            wallSlide: 0,
+            dash: 0,
+            chargeAttack: 0,
+            death: 0
         }
         
         this.targetBlendFactors = { ...this.blendFactors }
@@ -451,6 +465,28 @@ export class CharacterAnimator {
                 break
             case 'roll':
                 this.trail.clear()
+                break
+            case 'jump':
+                this.squashStretch.trigger()
+                break
+            case 'doubleJump':
+                this.wobble.impulse(5)
+                this.trail.clear()
+                break
+            case 'land':
+                this.squashStretch.trigger()
+                this.wobble.impulse(15)
+                break
+            case 'dash':
+                this.trail.clear()
+                break
+            case 'chargeAttack':
+                this.anticipation.trigger()
+                this.wobble.impulse(3)
+                break
+            case 'death':
+                this.squashStretch.trigger()
+                this.wobble.impulse(20)
                 break
         }
     }
@@ -600,6 +636,51 @@ export const AnimationPresets = {
             hurt: new Animation('hurt', [
                 new AnimationFrame(0, 160, 32, 32, 100),
                 new AnimationFrame(32, 160, 32, 32, 100)
+            ], { loop: false }),
+            death: new Animation('death', [
+                new AnimationFrame(0, 192, 32, 32, 100),
+                new AnimationFrame(32, 192, 32, 32, 100),
+                new AnimationFrame(64, 192, 32, 32, 100),
+                new AnimationFrame(96, 192, 32, 32, 200),
+                new AnimationFrame(128, 192, 32, 32, -1) // Final frame, holds indefinitely
+            ], { loop: false }),
+            jump: new Animation('jump', [
+                new AnimationFrame(0, 224, 32, 32, 100),
+                new AnimationFrame(32, 224, 32, 32, 100),
+                new AnimationFrame(64, 224, 32, 32, -1) // Hold in air
+            ], { loop: false }),
+            doubleJump: new Animation('doubleJump', [
+                new AnimationFrame(0, 256, 32, 32, 50),
+                new AnimationFrame(32, 256, 32, 32, 50),
+                new AnimationFrame(64, 256, 32, 32, 50),
+                new AnimationFrame(96, 256, 32, 32, 50),
+                new AnimationFrame(128, 256, 32, 32, 50),
+                new AnimationFrame(160, 256, 32, 32, 50),
+                new AnimationFrame(192, 256, 32, 32, 50),
+                new AnimationFrame(224, 256, 32, 32, -1) // Complete flip
+            ], { loop: false }),
+            land: new Animation('land', [
+                new AnimationFrame(0, 288, 32, 32, 50),
+                new AnimationFrame(32, 288, 32, 32, 50),
+                new AnimationFrame(64, 288, 32, 32, 100)
+            ], { loop: false }),
+            wallSlide: new Animation('wallSlide', [
+                new AnimationFrame(0, 320, 32, 32, 100),
+                new AnimationFrame(32, 320, 32, 32, 100)
+            ], { loop: true }),
+            dash: new Animation('dash', [
+                new AnimationFrame(0, 352, 32, 32, 50),
+                new AnimationFrame(32, 352, 32, 32, 50),
+                new AnimationFrame(64, 352, 32, 32, 100),
+                new AnimationFrame(96, 352, 32, 32, 50)
+            ], { loop: false }),
+            chargeAttack: new Animation('chargeAttack', [
+                new AnimationFrame(0, 384, 32, 32, 100),
+                new AnimationFrame(32, 384, 32, 32, 100),
+                new AnimationFrame(64, 384, 32, 32, 100),
+                new AnimationFrame(96, 384, 32, 32, 50),
+                new AnimationFrame(128, 384, 32, 32, 50),
+                new AnimationFrame(160, 384, 32, 32, 100)
             ], { loop: false })
         }
     },
@@ -624,7 +705,29 @@ export const AnimationPresets = {
             ], { loop: false }),
             hurt: new Animation('hurt', [
                 new AnimationFrame(0, 96, 48, 32, 100)
-            ], { loop: false })
+            ], { loop: false }),
+            howl: new Animation('howl', [
+                new AnimationFrame(0, 128, 48, 32, 200),
+                new AnimationFrame(48, 128, 48, 32, 300),
+                new AnimationFrame(96, 128, 48, 32, 400),
+                new AnimationFrame(144, 128, 48, 32, 300),
+                new AnimationFrame(192, 128, 48, 32, 200)
+            ], { loop: false }),
+            death: new Animation('death', [
+                new AnimationFrame(0, 160, 48, 32, 100),
+                new AnimationFrame(48, 160, 48, 32, 100),
+                new AnimationFrame(96, 160, 48, 32, 100),
+                new AnimationFrame(144, 160, 48, 32, 200),
+                new AnimationFrame(192, 160, 48, 32, -1) // Final frame
+            ], { loop: false }),
+            packRun: new Animation('packRun', [
+                new AnimationFrame(0, 192, 48, 32, 80),
+                new AnimationFrame(48, 192, 48, 32, 80),
+                new AnimationFrame(96, 192, 48, 32, 80),
+                new AnimationFrame(144, 192, 48, 32, 80),
+                new AnimationFrame(192, 192, 48, 32, 80),
+                new AnimationFrame(240, 192, 48, 32, 80)
+            ], { loop: true })
         }
     },
 
@@ -642,6 +745,32 @@ export const AnimationPresets = {
                 new AnimationFrame(0, 64, 32, 32, 30),
                 new AnimationFrame(32, 64, 32, 32, 30),
                 new AnimationFrame(64, 64, 32, 32, 30)
+            ], { loop: false }),
+            projectileSpawn: new Animation('projectileSpawn', [
+                new AnimationFrame(0, 128, 16, 16, 30),
+                new AnimationFrame(16, 128, 16, 16, 30),
+                new AnimationFrame(32, 128, 16, 16, 30)
+            ], { loop: false }),
+            projectileImpact: new Animation('projectileImpact', [
+                new AnimationFrame(0, 144, 32, 32, 40),
+                new AnimationFrame(32, 144, 32, 32, 40),
+                new AnimationFrame(64, 144, 32, 32, 40),
+                new AnimationFrame(96, 144, 32, 32, 40)
+            ], { loop: false }),
+            itemPickup: new Animation('itemPickup', [
+                new AnimationFrame(0, 176, 32, 32, 50),
+                new AnimationFrame(32, 176, 32, 32, 50),
+                new AnimationFrame(64, 176, 32, 32, 50),
+                new AnimationFrame(96, 176, 32, 32, 50),
+                new AnimationFrame(128, 176, 32, 32, 50)
+            ], { loop: false }),
+            powerUp: new Animation('powerUp', [
+                new AnimationFrame(0, 208, 64, 64, 60),
+                new AnimationFrame(64, 208, 64, 64, 60),
+                new AnimationFrame(128, 208, 64, 64, 60),
+                new AnimationFrame(192, 208, 64, 64, 60),
+                new AnimationFrame(256, 208, 64, 64, 60),
+                new AnimationFrame(320, 208, 64, 64, 60)
             ], { loop: false })
         }
     }
