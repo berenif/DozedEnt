@@ -7,6 +7,13 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 
 ## Implemented Features
 
+### ✅ Player Area System
+- **Enhanced UI**: Cyberpunk-themed player cards with real-time stats
+- **Performance Optimized**: Frame-based throttling for smooth 60 FPS
+- **Minimap System**: Real-time position tracking with viewport indicator
+- **Canvas Rendering**: Large world (3200x2400) with smooth camera
+- **Bug Fixes**: Resolved missing functions and boundary issues
+
 ### ✅ Phase System (8 phases)
 1. **Explore** - Room navigation with deterministic hazards
 2. **Fight** - Combat with wolves, stamina management
@@ -145,6 +152,12 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
    - CashOut phase mechanics
 
 ## File Structure
+
+### UI/Frontend Files
+- `demo/enhanced-player-area.html` - Enhanced player area demo
+- `docs/PLAYER_AREA_SYSTEM.md` - Player area documentation
+- `test-player-area-fix.html` - Player area test harness
+- `PLAYER_AREA_FIX_SUMMARY.md` - Fix summary documentation
 
 ### WASM Headers
 - `internal_core.h` - Core state and utilities
