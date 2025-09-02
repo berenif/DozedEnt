@@ -161,6 +161,77 @@
                 <button id="rematch-button" type="button">Rematch</button>
             </div>
         </div>
+
+        <!-- Risk Phase overlay -->
+        <div id="risk-overlay" hidden>
+            <div class="overlay-box risk-phase">
+                <p class="overlay-title">⚠️ RISK PHASE</p>
+                <div class="risk-info">
+                    <div class="risk-multiplier">Risk Multiplier: <span id="risk-mult">1.0x</span></div>
+                    <div class="active-curses">
+                        <p>Active Curses:</p>
+                        <ul id="curse-list"></ul>
+                    </div>
+                    <div class="timed-challenge" id="timed-challenge" hidden>
+                        <p>Challenge: <span id="challenge-progress">0</span>/<span id="challenge-target">5</span></p>
+                        <p>Time: <span id="challenge-time">0</span>s</p>
+                    </div>
+                </div>
+                <button id="escape-risk-button" type="button">Escape (Cost: Stamina)</button>
+            </div>
+        </div>
+
+        <!-- Escalate Phase overlay -->
+        <div id="escalate-overlay" hidden>
+            <div class="overlay-box escalate-phase">
+                <p class="overlay-title">📈 ESCALATION</p>
+                <div class="escalate-info">
+                    <div class="escalation-level">Level: <span id="escalation-lvl">0%</span></div>
+                    <div class="modifiers">
+                        <p>Enemy Modifiers:</p>
+                        <div class="modifier-list">
+                            <span class="modifier-stat">Speed: <span id="enemy-speed">1.0x</span></span>
+                            <span class="modifier-stat">Damage: <span id="enemy-damage">1.0x</span></span>
+                            <span class="modifier-stat">Spawn Rate: <span id="spawn-rate">1.0x</span></span>
+                        </div>
+                    </div>
+                    <div class="miniboss-alert" id="miniboss-alert" hidden>
+                        <p>⚔️ MINIBOSS ACTIVE!</p>
+                        <div class="miniboss-health">
+                            <div class="miniboss-health-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CashOut Phase overlay -->
+        <div id="cashout-overlay" hidden>
+            <div class="overlay-box cashout-phase">
+                <p class="overlay-title">💰 SHOP</p>
+                <div class="currency-display">
+                    <span class="gold">🔶 Gold: <span id="gold-amount">0</span></span>
+                    <span class="essence">🔷 Essence: <span id="essence-amount">0</span></span>
+                </div>
+                <div class="shop-items" id="shop-items">
+                    <!-- Shop items will be populated dynamically -->
+                </div>
+                <div class="shop-actions">
+                    <button id="heal-button" type="button">Heal (50🔶 5🔷)</button>
+                    <button id="reroll-button" type="button">Reroll Shop (20🔶)</button>
+                    <button id="exit-shop-button" type="button">Leave Shop</button>
+                </div>
+                <div class="forge-section">
+                    <p>⚒️ Forge</p>
+                    <div class="forge-options" id="forge-options">
+                        <button class="forge-btn" data-forge="0">Sharpen (30🔶)</button>
+                        <button class="forge-btn" data-forge="1">Reinforce (25🔶)</button>
+                        <button class="forge-btn" data-forge="2">Enchant (50🔶 8🔷)</button>
+                        <button class="forge-btn" data-forge="3">Reroll (40🔶 5🔷)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->

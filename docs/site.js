@@ -510,6 +510,117 @@ let sendAct
 let lastFrameTs = 0
 let hasSpawned = false
 let choiceVisible = false
+
+// Update Risk Phase UI
+function updateRiskPhaseUI() {
+  if (!wasmExports) return
+  
+  // Update risk multiplier
+  const riskMult = wasmExports.get_risk_multiplier?.() || 1.0
+  const riskMultEl = document.getElementById('risk-mult')
+  if (riskMultEl) riskMultEl.textContent = riskMult.toFixed(1) + 'x'
+  
+  // Update curse list
+  const curseList = document.getElementById('curse-list')
+  if (curseList) {
+    curseList.innerHTML = ''
+    const curseCount = wasmExports.get_active_curse_count?.() || 0
+    const curseTypes = ['Weakness', 'Fragility', 'Exhaustion', 'Slowness', 'Blindness']
+    
+    for (let i = 0; i < curseCount; i++) {
+      const type = wasmExports.get_curse_type?.(i) || 0
+      const intensity = wasmExports.get_curse_intensity?.(i) || 0
+      const li = document.createElement('li')
+      li.textContent = `${curseTypes[type]} (${(intensity * 100).toFixed(0)}%)`
+      curseList.appendChild(li)
+    }
+  }
+  
+  // Update timed challenge if active
+  const challengeProgress = wasmExports.get_timed_challenge_progress?.() || 0
+  const challengeTarget = wasmExports.get_timed_challenge_target?.() || 0
+  const challengeRemaining = wasmExports.get_timed_challenge_remaining?.() || 0
+  
+  const timedChallenge = document.getElementById('timed-challenge')
+  if (timedChallenge) {
+    timedChallenge.hidden = challengeTarget === 0
+    document.getElementById('challenge-progress').textContent = challengeProgress
+    document.getElementById('challenge-target').textContent = challengeTarget
+    document.getElementById('challenge-time').textContent = challengeRemaining.toFixed(1)
+  }
+}
+
+// Update Escalate Phase UI
+function updateEscalatePhaseUI() {
+  if (!wasmExports) return
+  
+  // Update escalation level
+  const level = wasmExports.get_escalation_level?.() || 0
+  const levelEl = document.getElementById('escalation-lvl')
+  if (levelEl) levelEl.textContent = (level * 100).toFixed(0) + '%'
+  
+  // Update modifiers
+  const speedMod = wasmExports.get_enemy_speed_modifier?.() || 1.0
+  const damageMod = wasmExports.get_enemy_damage_modifier?.() || 1.0
+  const spawnMod = wasmExports.get_spawn_rate_modifier?.() || 1.0
+  
+  document.getElementById('enemy-speed').textContent = speedMod.toFixed(1) + 'x'
+  document.getElementById('enemy-damage').textContent = damageMod.toFixed(1) + 'x'
+  document.getElementById('spawn-rate').textContent = spawnMod.toFixed(1) + 'x'
+  
+  // Update miniboss alert
+  const minibossActive = wasmExports.get_miniboss_active?.() === 1
+  const minibossAlert = document.getElementById('miniboss-alert')
+  if (minibossAlert) {
+    minibossAlert.hidden = !minibossActive
+    if (minibossActive) {
+      const health = wasmExports.get_miniboss_health?.() || 0
+      const healthFill = minibossAlert.querySelector('.miniboss-health-fill')
+      if (healthFill) {
+        healthFill.style.width = (health * 100) + '%'
+      }
+    }
+  }
+}
+
+// Update CashOut Phase UI
+function updateCashOutPhaseUI() {
+  if (!wasmExports) return
+  
+  // Update currency
+  const gold = wasmExports.get_gold?.() || 0
+  const essence = wasmExports.get_essence?.() || 0
+  document.getElementById('gold-amount').textContent = Math.floor(gold)
+  document.getElementById('essence-amount').textContent = Math.floor(essence)
+  
+  // Populate shop items
+  const shopItems = document.getElementById('shop-items')
+  if (shopItems) {
+    shopItems.innerHTML = ''
+    const itemCount = wasmExports.get_shop_item_count?.() || 0
+    const itemTypes = ['Weapon', 'Armor', 'Consumable', 'Blessing', 'Mystery']
+    
+    for (let i = 0; i < itemCount; i++) {
+      const type = wasmExports.get_shop_item_type?.(i) || 0
+      const goldCost = wasmExports.get_shop_item_cost_gold?.(i) || 0
+      const essenceCost = wasmExports.get_shop_item_cost_essence?.(i) || 0
+      
+      const itemDiv = document.createElement('div')
+      itemDiv.className = 'shop-item'
+      itemDiv.innerHTML = `
+        <div>${itemTypes[type]}</div>
+        <div>🔶${Math.floor(goldCost)} ${essenceCost > 0 ? `🔷${Math.floor(essenceCost)}` : ''}</div>
+      `
+      itemDiv.onclick = () => {
+        if (wasmExports.buy_shop_item?.(i) === 1) {
+          itemDiv.classList.add('purchased')
+          updateCashOutPhaseUI() // Refresh UI
+        }
+      }
+      shopItems.appendChild(itemDiv)
+    }
+  }
+}
 // movement-driven sound helpers
 let prevPosX = 0.5
 let prevPosY = 0.5
@@ -1605,18 +1716,58 @@ function gameLoop(ts) {
     footstepAccum = 0
   }
 
-  // Choice overlay: show when WASM phase reports Choose (2)
+  // Phase overlay management
   try {
     if (typeof wasmExports?.get_phase === 'function') {
       const phase = wasmExports.get_phase()
-      if (phase === 2 && !choiceVisible) {
-        populateAndShowChoices()
-      } else if (phase !== 2 && choiceVisible) {
-        hideChoices()
+      
+      // Hide all phase overlays first
+      const phaseOverlays = {
+        2: 'choice-overlay',
+        4: 'risk-overlay',
+        5: 'escalate-overlay',
+        6: 'cashout-overlay',
+        7: 'gameover-overlay'
       }
-      // Show Game Over overlay when phase is Reset (7)
-      if (phase === 7) {
-        gameOverOverlay.hidden = false
+      
+      // Hide all overlays
+      Object.values(phaseOverlays).forEach(id => {
+        const overlay = document.getElementById(id)
+        if (overlay && !phaseOverlays[phase] || phaseOverlays[phase] !== id) {
+          overlay.hidden = true
+        }
+      })
+      
+      // Show appropriate overlay for current phase
+      switch (phase) {
+        case 2: // Choose
+          if (!choiceVisible) {
+            populateAndShowChoices()
+          }
+          break
+          
+        case 4: // Risk
+          updateRiskPhaseUI()
+          document.getElementById('risk-overlay').hidden = false
+          break
+          
+        case 5: // Escalate
+          updateEscalatePhaseUI()
+          document.getElementById('escalate-overlay').hidden = false
+          break
+          
+        case 6: // CashOut
+          updateCashOutPhaseUI()
+          document.getElementById('cashout-overlay').hidden = false
+          break
+          
+        case 7: // Reset
+          gameOverOverlay.hidden = false
+          break
+          
+        default:
+          // Explore/Fight/PowerUp - no overlay
+          break
       }
     }
   } catch {}

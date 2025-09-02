@@ -873,3 +873,193 @@ body {
 #choice-overlay .choices button:hover {
   box-shadow: 0 8px 22px rgba(0,0,0,0.5), 0 0 26px rgba(64, 224, 255, 0.4);
 }
+
+/* Risk Phase overlay */
+#risk-overlay {
+  background: rgba(255, 100, 0, 0.3);
+}
+
+.risk-phase {
+  background: linear-gradient(135deg, #2a1a1a 0%, #4a2222 100%);
+  border: 2px solid #ff6600;
+}
+
+.risk-info {
+  margin: 20px 0;
+}
+
+.risk-multiplier {
+  font-size: 1.2em;
+  color: #ffaa00;
+  margin-bottom: 10px;
+}
+
+.active-curses ul {
+  list-style: none;
+  padding: 0;
+}
+
+.active-curses li {
+  background: rgba(139, 0, 0, 0.3);
+  padding: 5px 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+.timed-challenge {
+  background: rgba(255, 200, 0, 0.2);
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+/* Escalate Phase overlay */
+#escalate-overlay {
+  background: rgba(200, 0, 200, 0.3);
+}
+
+.escalate-phase {
+  background: linear-gradient(135deg, #2a1a2a 0%, #4a224a 100%);
+  border: 2px solid #ff00ff;
+}
+
+.escalate-info {
+  margin: 20px 0;
+}
+
+.escalation-level {
+  font-size: 1.3em;
+  color: #ff00ff;
+  margin-bottom: 15px;
+}
+
+.modifier-list {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.modifier-stat {
+  background: rgba(200, 0, 200, 0.2);
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.miniboss-alert {
+  background: rgba(255, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 20px;
+  animation: pulse 2s infinite;
+}
+
+.miniboss-health {
+  width: 100%;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.miniboss-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0000, #ff6600);
+  transition: width 0.3s ease;
+}
+
+/* CashOut Phase overlay */
+#cashout-overlay {
+  background: rgba(255, 215, 0, 0.3);
+}
+
+.cashout-phase {
+  background: linear-gradient(135deg, #2a2a1a 0%, #4a4a22 100%);
+  border: 2px solid #ffd700;
+  max-width: 600px;
+}
+
+.currency-display {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 20px 0;
+  font-size: 1.2em;
+}
+
+.gold {
+  color: #ffd700;
+}
+
+.essence {
+  color: #00ddff;
+}
+
+.shop-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.shop-item {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.shop-item:hover {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+}
+
+.shop-item.purchased {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shop-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.forge-section {
+  border-top: 1px solid #666;
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
+.forge-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.forge-btn {
+  background: rgba(100, 50, 0, 0.5);
+  padding: 8px;
+  border: 1px solid #8b4513;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.forge-btn:hover {
+  background: rgba(139, 69, 19, 0.7);
+  border-color: #daa520;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}

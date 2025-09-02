@@ -146,6 +146,7 @@ static GamePhase g_phase = GamePhase::Explore;
 static unsigned int g_wolf_kills_since_choice = 0;
 static float g_last_attack_time = -1000.f;
 static float g_last_roll_time = -1000.f;
+static unsigned int g_room_count = 0;  // Track room progression for early room spawn logic
 
 // Landmarks/exits snapshot
 #define MAX_LANDMARKS 4

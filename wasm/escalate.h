@@ -265,15 +265,18 @@ static bool should_enter_escalation_phase() {
 }
 
 // Get escalation modifiers for enemy stats
-static float get_enemy_speed_modifier() {
+__attribute__((export_name("get_enemy_speed_modifier")))
+float get_enemy_speed_modifier() {
   return g_enemy_speed_multiplier;
 }
 
-static float get_enemy_damage_modifier() {
+__attribute__((export_name("get_enemy_damage_modifier")))
+float get_enemy_damage_modifier() {
   return g_enemy_damage_multiplier;
 }
 
-static float get_spawn_rate_modifier() {
+__attribute__((export_name("get_spawn_rate_modifier")))
+float get_spawn_rate_modifier() {
   return g_spawn_rate_multiplier;
 }
 
