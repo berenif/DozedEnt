@@ -176,12 +176,10 @@ class RoomManager {
         clearInterval(this.announceInterval)
         this.announceInterval = null
       }
-    } else {
+    } else if (this.gameActions) {
       // Notify host of leaving
-      if (this.gameActions) {
-        const [sendLeaveNotify] = this.gameActions.sendLeaveNotify
-        sendLeaveNotify({ playerId: selfId })
-      }
+      const [sendLeaveNotify] = this.gameActions.sendLeaveNotify
+      sendLeaveNotify({ playerId: selfId })
     }
     
     // Leave the game room
@@ -264,7 +262,7 @@ class RoomManager {
       // Client-specific handlers
       
       // Handle join response
-      actions.sendJoinResponse[1]((response, peerId) => {
+      actions.sendJoinResponse[1]((response) => {
         if (response.accepted) {
           this.currentRoom = response.roomInfo
           if (response.gameState) {

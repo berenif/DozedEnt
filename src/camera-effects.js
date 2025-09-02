@@ -198,7 +198,7 @@ export class CameraEffects {
         ctx.save()
         ctx.globalAlpha = this.motionBlurStrength / this.motionBlurFrames.length
         
-        this.motionBlurFrames.forEach((frame, index) => {
+        this.motionBlurFrames.forEach((frame) => {
             ctx.putImageData(frame, 0, 0)
         })
         

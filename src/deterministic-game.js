@@ -376,7 +376,7 @@ class DeterministicGame {
     }
     
     // Save entities
-    for (const [id, entity] of this.entities) {
+    for (const [, entity] of this.entities) {
       state.entities.push({ ...entity })
     }
     
@@ -462,7 +462,7 @@ class DeterministicGame {
     }
     
     // Include player scores
-    for (const [id, player] of this.players) {
+    for (const [, player] of this.players) {
       checksum ^= player.score
     }
     
@@ -511,11 +511,11 @@ class DeterministicGame {
   
   // Override these methods in game implementation
   onInitialize() {}
-  onPlayerAction(_playerId, _player) {}
-  onCollision(_entity1, _entity2) {}
+  onPlayerAction() {}
+  onCollision() {}
   updateGameLogic() {}
   onSaveState() { return {} }
-  onLoadState(_state) {}
+  onLoadState() {}
   onGetChecksum() { return 0 }
 }
 

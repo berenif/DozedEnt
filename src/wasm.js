@@ -10,21 +10,6 @@ const isResponse = x => typeof Response !== 'undefined' && x instanceof Response
 const isUrl = x => typeof x === 'string' && /\.wasm($|\?|#)/.test(x)
 const isBytes = x => x instanceof ArrayBuffer || x instanceof Uint8Array
 
-const getBytes = async source => {
-  if (isResponse(source)) {
-    const res = typeof source.clone === 'function' ? source.clone() : source
-    return new Uint8Array(await res.arrayBuffer())
-  }
-  if (isUrl(source)) {
-    const res = await fetch(source)
-    return new Uint8Array(await res.arrayBuffer())
-  }
-  if (isBytes(source)) {
-    return new Uint8Array(source instanceof Uint8Array ? source.buffer : source)
-  }
-  throw new TypeError('Unsupported WASM source; expected URL/Response/bytes')
-}
-
 const getInstantiate = async (source, importObject) => {
   if (isResponse(source)) {
     try {
@@ -122,16 +107,16 @@ const createWasiPreview1 = (memory) => {
 			dataView.setUint32(argvBufSizePtr >>> 0, 0, true)
 			return 0
 		},
-		args_get: (_argvPtr, _argvBufPtr) => 0,
+		args_get: () => 0,
 		environ_sizes_get: (envcPtr, envBufSizePtr) => {
 			const dataView = dv()
 			dataView.setUint32(envcPtr >>> 0, 0, true)
 			dataView.setUint32(envBufSizePtr >>> 0, 0, true)
 			return 0
 		},
-		environ_get: (_envPtr, _envBufPtr) => 0,
+		environ_get: () => 0,
 
-		fd_close: (_fd) => 0,
+		fd_close: () => 0,
 		fd_seek: (_fd, _offsetLow, _offsetHigh, _whence, newOffsetPtr) => {
 			// report position 0
 			dv().setUint32(newOffsetPtr >>> 0, 0, true)
@@ -214,8 +199,8 @@ export const initWasmGame = async ({source, imports, onReady}) => {
   const api = {
     // Convention-based optional exports
     start: runtime.exports.start || (() => {}),
-    update: runtime.exports.update || ((dtMs) => {}),
-    handleMessage: runtime.exports.handleMessage || ((ptr, len) => {}),
+    update: runtime.exports.update || (() => {}),
+    handleMessage: runtime.exports.handleMessage || (() => {}),
     exports: runtime.exports,
     memory: runtime.memory
   }

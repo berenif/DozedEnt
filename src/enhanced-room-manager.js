@@ -630,7 +630,7 @@ export class EnhancedRoomManager {
     }
     
     // Handle player join
-    onPlayerJoin((data, peerId) => {
+    onPlayerJoin((data) => {
       const joinData = typeof data === 'string' ? fromJson(data) : data
       
       if (joinData.asSpectator && this.currentRoom.spectators.length < this.currentRoom.maxSpectators) {
@@ -681,7 +681,7 @@ export class EnhancedRoomManager {
     })
     
     // Handle game start
-    onGameStart((data) => {
+    onGameStart(() => {
       this.currentRoom.state = RoomState.IN_PROGRESS
       this.listeners.onRoomStateChange(RoomState.IN_PROGRESS)
     })
@@ -853,7 +853,7 @@ export class EnhancedRoomManager {
     return suitableRooms.sort((a, b) => b.matchScore - a.matchScore)
   }
   
-  _handleMatchmakingRequest(request, peerId) {
+  _handleMatchmakingRequest(request) {
     // Only process if we're hosting a room
     if (!this.currentRoom || this.playerInfo.role !== PlayerRole.HOST) {return}
     
@@ -876,7 +876,7 @@ export class EnhancedRoomManager {
     }
   }
   
-  _handleMatchmakingResponse(response, peerId) {
+  _handleMatchmakingResponse(response) {
     const res = typeof response === 'string' ? fromJson(response) : response
     
     // Check if this response is for us

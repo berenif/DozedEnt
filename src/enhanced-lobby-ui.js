@@ -3,7 +3,7 @@
  * with chat, spectator mode, matchmaking, and statistics
  */
 
-import { EnhancedRoomManager, RoomState, RoomType, PlayerRole } from './enhanced-room-manager.js'
+import { EnhancedRoomManager } from './enhanced-room-manager.js'
 
 export class EnhancedLobbyUI {
   constructor(containerId = 'enhanced-lobby', appId = 'game', config = {}) {
@@ -1297,7 +1297,7 @@ export class EnhancedLobbyUI {
       }
     })
     
-    this.roomManager.on('onMatchmakingComplete', (room) => {
+    this.roomManager.on('onMatchmakingComplete', () => {
       this.isMatchmaking = false
       this.showView('in-room')
     })

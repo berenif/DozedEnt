@@ -175,7 +175,7 @@ export class SoundSystem {
         }
     }
 
-    async initialize() {
+    initialize() {
         if (this.initialized) {return}
         if (this.initPromise) {return this.initPromise}
         
@@ -244,7 +244,7 @@ export class SoundSystem {
         }
     }
 
-    async createReverb() {
+    createReverb() {
         const length = this.audioContext.sampleRate * 2 // 2 second reverb
         const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate)
         
@@ -272,7 +272,7 @@ export class SoundSystem {
         this.reverbDry.connect(this.masterGain)
     }
 
-    async generateProceduralSounds() {
+    generateProceduralSounds() {
         // Generate basic waveform sounds for different effects
         
         // Sword swing - whoosh sound
@@ -438,7 +438,7 @@ export class SoundSystem {
         
         for (let i = 0; i < length; i++) {
             const t = i / sampleRate
-            let envelope = 0
+            let envelope
             
             if (t < attack) {
                 envelope = t / attack
@@ -606,7 +606,7 @@ export class SoundSystem {
     }
 
     // Preset sound triggers for game events
-    playFootstep(position, surface = 'ground') {
+    playFootstep(position) {
         this.play('footstep', { position, volume: 0.3 + Math.random() * 0.2 })
     }
 
@@ -673,7 +673,7 @@ export class SoundSystem {
     }
 
     // Music playback (would need actual music files in production)
-    playMusic(trackName, fadeIn = 2) {
+    playMusic(trackName) {
         // Placeholder for music playback
         console.log(`Playing music: ${trackName}`)
     }

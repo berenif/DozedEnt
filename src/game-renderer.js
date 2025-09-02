@@ -242,7 +242,7 @@ export class GameRenderer {
                                       Math.min(this.camera.bounds.maxY, this.camera.targetY))
         
         // Smooth camera movement
-        const smoothing = 1 - Math.pow(1 - this.camera.smoothing, deltaTime * 60)
+        const smoothing = 1 - (1 - this.camera.smoothing)**(deltaTime * 60)
         this.camera.x += (this.camera.targetX - this.camera.x) * smoothing
         this.camera.y += (this.camera.targetY - this.camera.y) * smoothing
     }
@@ -555,7 +555,7 @@ export class GameRenderer {
         this.ctx.fill()
     }
     
-    drawPowerup(x, y, size, effect) {
+    drawPowerup(x, y, size) {
         // Star shape for powerups
         this.ctx.beginPath()
         for (let i = 0; i < 5; i++) {
@@ -1129,10 +1129,18 @@ export class GameRenderer {
         let inputX = 0
         let inputY = 0
         
-        if (input.left) inputX -= 1
-        if (input.right) inputX += 1
-        if (input.up) inputY -= 1
-        if (input.down) inputY += 1
+        if (input.left) {
+            inputX -= 1
+        }
+        if (input.right) {
+            inputX += 1
+        }
+        if (input.up) {
+            inputY -= 1
+        }
+        if (input.down) {
+            inputY += 1
+        }
         
         // Normalize diagonal movement
         if (inputX !== 0 && inputY !== 0) {
@@ -1156,7 +1164,7 @@ export class GameRenderer {
         }
         
         // Apply friction
-        const frictionFactor = Math.pow(this.player.friction, deltaTime * 60)
+        const frictionFactor = this.player.friction**(deltaTime * 60)
         this.player.velocityX *= frictionFactor
         this.player.velocityY *= frictionFactor
         
@@ -1405,7 +1413,9 @@ export class GameRenderer {
     
     // Player action methods
     performRoll(direction) {
-        if (this.player.stamina < 30 || this.player.state === 'rolling') return false
+        if (this.player.stamina < 30 || this.player.state === 'rolling') {
+            return false
+        }
         
         this.player.state = 'rolling'
         this.player.stamina -= 30
@@ -1424,7 +1434,9 @@ export class GameRenderer {
     }
     
     performAttack() {
-        if (this.player.state === 'attacking') return false
+        if (this.player.state === 'attacking') {
+            return false
+        }
         
         this.player.state = 'attacking'
         
