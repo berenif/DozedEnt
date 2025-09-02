@@ -57,8 +57,9 @@
   "scripts": {
     "build": "rollup -c",
     "build:animations": "rollup -c rollup.config.animations.js",
-    "build:docs": "npm run build && npm run build:animations && cp -r dist docs/ 2>/dev/null || true",
-    "build:all": "npm run build && npm run build:animations",
+    "build:wolf": "rollup -c rollup.config.wolf.js",
+    "build:docs": "npm run build && npm run build:animations && npm run build:wolf && cp -r dist docs/ 2>/dev/null || true && cp src/wolf-animation.js docs/ && cp src/wolf-character.js docs/ && cp demo-wolf-animation.html docs/wolf-animation-demo.html",
+    "build:all": "npm run build && npm run build:animations && npm run build:wolf",
     "wasm:build": "em++ wasm/game.cpp -O3 -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o docs/game.wasm",
     "get-bundle-sizes": "node scripts/get-bundle-sizes.js",
     "test": "playwright test ./test",

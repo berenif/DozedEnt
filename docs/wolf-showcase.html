@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Animation Showcase - Dozed Ent</title>
+    <link href="images/favicon.png" rel="icon" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ff8800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            color: #aaa;
+        }
+        
+        .nav-links {
+            margin-top: 20px;
+        }
+        
+        .nav-links a {
+            color: #00ff88;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 5px 10px;
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: #00ff88;
+            color: #0a0e1a;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-section {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .demo-canvas {
+            width: 100%;
+            max-width: 1200px;
+            height: 600px;
+            margin: 0 auto;
+            display: block;
+            border: 2px solid #ff8800;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 50%, #7FBF7F 100%);
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .control-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 136, 0, 0.3);
+        }
+        
+        .control-card h3 {
+            color: #ff8800;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 136, 0, 0.2);
+            color: white;
+            border: 1px solid #ff8800;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Space Mono', monospace;
+        }
+        
+        button:hover {
+            background: rgba(255, 136, 0, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        button.active {
+            background: #ff8800;
+            color: #0a0e1a;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: 1px solid #ff8800;
+            border-radius: 5px;
+            font-family: 'Space Mono', monospace;
+        }
+        
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .stat-value {
+            color: #ff8800;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .info-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-panel h3 {
+            color: #ff8800;
+            margin-bottom: 10px;
+        }
+        
+        .info-panel ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .info-panel li {
+            margin: 5px 0;
+            position: relative;
+        }
+        
+        .info-panel li:before {
+            content: "🐺";
+            position: absolute;
+            left: -20px;
+        }
+        
+        #fpsCounter {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="fpsCounter">FPS: 0</div>
+    
+    <div class="header">
+        <h1>🐺 Wolf Animation System</h1>
+        <p>Advanced procedural animation showcase with physics-based movement</p>
+        <div class="nav-links">
+            <a href="index.html">Main Game</a>
+            <a href="animations-showcase.html">Player Animations</a>
+            <a href="wolf-animation-demo.html">Full Wolf Demo</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="demo-section">
+            <canvas id="wolfCanvas" class="demo-canvas"></canvas>
+            
+            <div class="controls-grid">
+                <div class="control-card">
+                    <h3>Movement States</h3>
+                    <button onclick="setWolfState('idle')" id="btn-idle" class="active">Idle</button>
+                    <button onclick="setWolfState('walking')" id="btn-walking">Walking</button>
+                    <button onclick="setWolfState('running')" id="btn-running">Running</button>
+                    <button onclick="setWolfState('prowling')" id="btn-prowling">Prowling</button>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Combat Actions</h3>
+                    <button onclick="triggerLunge()" id="btn-lunging">Lunge Attack</button>
+                    <button onclick="setWolfState('attacking')" id="btn-attacking">Bite Attack</button>
+                    <button onclick="setWolfState('hurt')" id="btn-hurt">Take Damage</button>
+                    <button onclick="setWolfState('death')" id="btn-death">Death</button>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Special Actions</h3>
+                    <button onclick="setWolfState('howling')" id="btn-howling">Howl</button>
+                    <button onclick="packFormation()">Pack Formation</button>
+                    <button onclick="coordinatedAttack()">Pack Attack</button>
+                    <button onclick="packHowl()">Pack Howl</button>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Wolf Types</h3>
+                    <select id="wolfType" onchange="changeWolfType()">
+                        <option value="normal">Normal Wolf</option>
+                        <option value="alpha">Alpha Wolf (Larger)</option>
+                        <option value="scout">Scout Wolf (Faster)</option>
+                        <option value="hunter">Hunter Wolf (Stronger)</option>
+                    </select>
+                    <button onclick="spawnWolf()">Spawn Wolf</button>
+                    <button onclick="clearWolves()">Clear All</button>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Environment</h3>
+                    <button onclick="toggleTimeOfDay()" id="btn-time">Day/Night</button>
+                    <button onclick="toggleWeather()" id="btn-weather">Weather</button>
+                    <button onclick="addPrey()">Add Prey</button>
+                    <button onclick="toggleWind()">Toggle Wind</button>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Camera Controls</h3>
+                    <button onclick="followWolf()">Follow Wolf</button>
+                    <button onclick="freeCamera()">Free Camera</button>
+                    <button onclick="zoomIn()">Zoom In</button>
+                    <button onclick="zoomOut()">Zoom Out</button>
+                </div>
+            </div>
+            
+            <div class="stats-display">
+                <div class="stat-item">
+                    <div class="stat-label">Wolves</div>
+                    <div class="stat-value" id="wolfCount">1</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">State</div>
+                    <div class="stat-value" id="currentState">idle</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Animation</div>
+                    <div class="stat-value" id="animFrame">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Particles</div>
+                    <div class="stat-value" id="particleCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Wind</div>
+                    <div class="stat-value" id="windStrength">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="timeOfDay">Day</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Animation Features</h3>
+            <ul>
+                <li>Procedural leg movement with inverse kinematics</li>
+                <li>Physics-based segmented tail animation</li>
+                <li>Dynamic breathing and chest expansion</li>
+                <li>Realistic fur movement with wind effects</li>
+                <li>Particle effects for dust, attacks, and howling</li>
+                <li>Smooth state transitions with animation blending</li>
+                <li>Eye tracking, blinking, and pupil dilation</li>
+                <li>Ear movements based on alertness and emotion</li>
+                <li>Complex mouth animations with teeth and tongue</li>
+                <li>Pack coordination and synchronized behaviors</li>
+                <li>Different wolf types with unique characteristics</li>
+                <li>Environmental interactions and weather effects</li>
+            </ul>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Controls</h3>
+            <ul style="list-style: none;">
+                <li>🖱️ <strong>Click</strong> - Select wolf or set movement target</li>
+                <li>⬅️➡️ <strong>Arrow Keys</strong> - Move selected wolf</li>
+                <li>⬆️ <strong>Up Arrow</strong> - Run</li>
+                <li>⬇️ <strong>Down Arrow</strong> - Prowl</li>
+                <li>🔲 <strong>Space</strong> - Attack</li>
+                <li>🔤 <strong>H</strong> - Howl</li>
+                <li>🔤 <strong>L</strong> - Lunge</li>
+                <li>🔤 <strong>P</strong> - Form Pack</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { WolfCharacter } from './wolf-character.js'
+        import { ParticleSystem } from './particle-system.js'
+        
+        const canvas = document.getElementById('wolfCanvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Set canvas size
+        canvas.width = canvas.offsetWidth
+        canvas.height = 600
+        
+        // Game state
+        let wolves = []
+        let selectedWolf = null
+        let prey = []
+        let camera = { x: 0, y: 0, zoom: 1, follow: false }
+        let environment = {
+            timeOfDay: 'day',
+            weather: 'clear',
+            windStrength: 0,
+            windDirection: 0
+        }
+        let keys = {}
+        let mousePos = { x: 0, y: 0 }
+        
+        // Performance tracking
+        let fps = 0
+        let frameCount = 0
+        let lastFpsUpdate = 0
+        let lastTime = 0
+        
+        // Ground level
+        const groundY = canvas.height - 120
+        
+        // Initialize first wolf
+        function init() {
+            const wolf = new WolfCharacter(canvas.width / 2, groundY - 30, 'normal')
+            wolves.push(wolf)
+            selectedWolf = wolf
+        }
+        
+        // Animation loop
+        function animate(currentTime) {
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1)
+            lastTime = currentTime
+            
+            // Update FPS
+            frameCount++
+            if (currentTime - lastFpsUpdate > 1000) {
+                fps = frameCount
+                frameCount = 0
+                lastFpsUpdate = currentTime
+                document.getElementById('fpsCounter').textContent = `FPS: ${fps}`
+            }
+            
+            // Update environment
+            updateEnvironment(deltaTime)
+            
+            // Update wolves
+            wolves.forEach(wolf => {
+                // Apply movement based on state
+                if (wolf === selectedWolf) {
+                    handleWolfInput(wolf)
+                } else {
+                    // Simple AI for non-selected wolves
+                    applyWolfAI(wolf, deltaTime)
+                }
+                
+                // Keep wolves on ground
+                wolf.position.y = Math.min(wolf.position.y, groundY - wolf.height / 2)
+                wolf.isGrounded = wolf.position.y >= groundY - wolf.height / 2
+                
+                // Boundary check
+                if (wolf.position.x < 50 || wolf.position.x > canvas.width - 50) {
+                    wolf.facing *= -1
+                    wolf.velocity.x *= -0.5
+                }
+                
+                // Update wolf
+                wolf.update(deltaTime, prey[0] || null)
+            })
+            
+            // Update prey
+            updatePrey(deltaTime)
+            
+            // Update camera
+            updateCamera()
+            
+            // Render
+            render()
+            
+            // Update UI
+            updateStats()
+            
+            requestAnimationFrame(animate)
+        }
+        
+        function handleWolfInput(wolf) {
+            if (keys['ArrowLeft']) {
+                wolf.facing = -1
+                if (wolf.state === 'idle') wolf.setState('walking')
+                wolf.velocity.x = -100
+            } else if (keys['ArrowRight']) {
+                wolf.facing = 1
+                if (wolf.state === 'idle') wolf.setState('walking')
+                wolf.velocity.x = 100
+            } else if (keys['ArrowUp']) {
+                wolf.setState('running')
+                wolf.velocity.x = wolf.facing * 200
+            } else if (keys['ArrowDown']) {
+                wolf.setState('prowling')
+                wolf.velocity.x = wolf.facing * 50
+            } else {
+                if (wolf.state === 'walking' || wolf.state === 'running' || wolf.state === 'prowling') {
+                    wolf.setState('idle')
+                }
+                wolf.velocity.x *= 0.9
+            }
+        }
+        
+        function applyWolfAI(wolf, deltaTime) {
+            // Simple pack following behavior
+            if (selectedWolf && wolf !== selectedWolf) {
+                const dx = selectedWolf.position.x - wolf.position.x
+                const distance = Math.abs(dx)
+                
+                if (distance > 150) {
+                    wolf.facing = dx > 0 ? 1 : -1
+                    wolf.setState('running')
+                    wolf.velocity.x = wolf.facing * 150
+                } else if (distance > 80) {
+                    wolf.facing = dx > 0 ? 1 : -1
+                    wolf.setState('walking')
+                    wolf.velocity.x = wolf.facing * 80
+                } else {
+                    if (wolf.state !== 'idle' && wolf.state !== 'howling') {
+                        wolf.setState('idle')
+                    }
+                    wolf.velocity.x *= 0.9
+                }
+            }
+        }
+        
+        function updateEnvironment(deltaTime) {
+            // Update wind
+            if (environment.windStrength > 0) {
+                environment.windDirection += deltaTime * 0.5
+                const windEffect = Math.sin(environment.windDirection) * environment.windStrength
+                
+                // Apply wind to wolves' fur
+                wolves.forEach(wolf => {
+                    if (wolf.furMovement) {
+                        wolf.furMovement.wind = windEffect
+                    }
+                })
+            }
+        }
+        
+        function updatePrey(deltaTime) {
+            prey.forEach(p => {
+                // Simple prey movement
+                p.x += p.vx * deltaTime
+                p.y = groundY - 20
+                
+                // Flee from wolves
+                const nearestWolf = wolves.reduce((nearest, wolf) => {
+                    const dist = Math.abs(wolf.position.x - p.x)
+                    return !nearest || dist < nearest.dist ? { wolf, dist } : nearest
+                }, null)
+                
+                if (nearestWolf && nearestWolf.dist < 200) {
+                    p.vx = (p.x < nearestWolf.wolf.position.x ? -1 : 1) * 300
+                } else {
+                    p.vx *= 0.95
+                }
+                
+                // Boundary check
+                if (p.x < 0 || p.x > canvas.width) {
+                    p.vx *= -1
+                }
+            })
+        }
+        
+        function updateCamera() {
+            if (camera.follow && selectedWolf) {
+                camera.x = selectedWolf.position.x - canvas.width / 2
+                camera.y = selectedWolf.position.y - canvas.height / 2
+            }
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw background
+            drawBackground()
+            
+            // Draw ground
+            drawGround()
+            
+            // Draw prey
+            drawPrey()
+            
+            // Draw wolves
+            wolves.forEach(wolf => {
+                wolf.render(ctx, camera)
+            })
+            
+            // Draw selection indicator
+            if (selectedWolf) {
+                ctx.save()
+                ctx.strokeStyle = '#ffd700'
+                ctx.lineWidth = 2
+                ctx.beginPath()
+                ctx.arc(
+                    selectedWolf.position.x - camera.x,
+                    selectedWolf.position.y - camera.y - selectedWolf.height - 20,
+                    10, 0, Math.PI * 2
+                )
+                ctx.stroke()
+                ctx.restore()
+            }
+        }
+        
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+            
+            if (environment.timeOfDay === 'day') {
+                gradient.addColorStop(0, '#87CEEB')
+                gradient.addColorStop(0.5, '#98D8C8')
+                gradient.addColorStop(1, '#7FBF7F')
+            } else {
+                gradient.addColorStop(0, '#0C1445')
+                gradient.addColorStop(0.5, '#1e3c72')
+                gradient.addColorStop(1, '#2a5298')
+            }
+            
+            ctx.fillStyle = gradient
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            // Weather effects
+            if (environment.weather === 'rain') {
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+                ctx.lineWidth = 1
+                for (let i = 0; i < 100; i++) {
+                    const x = Math.random() * canvas.width
+                    const y = Math.random() * canvas.height
+                    ctx.beginPath()
+                    ctx.moveTo(x, y)
+                    ctx.lineTo(x - 2, y + 10)
+                    ctx.stroke()
+                }
+            } else if (environment.weather === 'snow') {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)'
+                for (let i = 0; i < 50; i++) {
+                    ctx.beginPath()
+                    ctx.arc(
+                        Math.random() * canvas.width,
+                        Math.random() * canvas.height,
+                        Math.random() * 3 + 1,
+                        0, Math.PI * 2
+                    )
+                    ctx.fill()
+                }
+            }
+            
+            // Mountains
+            ctx.fillStyle = environment.timeOfDay === 'day' ? 
+                'rgba(100,100,100,0.3)' : 'rgba(50,50,50,0.5)'
+            ctx.beginPath()
+            ctx.moveTo(0, 400)
+            ctx.lineTo(300, 200)
+            ctx.lineTo(600, 350)
+            ctx.lineTo(900, 150)
+            ctx.lineTo(canvas.width, 300)
+            ctx.lineTo(canvas.width, canvas.height)
+            ctx.lineTo(0, canvas.height)
+            ctx.fill()
+        }
+        
+        function drawGround() {
+            ctx.fillStyle = environment.timeOfDay === 'day' ? '#8B7355' : '#5C4A3A'
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY)
+            
+            // Grass
+            ctx.fillStyle = environment.timeOfDay === 'day' ? '#7CFC00' : '#4A7C00'
+            for (let x = 0; x < canvas.width; x += 20) {
+                const height = Math.random() * 15 + 5
+                ctx.beginPath()
+                ctx.moveTo(x, groundY)
+                ctx.quadraticCurveTo(x + 5, groundY - height/2, x + 10, groundY - height)
+                ctx.quadraticCurveTo(x + 5, groundY - height/2, x, groundY)
+                ctx.fill()
+            }
+        }
+        
+        function drawPrey() {
+            prey.forEach(p => {
+                ctx.save()
+                ctx.translate(p.x - camera.x, p.y - camera.y)
+                
+                // Simple rabbit shape
+                ctx.fillStyle = '#8B7355'
+                ctx.beginPath()
+                ctx.ellipse(0, 0, 15, 10, 0, 0, Math.PI * 2)
+                ctx.fill()
+                
+                // Ears
+                ctx.beginPath()
+                ctx.ellipse(-5, -10, 3, 8, -0.2, 0, Math.PI * 2)
+                ctx.ellipse(5, -10, 3, 8, 0.2, 0, Math.PI * 2)
+                ctx.fill()
+                
+                // Eye
+                ctx.fillStyle = '#000'
+                ctx.beginPath()
+                ctx.arc(5, -2, 2, 0, Math.PI * 2)
+                ctx.fill()
+                
+                ctx.restore()
+            })
+        }
+        
+        function updateStats() {
+            document.getElementById('wolfCount').textContent = wolves.length
+            document.getElementById('currentState').textContent = selectedWolf?.state || 'none'
+            document.getElementById('animFrame').textContent = 
+                selectedWolf ? Math.floor(selectedWolf.animationFrame) : 0
+            
+            let particleCount = 0
+            wolves.forEach(wolf => {
+                if (wolf.particleSystem?.particles) {
+                    particleCount += wolf.particleSystem.particles.length
+                }
+            })
+            document.getElementById('particleCount').textContent = particleCount
+            document.getElementById('windStrength').textContent = 
+                environment.windStrength.toFixed(1)
+            document.getElementById('timeOfDay').textContent = 
+                environment.timeOfDay === 'day' ? 'Day' : 'Night'
+        }
+        
+        // Control functions
+        window.setWolfState = function(state) {
+            if (selectedWolf) {
+                selectedWolf.setState(state)
+                
+                // Update button states
+                document.querySelectorAll('button[id^="btn-"]').forEach(btn => {
+                    btn.classList.remove('active')
+                })
+                const btn = document.getElementById(`btn-${state}`)
+                if (btn) btn.classList.add('active')
+                
+                // Auto-reset certain states
+                if (state === 'hurt') {
+                    setTimeout(() => {
+                        selectedWolf.setState('idle')
+                        document.getElementById('btn-idle').classList.add('active')
+                        document.getElementById('btn-hurt').classList.remove('active')
+                    }, 1000)
+                } else if (state === 'death') {
+                    setTimeout(() => {
+                        wolves = wolves.filter(w => w !== selectedWolf)
+                        selectedWolf = wolves[0] || null
+                        if (wolves.length === 0) {
+                            init()
+                        }
+                    }, 3000)
+                }
+            }
+        }
+        
+        window.triggerLunge = function() {
+            if (selectedWolf) {
+                const target = { 
+                    position: { 
+                        x: selectedWolf.position.x + selectedWolf.facing * 200, 
+                        y: selectedWolf.position.y 
+                    } 
+                }
+                selectedWolf.startLungeCharge(target)
+                setTimeout(() => selectedWolf.executeLunge(target), 800)
+            }
+        }
+        
+        window.changeWolfType = function() {
+            const type = document.getElementById('wolfType').value
+            if (selectedWolf) {
+                const newWolf = new WolfCharacter(
+                    selectedWolf.position.x, 
+                    selectedWolf.position.y, 
+                    type
+                )
+                const index = wolves.indexOf(selectedWolf)
+                wolves[index] = newWolf
+                selectedWolf = newWolf
+            }
+        }
+        
+        window.spawnWolf = function() {
+            const type = document.getElementById('wolfType').value
+            const x = Math.random() * (canvas.width - 200) + 100
+            const wolf = new WolfCharacter(x, groundY - 30, type)
+            wolves.push(wolf)
+        }
+        
+        window.clearWolves = function() {
+            wolves = []
+            selectedWolf = null
+            init()
+        }
+        
+        window.packFormation = function() {
+            const leader = wolves.find(w => w.type === 'alpha') || wolves[0]
+            wolves.forEach((wolf, i) => {
+                if (wolf !== leader) {
+                    wolf.position.x = leader.position.x - (i + 1) * 80
+                    wolf.facing = leader.facing
+                }
+            })
+        }
+        
+        window.coordinatedAttack = function() {
+            wolves.forEach((wolf, i) => {
+                setTimeout(() => {
+                    wolf.setState('attacking')
+                    setTimeout(() => wolf.setState('idle'), 1500)
+                }, i * 200)
+            })
+        }
+        
+        window.packHowl = function() {
+            wolves.forEach((wolf, i) => {
+                setTimeout(() => {
+                    wolf.setState('howling')
+                    setTimeout(() => wolf.setState('idle'), 3000)
+                }, i * 300)
+            })
+        }
+        
+        window.toggleTimeOfDay = function() {
+            environment.timeOfDay = environment.timeOfDay === 'day' ? 'night' : 'day'
+        }
+        
+        window.toggleWeather = function() {
+            const weatherTypes = ['clear', 'rain', 'snow']
+            const index = weatherTypes.indexOf(environment.weather)
+            environment.weather = weatherTypes[(index + 1) % weatherTypes.length]
+        }
+        
+        window.addPrey = function() {
+            prey.push({
+                x: Math.random() * canvas.width,
+                y: groundY - 20,
+                vx: 0
+            })
+        }
+        
+        window.toggleWind = function() {
+            environment.windStrength = environment.windStrength > 0 ? 0 : 0.5
+        }
+        
+        window.followWolf = function() {
+            camera.follow = true
+        }
+        
+        window.freeCamera = function() {
+            camera.follow = false
+            camera.x = 0
+            camera.y = 0
+        }
+        
+        window.zoomIn = function() {
+            camera.zoom = Math.min(camera.zoom * 1.2, 3)
+        }
+        
+        window.zoomOut = function() {
+            camera.zoom = Math.max(camera.zoom / 1.2, 0.5)
+        }
+        
+        // Input handling
+        document.addEventListener('keydown', e => {
+            keys[e.key] = true
+            
+            if (selectedWolf) {
+                switch(e.key) {
+                    case ' ':
+                        selectedWolf.setState('attacking')
+                        setTimeout(() => selectedWolf.setState('idle'), 1000)
+                        break
+                    case 'h':
+                    case 'H':
+                        selectedWolf.setState('howling')
+                        setTimeout(() => selectedWolf.setState('idle'), 3000)
+                        break
+                    case 'l':
+                    case 'L':
+                        triggerLunge()
+                        break
+                    case 'p':
+                    case 'P':
+                        packFormation()
+                        break
+                }
+            }
+        })
+        
+        document.addEventListener('keyup', e => {
+            keys[e.key] = false
+        })
+        
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect()
+            const x = e.clientX - rect.left + camera.x
+            const y = e.clientY - rect.top + camera.y
+            
+            // Check if clicking on a wolf
+            let clickedWolf = null
+            wolves.forEach(wolf => {
+                const dx = Math.abs(x - wolf.position.x)
+                const dy = Math.abs(y - wolf.position.y)
+                if (dx < wolf.width/2 && dy < wolf.height/2) {
+                    clickedWolf = wolf
+                }
+            })
+            
+            if (clickedWolf) {
+                selectedWolf = clickedWolf
+            } else if (selectedWolf) {
+                // Move towards click
+                selectedWolf.facing = x > selectedWolf.position.x ? 1 : -1
+                selectedWolf.setState('running')
+                setTimeout(() => selectedWolf.setState('idle'), 1000)
+            }
+        })
+        
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect()
+            mousePos.x = e.clientX - rect.left
+            mousePos.y = e.clientY - rect.top
+        })
+        
+        // Initialize and start
+        init()
+        requestAnimationFrame(animate)
+    </script>
+</body>
+</html>
