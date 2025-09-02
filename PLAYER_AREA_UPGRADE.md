@@ -16,6 +16,16 @@ The player area has been completely transformed with a cutting-edge, cyberpunk-i
 - 🌈 Dynamic color-coded team system
 - 🗺️ Live minimap with position tracking
 
+## 🔧 Recent Fixes (January 2025)
+
+### Bug Fixes Applied
+1. **Fixed Missing Function**: Added `updatePlayerCards()` function that was being called but not defined
+2. **Improved Minimap**: Enhanced boundary checking and viewport indicator rendering
+3. **Performance Optimization**: Reduced DOM update frequency for better FPS
+   - Minimap updates every 3rd frame instead of every frame
+   - Health simulation runs every 60th frame instead of continuously
+4. **Edge Case Handling**: Added null checks and boundary validations for minimap elements
+
 ## 🆕 New Features
 
 ### 1️⃣ Player Cards System
@@ -91,9 +101,12 @@ The player area has been completely transformed with a cutting-edge, cyberpunk-i
 
 ### Performance Optimizations
 - CSS animations using GPU acceleration
-- Efficient DOM manipulation
-- RequestAnimationFrame for smooth gameplay
+- Efficient DOM manipulation with reduced update frequency
+- RequestAnimationFrame for smooth 60 FPS gameplay
 - Optimized particle system
+- Batched DOM updates for minimap (every 3 frames)
+- Throttled health simulation checks (every 60 frames)
+- Boundary checking to prevent out-of-bounds rendering
 
 ### Responsive Design
 - Flexible grid layouts
@@ -209,6 +222,33 @@ chrome /workspace/demo/enhanced-player-area.html
 2. Open `enhanced-player-area.html` in your preferred browser
 3. Experience the full cyberpunk UI with all visual effects
 
+## 🐛 Fixed Issues & Implementation Details
+
+### Key Functions Added
+- **`updatePlayerCards()`**: Dynamically updates player health, energy, and stats in real-time
+  - Finds player cards by name matching
+  - Updates health/energy bar widths
+  - Refreshes kill/death statistics
+  - Recalculates K/D ratios
+
+### Performance Improvements
+- **Frame-based Updates**: DOM updates are now throttled based on frame count
+  - Minimap: Updates every 3 frames (20 FPS)
+  - Health simulation: Checks every 60 frames (1 FPS)
+  - Canvas rendering: Full 60 FPS maintained
+  
+### Boundary Safety
+- **Minimap Clamping**: Player dots and viewport indicators stay within minimap bounds
+- **Null Checks**: Added safety checks for missing DOM elements
+- **World Boundaries**: Proper clamping for camera and player positions
+
+### Code Quality
+- All functions properly defined before use
+- Consistent naming conventions maintained
+- Proper event handling and cleanup
+- Memory-efficient DOM manipulation
+
 ---
 
 *Last updated: January 2025*
+*Fixes applied: Missing function definitions, performance optimizations, boundary handling*
