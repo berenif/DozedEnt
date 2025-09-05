@@ -380,18 +380,53 @@ void update(float dtSeconds) {
   // Cache rolling flag for combat checks
   g_is_rolling = g_input_is_rolling ? 1 : 0;
 
-  // Jump handling
-  if (g_input_is_jumping && g_is_grounded && g_jump_count == 0) {
-      g_vel_y = JUMP_POWER;
-      g_is_grounded = 0;
-      g_jump_count = 1;
-      g_player_anim_state = PlayerAnimState_Jumping;
-  } else if (g_input_is_jumping && g_jump_count == 1 && g_jump_count < MAX_JUMPS) {
-      // Double jump (simple implementation)
-      g_vel_y = JUMP_POWER * 0.8f;
-      g_jump_count = 2;
-      g_player_anim_state = PlayerAnimState_DoubleJumping;
+  // Jump handling with improved mechanics
+  static float g_last_jump_time = -1000.f;
+  const float JUMP_BUFFER_TIME = 0.1f; // Allow jump input slightly before landing
+  const float COYOTE_TIME = 0.15f; // Allow jump slightly after leaving platform
+  static float g_left_ground_time = -1000.f;
+  
+  // Track when we left the ground
+  if (!g_is_grounded && g_prev_is_grounded) {
+    g_left_ground_time = g_time_seconds;
   }
+  
+  // Jump with buffer and coyote time
+  if (g_input_is_jumping && (g_time_seconds - g_last_jump_time) > 0.2f) {
+    bool canJump = false;
+    
+    if (g_is_grounded && g_jump_count == 0) {
+      // Normal jump from ground
+      canJump = true;
+    } else if (!g_is_grounded && g_jump_count == 0 && 
+               (g_time_seconds - g_left_ground_time) <= COYOTE_TIME) {
+      // Coyote jump (recently left ground)
+      canJump = true;
+    } else if (g_jump_count == 1 && g_jump_count < MAX_JUMPS) {
+      // Double jump
+      canJump = true;
+    }
+    
+    if (canJump) {
+      float jumpPower = JUMP_POWER;
+      if (g_jump_count == 1) {
+        jumpPower *= 0.85f; // Slightly weaker double jump
+      }
+      
+      g_vel_y = jumpPower;
+      g_is_grounded = 0;
+      g_jump_count++;
+      g_last_jump_time = g_time_seconds;
+      
+      if (g_jump_count == 1) {
+        g_player_anim_state = PlayerAnimState_Jumping;
+      } else {
+        g_player_anim_state = PlayerAnimState_DoubleJumping;
+      }
+    }
+  }
+  
+  static int g_prev_is_grounded = 1;
 
   // Apply gravity if not grounded
   if (!g_is_grounded) {
@@ -440,33 +475,84 @@ void update(float dtSeconds) {
   float nextX = clamp01(g_pos_x + g_vel_x * dtSeconds);
   float nextY = clamp01(g_pos_y + g_vel_y * dtSeconds);
 
-  // Resolve player-obstacle collisions
+  // Resolve player-obstacle collisions with improved platforming
   int was_grounded = g_is_grounded;
   g_is_grounded = 0; // Assume not grounded until collision detection proves otherwise
+  g_prev_is_grounded = was_grounded;
 
   for (int i = 0; i < g_obstacle_count; ++i) {
       float ox = g_obstacles_x[i];
       float oy = g_obstacles_y[i];
       float oradius = g_obstacles_r[i];
 
-      float collision_result = resolve_circle_collision(g_pos_x, g_pos_y, PLAYER_RADIUS, nextX, nextY, ox, oy, oradius);
+      float dx = nextX - ox;
+      float dy = nextY - oy;
+      float dist = vec_len(dx, dy);
+      float combined_radius = PLAYER_RADIUS + oradius;
 
-      if (collision_result > 0.f) { // Collision occurred
-          // Simple vertical collision response for platforming
-          if (g_vel_y > 0 && (nextY + PLAYER_RADIUS) > (oy - oradius) && (prevY + PLAYER_RADIUS) <= (oy - oradius)) {
+      if (dist < combined_radius && dist > 0.f) {
+          // Normalize collision vector
+          dx /= dist;
+          dy /= dist;
+          
+          // Calculate overlap
+          float overlap = combined_radius - dist;
+          
+          // Determine collision type based on relative position and velocity
+          float prev_dx = g_pos_x - ox;
+          float prev_dy = g_pos_y - oy;
+          float prev_dist = vec_len(prev_dx, prev_dy);
+          
+          // Check if this is a landing (falling onto platform from above)
+          bool is_landing = (g_vel_y > 0.1f && dy > 0.5f && prev_dy > 0.3f);
+          
+          // Check if this is a ceiling hit (jumping into platform from below)
+          bool is_ceiling = (g_vel_y < -0.1f && dy < -0.5f && prev_dy < -0.3f);
+          
+          // Check if this is a wall collision
+          bool is_wall = (fabs(dx) > 0.6f);
+          
+          if (is_landing) {
+              // Landing on top of platform
               nextY = oy - oradius - PLAYER_RADIUS;
-              g_vel_y = 0;
+              g_vel_y = 0.f;
               g_is_grounded = 1;
               g_jump_count = 0; // Reset jump count on landing
               if (!was_grounded) {
                   g_player_anim_state = PlayerAnimState_Landing;
               }
-          } else { // Horizontal collision or hitting from below
-              g_vel_x = 0;
-              // Prevent sticking to walls when moving horizontally against them
-              if (fabs(nextX - prevX) > 0.0001f) {
-                  nextX = prevX;
+          } else if (is_ceiling) {
+              // Hit ceiling
+              nextY = oy + oradius + PLAYER_RADIUS;
+              g_vel_y = 0.f;
+          } else if (is_wall) {
+              // Wall collision
+              nextX = ox + dx * (oradius + PLAYER_RADIUS);
+              g_vel_x *= 0.1f; // Reduce horizontal velocity when hitting walls
+          } else {
+              // General collision resolution
+              nextX += dx * overlap * 0.5f;
+              nextY += dy * overlap * 0.5f;
+              
+              // Reduce velocity in collision direction
+              float vel_dot = g_vel_x * dx + g_vel_y * dy;
+              if (vel_dot < 0) {
+                  g_vel_x -= dx * vel_dot;
+                  g_vel_y -= dy * vel_dot;
               }
+          }
+      }
+  }
+  
+  // Ground detection at world boundaries
+  if (nextY >= 0.95f) {
+      nextY = 0.95f;
+      if (g_vel_y > 0) {
+          g_vel_y = 0;
+          g_is_grounded = 1;
+          g_jump_count = 0;
+          if (!was_grounded) {
+              g_player_anim_state = PlayerAnimState_Landing;
           }
       }
   }
@@ -695,30 +781,110 @@ void update(float dtSeconds) {
     if (g_hp > 1.0f) g_hp = 1.0f;
   }
 
-  // Update player animation state
-  if (g_player_anim_state == PlayerAnimState_Jumping || g_player_anim_state == PlayerAnimState_DoubleJumping) {
-      // Stay in jumping/double jumping state until grounded
-      if (g_is_grounded) {
-          g_player_anim_state = PlayerAnimState_Landing; // Transition to landing if just hit ground
+  // Wall sliding detection
+  static bool g_is_wall_sliding = false;
+  static float g_wall_slide_timer = 0.f;
+  
+  // Check for wall sliding conditions
+  if (!g_is_grounded && g_vel_y > 0.1f) {
+      bool touching_wall = false;
+      float wall_normal_x = 0.f;
+      
+      // Check if touching a wall
+      for (int i = 0; i < g_obstacle_count; ++i) {
+          float ox = g_obstacles_x[i];
+          float oy = g_obstacles_y[i];
+          float oradius = g_obstacles_r[i];
+          
+          float dx = g_pos_x - ox;
+          float dy = g_pos_y - oy;
+          float dist = vec_len(dx, dy);
+          
+          if (dist < (PLAYER_RADIUS + oradius + 0.01f) && fabs(dx) > 0.6f * dist) {
+              touching_wall = true;
+              wall_normal_x = dx > 0 ? 1.f : -1.f;
+              break;
+          }
       }
-  } else if (g_player_anim_state == PlayerAnimState_Landing) {
-      // Transition from landing to idle/running after a short duration or immediately
-      if (vec_len(g_vel_x, g_vel_y) > 0.01f) {
-          g_player_anim_state = PlayerAnimState_Running;
+      
+      // Check if player is trying to move into the wall
+      bool moving_into_wall = (wall_normal_x > 0 && g_input_x > 0) || (wall_normal_x < 0 && g_input_x < 0);
+      
+      if (touching_wall && moving_into_wall && g_vel_y > 0.05f) {
+          g_is_wall_sliding = true;
+          g_wall_slide_timer = 0.f;
+          // Reduce fall speed while wall sliding
+          g_vel_y *= 0.6f;
       } else {
-          g_player_anim_state = PlayerAnimState_Idle;
+          if (g_is_wall_sliding) {
+              g_wall_slide_timer += dtSeconds;
+              if (g_wall_slide_timer > 0.1f) { // Small delay before stopping wall slide
+                  g_is_wall_sliding = false;
+              }
+          }
       }
-  } else if (g_input_is_rolling) {
-      g_player_anim_state = PlayerAnimState_Rolling;
-  } else if (g_input_is_attacking) {
-      g_player_anim_state = PlayerAnimState_Attacking;
-  } else if (g_input_is_blocking) {
-      g_player_anim_state = PlayerAnimState_Blocking;
-  } else if (vec_len(g_vel_x, g_vel_y) > 0.01f) {
-      g_player_anim_state = PlayerAnimState_Running;
   } else {
-      g_player_anim_state = PlayerAnimState_Idle;
+      g_is_wall_sliding = false;
   }
+
+  // Update player animation state with improved transitions
+  PlayerAnimState new_state = g_player_anim_state;
+  
+  if (g_input_is_rolling && g_is_rolling) {
+      new_state = PlayerAnimState_Rolling;
+  } else if (g_attack_state != AttackState::Idle) {
+      new_state = PlayerAnimState_Attacking;
+  } else if (g_input_is_blocking && g_blocking) {
+      new_state = PlayerAnimState_Blocking;
+  } else if (g_is_wall_sliding) {
+      new_state = PlayerAnimState_WallSliding;
+  } else if (!g_is_grounded) {
+      if (g_vel_y < -0.1f) {
+          if (g_jump_count == 2) {
+              new_state = PlayerAnimState_DoubleJumping;
+          } else {
+              new_state = PlayerAnimState_Jumping;
+          }
+      } else if (g_vel_y > 0.1f) {
+          // Falling
+          if (g_player_anim_state == PlayerAnimState_Jumping || 
+              g_player_anim_state == PlayerAnimState_DoubleJumping) {
+              // Keep current jumping state until landing
+          } else {
+              new_state = PlayerAnimState_Jumping; // Default falling animation
+          }
+      }
+  } else if (g_is_grounded) {
+      if (g_player_anim_state == PlayerAnimState_Jumping || 
+          g_player_anim_state == PlayerAnimState_DoubleJumping ||
+          g_player_anim_state == PlayerAnimState_WallSliding) {
+          new_state = PlayerAnimState_Landing;
+      } else if (g_player_anim_state == PlayerAnimState_Landing) {
+          // Transition from landing after a brief moment
+          static float landing_timer = 0.f;
+          if (g_player_anim_state != g_prev_player_anim_state) {
+              landing_timer = 0.f;
+          }
+          landing_timer += dtSeconds;
+          
+          if (landing_timer > 0.2f || vec_len(g_vel_x, g_vel_y) > 0.05f) {
+              if (vec_len(g_vel_x, g_vel_y) > 0.05f) {
+                  new_state = PlayerAnimState_Running;
+              } else {
+                  new_state = PlayerAnimState_Idle;
+              }
+          }
+      } else {
+          // Normal ground movement
+          if (vec_len(g_vel_x, g_vel_y) > 0.05f) {
+              new_state = PlayerAnimState_Running;
+          } else {
+              new_state = PlayerAnimState_Idle;
+          }
+      }
+  }
+  
+  g_player_anim_state = new_state;
 
   // Record state start time when state changes (for UI timing)
   if (g_player_anim_state != g_prev_player_anim_state) {
@@ -772,6 +938,14 @@ unsigned int get_is_grounded() {
 __attribute__((export_name("get_jump_count")))
 unsigned int get_jump_count() {
     return g_jump_count;
+}
+
+// New export for wall sliding state
+__attribute__((export_name("get_is_wall_sliding")))
+unsigned int get_is_wall_sliding() {
+    // Access the static variable from the update function scope
+    // For now, we'll derive this from animation state
+    return (g_player_anim_state == PlayerAnimState_WallSliding) ? 1 : 0;
 }
 
 // Time since current player state started (seconds)

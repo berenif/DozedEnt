@@ -2072,10 +2072,13 @@ async function gameLoop(ts) {
       dirX = moveX / mag
       dirY = moveY / mag
     }
+    // Check for jump input
+    const jumpPressed = keyDown.has('space') || keyDown.has(' ')
+    
     // Forward inputs to WASM (normal movement)
     try {
       if (typeof wasmExports.set_player_input === 'function') {
-        wasmExports.set_player_input(dirX, dirY, 0, 0, 0, blocking ? 1 : 0)
+        wasmExports.set_player_input(dirX, dirY, 0, jumpPressed ? 1 : 0, 0, blocking ? 1 : 0)
       }
     } catch {}
     // Advance simulation with delta time only

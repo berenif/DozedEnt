@@ -528,7 +528,41 @@ export class GameRenderer {
         // Clear existing platforms for biome-specific generation
         this.platforms = [];
         
-        // Generate ground platforms based on biome
+        // First, read obstacles from WASM if available
+        if (window.wasmExports && typeof window.wasmExports.get_obstacle_count === 'function') {
+            const obstacleCount = window.wasmExports.get_obstacle_count();
+            
+            for (let i = 0; i < obstacleCount; i++) {
+                if (typeof window.wasmExports.get_obstacle_x === 'function' &&
+                    typeof window.wasmExports.get_obstacle_y === 'function' &&
+                    typeof window.wasmExports.get_obstacle_r === 'function') {
+                    
+                    const wasmX = window.wasmExports.get_obstacle_x(i);
+                    const wasmY = window.wasmExports.get_obstacle_y(i);
+                    const wasmR = window.wasmExports.get_obstacle_r(i);
+                    
+                    // Convert WASM coordinates to world coordinates
+                    const worldPos = this.wasmToWorld(wasmX, wasmY);
+                    const worldRadius = wasmR * (this.world.width / 3); // Scale radius
+                    
+                    // Add WASM obstacle as a platform
+                    this.platforms.push({
+                        x: worldPos.x - worldRadius,
+                        y: worldPos.y - worldRadius,
+                        width: worldRadius * 2,
+                        height: worldRadius * 2,
+                        type: 'wasm_obstacle',
+                        color: '#666666',
+                        isCircular: true,
+                        centerX: worldPos.x,
+                        centerY: worldPos.y,
+                        radius: worldRadius
+                    });
+                }
+            }
+        }
+        
+        // Generate additional ground platforms based on biome
         switch (this.currentBiome) {
             case 0: // Forest
                 this.platforms.push({
@@ -575,22 +609,86 @@ export class GameRenderer {
         }
         
         this.platforms.forEach(platform => {
-            // Platform shadow
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
-            this.ctx.fillRect(
-                platform.x + 5,
-                platform.y + 5,
-                platform.width,
-                platform.height
-            )
+            this.ctx.save();
             
-            // Platform main body
-            const gradient = this.ctx.createLinearGradient(
-                platform.x,
-                platform.y,
-                platform.x,
-                platform.y + platform.height
-            )
+            if (platform.isCircular) {
+                // Render circular obstacles from WASM
+                // Shadow
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.beginPath();
+                this.ctx.arc(platform.centerX + 3, platform.centerY + 3, platform.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Main body with gradient
+                const gradient = this.ctx.createRadialGradient(
+                    platform.centerX - platform.radius * 0.3,
+                    platform.centerY - platform.radius * 0.3,
+                    0,
+                    platform.centerX,
+                    platform.centerY,
+                    platform.radius
+                );
+                
+                // Biome-specific colors for WASM obstacles
+                let color1, color2;
+                switch (this.currentBiome) {
+                    case 0: // Forest
+                        color1 = '#8B4513'; // Saddle brown (tree trunks)
+                        color2 = '#654321'; // Dark brown
+                        break;
+                    case 1: // Swamp
+                        color1 = '#556B2F'; // Dark olive green (moss-covered)
+                        color2 = '#2F4F2F'; // Dark sea green
+                        break;
+                    case 2: // Mountains
+                        color1 = '#708090'; // Slate gray (rocks)
+                        color2 = '#2F4F4F'; // Dark slate gray
+                        break;
+                    case 3: // Plains
+                        color1 = '#D2B48C'; // Tan (dirt mounds)
+                        color2 = '#A0522D'; // Sienna
+                        break;
+                    default:
+                        color1 = '#888888';
+                        color2 = '#555555';
+                        break;
+                }
+                
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(platform.centerX, platform.centerY, platform.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Highlight
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(platform.centerX, platform.centerY, platform.radius - 2, Math.PI * 1.2, Math.PI * 1.8);
+                this.ctx.stroke();
+                this.ctx.globalAlpha = 1;
+                
+            } else {
+                // Regular rectangular platform rendering
+                // Platform shadow
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
+                this.ctx.fillRect(
+                    platform.x + 5,
+                    platform.y + 5,
+                    platform.width,
+                    platform.height
+                )
+                
+                // Platform main body
+                const gradient = this.ctx.createLinearGradient(
+                    platform.x,
+                    platform.y,
+                    platform.x,
+                    platform.y + platform.height
+                )
             
             let platformColor1, platformColor2;
             switch (platform.type) {
@@ -637,10 +735,13 @@ export class GameRenderer {
             this.ctx.fillStyle = gradient
             this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height)
             
-            // Platform edge highlight
-            this.ctx.strokeStyle = '#a0aec0'
-            this.ctx.lineWidth = 2
-            this.ctx.strokeRect(platform.x, platform.y, platform.width, platform.height)
+                // Platform edge highlight
+                this.ctx.strokeStyle = '#a0aec0'
+                this.ctx.lineWidth = 2
+                this.ctx.strokeRect(platform.x, platform.y, platform.width, platform.height)
+            }
+            
+            this.ctx.restore();
         })
     }
     
@@ -962,6 +1063,11 @@ export class GameRenderer {
     }
     
     renderInteractables() {
+        // First render WASM landmarks and exits
+        this.renderWasmLandmarks();
+        this.renderWasmExits();
+        
+        // Then render regular interactables
         this.interactables.forEach(obj => {
             switch(obj.type) {
                 case 'chest':
@@ -975,6 +1081,123 @@ export class GameRenderer {
                     break
             }
         })
+    }
+    
+    renderWasmLandmarks() {
+        if (!window.wasmExports || typeof window.wasmExports.get_landmark_count !== 'function') return;
+        
+        const landmarkCount = window.wasmExports.get_landmark_count();
+        
+        for (let i = 0; i < landmarkCount; i++) {
+            if (typeof window.wasmExports.get_landmark_x === 'function' &&
+                typeof window.wasmExports.get_landmark_y === 'function') {
+                
+                const wasmX = window.wasmExports.get_landmark_x(i);
+                const wasmY = window.wasmExports.get_landmark_y(i);
+                const worldPos = this.wasmToWorld(wasmX, wasmY);
+                
+                this.drawLandmark(worldPos.x, worldPos.y, i);
+            }
+        }
+    }
+    
+    renderWasmExits() {
+        if (!window.wasmExports || typeof window.wasmExports.get_exit_count !== 'function') return;
+        
+        const exitCount = window.wasmExports.get_exit_count();
+        
+        for (let i = 0; i < exitCount; i++) {
+            if (typeof window.wasmExports.get_exit_x === 'function' &&
+                typeof window.wasmExports.get_exit_y === 'function') {
+                
+                const wasmX = window.wasmExports.get_exit_x(i);
+                const wasmY = window.wasmExports.get_exit_y(i);
+                const worldPos = this.wasmToWorld(wasmX, wasmY);
+                
+                this.drawExit(worldPos.x, worldPos.y, i);
+            }
+        }
+    }
+    
+    drawLandmark(x, y, index) {
+        this.ctx.save();
+        
+        // Pulsing glow effect
+        const time = Date.now() / 1000;
+        const pulse = 0.8 + 0.2 * Math.sin(time * 2 + index);
+        
+        // Glow
+        this.ctx.shadowColor = '#FFD700';
+        this.ctx.shadowBlur = 20 * pulse;
+        
+        // Main landmark body (crystal/obelisk style)
+        this.ctx.fillStyle = '#FFD700';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y - 30);
+        this.ctx.lineTo(x - 15, y);
+        this.ctx.lineTo(x - 8, y + 20);
+        this.ctx.lineTo(x + 8, y + 20);
+        this.ctx.lineTo(x + 15, y);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Inner light
+        this.ctx.fillStyle = '#FFFF99';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y - 25);
+        this.ctx.lineTo(x - 10, y - 5);
+        this.ctx.lineTo(x - 5, y + 15);
+        this.ctx.lineTo(x + 5, y + 15);
+        this.ctx.lineTo(x + 10, y - 5);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Reset shadow
+        this.ctx.shadowBlur = 0;
+        
+        this.ctx.restore();
+    }
+    
+    drawExit(x, y, index) {
+        this.ctx.save();
+        
+        // Portal effect
+        const time = Date.now() / 1000;
+        const rotation = time + index * Math.PI / 2;
+        
+        // Portal ring
+        this.ctx.strokeStyle = '#00FFFF';
+        this.ctx.lineWidth = 4;
+        this.ctx.shadowColor = '#00FFFF';
+        this.ctx.shadowBlur = 15;
+        
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 25, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        // Inner swirl
+        this.ctx.strokeStyle = '#0099FF';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+            const angle = rotation + i * (Math.PI * 2 / 3);
+            const radius = 15;
+            this.ctx.moveTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+            this.ctx.arc(x, y, radius, angle, angle + Math.PI / 2);
+        }
+        this.ctx.stroke();
+        
+        // Center core
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.shadowBlur = 10;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Reset shadow
+        this.ctx.shadowBlur = 0;
+        
+        this.ctx.restore();
     }
     
     drawChest(chest) {
@@ -1127,91 +1350,351 @@ export class GameRenderer {
     }
     
     renderPlayer() {
+        if (!window.wasmExports) return;
+        
         this.ctx.save()
 
-        // Convert player position from WASM normalized coordinates to world coordinates
-        const playerWorldPos = this.wasmToWorld(this.player.x, this.player.y)
+        // Get player state from WASM
+        const wasmX = typeof window.wasmExports.get_x === 'function' ? window.wasmExports.get_x() : 0.5;
+        const wasmY = typeof window.wasmExports.get_y === 'function' ? window.wasmExports.get_y() : 0.5;
+        const velX = typeof window.wasmExports.get_vel_x === 'function' ? window.wasmExports.get_vel_x() : 0;
+        const velY = typeof window.wasmExports.get_vel_y === 'function' ? window.wasmExports.get_vel_y() : 0;
+        const isGrounded = typeof window.wasmExports.get_is_grounded === 'function' ? window.wasmExports.get_is_grounded() : 1;
+        const isRolling = typeof window.wasmExports.get_is_rolling === 'function' ? window.wasmExports.get_is_rolling() : 0;
+        const isBlocking = typeof window.wasmExports.get_block_state === 'function' ? window.wasmExports.get_block_state() : 0;
+        const animState = typeof window.wasmExports.get_player_anim_state === 'function' ? window.wasmExports.get_player_anim_state() : 0;
+        const jumpCount = typeof window.wasmExports.get_jump_count === 'function' ? window.wasmExports.get_jump_count() : 0;
+        const isWallSliding = typeof window.wasmExports.get_is_wall_sliding === 'function' ? window.wasmExports.get_is_wall_sliding() : 0;
+        const stateTimer = typeof window.wasmExports.get_player_state_timer === 'function' ? window.wasmExports.get_player_state_timer() : 0;
 
-        // Player shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
+        // Convert player position from WASM normalized coordinates to world coordinates
+        const playerWorldPos = this.wasmToWorld(wasmX, wasmY)
+
+        // Update internal player state for compatibility
+        this.player.x = wasmX;
+        this.player.y = wasmY;
+        this.player.velocityX = velX;
+        this.player.velocityY = velY;
+        this.player.isGrounded = isGrounded;
+        
+        // Determine facing direction from velocity
+        if (Math.abs(velX) > 0.01) {
+            this.player.facing = velX > 0 ? 1 : -1;
+        }
+
+        // Player shadow (larger when airborne)
+        const shadowSize = isGrounded ? this.player.width / 2 : this.player.width / 3;
+        const shadowOpacity = isGrounded ? 0.3 : 0.2;
+        this.ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`
         this.ctx.beginPath()
         this.ctx.ellipse(
             playerWorldPos.x + this.player.width / 2,
-            playerWorldPos.y + this.player.height + 5,
-            this.player.width / 2,
+            playerWorldPos.y + this.player.height + (isGrounded ? 5 : 15),
+            shadowSize,
             5,
             0, 0, Math.PI * 2
         )
         this.ctx.fill()
 
-        // Player body
-        this.drawCharacter(
+        // Animation state mapping
+        const animStateNames = [
+            'idle', 'running', 'attacking', 'blocking', 'rolling', 'hurt', 'dead',
+            'jumping', 'double_jumping', 'landing', 'wall_sliding', 'dashing', 'charging_attack'
+        ];
+        const currentAnimState = animStateNames[animState] || 'idle';
+
+        // Player body with enhanced visual effects
+        this.drawEnhancedCharacter(
             playerWorldPos.x,
             playerWorldPos.y,
             this.player.width,
             this.player.height,
             this.player.color,
             this.player.facing,
-            this.player.state,
-            this.player.animationFrame
+            currentAnimState,
+            stateTimer,
+            {
+                isGrounded,
+                isRolling,
+                isBlocking,
+                jumpCount,
+                isWallSliding,
+                velX,
+                velY
+            }
         )
         
-        // Weapon
-        this.drawWeapon(this.player)
-        
-        // Status effects
-        if (this.player.state === 'blocking') {
-            this.drawShield(this.player)
+        // Weapon effects
+        if (currentAnimState === 'attacking') {
+            this.drawWeaponTrail(playerWorldPos, this.player.facing, stateTimer);
         }
         
-        if (this.player.state === 'rolling') {
-            // Motion blur effect
-            for (let i = 1; i <= 3; i++) {
-                this.ctx.globalAlpha = 0.3 / i
-                this.drawCharacter(
-                    playerWorldPos.x - this.player.velocityX * 0.05 * i,
-                    playerWorldPos.y - this.player.velocityY * 0.05 * i,
-                    this.player.width,
-                    this.player.height,
-                    this.player.color,
-                    this.player.facing,
-                    'rolling',
-                    this.player.animationFrame
-                )
-            }
-            this.ctx.globalAlpha = 1
+        // Status effects
+        if (isBlocking) {
+            this.drawShieldEffect(playerWorldPos, this.player.facing);
+        }
+        
+        if (isRolling) {
+            this.drawRollTrail(playerWorldPos, velX, velY);
+        }
+        
+        if (isWallSliding) {
+            this.drawWallSlideEffect(playerWorldPos, this.player.facing);
+        }
+        
+        // Jump/double jump effects
+        if (!isGrounded && jumpCount > 0) {
+            this.drawAirborneEffects(playerWorldPos, jumpCount, velY);
         }
         
         this.ctx.restore()
     }
     
-    drawCharacter(x, y, width, height, color, facing, state, frame) {
-        // Body
-        const bodyColor = state === 'hurt' ? '#ff6b6b' : color
-        this.ctx.fillStyle = bodyColor
+    drawEnhancedCharacter(x, y, width, height, color, facing, state, stateTimer, effects) {
+        const time = Date.now() / 1000;
+        
+        // State-specific color modifications
+        let bodyColor = color;
+        if (state === 'hurt') {
+            bodyColor = '#ff6b6b';
+        } else if (state === 'blocking') {
+            bodyColor = this.blendColors(color, '#4488ff', 0.3);
+        } else if (state === 'rolling') {
+            bodyColor = this.blendColors(color, '#ffffff', 0.2);
+        } else if (state === 'wall_sliding') {
+            bodyColor = this.blendColors(color, '#ffaa00', 0.2);
+        }
+        
+        this.ctx.fillStyle = bodyColor;
+        
+        // Animation-specific transforms
+        this.ctx.save();
+        this.ctx.translate(x + width / 2, y + height / 2);
+        
+        // State-specific rotations and scaling
+        if (state === 'rolling') {
+            this.ctx.rotate(stateTimer * 20); // Spinning effect
+        } else if (state === 'wall_sliding') {
+            this.ctx.scale(1, 1.1); // Stretched vertically
+            this.ctx.rotate(facing * 0.1); // Slight lean
+        } else if (state === 'landing' && stateTimer < 0.2) {
+            const squash = 1 - (stateTimer / 0.2) * 0.3;
+            this.ctx.scale(1.2, squash); // Squash and stretch
+        } else if (!effects.isGrounded && effects.velY < -0.2) {
+            this.ctx.scale(0.9, 1.1); // Stretched when jumping up
+        } else if (!effects.isGrounded && effects.velY > 0.2) {
+            this.ctx.scale(1.1, 0.9); // Compressed when falling
+        }
+        
+        // Translate back to corner for drawing
+        this.ctx.translate(-width / 2, -height / 2);
         
         // Torso
-        this.ctx.fillRect(x + width * 0.25, y + height * 0.3, width * 0.5, height * 0.4)
+        this.ctx.fillRect(width * 0.25, height * 0.3, width * 0.5, height * 0.4);
         
         // Head
-        this.ctx.beginPath()
-        this.ctx.arc(x + width / 2, y + height * 0.2, width * 0.2, 0, Math.PI * 2)
-        this.ctx.fill()
+        this.ctx.beginPath();
+        this.ctx.arc(width / 2, height * 0.2, width * 0.2, 0, Math.PI * 2);
+        this.ctx.fill();
         
-        // Arms
-        const armOffset = Math.sin(frame * 0.3) * 5
-        this.ctx.fillRect(x + width * 0.1, y + height * 0.35 + armOffset, width * 0.15, height * 0.3)
-        this.ctx.fillRect(x + width * 0.75, y + height * 0.35 - armOffset, width * 0.15, height * 0.3)
+        // Arms with state-specific animation
+        let armOffset = 0;
+        if (state === 'running') {
+            armOffset = Math.sin(time * 8) * 8;
+        } else if (state === 'attacking') {
+            armOffset = Math.sin(stateTimer * 30) * 15;
+        } else if (state === 'blocking') {
+            armOffset = -5; // Arms up for blocking
+        }
         
-        // Legs
-        const legOffset = state === 'running' ? Math.sin(frame * 0.5) * 10 : 0
-        this.ctx.fillRect(x + width * 0.25, y + height * 0.65 + Math.max(0, legOffset), width * 0.2, height * 0.35)
-        this.ctx.fillRect(x + width * 0.55, y + height * 0.65 + Math.max(0, -legOffset), width * 0.2, height * 0.35)
+        this.ctx.fillRect(width * 0.1, height * 0.35 + armOffset, width * 0.15, height * 0.3);
+        this.ctx.fillRect(width * 0.75, height * 0.35 - armOffset, width * 0.15, height * 0.3);
+        
+        // Legs with state-specific animation
+        let legOffset = 0;
+        if (state === 'running') {
+            legOffset = Math.sin(time * 8 + Math.PI) * 12;
+        } else if (state === 'jumping' || state === 'double_jumping') {
+            legOffset = -10; // Legs tucked up
+        } else if (state === 'landing') {
+            legOffset = 5; // Legs extended for landing
+        }
+        
+        this.ctx.fillRect(width * 0.25, height * 0.65 + Math.max(0, legOffset), width * 0.2, height * 0.35);
+        this.ctx.fillRect(width * 0.55, height * 0.65 + Math.max(0, -legOffset), width * 0.2, height * 0.35);
         
         // Eyes
-        this.ctx.fillStyle = '#ffffff'
-        const eyeX = facing === 1 ? x + width * 0.55 : x + width * 0.35
-        this.ctx.fillRect(eyeX, y + height * 0.15, width * 0.1, height * 0.05)
+        this.ctx.fillStyle = '#ffffff';
+        const eyeX = facing === 1 ? width * 0.55 : width * 0.35;
+        this.ctx.fillRect(eyeX, height * 0.15, width * 0.1, height * 0.05);
+        
+        // State-specific details
+        if (state === 'blocking') {
+            // Block stance indicator
+            this.ctx.fillStyle = '#4488ff';
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.fillRect(width * 0.8 * facing, height * 0.2, width * 0.1, height * 0.6);
+            this.ctx.globalAlpha = 1;
+        }
+        
+        this.ctx.restore();
+    }
+    
+    drawCharacter(x, y, width, height, color, facing, state, frame) {
+        // Fallback to simple character drawing for compatibility
+        this.drawEnhancedCharacter(x, y, width, height, color, facing, state, 0, {
+            isGrounded: true,
+            isRolling: state === 'rolling',
+            isBlocking: state === 'blocking',
+            jumpCount: 0,
+            isWallSliding: state === 'wall_sliding',
+            velX: 0,
+            velY: 0
+        });
+    }
+    
+    blendColors(color1, color2, ratio) {
+        // Simple color blending helper
+        const c1 = this.hexToRgb(color1);
+        const c2 = this.hexToRgb(color2);
+        
+        const r = Math.round(c1.r * (1 - ratio) + c2.r * ratio);
+        const g = Math.round(c1.g * (1 - ratio) + c2.g * ratio);
+        const b = Math.round(c1.b * (1 - ratio) + c2.b * ratio);
+        
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+    
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : {r: 74, g: 144, b: 226}; // Default blue
+    }
+    
+    drawWeaponTrail(pos, facing, stateTimer) {
+        this.ctx.save();
+        
+        const angle = Math.sin(stateTimer * 15) * Math.PI / 3;
+        const trailLength = 40;
+        
+        this.ctx.strokeStyle = '#ffddaa';
+        this.ctx.lineWidth = 3;
+        this.ctx.globalAlpha = 0.7;
+        
+        this.ctx.translate(pos.x + this.player.width / 2, pos.y + this.player.height * 0.4);
+        this.ctx.rotate(angle * facing);
+        
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, trailLength, -Math.PI / 6, Math.PI / 6);
+        this.ctx.stroke();
+        
+        this.ctx.restore();
+    }
+    
+    drawShieldEffect(pos, facing) {
+        this.ctx.save();
+        
+        const time = Date.now() / 1000;
+        const pulse = 0.7 + 0.3 * Math.sin(time * 4);
+        
+        this.ctx.fillStyle = `rgba(68, 136, 255, ${0.3 * pulse})`;
+        this.ctx.strokeStyle = '#4488ff';
+        this.ctx.lineWidth = 2;
+        
+        const shieldX = pos.x + (facing > 0 ? this.player.width - 5 : -15);
+        const shieldY = pos.y + this.player.height * 0.2;
+        const shieldWidth = 20;
+        const shieldHeight = this.player.height * 0.6;
+        
+        this.ctx.fillRect(shieldX, shieldY, shieldWidth, shieldHeight);
+        this.ctx.strokeRect(shieldX, shieldY, shieldWidth, shieldHeight);
+        
+        this.ctx.restore();
+    }
+    
+    drawRollTrail(pos, velX, velY) {
+        this.ctx.save();
+        
+        const trailLength = 5;
+        const speed = Math.sqrt(velX * velX + velY * velY);
+        
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        
+        for (let i = 1; i <= trailLength; i++) {
+            const alpha = (trailLength - i) / trailLength * 0.3;
+            this.ctx.globalAlpha = alpha;
+            
+            const trailX = pos.x - velX * i * 100;
+            const trailY = pos.y - velY * i * 100;
+            
+            this.ctx.beginPath();
+            this.ctx.arc(trailX + this.player.width / 2, trailY + this.player.height / 2, 
+                        this.player.width / 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        this.ctx.restore();
+    }
+    
+    drawWallSlideEffect(pos, facing) {
+        this.ctx.save();
+        
+        const time = Date.now() / 1000;
+        const sparkCount = 3;
+        
+        this.ctx.fillStyle = '#ffaa00';
+        
+        for (let i = 0; i < sparkCount; i++) {
+            const sparkY = pos.y + this.player.height * (0.3 + Math.random() * 0.4);
+            const sparkX = pos.x + (facing > 0 ? this.player.width + 2 : -5);
+            const sparkSize = 2 + Math.random() * 3;
+            
+            this.ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+            this.ctx.beginPath();
+            this.ctx.arc(sparkX + Math.sin(time * 10 + i) * 3, sparkY, sparkSize, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        this.ctx.restore();
+    }
+    
+    drawAirborneEffects(pos, jumpCount, velY) {
+        this.ctx.save();
+        
+        if (jumpCount === 2) {
+            // Double jump effect
+            const time = Date.now() / 1000;
+            this.ctx.strokeStyle = '#00ffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.globalAlpha = 0.6;
+            
+            for (let i = 0; i < 3; i++) {
+                const radius = 20 + i * 8;
+                this.ctx.beginPath();
+                this.ctx.arc(pos.x + this.player.width / 2, pos.y + this.player.height / 2, 
+                           radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+        }
+        
+        // Wind effect when falling fast
+        if (velY > 0.3) {
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.lineWidth = 1;
+            
+            for (let i = 0; i < 3; i++) {
+                const lineX = pos.x + this.player.width * (0.2 + i * 0.3);
+                this.ctx.beginPath();
+                this.ctx.moveTo(lineX, pos.y - 10);
+                this.ctx.lineTo(lineX, pos.y - 30);
+                this.ctx.stroke();
+            }
+        }
+        
+        this.ctx.restore();
     }
     
     drawWeapon(character) {
@@ -1965,6 +2448,36 @@ export class GameRenderer {
         const wasmY = Math.max(0, Math.min(1, (worldY - offsetY) / playableHeight))
         
         return { x: wasmX, y: wasmY }
+    }
+    
+    // Enhanced coordinate mapping with scaling options
+    wasmToWorldScaled(wasmX, wasmY, scale = 1.0) {
+        const worldPos = this.wasmToWorld(wasmX, wasmY);
+        return {
+            x: worldPos.x * scale,
+            y: worldPos.y * scale
+        };
+    }
+    
+    // Convert WASM radius to world radius
+    wasmRadiusToWorld(wasmRadius) {
+        return wasmRadius * (this.world.width / 3);
+    }
+    
+    // Convert world radius to WASM radius
+    worldRadiusToWasm(worldRadius) {
+        return worldRadius / (this.world.width / 3);
+    }
+    
+    // Utility to check if WASM coordinates are within bounds
+    isWasmCoordValid(wasmX, wasmY) {
+        return wasmX >= 0 && wasmX <= 1 && wasmY >= 0 && wasmY <= 1;
+    }
+    
+    // Utility to check if world coordinates are within playable area
+    isWorldCoordInPlayableArea(worldX, worldY) {
+        const wasmCoord = this.worldToWasm(worldX, worldY);
+        return this.isWasmCoordValid(wasmCoord.x, wasmCoord.y);
     }
     
     // Set player position from WASM coordinates

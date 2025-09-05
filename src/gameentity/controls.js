@@ -366,6 +366,10 @@ class MobileGameControls {
                 this.performBlock();
                 this.setCooldown(action, 1000);
                 break;
+            case 'jump':
+                this.performJump();
+                this.setCooldown(action, 200); // Short cooldown to prevent spam
+                break;
         }
     }
 
@@ -431,6 +435,30 @@ class MobileGameControls {
         setTimeout(() => {
             this.gameState.blocking = false;
         }, 1000);
+    }
+
+    performJump() {
+        // Simulate spacebar press for jump
+        const keydownEvent = new KeyboardEvent('keydown', {
+            key: ' ',
+            code: 'Space',
+            bubbles: true,
+            cancelable: true
+        });
+        window.dispatchEvent(keydownEvent);
+        
+        // Simulate keyup after a short delay
+        setTimeout(() => {
+            const keyupEvent = new KeyboardEvent('keyup', {
+                key: ' ',
+                code: 'Space',
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(keyupEvent);
+        }, 100);
+        
+        this.createVisualEffect('jump');
     }
 
     activateSkill(skill) {
@@ -569,6 +597,9 @@ class MobileGameControls {
             case 'block':
                 this.drawBlockEffect(x, y);
                 break;
+            case 'jump':
+                this.drawJumpEffect(x, y);
+                break;
             default:
                 if (type.startsWith('skill-')) {
                     this.drawSkillEffect(x, y, type.replace('skill-', ''));
@@ -636,6 +667,43 @@ class MobileGameControls {
         setTimeout(() => {
             this.ctx.clearRect(x - 40, y - 40, 80, 80);
         }, 600);
+    }
+
+    drawJumpEffect(x, y) {
+        // Jump burst effect
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+        this.ctx.lineWidth = 2;
+        
+        // Draw upward burst rings
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.7 - i * 0.2;
+                
+                // Ring
+                this.ctx.beginPath();
+                this.ctx.arc(x, y + 20, 15 + i * 8, 0, Math.PI * 2);
+                this.ctx.stroke();
+                
+                // Upward particles
+                for (let j = 0; j < 5; j++) {
+                    const angle = (j / 5) * Math.PI * 2;
+                    const particleX = x + Math.cos(angle) * (10 + i * 5);
+                    const particleY = y + 20 + Math.sin(angle) * (10 + i * 5);
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(particleX, particleY - i * 10, 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                this.ctx.restore();
+            }, i * 50);
+        }
+        
+        setTimeout(() => {
+            this.ctx.clearRect(x - 40, y - 20, 80, 80);
+        }, 400);
     }
 
     drawSkillEffect(x, y, skill) {
