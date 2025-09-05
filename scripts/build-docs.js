@@ -347,191 +347,13 @@ wolves.forEach(wolf => {
   console.log('✅ Getting started guide built')
 }
 
-// Build demo index
-function buildDemoIndex() {
-  console.log('🎮 Building demo index...')
+// Build main index
+function buildMainIndex() {
+  console.log('🎮 Building main index...')
   
-  const demoIndex = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trystero Game Framework - Demos</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 40px;
-            font-size: 2.5em;
-        }
-        .demo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
-        }
-        .demo-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 2px solid transparent;
-        }
-        .demo-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-        .demo-card h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        .demo-card p {
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-        .demo-link {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-        }
-        .demo-link:hover {
-            transform: scale(1.05);
-        }
-        .feature-list {
-            text-align: left;
-            margin: 20px 0;
-        }
-        .feature-list li {
-            margin: 8px 0;
-            color: #555;
-        }
-        .emoji {
-            font-size: 2em;
-            margin-bottom: 15px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🎮 Trystero Game Framework Demos</h1>
-        
-        <div class="demo-grid">
-            <div class="demo-card">
-                <div class="emoji">⚔️</div>
-                <h3>Complete Game Demo</h3>
-                <p>Full multiplayer survival game showcasing all systems working together.</p>
-                <ul class="feature-list">
-                    <li>✅ Player animations & combat</li>
-                    <li>✅ Wolf AI pack behavior</li>
-                    <li>✅ Rollback netcode</li>
-                    <li>✅ Lobby system</li>
-                </ul>
-                <a href="complete-game.html" class="demo-link">Play Demo</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🎭</div>
-                <h3>Animation Showcase</h3>
-                <p>Interactive demo of the player animation system with all states and transitions.</p>
-                <ul class="feature-list">
-                    <li>✅ 7 animation states</li>
-                    <li>✅ Smooth transitions</li>
-                    <li>✅ Combat mechanics</li>
-                    <li>✅ Visual effects</li>
-                </ul>
-                <a href="animations-showcase.html" class="demo-link">View Demo</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🐺</div>
-                <h3>Wolf AI Demo</h3>
-                <p>Advanced AI system demonstration with pack behaviors and adaptive difficulty.</p>
-                <ul class="feature-list">
-                    <li>✅ Pack intelligence</li>
-                    <li>✅ Adaptive difficulty</li>
-                    <li>✅ Environmental awareness</li>
-                    <li>✅ Memory system</li>
-                </ul>
-                <a href="wolf-animation-demo.html" class="demo-link">Watch AI</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🏠</div>
-                <h3>Lobby System Demo</h3>
-                <p>Complete multiplayer lobby with matchmaking and room management.</p>
-                <ul class="feature-list">
-                    <li>✅ Room creation</li>
-                    <li>✅ Skill-based matching</li>
-                    <li>✅ Real-time chat</li>
-                    <li>✅ Spectator mode</li>
-                </ul>
-                <a href="enhanced-lobby-demo.html" class="demo-link">Join Lobby</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🌀</div>
-                <h3>Rollback Demo</h3>
-                <p>Professional netcode demonstration with frame-perfect synchronization.</p>
-                <ul class="feature-list">
-                    <li>✅ Rollback & prediction</li>
-                    <li>✅ Deterministic simulation</li>
-                    <li>✅ Lag compensation</li>
-                    <li>✅ Frame synchronization</li>
-                </ul>
-                <a href="rollback-demo.html" class="demo-link">Test Netcode</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🎨</div>
-                <h3>Game Renderer Demo</h3>
-                <p>High-performance rendering system with visual effects and optimizations.</p>
-                <ul class="feature-list">
-                    <li>✅ Layer management</li>
-                    <li>✅ Particle systems</li>
-                    <li>✅ Camera effects</li>
-                    <li>✅ Performance optimization</li>
-                </ul>
-                <a href="renderer-demo.html" class="demo-link">See Effects</a>
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #eee;">
-            <p style="color: #666; font-size: 1.1em;">
-                🚀 <strong>Ready to build your own game?</strong><br>
-                Check out the <a href="GETTING_STARTED.md" style="color: #667eea;">Getting Started Guide</a> 
-                and <a href="API.md" style="color: #667eea;">API Documentation</a>
-            </p>
-        </div>
-    </div>
-</body>
-</html>`
-
-  writeFileSync(join(docsDir, 'index.html'), demoIndex)
-  console.log('✅ Demo index built')
+  // The index.html is already created manually in the root
+  // This function is kept for compatibility but doesn't override the existing file
+  console.log('✅ Main index already exists in root')
 }
 
 // Main build function
@@ -539,14 +361,14 @@ async function buildDocs() {
   try {
     buildApiDocs()
     buildGettingStartedGuide()
-    buildDemoIndex()
+    buildMainIndex()
     
     console.log('\\n🎉 Documentation build complete!')
     console.log('📁 Files created in root directory:')
     console.log('   - API.md')
     console.log('   - GETTING_STARTED.md')
-    console.log('   - index.html')
-    console.log('\\n🌐 Open index.html in your browser to view the demos')
+    console.log('   - index.html (main landing page)')
+    console.log('\\n🌐 Open index.html in your browser to view the project')
     
   } catch (error) {
     console.error('❌ Error building documentation:', error)

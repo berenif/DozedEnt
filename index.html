@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trystero Game Framework - Demos</title>
+    <title>Trystero - Serverless WebRTC Matchmaking</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -11,9 +11,10 @@
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            color: #333;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -23,154 +24,161 @@
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
             font-size: 2.5em;
         }
-        .demo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+        .tagline {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 40px;
         }
-        .demo-card {
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .feature {
             background: #f8f9fa;
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 2px solid transparent;
+            border: 2px solid #eee;
         }
-        .demo-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-        .demo-card h3 {
+        .feature h3 {
             color: #333;
             margin-bottom: 15px;
             font-size: 1.3em;
         }
-        .demo-card p {
+        .feature p {
             color: #666;
-            margin-bottom: 20px;
             line-height: 1.6;
-        }
-        .demo-link {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-        }
-        .demo-link:hover {
-            transform: scale(1.05);
-        }
-        .feature-list {
-            text-align: left;
-            margin: 20px 0;
-        }
-        .feature-list li {
-            margin: 8px 0;
-            color: #555;
         }
         .emoji {
             font-size: 2em;
             margin-bottom: 15px;
         }
+        .cta {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: transform 0.2s ease;
+        }
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+        .docs-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        .docs-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .doc-link {
+            color: #667eea;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            transition: all 0.2s ease;
+        }
+        .doc-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        .code-example {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            border-left: 4px solid #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Trystero Game Framework Demos</h1>
+        <h1>🎮 Trystero</h1>
+        <p class="tagline">Serverless WebRTC matchmaking for painless P2P</p>
         
-        <div class="demo-grid">
-            <div class="demo-card">
-                <div class="emoji">⚔️</div>
-                <h3>Complete Game Demo</h3>
-                <p>Full multiplayer survival game showcasing all systems working together.</p>
-                <ul class="feature-list">
-                    <li>✅ Player animations & combat</li>
-                    <li>✅ Wolf AI pack behavior</li>
-                    <li>✅ Rollback netcode</li>
-                    <li>✅ Lobby system</li>
-                </ul>
-                <a href="complete-game.html" class="demo-link">Play Demo</a>
+        <div class="features">
+            <div class="feature">
+                <div class="emoji">🌐</div>
+                <h3>Serverless P2P</h3>
+                <p>Connect peers directly without maintaining servers. Multiple signaling strategies included.</p>
             </div>
             
-            <div class="demo-card">
-                <div class="emoji">🎭</div>
-                <h3>Animation Showcase</h3>
-                <p>Interactive demo of the player animation system with all states and transitions.</p>
-                <ul class="feature-list">
-                    <li>✅ 7 animation states</li>
-                    <li>✅ Smooth transitions</li>
-                    <li>✅ Combat mechanics</li>
-                    <li>✅ Visual effects</li>
-                </ul>
-                <a href="animations-showcase.html" class="demo-link">View Demo</a>
+            <div class="feature">
+                <div class="emoji">🚀</div>
+                <h3>Zero Configuration</h3>
+                <p>Get started in minutes with sensible defaults. No complex setup or infrastructure required.</p>
             </div>
             
-            <div class="demo-card">
-                <div class="emoji">🐺</div>
-                <h3>Wolf AI Demo</h3>
-                <p>Advanced AI system demonstration with pack behaviors and adaptive difficulty.</p>
-                <ul class="feature-list">
-                    <li>✅ Pack intelligence</li>
-                    <li>✅ Adaptive difficulty</li>
-                    <li>✅ Environmental awareness</li>
-                    <li>✅ Memory system</li>
-                </ul>
-                <a href="wolf-animation-demo.html" class="demo-link">Watch AI</a>
+            <div class="feature">
+                <div class="emoji">🎯</div>
+                <h3>Game-Ready</h3>
+                <p>Built-in support for real-time multiplayer games with WASM integration and rollback netcode.</p>
             </div>
             
-            <div class="demo-card">
-                <div class="emoji">🏠</div>
-                <h3>Lobby System Demo</h3>
-                <p>Complete multiplayer lobby with matchmaking and room management.</p>
-                <ul class="feature-list">
-                    <li>✅ Room creation</li>
-                    <li>✅ Skill-based matching</li>
-                    <li>✅ Real-time chat</li>
-                    <li>✅ Spectator mode</li>
-                </ul>
-                <a href="enhanced-lobby-demo.html" class="demo-link">Join Lobby</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🌀</div>
-                <h3>Rollback Demo</h3>
-                <p>Professional netcode demonstration with frame-perfect synchronization.</p>
-                <ul class="feature-list">
-                    <li>✅ Rollback & prediction</li>
-                    <li>✅ Deterministic simulation</li>
-                    <li>✅ Lag compensation</li>
-                    <li>✅ Frame synchronization</li>
-                </ul>
-                <a href="rollback-demo.html" class="demo-link">Test Netcode</a>
-            </div>
-            
-            <div class="demo-card">
-                <div class="emoji">🎨</div>
-                <h3>Game Renderer Demo</h3>
-                <p>High-performance rendering system with visual effects and optimizations.</p>
-                <ul class="feature-list">
-                    <li>✅ Layer management</li>
-                    <li>✅ Particle systems</li>
-                    <li>✅ Camera effects</li>
-                    <li>✅ Performance optimization</li>
-                </ul>
-                <a href="renderer-demo.html" class="demo-link">See Effects</a>
+            <div class="feature">
+                <div class="emoji">🔒</div>
+                <h3>Secure by Default</h3>
+                <p>End-to-end encryption and secure room management with optional password protection.</p>
             </div>
         </div>
-        
+
+        <div class="cta">
+            <a href="https://github.com/berenif/DozedEnt" class="cta-button">View on GitHub</a>
+            <a href="https://www.npmjs.com/package/trystero" class="cta-button">Install via NPM</a>
+        </div>
+
+        <div class="code-example">
+<strong>Quick Start:</strong>
+<pre>npm install trystero
+
+import {joinRoom} from 'trystero'
+
+const room = joinRoom({appId: 'my-app'}, 'room-id')
+const [sendMessage, getMessage] = room.makeAction('message')
+
+// Send data to peers
+sendMessage('Hello, world!')
+
+// Listen for data from peers
+getMessage((data, peerId) => {
+  console.log(`${peerId} says: ${data}`)
+})</pre>
+        </div>
+
+        <div class="docs-section">
+            <h2 style="text-align: center; color: #333; margin-bottom: 30px;">Documentation</h2>
+            <div class="docs-links">
+                <a href="API.md" class="doc-link">📚 API Reference</a>
+                <a href="GETTING_STARTED.md" class="doc-link">🚀 Getting Started</a>
+                <a href="https://github.com/berenif/DozedEnt#readme" class="doc-link">📖 README</a>
+            </div>
+        </div>
+
         <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #eee;">
-            <p style="color: #666; font-size: 1.1em;">
-                🚀 <strong>Ready to build your own game?</strong><br>
-                Check out the <a href="GETTING_STARTED.md" style="color: #667eea;">Getting Started Guide</a> 
-                and <a href="API.md" style="color: #667eea;">API Documentation</a>
+            <p style="color: #666;">
+                <strong>Trystero</strong> - Making peer-to-peer connections simple and reliable<br>
+                <small>MIT License • Built with ❤️ for the web</small>
             </p>
         </div>
     </div>

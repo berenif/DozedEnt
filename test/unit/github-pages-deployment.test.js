@@ -57,34 +57,20 @@ describe('GitHub Pages Deployment', () => {
       expect(fs.existsSync(docsDistPath), 'dist folder is missing in root').to.be.true;
     });
 
-    it('should have all critical game files in root', () => {
-      const criticalFiles = [
-        'complete-game.html',
-        'room-demo.html',
-        'wolf-animation-demo.html'
+    it('should have essential project files in root', () => {
+      const essentialFiles = [
+        'game.wasm',
+        'API.md',
+        'GETTING_STARTED.md'
       ];
 
-      criticalFiles.forEach(file => {
+      essentialFiles.forEach(file => {
         const filePath = path.join(docsDir, file);
         expect(fs.existsSync(filePath), 
-          `Critical game file missing in docs: ${file}`).to.be.true;
+          `Essential project file missing: ${file}`).to.be.true;
       });
     });
 
-    it('should have all demo files copied to docs', () => {
-      if (!fs.existsSync(demoDir)) {
-        return; // Skip if demo folder doesn't exist
-      }
-
-      const demoFiles = fs.readdirSync(demoDir)
-        .filter(file => file.endsWith('.html'));
-
-      demoFiles.forEach(file => {
-        const docsFilePath = path.join(docsDir, file);
-        expect(fs.existsSync(docsFilePath), 
-          `Demo file not copied to docs: ${file}`).to.be.true;
-      });
-    });
   });
 
   describe('Build Output Validation', () => {

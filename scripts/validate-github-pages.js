@@ -51,12 +51,9 @@ function checkIndexFile() {
     errors.push('❌ index.html missing DOCTYPE declaration');
   }
   
-  // Check for game links
-  const requiredLinks = ['complete-game.html', 'enhanced-game-demo.html', 'room-demo.html'];
-  const missingLinks = requiredLinks.filter(link => !content.includes(link));
-  
-  if (missingLinks.length > 0) {
-    warnings.push(`⚠️  index.html missing links to: ${missingLinks.join(', ')}`);
+  // Check for essential content (demos were removed)
+  if (!content.includes('Trystero')) {
+    warnings.push(`⚠️  index.html missing Trystero branding`);
   }
   
   successes.push('✓ index.html exists and has proper structure');
@@ -112,20 +109,17 @@ function checkBuiltAssets() {
 }
 
 // Check for game files
-function checkGameFiles() {
-  console.log('Checking game files...');
+function checkProjectFiles() {
+  console.log('Checking essential project files...');
   
-  const criticalGameFiles = [
-    'complete-game.html',
-    'enhanced-game-demo.html',
-    'room-demo.html',
-    'enhanced-lobby-demo.html',
-    'player-animations-demo.html',
-    'wolf-animation-demo.html'
+  const essentialFiles = [
+    'game.wasm',
+    'API.md',
+    'GETTING_STARTED.md'
   ];
   
   const missingFiles = [];
-  criticalGameFiles.forEach(file => {
+  essentialFiles.forEach(file => {
     const filePath = path.join(docsDir, file);
     if (!fs.existsSync(filePath)) {
       missingFiles.push(file);
@@ -133,27 +127,11 @@ function checkGameFiles() {
   });
   
   if (missingFiles.length > 0) {
-    errors.push(`❌ Missing game files in docs: ${missingFiles.join(', ')}`);
+    errors.push(`❌ Missing essential files: ${missingFiles.join(', ')}`);
     return false;
   }
   
-  // Check if demo files are copied
-  if (fs.existsSync(demoDir)) {
-    const demoFiles = fs.readdirSync(demoDir).filter(f => f.endsWith('.html'));
-    const notCopied = [];
-    
-    demoFiles.forEach(file => {
-      if (!fs.existsSync(path.join(docsDir, file))) {
-        notCopied.push(file);
-      }
-    });
-    
-    if (notCopied.length > 0) {
-      warnings.push(`⚠️  Demo files not copied to docs: ${notCopied.join(', ')}`);
-    }
-  }
-  
-  successes.push('✓ All critical game files are present');
+  successes.push('✓ All essential project files are present');
   return true;
 }
 
@@ -161,26 +139,14 @@ function checkGameFiles() {
 function checkSupportingFiles() {
   console.log('Checking supporting files...');
   
-  const supportingFiles = [
-    'wolf-animation.js',
-    'wolf-character.js',
-    'game-renderer.js',
-    'enhanced-room-manager.js'
-  ];
-  
-  const missingSupporting = [];
-  supportingFiles.forEach(file => {
-    const filePath = path.join(docsDir, file);
-    if (!fs.existsSync(filePath)) {
-      missingSupporting.push(file);
-    }
-  });
-  
-  if (missingSupporting.length > 0) {
-    warnings.push(`⚠️  Missing supporting files: ${missingSupporting.join(', ')}`);
-  } else {
-    successes.push('✓ All supporting JavaScript files are present');
+  // Check for main site.js if it exists
+  const siteJsPath = path.join(docsDir, 'site.js');
+  if (fs.existsSync(siteJsPath)) {
+    successes.push('✓ Main site.js file is present');
   }
+  
+  // No required supporting files since demos were removed
+  successes.push('✓ Supporting files check complete');
   
   return true;
 }
@@ -260,7 +226,7 @@ function validate() {
     checkIndexFile();
     checkNoJekyll();
     checkBuiltAssets();
-    checkGameFiles();
+    checkProjectFiles();
     checkSupportingFiles();
     checkFileSizes();
     checkForTestFiles();
