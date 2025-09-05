@@ -6,6 +6,7 @@ export class WolfAnimator extends CharacterAnimator {
         // Initialize wolf-specific animation states or overrides here
         // For example, if wolf has different blend factors or default states
         this.blendSpeed = 0.15 // Wolf animations might blend differently
+        this._animationTimeouts = new Set() // Track timeouts for cleanup
     }
 
     // Override or add wolf-specific state setting logic
@@ -31,20 +32,38 @@ export class WolfAnimator extends CharacterAnimator {
     // Add any wolf-specific animation triggers or methods
     triggerHowl() {
         this.setState('howl')
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+            this._animationTimeouts.delete(timeoutId)
             if (this.state === 'howl') {
                 this.setState('idle') // Or a more appropriate resting state
             }
         }, 1400) // Adjust duration based on howl animation
+        this._animationTimeouts.add(timeoutId)
     }
 
     triggerLunge() {
         this.setState('lunge')
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+            this._animationTimeouts.delete(timeoutId)
             if (this.state === 'lunge') {
                 this.setState('idle')
             }
         }, 200) // Adjust duration
+        this._animationTimeouts.add(timeoutId)
+    }
+
+    // Cleanup method to prevent memory leaks
+    destroy() {
+        // Clear all pending timeouts
+        for (const timeoutId of this._animationTimeouts) {
+            clearTimeout(timeoutId)
+        }
+        this._animationTimeouts.clear()
+        
+        // Call parent cleanup if it exists
+        if (super.destroy) {
+            super.destroy()
+        }
     }
 
     triggerProwl(isProwling) {

@@ -242,15 +242,15 @@ describe('Build System', () => {
 
     it('should validate source files exist', () => {
       const sourceFiles = [
-        'src/firebase.js',
-        'src/ipfs.js',
-        'src/mqtt.js',
-        'src/nostr.js',
-        'src/supabase.js',
-        'src/torrent.js',
-        'src/wasm.js',
-        'src/player-animator.js',
-        'src/wolf-animation.js'
+        'src/netcode/firebase.js',
+        'src/netcode/ipfs.js',
+        'src/netcode/mqtt.js',
+        'src/netcode/nostr.js',
+        'src/netcode/supabase.js',
+        'src/netcode/torrent.js',
+        'src/utils/wasm.js',
+        'src/animation/player-animator.js',
+        'src/animation/wolf-animation.js'
       ];
       
       sourceFiles.forEach(file => {

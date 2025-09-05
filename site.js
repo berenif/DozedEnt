@@ -1449,7 +1449,12 @@ function getOrCreatePeerEl(peerId) {
   if (el) return el
   // assign color
   if (!peerToColor.has(peerId)) {
-    const color = otherColorPool[peerToColor.size % otherColorPool.length]
+    // Use a more deterministic color assignment based on peerId to avoid race conditions
+    let colorIndex = 0
+    for (let i = 0; i < peerId.length; i++) {
+      colorIndex += peerId.charCodeAt(i)
+    }
+    const color = otherColorPool[colorIndex % otherColorPool.length]
     peerToColor.set(peerId, color)
   }
   el = document.createElement('div')
@@ -1770,8 +1775,8 @@ function init(n) {
           const worldX = leftPx + cameraX
           const worldY = topPx + cameraY
           // Unscale from world to WASM's 0-1 range
-          const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
-          const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+          const unscaledX = (worldX / (WORLD_WIDTH / 3)) / 3.0  // Maps from full world back to 0-1
+          const unscaledY = (worldY / (WORLD_HEIGHT / 3)) / 3.0  // Maps from full world back to 0-1
           const ax = clamp01(unscaledX)
           const ay = clamp01(unscaledY)
           // Post an attack sound at peer position
@@ -1804,8 +1809,8 @@ function init(n) {
         const worldX = leftPx + cameraX
         const worldY = topPx + cameraY
         // Unscale from world to WASM's 0-1 range
-        const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
-        const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+        const unscaledX = (worldX / (WORLD_WIDTH / 3)) / 3.0  // Maps from full world back to 0-1
+        const unscaledY = (worldY / (WORLD_HEIGHT / 3)) / 3.0  // Maps from full world back to 0-1
         const nx = clamp01(unscaledX)
         const ny = clamp01(unscaledY)
         // peer's block spark aligned to their reported direction if provided
@@ -1825,8 +1830,8 @@ function init(n) {
       const worldX = leftPx + cameraX
       const worldY = topPx + cameraY
       // Unscale from world to WASM's 0-1 range
-      const unscaledX = (worldX / (WORLD_WIDTH / 3)) - 1.0  // Maps from center third back to 0-1
-      const unscaledY = (worldY / (WORLD_HEIGHT / 3)) - 1.0  // Maps from center third back to 0-1
+      const unscaledX = (worldX / (WORLD_WIDTH / 3)) / 3.0  // Maps from full world back to 0-1
+      const unscaledY = (worldY / (WORLD_HEIGHT / 3)) / 3.0  // Maps from full world back to 0-1
       const nx = clamp01(unscaledX)
       const ny = clamp01(unscaledY)
       postSoundAt(nx, ny, 0.45)
@@ -2040,10 +2045,12 @@ async function gameLoop(ts) {
       }
     } catch {}
     // Advance simulation with delta time only
-    wasmExports.update(dt)
+    if (typeof wasmExports.update === 'function') {
+      wasmExports.update(dt)
+    }
     // Don't clamp to 0-1, WASM already handles boundaries
-    posX = wasmExports.get_x?.() ?? posX
-    posY = wasmExports.get_y?.() ?? posY
+    posX = (typeof wasmExports.get_x === 'function') ? wasmExports.get_x() : posX
+    posY = (typeof wasmExports.get_y === 'function') ? wasmExports.get_y() : posY
     // keep facing along roll direction and spawn trail
     faceDirX = rollDirX
     faceDirY = rollDirY
@@ -2072,10 +2079,12 @@ async function gameLoop(ts) {
       }
     } catch {}
     // Advance simulation with delta time only
-    wasmExports.update(dt)
+    if (typeof wasmExports.update === 'function') {
+      wasmExports.update(dt)
+    }
     // Don't clamp to 0-1, WASM already handles boundaries
-    posX = wasmExports.get_x?.() ?? posX
-    posY = wasmExports.get_y?.() ?? posY
+    posX = (typeof wasmExports.get_x === 'function') ? wasmExports.get_x() : posX
+    posY = (typeof wasmExports.get_y === 'function') ? wasmExports.get_y() : posY
     // update facing when moving and reset trail accumulator
     if (dirX !== 0 || dirY !== 0) {
       const len2 = Math.hypot(dirX, dirY) || 1
