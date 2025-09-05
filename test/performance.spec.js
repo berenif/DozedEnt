@@ -12,7 +12,7 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -189,7 +189,7 @@ test('Performance Test: WASM memory usage stays within limits', async ({page}) =
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 

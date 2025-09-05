@@ -12,7 +12,7 @@ test('Phase Transitions: Complete core loop test', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -178,7 +178,7 @@ test('Phase Transitions: Risk phase mechanics', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -247,7 +247,7 @@ test('Phase Transitions: Escalate phase mechanics', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -319,7 +319,7 @@ test('Phase Transitions: CashOut phase mechanics', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 

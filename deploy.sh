@@ -26,20 +26,18 @@ npm run build:all
 echo "📚 Building documentation..."
 npm run build:docs
 
-# Copy dist folder to docs
-echo "📋 Copying dist folder to docs..."
-cp -r dist docs/
+# Dist folder is already in root, no need to copy
 
 # Create .nojekyll file if it doesn't exist
 echo "📄 Ensuring .nojekyll file exists..."
-touch docs/.nojekyll
+touch .nojekyll
 
 # Validate deployment
 echo "🔍 Validating deployment..."
 npm run validate:github-pages
 
 echo "✅ Deployment preparation complete!"
-echo "📁 Files ready in docs/ folder:"
-ls -la docs/
+echo "📁 Files ready in root folder:"
+ls -la
 
-echo "🌐 Ready for GitHub Pages deployment!"
+echo "🌐 Ready for GitHub Pages deployment from root!"

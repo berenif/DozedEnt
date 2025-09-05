@@ -2,13 +2,13 @@ import {test, expect} from '@playwright/test'
 
 test.describe('Golden Gameplay Tests', () => {
   test.beforeEach(async ({page}) => {
-    await page.goto('http://localhost:8080/docs/index.html')
+    await page.goto('http://localhost:8080/index.html')
     await page.waitForTimeout(500) // Wait for WASM to load
   })
 
   test('deterministic gameplay with fixed seed', async ({page}) => {
     // Set a fixed seed via URL parameter
-    await page.goto('http://localhost:8080/docs/index.html?seed=12345')
+    await page.goto('http://localhost:8080/index.html?seed=12345')
     await page.waitForTimeout(1000)
 
     // Record initial state
@@ -100,7 +100,7 @@ test.describe('Golden Gameplay Tests', () => {
     console.log('Golden final state:', goldenFinalState)
 
     // Test determinism by reloading and running the same script
-    await page.goto('/docs/index.html?seed=12345')
+    await page.goto('/index.html?seed=12345')
     await page.waitForTimeout(1000)
 
     // Run the same input script again
@@ -157,7 +157,7 @@ test.describe('Golden Gameplay Tests', () => {
   })
 
   test('pity timer guarantees good choice after bad streak', async ({page}) => {
-    await page.goto('http://localhost:8080/docs/index.html?seed=99999')
+    await page.goto('http://localhost:8080/index.html?seed=99999')
     await page.waitForTimeout(1000)
 
     // Simulate getting to choice phase multiple times
@@ -226,7 +226,7 @@ test.describe('Golden Gameplay Tests', () => {
   })
 
   test('phase transitions work correctly', async ({page}) => {
-    await page.goto('http://localhost:8080/docs/index.html?seed=54321')
+    await page.goto('http://localhost:8080/index.html?seed=54321')
     await page.waitForTimeout(1000)
 
     const phases = []

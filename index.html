@@ -2,177 +2,177 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>DozedEnt - WASM-First Multiplayer Game</title>
-    
-    <link rel="stylesheet" href="src/css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trystero Game Framework - Demos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .demo-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        .demo-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .demo-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .demo-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        .demo-link:hover {
+            transform: scale(1.05);
+        }
+        .feature-list {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .feature-list li {
+            margin: 8px 0;
+            color: #555;
+        }
+        .emoji {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading Game...</div>
-    </div>
-
-    <!-- Game Container -->
-    <div class="game-container">
-        <!-- UI Canvas (for overlays) -->
-        <div id="canvas"></div>
-
-        <!-- Start Overlay -->
-        <div id="overlay-start" class="overlay" style="display: none;">
-            <div class="overlay-content">
-                <h2>Welcome to DozedEnt</h2>
-                <p>Click to start your adventure!</p>
-                <button class="choice-btn">Start Game</button>
+    <div class="container">
+        <h1>🎮 Trystero Game Framework Demos</h1>
+        
+        <div class="demo-grid">
+            <div class="demo-card">
+                <div class="emoji">⚔️</div>
+                <h3>Complete Game Demo</h3>
+                <p>Full multiplayer survival game showcasing all systems working together.</p>
+                <ul class="feature-list">
+                    <li>✅ Player animations & combat</li>
+                    <li>✅ Wolf AI pack behavior</li>
+                    <li>✅ Rollback netcode</li>
+                    <li>✅ Lobby system</li>
+                </ul>
+                <a href="complete-game.html" class="demo-link">Play Demo</a>
+            </div>
+            
+            <div class="demo-card">
+                <div class="emoji">🎭</div>
+                <h3>Animation Showcase</h3>
+                <p>Interactive demo of the player animation system with all states and transitions.</p>
+                <ul class="feature-list">
+                    <li>✅ 7 animation states</li>
+                    <li>✅ Smooth transitions</li>
+                    <li>✅ Combat mechanics</li>
+                    <li>✅ Visual effects</li>
+                </ul>
+                <a href="animations-showcase.html" class="demo-link">View Demo</a>
+            </div>
+            
+            <div class="demo-card">
+                <div class="emoji">🐺</div>
+                <h3>Wolf AI Demo</h3>
+                <p>Advanced AI system demonstration with pack behaviors and adaptive difficulty.</p>
+                <ul class="feature-list">
+                    <li>✅ Pack intelligence</li>
+                    <li>✅ Adaptive difficulty</li>
+                    <li>✅ Environmental awareness</li>
+                    <li>✅ Memory system</li>
+                </ul>
+                <a href="wolf-animation-demo.html" class="demo-link">Watch AI</a>
+            </div>
+            
+            <div class="demo-card">
+                <div class="emoji">🏠</div>
+                <h3>Lobby System Demo</h3>
+                <p>Complete multiplayer lobby with matchmaking and room management.</p>
+                <ul class="feature-list">
+                    <li>✅ Room creation</li>
+                    <li>✅ Skill-based matching</li>
+                    <li>✅ Real-time chat</li>
+                    <li>✅ Spectator mode</li>
+                </ul>
+                <a href="enhanced-lobby-demo.html" class="demo-link">Join Lobby</a>
+            </div>
+            
+            <div class="demo-card">
+                <div class="emoji">🌀</div>
+                <h3>Rollback Demo</h3>
+                <p>Professional netcode demonstration with frame-perfect synchronization.</p>
+                <ul class="feature-list">
+                    <li>✅ Rollback & prediction</li>
+                    <li>✅ Deterministic simulation</li>
+                    <li>✅ Lag compensation</li>
+                    <li>✅ Frame synchronization</li>
+                </ul>
+                <a href="rollback-demo.html" class="demo-link">Test Netcode</a>
+            </div>
+            
+            <div class="demo-card">
+                <div class="emoji">🎨</div>
+                <h3>Game Renderer Demo</h3>
+                <p>High-performance rendering system with visual effects and optimizations.</p>
+                <ul class="feature-list">
+                    <li>✅ Layer management</li>
+                    <li>✅ Particle systems</li>
+                    <li>✅ Camera effects</li>
+                    <li>✅ Performance optimization</li>
+                </ul>
+                <a href="renderer-demo.html" class="demo-link">See Effects</a>
             </div>
         </div>
-
-        <!-- Orientation Overlay -->
-        <div id="orientation-overlay" class="overlay" style="display: none;">
-            <div class="overlay-content">
-                <h2>Please rotate your device</h2>
-                <p>For the best experience, please use landscape orientation.</p>
-            </div>
-        </div>
-
-        <!-- Controls Tip -->
-        <div id="controls-tip" class="controls-tip" style="display: none;">
-            Use the joystick to move and action buttons to fight!
-        </div>
-
-        <!-- Actions Container -->
-        <div id="actions" class="actions-container" style="display: none;"></div>
-
-        <!-- Main Canvas -->
-        <canvas id="gameCanvas"></canvas>
-
-        <!-- Phase Indicator -->
-        <div class="phase-indicator" id="phaseIndicator">EXPLORE</div>
-
-        <!-- Top HUD -->
-        <div class="top-hud">
-
-            <div class="score-info">
-                <div class="score">Score: <span id="scoreValue">0</span></div>
-                <div class="currency">
-                    <span class="gold">🔶 <span id="goldValue">0</span></span>
-                    <span class="essence">🔷 <span id="essenceValue">0</span></span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Connection Status -->
-        <div class="connection-status">
-            <span id="connectionStatus" class="status-offline">● Offline</span>
-            <span id="playerCount"> (1 player)</span>
-        </div>
-
-        <!-- Bottom Controls -->
-        <div class="bottom-controls">
-            <div class="action-buttons">
-                <button class="action-btn" id="attackBtn" data-action="attack">
-                    <span>⚔️</span>
-                    <div class="cooldown" id="attackCooldown"></div>
-                </button>
-                <button class="action-btn" id="rollBtn" data-action="roll">
-                    <span>🌀</span>
-                    <div class="cooldown" id="rollCooldown"></div>
-                </button>
-                <button class="action-btn" id="blockBtn" data-action="block">
-                    <span>🛡️</span>
-                    <div class="cooldown" id="blockCooldown"></div>
-                </button>
-                <button class="action-btn" id="jumpBtn" data-action="jump">
-                    <span>⬆️</span>
-                    <div class="cooldown" id="jumpCooldown"></div>
-                </button>
-            </div>
-
-
-        </div>
-
-        <!-- Mobile Controls -->
-        <div id="joystick">
-            <div id="joystick-base">
-                <div id="joystick-knob"></div>
-            </div>
-        </div>
-
-        <!-- Game Overlays -->
-        <div class="overlay" id="choiceOverlay">
-            <div class="overlay-content">
-                <h2 class="overlay-title">Choose Your Path</h2>
-                <div class="choices" id="choiceContainer">
-                    <button id="choice-0" class="choice-btn">Choice 1</button>
-                    <button id="choice-1" class="choice-btn">Choice 2</button>
-                    <button id="choice-2" class="choice-btn">Choice 3</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="overlay" id="riskOverlay">
-            <div class="overlay-content">
-                <h2 class="overlay-title">⚠️ Risk Phase</h2>
-                <div class="risk-content">
-                    <p>Risk Multiplier: <span id="riskMultiplier">1.0x</span></p>
-                    <div id="curseList"></div>
-                    <div id="timedChallenge" style="display: none;">
-                        <p>Challenge: <span id="challengeProgress">0</span>/<span id="challengeTarget">5</span></p>
-                        <p>Time: <span id="challengeTime">30</span>s</p>
-                    </div>
-                    <button onclick="escapeRisk()" class="choice-btn risk-escape">Escape (Cost: Stamina)</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="overlay" id="escalateOverlay">
-            <div class="overlay-content">
-                <h2 class="overlay-title">📈 Escalation Phase</h2>
-                <div class="escalate-content">
-                    <p>Difficulty Level: <span id="escalationLevel">0.0</span></p>
-                    <p>Enemy Modifiers Active:</p>
-                    <div id="modifierList"></div>
-                    <div id="minibossAlert" style="display: none;">
-                        <h3>⚠️ MINIBOSS DETECTED</h3>
-                        <div class="miniboss-health-bar">
-                            <div id="minibossHealth"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="overlay" id="cashoutOverlay">
-            <div class="overlay-content">
-                <h2 class="overlay-title">💰 Shop</h2>
-                <div class="shop-content">
-                    <div class="shop-actions">
-                        <button onclick="buyHeal()" class="shop-action-btn">Heal (50🔶 5🔷)</button>
-                        <button onclick="rerollShop()" class="shop-action-btn">Reroll (20🔶)</button>
-                    </div>
-                    <div class="shop-grid" id="shopItems"></div>
-                    <div class="shop-exit">
-                        <button onclick="exitShop()" class="choice-btn">Exit Shop</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="overlay" id="gameOverOverlay">
-            <div class="overlay-content">
-                <h2 class="overlay-title">Game Over</h2>
-                <div class="game-over-content">
-                    <p>Final Score: <span id="finalScore">0</span></p>
-                    <p>Rooms Cleared: <span id="roomsCleared">0</span></p>
-                    <button id="restart-button" onclick="restartGame()" class="choice-btn">Play Again</button>
-                    <button id="rematch-button" onclick="restartGame()" class="choice-btn" style="display: none;">Rematch</button>
-                </div>
-            </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #eee;">
+            <p style="color: #666; font-size: 1.1em;">
+                🚀 <strong>Ready to build your own game?</strong><br>
+                Check out the <a href="GETTING_STARTED.md" style="color: #667eea;">Getting Started Guide</a> 
+                and <a href="API.md" style="color: #667eea;">API Documentation</a>
+            </p>
         </div>
     </div>
-
-    <!-- Scripts -->
-    <script type="module" src="site.js"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ test('Golden Test: 60s deterministic gameplay with identical seed and inputs', a
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -170,7 +170,7 @@ test('Golden Test: Pity timer for rare choices', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 

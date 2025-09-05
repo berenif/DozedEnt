@@ -9,7 +9,7 @@ import chalk from 'chalk';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const docsDir = path.join(rootDir, 'docs');
+const docsDir = rootDir; // Deploy to root instead of docs folder
 const demoDir = path.join(rootDir, 'demo');
 const distDir = path.join(rootDir, 'dist');
 
@@ -19,14 +19,14 @@ let successes = [];
 
 console.log(chalk.blue.bold('\n🔍 Validating GitHub Pages Deployment...\n'));
 
-// Check if docs folder exists
+// Check if root directory is ready for deployment
 function checkDocsFolder() {
-  console.log('Checking docs folder...');
+  console.log('Checking root directory for deployment...');
   if (!fs.existsSync(docsDir)) {
-    errors.push('❌ docs folder does not exist. Run npm run build:docs first.');
+    errors.push('❌ Root directory does not exist.');
     return false;
   }
-  successes.push('✓ docs folder exists');
+  successes.push('✓ Root directory exists and ready for deployment');
   return true;
 }
 
@@ -35,7 +35,7 @@ function checkIndexFile() {
   console.log('Checking index.html...');
   const indexPath = path.join(docsDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
-    errors.push('❌ docs/index.html is missing');
+    errors.push('❌ index.html is missing');
     return false;
   }
   
@@ -81,7 +81,7 @@ function checkBuiltAssets() {
   const docsDistPath = path.join(docsDir, 'dist');
   
   if (!fs.existsSync(docsDistPath)) {
-    errors.push('❌ dist folder is missing in docs');
+    errors.push('❌ dist folder is missing in root');
     return false;
   }
   
@@ -103,11 +103,11 @@ function checkBuiltAssets() {
   });
   
   if (missingBundles.length > 0) {
-    errors.push(`❌ Missing bundles in docs/dist: ${missingBundles.join(', ')}`);
+    errors.push(`❌ Missing bundles in dist: ${missingBundles.join(', ')}`);
     return false;
   }
   
-  successes.push('✓ All required bundles are present in docs/dist');
+  successes.push('✓ All required bundles are present in dist');
   return true;
 }
 

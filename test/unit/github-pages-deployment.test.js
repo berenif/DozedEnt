@@ -8,7 +8,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-const docsDir = path.join(rootDir, 'docs');
+const docsDir = rootDir; // Deploy to root instead of docs folder
 const demoDir = path.join(rootDir, 'demo');
 const distDir = path.join(rootDir, 'dist');
 
@@ -30,34 +30,34 @@ describe('GitHub Pages Deployment', () => {
     });
   });
 
-  describe('Docs Folder Structure', () => {
+  describe('Root Deployment Structure', () => {
     before(function() {
-      // Skip if docs folder doesn't exist yet
+      // Skip if root directory doesn't exist yet
       if (!fs.existsSync(docsDir)) {
         this.skip();
       }
     });
 
-    it('should have docs folder', () => {
-      expect(fs.existsSync(docsDir), 'docs folder is missing').to.be.true;
+    it('should have root directory', () => {
+      expect(fs.existsSync(docsDir), 'root directory is missing').to.be.true;
     });
 
-    it('should have index.html in docs folder', () => {
+    it('should have index.html in root', () => {
       const indexPath = path.join(docsDir, 'index.html');
-      expect(fs.existsSync(indexPath), 'docs/index.html is missing').to.be.true;
+      expect(fs.existsSync(indexPath), 'index.html is missing').to.be.true;
     });
 
     it('should have .nojekyll file for GitHub Pages', () => {
       const nojekyllPath = path.join(docsDir, '.nojekyll');
-      expect(fs.existsSync(nojekyllPath), '.nojekyll file is missing in docs folder').to.be.true;
+      expect(fs.existsSync(nojekyllPath), '.nojekyll file is missing in root folder').to.be.true;
     });
 
-    it('should have dist folder with built assets in docs', () => {
+    it('should have dist folder with built assets in root', () => {
       const docsDistPath = path.join(docsDir, 'dist');
-      expect(fs.existsSync(docsDistPath), 'dist folder is missing in docs').to.be.true;
+      expect(fs.existsSync(docsDistPath), 'dist folder is missing in root').to.be.true;
     });
 
-    it('should have all critical game files in docs', () => {
+    it('should have all critical game files in root', () => {
       const criticalFiles = [
         'complete-game.html',
         'room-demo.html',

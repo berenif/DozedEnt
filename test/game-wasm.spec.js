@@ -12,7 +12,7 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
@@ -118,7 +118,7 @@ test('Game WASM: player anim/state timers and overlay exports exist and behave',
 
   const result = await page.evaluate(async () => {
     const {loadWasm} = window.trysteroWasm
-    const res = await fetch('../docs/game.wasm')
+    const res = await fetch('../game.wasm')
     const {exports} = await loadWasm(res)
     const api = exports
 

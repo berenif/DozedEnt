@@ -17,11 +17,8 @@ const projectRoot = join(__dirname, '..')
 
 console.log('📚 Building Trystero Game Framework Documentation...')
 
-// Ensure docs directory exists
-const docsDir = join(projectRoot, 'docs')
-if (!existsSync(docsDir)) {
-  mkdirSync(docsDir, { recursive: true })
-}
+// Use project root as the deployment directory
+const docsDir = projectRoot
 
 // Build API documentation
 function buildApiDocs() {
@@ -545,11 +542,11 @@ async function buildDocs() {
     buildDemoIndex()
     
     console.log('\\n🎉 Documentation build complete!')
-    console.log('📁 Files created in /docs directory:')
+    console.log('📁 Files created in root directory:')
     console.log('   - API.md')
     console.log('   - GETTING_STARTED.md')
     console.log('   - index.html')
-    console.log('\\n🌐 Open docs/index.html in your browser to view the demos')
+    console.log('\\n🌐 Open index.html in your browser to view the demos')
     
   } catch (error) {
     console.error('❌ Error building documentation:', error)
