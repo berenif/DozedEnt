@@ -80,10 +80,20 @@ jobs:
         run: npm ci
         
       - name: Build project and prepare docs
-        run: npm run build:docs
+        run: bash ./deploy.sh
         
       - name: Validate GitHub Pages deployment
-        run: node scripts/validate-github-pages.js
+        run: |
+          echo "🔍 Starting GitHub Pages validation..."
+          echo "📁 Current directory: $(pwd)"
+          echo "📋 Contents of docs folder:"
+          ls -la docs/
+          echo ""
+          echo "📦 Contents of docs/dist folder:"
+          ls -la docs/dist/ || echo "dist folder not found"
+          echo ""
+          echo "🚀 Running validation script..."
+          node scripts/validate-github-pages.js
         
       - name: Check critical files
         run: |
