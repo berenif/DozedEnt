@@ -1,0 +1,1156 @@
+// Minimal C++ game logic compiled to WASM
+// - Maintains player position in normalized [0,1] space
+// - Applies movement and collision against a vertical wall centered at x=0.5
+
+#include <cmath>
+#include "internal_core.h"
+#include "obstacles.h"
+#include "terrain_hazards.h"
+#include "scent.h"
+#include "enemies.h"
+#include "choices.h"
+#include "risk.h"
+#include "escalate.h"
+#include "cashout.h"
+#include "anim_overlay.h"
+
+// Player input variables
+static float g_input_x = 0.f;
+static float g_input_y = 0.f;
+static int g_input_is_rolling = 0;
+static int g_input_is_jumping = 0; // New: Jumping input
+static int g_input_is_attacking = 0; // New: Attack input
+static int g_input_is_blocking = 0; // New: Blocking input
+
+// Player animation state global
+PlayerAnimState g_player_anim_state = PlayerAnimState_Idle;
+static PlayerAnimState g_prev_player_anim_state = PlayerAnimState_Idle;
+
+// Setter for player input
+__attribute__((export_name("set_player_input")))
+void set_player_input(float inputX, float inputY, int isRolling, int isJumping, int isAttacking, int isBlocking) {
+  g_input_x = inputX;
+  g_input_y = inputY;
+  g_input_is_rolling = isRolling;
+  g_input_is_jumping = isJumping; // New
+  g_input_is_attacking = isAttacking; // New
+  g_input_is_blocking = isBlocking; // New
+}
+
+int main() { return 0; }
+
+// Player modifiers now centralized in internal_core.h
+
+// Animation overlay moved to anim_overlay.h
+
+// Pack tracking lives in enemies.h
+
+/* Choices and landmarks now declared in choices.h/internal_core.h */
+
+__attribute__((export_name("init_run")))
+void init_run(unsigned long long seed, unsigned int start_weapon) {
+  (void)start_weapon; // unused in scaffold
+  g_rng = (seed ? seed : 1ull);
+  g_phase = GamePhase::Explore;
+  g_wolf_kills_since_choice = 0;
+  g_pos_x = 0.5f;
+  g_pos_y = 0.5f;
+  g_vel_x = 0.f;
+  g_vel_y = 0.f;
+  g_stamina = 1.0f;
+  g_blocking = 0;
+  g_is_rolling = 0;
+  g_prev_is_rolling = 0;
+  g_choice_count = 0;
+  g_non_rare_choice_streak = 0;
+  g_total_choices_offered = 0;
+  g_is_grounded = 1; // New: Player starts grounded
+  g_jump_count = 0; // New: Jump counter
+  init_choice_pool();  // Initialize the choice pool
+  init_risk_phase();   // Initialize risk phase
+  g_time_seconds = 0.f;
+  g_room_count = 0;     // Reset room counter
+  g_last_attack_time = -1000.f;
+  g_last_roll_time = -1000.f;
+  g_enemy_count = 0;
+  for (int i = 0; i < MAX_ENEMIES; ++i) g_enemies[i].active = 0;
+  g_sound_count = 0;
+  g_danger_count = 0;
+  g_wind_x = 0.f; g_wind_y = 0.f;
+  // Reset scent and pack
+  scent_clear();
+  g_pack_plan = PackPlan::Stalk;
+  g_pack_plan_time = 0.f;
+  g_pack_morale = 0.7f;
+  g_pack_peak_wolves = 0;
+  g_howl_cooldown_until = -1000.f;
+  for (int i = 0; i < MAX_ENEMIES; ++i) g_enemy_roles[i] = (unsigned char)PackRole::None;
+  // Clear wolf animation data
+  reset_wolf_anim_data();
+
+  // Randomly select a biome for the new run
+  g_current_biome = (BiomeType)(rng_u32() % (unsigned int)BiomeType::Count);
+  
+  // Deterministic spawn corner from RNG (no peer consideration in scaffold)
+  const float margin = 0.06f;
+  const float corners[4][2] = {
+    {margin, margin},
+    {1.f - margin, margin},
+    {margin, 1.f - margin},
+    {1.f - margin, 1.f - margin}
+  };
+  unsigned int cornerIndex = rng_u32() & 3u;
+  g_pos_x = corners[cornerIndex][0];
+  g_pos_y = corners[cornerIndex][1];
+
+  // Generate obstacles deterministically, guaranteeing walkable space
+  generate_obstacles_walkable();
+  
+  // Generate hostile terrain hazards
+  generate_hazards();
+
+  // Generate simple deterministic landmarks (3) and exits (1)
+  g_landmark_count = 3;
+  for (int i = 0; i < (int)g_landmark_count; ++i) {
+    // keep away from edges a bit
+    g_landmarks_x[i] = 0.1f + 0.8f * rng_float01();
+    g_landmarks_y[i] = 0.1f + 0.8f * rng_float01();
+  }
+  g_exit_count = 1;
+  for (int i = 0; i < (int)g_exit_count; ++i) {
+    g_exits_x[i] = 0.1f + 0.8f * rng_float01();
+    g_exits_y[i] = 0.1f + 0.8f * rng_float01();
+  }
+
+  // Generate a simple platform for jumping if not in a biome that generates complex platforms
+  // This is a placeholder; more sophisticated platform generation should be biome-specific
+  if (g_current_biome == BiomeType::Forest || g_current_biome == BiomeType::Plains) {
+    g_obstacle_count = 1;
+    g_obstacles_x[0] = 0.5f;
+    g_obstacles_y[0] = 0.7f;
+    g_obstacles_r[0] = 0.1f; // Represents a platform
+  } else {
+    g_obstacle_count = 0;
+  }
+
+  // Spawn initial wolf pack - early rooms have fewer enemies for quick regain of flow
+  unsigned int initial_pack_size = 4;
+  if (g_room_count < 3) {
+    // First 3 rooms are shorter with fewer enemies
+    initial_pack_size = 2 + (g_room_count > 0 ? 1 : 0);  // 2, 3, 3 enemies
+  }
+  spawn_wolf_pack(initial_pack_size);
+  // Initial role assignment
+  for (int i = 0; i < MAX_ENEMIES; ++i) if (g_enemies[i].active) g_enemy_roles[i] = (unsigned char)PackRole::Harasser;
+  // Clear den/danger boards
+  g_den_radius = 0.f;
+}
+
+__attribute__((export_name("reset_run")))
+void reset_run(unsigned long long new_seed) {
+  init_run(new_seed, 0);
+}
+
+__attribute__((export_name("get_phase")))
+unsigned int get_phase() {
+  return (unsigned int)g_phase;
+}
+
+__attribute__((export_name("get_room_count")))
+unsigned int get_room_count() { return g_room_count; }
+
+// Choice accessors for JS without pointer passing
+__attribute__((export_name("get_choice_count")))
+unsigned int get_choice_count() { return (unsigned int)g_choice_count; }
+
+__attribute__((export_name("get_choice_id")))
+unsigned int get_choice_id(unsigned int idx) { return (idx < g_choice_count) ? g_choices[idx].id : 0u; }
+
+__attribute__((export_name("get_choice_type")))
+unsigned int get_choice_type(unsigned int idx) { return (idx < g_choice_count) ? g_choices[idx].type : 0u; }
+
+__attribute__((export_name("get_choice_rarity")))
+unsigned int get_choice_rarity(unsigned int idx) { return (idx < g_choice_count) ? g_choices[idx].rarity : 0u; }
+
+__attribute__((export_name("get_choice_tags")))
+unsigned int get_choice_tags(unsigned int idx) { return (idx < g_choice_count) ? g_choices[idx].tags : 0u; }
+
+// Risk phase exports
+__attribute__((export_name("get_curse_count")))
+unsigned int get_curse_count() { return g_curse_count; }
+
+__attribute__((export_name("get_risk_multiplier")))
+float get_risk_multiplier() { return g_risk_multiplier; }
+
+__attribute__((export_name("escape_risk")))
+int escape_risk() {
+  if (g_phase != GamePhase::Risk) return 0;
+  if (attempt_risk_escape()) {
+    g_phase = GamePhase::Explore;
+    g_room_count++;  // Increment room count for early room spawn logic
+    return 1;
+  }
+  return 0;
+}
+
+__attribute__((export_name("trigger_risk_event")))
+void trigger_risk_event_export() {
+  trigger_risk_event();
+}
+
+__attribute__((export_name("trigger_escalation_event")))
+void trigger_escalation_event_export() {
+  trigger_escalation_event();
+}
+
+__attribute__((export_name("exit_cashout")))
+int exit_cashout() {
+  if (g_phase != GamePhase::CashOut) return 0;
+  g_phase = GamePhase::Explore;
+  g_wolf_kills_since_choice = 0;
+  g_room_count++;  // Increment room count for early room spawn logic
+  return 1;
+}
+
+__attribute__((export_name("get_timed_challenge_progress")))
+unsigned int get_timed_challenge_progress() { return g_timed_challenge_progress; }
+
+__attribute__((export_name("get_timed_challenge_target")))
+unsigned int get_timed_challenge_target() { return g_timed_challenge_target; }
+
+__attribute__((export_name("get_timed_challenge_remaining")))
+float get_timed_challenge_remaining() {
+  if (g_timed_challenge_end < 0.0f) return 0.0f;
+  float remaining = g_timed_challenge_end - g_time_seconds;
+  return remaining > 0.0f ? remaining : 0.0f;
+}
+
+// Additional Risk phase exports
+__attribute__((export_name("get_elite_active")))
+int get_elite_active() { return g_elite_active ? 1 : 0; }
+
+__attribute__((export_name("get_risk_event_count")))
+unsigned int get_risk_event_count() { return g_risk_event_count; }
+
+__attribute__((export_name("get_active_curse_count")))
+unsigned int get_active_curse_count() { return g_curse_count; }
+
+__attribute__((export_name("get_curse_type")))
+unsigned int get_curse_type(unsigned int index) {
+  if (index >= g_curse_count) return 0;
+  return (unsigned int)g_active_curses[index].type;
+}
+
+__attribute__((export_name("get_curse_intensity")))
+float get_curse_intensity(unsigned int index) {
+  if (index >= g_curse_count) return 0.0f;
+  return g_active_curses[index].intensity;
+}
+
+// Escalate phase exports
+__attribute__((export_name("get_escalation_level")))
+float get_escalation_level() { return g_escalation_level; }
+
+// Phase initialization exports
+__attribute__((export_name("init_risk_phase")))
+void init_risk_phase_export() { init_risk_phase(); }
+
+__attribute__((export_name("init_escalation_phase")))
+void init_escalation_phase_export() { init_escalation_phase(); }
+
+__attribute__((export_name("init_cashout_phase")))
+void init_cashout_phase_export() { init_cashout_phase(); }
+
+// Phase transition functions for testing/debugging
+__attribute__((export_name("force_phase_transition")))
+void force_phase_transition(unsigned int phase) {
+  if (phase > 7) return; // Invalid phase
+  g_phase = (GamePhase)phase;
+  
+  // Initialize the phase if needed
+  switch (g_phase) {
+    case GamePhase::Risk:
+      init_risk_phase();
+      trigger_risk_event();
+      break;
+    case GamePhase::Escalate:
+      init_escalation_phase();
+      trigger_escalation_event();
+      break;
+    case GamePhase::CashOut:
+      init_cashout_phase();
+      break;
+    case GamePhase::Choose:
+      generate_choices();
+      break;
+    default:
+      break;
+  }
+}
+
+__attribute__((export_name("generate_choices")))
+void generate_choices_export() {
+  generate_choices();
+}
+
+__attribute__((export_name("commit_choice")))
+int commit_choice(unsigned int choice_id) {
+  if (g_phase != GamePhase::Choose) return 0;
+  // verify exists
+  bool found = false;
+  for (unsigned int i = 0; i < g_choice_count; ++i) {
+    if (g_choices[i].id == choice_id) { found = true; break; }
+  }
+  if (!found) return 0;
+  
+  // Mark the choice as taken for exclusion system
+  mark_choice_taken(choice_id);
+  
+  // Apply choice effects based on type and tags
+  for (unsigned int i = 0; i < g_choice_count; ++i) {
+    if (g_choices[i].id == choice_id) {
+      // Apply effects based on rarity
+      float staminaBonus = 0.1f;
+      if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Uncommon) staminaBonus = 0.15f;
+      else if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Rare) staminaBonus = 0.2f;
+      else if (g_choices[i].rarity == (unsigned char)ChoiceRarity::Legendary) staminaBonus = 0.3f;
+      
+      g_stamina += staminaBonus;
+      if (g_stamina > 1.0f) g_stamina = 1.0f;
+      
+      // Apply specific effects based on tags from choices.h
+      unsigned int tags = g_choices[i].tags;
+      if (tags & TAG_STAMINA) { g_max_stamina += 0.1f; if (g_stamina > g_max_stamina) g_stamina = g_max_stamina; }
+      if (tags & TAG_SPEED) { g_speed_mult *= 1.2f; }
+      if (tags & TAG_DAMAGE) { g_attack_damage_mult *= 1.25f; }
+      if (tags & TAG_DEFENSE) { g_defense_mult *= 1.25f; }
+      if (tags & TAG_LIFESTEAL) { float nl = g_lifesteal + 0.15f; g_lifesteal = (nl > 0.6f) ? 0.6f : nl; }
+      if (tags & TAG_COOLDOWN) { /* reserved */ }
+      if (tags & TAG_TREASURE) { g_treasure_multiplier *= 1.5f; }
+      if (tags & TAG_BURN) { /* reserved elemental */ }
+      if (tags & TAG_FREEZE) { /* reserved elemental */ }
+      if (tags & TAG_LIGHTNING) { /* reserved elemental */ }
+      if (tags & TAG_POISON) { /* reserved elemental */ }
+      if (tags & TAG_TELEPORT) { /* reserved */ }
+      
+      break;
+    }
+  }
+  
+  g_phase = GamePhase::Explore;
+  g_choice_count = 0;
+  g_wolf_kills_since_choice = 0;
+  g_room_count++;  // Increment room count for early room spawn logic
+  return 1;
+}
+// Initialize/reset state
+__attribute__((export_name("start")))
+void start() {
+  g_pos_x = 0.5f;
+  g_pos_y = 0.5f;
+  g_vel_x = 0.f;
+  g_vel_y = 0.f;
+  g_stamina = 1.0f;
+  g_hp = 1.0f;
+  g_time_seconds = 0.f;
+}
+
+// Advance simulation by dt seconds with desired input vector in [-1,1]
+// If isRolling != 0, uses roll speed multiplier
+// This function performs collision with a vertical wall centered at x=0.5
+__attribute__((export_name("update")))
+void update(float dtSeconds) {
+  // Advance simulation clock deterministically
+  if (dtSeconds > 0.f) {
+    g_time_seconds += dtSeconds;
+  }
+  // Normalize input direction if needed
+  float len = g_input_x * g_input_x + g_input_y * g_input_y;
+  if (len > 0.f) {
+    // fast rsqrt approximation is unnecessary; use sqrt
+    len = __builtin_sqrtf(len);
+    g_input_x /= len;
+    g_input_y /= len;
+  }
+
+  const float speed = (BASE_SPEED * g_speed_mult) * (g_input_is_rolling ? ROLL_SPEED_MULTIPLIER : 1.f);
+  const float acceleration = PLAYER_ACCEL * dtSeconds;
+  const float friction = PLAYER_FRICTION * dtSeconds;
+
+  // Cache rolling flag for combat checks
+  g_is_rolling = g_input_is_rolling ? 1 : 0;
+
+  // Jump handling
+  if (g_input_is_jumping && g_is_grounded && g_jump_count == 0) {
+      g_vel_y = JUMP_POWER;
+      g_is_grounded = 0;
+      g_jump_count = 1;
+      g_player_anim_state = PlayerAnimState_Jumping;
+  } else if (g_input_is_jumping && g_jump_count == 1 && g_jump_count < MAX_JUMPS) {
+      // Double jump (simple implementation)
+      g_vel_y = JUMP_POWER * 0.8f;
+      g_jump_count = 2;
+      g_player_anim_state = PlayerAnimState_DoubleJumping;
+  }
+
+  // Apply gravity if not grounded
+  if (!g_is_grounded) {
+      g_vel_y += GRAVITY * dtSeconds;
+  }
+
+  // Roll start cost is handled by on_roll_start() to allow UI gating
+
+  // Release latch when time elapses
+  if (g_player_latched && g_time_seconds >= g_latch_end_time) {
+    g_player_latched = 0; g_latch_enemy_idx = -1;
+  }
+
+  // While holding block (and not rolling) or latched, target zero velocity
+  bool haltMovement = ((g_input_is_blocking && !g_is_rolling) || g_player_latched);
+
+  // Compute desired velocity from input
+  float desiredVX = haltMovement ? 0.f : (g_input_x * speed);
+  float desiredVY = haltMovement ? 0.f : (g_input_y * speed);
+
+  // Smoothly steer velocity toward desired
+  if (dtSeconds > 0.f) {
+    g_vel_x += (desiredVX - g_vel_x) * acceleration;
+    g_vel_y += (desiredVY - g_vel_y) * acceleration;
+    // Friction damping
+    float damp = 1.f - friction;
+    if (damp < 0.f) damp = 0.f;
+    g_vel_x *= damp;
+    g_vel_y *= damp;
+  }
+
+  // Hard clamp to current max speed budget (handles roll/non-roll caps)
+  {
+    float sp = vec_len(g_vel_x, g_vel_y);
+    if (sp > speed && sp > 0.f) {
+      float s = speed / sp;
+      g_vel_x *= s; g_vel_y *= s;
+    }
+  }
+
+  // If movement halted due to block/latch, zero horizontal velocity
+  if (haltMovement) { g_vel_x = 0.f; }
+
+  // Integrate and resolve collisions against world and enemies
+  float prevX = g_pos_x, prevY = g_pos_y;
+  float nextX = clamp01(g_pos_x + g_vel_x * dtSeconds);
+  float nextY = clamp01(g_pos_y + g_vel_y * dtSeconds);
+
+  // Resolve player-obstacle collisions
+  int was_grounded = g_is_grounded;
+  g_is_grounded = 0; // Assume not grounded until collision detection proves otherwise
+
+  for (int i = 0; i < g_obstacle_count; ++i) {
+      float ox = g_obstacles_x[i];
+      float oy = g_obstacles_y[i];
+      float oradius = g_obstacles_r[i];
+
+      float collision_result = resolve_circle_collision(g_pos_x, g_pos_y, PLAYER_RADIUS, nextX, nextY, ox, oy, oradius);
+
+      if (collision_result > 0.f) { // Collision occurred
+          // Simple vertical collision response for platforming
+          if (g_vel_y > 0 && (nextY + PLAYER_RADIUS) > (oy - oradius) && (prevY + PLAYER_RADIUS) <= (oy - oradius)) {
+              nextY = oy - oradius - PLAYER_RADIUS;
+              g_vel_y = 0;
+              g_is_grounded = 1;
+              g_jump_count = 0; // Reset jump count on landing
+              if (!was_grounded) {
+                  g_player_anim_state = PlayerAnimState_Landing;
+              }
+          } else { // Horizontal collision or hitting from below
+              g_vel_x = 0;
+              // Prevent sticking to walls when moving horizontally against them
+              if (fabs(nextX - prevX) > 0.0001f) {
+                  nextX = prevX;
+              }
+          }
+      }
+  }
+
+  resolve_player_enemy_collisions(g_pos_x, g_pos_y, nextX, nextY);
+  g_pos_x = nextX;
+  g_pos_y = nextY;
+
+  // Reconcile velocity to actual displacement to avoid post-collision drift
+  if (dtSeconds > 0.f) {
+    g_vel_x = (g_pos_x - prevX) / dtSeconds;
+    g_vel_y = (g_pos_y - prevY) / dtSeconds;
+  }
+
+  // If latched, drag player slightly towards latch enemy
+  if (g_player_latched && g_latch_enemy_idx >= 0 && g_latch_enemy_idx < (int)g_enemy_count && g_enemies[g_latch_enemy_idx].active) {
+    float dx = g_enemies[g_latch_enemy_idx].x - g_pos_x;
+    float dy = g_enemies[g_latch_enemy_idx].y - g_pos_y;
+    float d = vec_len(dx, dy);
+    if (d > 0.f) { dx /= d; dy /= d; }
+    const float dragStep = LATCH_DRAG_SPEED * dtSeconds;
+    float nx2 = clamp01(g_pos_x + dx * dragStep);
+    float ny2 = clamp01(g_pos_y + dy * dragStep);
+    resolve_obstacle_collision(g_pos_x, g_pos_y, nx2, ny2);
+    resolve_player_enemy_collisions(g_pos_x, g_pos_y, nx2, ny2);
+    g_pos_x = nx2;
+    g_pos_y = ny2;
+  }
+
+  // Update player facing from velocity when not blocking
+  if (!g_blocking) {
+    float fx = g_vel_x, fy = g_vel_y; normalize(fx, fy);
+    if (fx != 0.f || fy != 0.f) { g_face_x = fx; g_face_y = fy; }
+  }
+
+  // Stamina drain/regen
+  apply_stamina_and_block_update(dtSeconds);
+  
+  // Update hazards and apply effects
+  update_hazards(dtSeconds);
+  
+  // Apply hazard movement modifiers
+  float hazardSpeedMod = get_hazard_speed_modifier();
+  if (hazardSpeedMod < 1.0f) {
+    g_vel_x *= hazardSpeedMod;
+    g_vel_y *= hazardSpeedMod;
+  }
+
+  // Advance player attack state and resolve hits
+  if (dtSeconds > 0.f) {
+    if (g_attack_state == AttackState::Windup) {
+      if ((g_time_seconds - g_attack_state_time) >= ATTACK_WINDUP_SEC) {
+        g_attack_state = AttackState::Active;
+        g_attack_state_time = g_time_seconds;
+      }
+    } else if (g_attack_state == AttackState::Active) {
+      // During active, evaluate hits each frame; allow multi-hit across different enemies
+      for (int i = 0; i < (int)g_enemy_count; ++i) {
+        Enemy &e = g_enemies[i];
+        if (!e.active) continue;
+        if (e.health <= 0.f) continue;
+        float dx = e.x - g_pos_x;
+        float dy = e.y - g_pos_y;
+        float dist = vec_len(dx, dy);
+        if (dist <= 0.f || dist > ATTACK_RANGE) continue;
+        dx /= dist; dy /= dist;
+        float dot = dx * g_attack_dir_x + dy * g_attack_dir_y;
+        if (dot >= ATTACK_ARC_COS_THRESHOLD) {
+          // Apply damage and brief stun/knockback
+          float prevHealth = e.health;
+          float damage = ATTACK_DAMAGE * g_attack_damage_mult;
+          damage *= get_curse_modifier(CurseType::Weakness);
+          if (e.type == EnemyType::Wolf) { damage *= g_wolf_damage_mult; }
+          if (rng_float01() < g_crit_chance) { damage *= 2.0f; }
+          e.health -= damage;
+          if (e.health < 0.f) e.health = 0.f;
+          if (damage > 0.f && g_lifesteal > 0.f) { g_hp += damage * g_lifesteal; if (g_hp > 1.0f) g_hp = 1.0f; }
+          // Count wolf kills and trigger boon after 3 kills
+          if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {
+            g_wolf_kills_since_choice += 1u;
+            
+            // Award currency for defeating enemies
+            add_gold(10.0f + rng_float01() * 5.0f);
+            if (g_elite_active) {
+              add_essence(2.0f + rng_float01() * 2.0f);
+            }
+            
+            // Update timed challenge progress if active
+            if (g_timed_challenge_end > 0.0f && g_time_seconds < g_timed_challenge_end) {
+              g_timed_challenge_progress++;
+            }
+            
+            if ((g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) && g_wolf_kills_since_choice >= 3u) {
+              generate_choices();
+              g_phase = GamePhase::Choose;
+            }
+          }
+          e.feintEndTime = -1000.f; // cancel any feint
+          e.lungeEndTime = -1000.f; // cancel any lunge
+          // simple recover flag via state; wolf update may override but will respect cooldowns
+          e.vx += dx * ATTACK_KNOCKBACK;
+          e.vy += dy * ATTACK_KNOCKBACK;
+        }
+      }
+      if ((g_time_seconds - g_attack_state_time) >= ATTACK_ACTIVE_SEC) {
+        g_attack_state = AttackState::Recovery;
+        g_attack_state_time = g_time_seconds;
+      }
+    } else if (g_attack_state == AttackState::Recovery) {
+      if ((g_time_seconds - g_attack_state_time) >= ATTACK_RECOVERY_SEC) {
+        g_attack_state = AttackState::Idle;
+        g_attack_state_time = g_time_seconds;
+      }
+    }
+  }
+
+  // Remember rolling state for next frame
+  g_prev_is_rolling = g_is_rolling;
+
+  // ------------------------------------------------------------
+  // Enemies tick (deterministic; driven entirely by WASM state)
+  // ------------------------------------------------------------
+  if (dtSeconds > 0.f) {
+    // Advance player attack state timings
+    switch (g_attack_state) {
+      case AttackState::Windup:
+        if ((g_time_seconds - g_attack_state_time) >= ATTACK_WINDUP_SEC) {
+          g_attack_state = AttackState::Active;
+          g_attack_state_time = g_time_seconds;
+        }
+        break;
+      case AttackState::Active:
+        if ((g_time_seconds - g_attack_state_time) >= ATTACK_ACTIVE_SEC) {
+          g_attack_state = AttackState::Recovery;
+          g_attack_state_time = g_time_seconds;
+        }
+        break;
+      case AttackState::Recovery:
+        if ((g_time_seconds - g_attack_state_time) >= ATTACK_RECOVERY_SEC) {
+          g_attack_state = AttackState::Idle;
+          g_attack_state_time = g_time_seconds;
+        }
+        break;
+      case AttackState::Idle: default: break;
+    }
+    // Update scent field first (used by perception)
+    scent_step(dtSeconds);
+    // Update pack morale and track casualties
+    update_pack_morale_and_peak(dtSeconds);
+    // Expire dangers
+    for (int i = 0; i < (int)g_danger_count; ++i) {
+      if (g_time_seconds > g_dangers[i].expiresAt) {
+        int last = (int)g_danger_count - 1;
+        if (i <= last) {
+          g_dangers[i] = g_dangers[last];
+          if (g_danger_count > 0) g_danger_count--;
+        }
+      }
+    }
+    // Howl-based reinforcement spawns
+    maybe_handle_howl_spawns();
+    update_pack_controller();
+    enemy_tick_all(dtSeconds);
+  }
+  
+  // Risk phase management
+  if (g_phase == GamePhase::Risk) {
+    update_risk_phase(dtSeconds);
+    
+    // Check for timed challenge completion
+    if (g_timed_challenge_end > 0.0f && g_timed_challenge_progress >= g_timed_challenge_target) {
+      // Success! Grant bonus and exit risk phase
+      g_stamina = 1.0f; // Full stamina restore
+      g_phase = GamePhase::PowerUp;
+      g_timed_challenge_end = -1.0f;
+    }
+    
+    // Check if should transition to Escalate
+    if (g_risk_event_count == 0 && should_enter_escalation_phase()) {
+      g_phase = GamePhase::Escalate;
+      init_escalation_phase();
+      trigger_escalation_event();
+    }
+  } else if (g_phase == GamePhase::Escalate) {
+    // Escalate phase management
+    update_escalation_phase(dtSeconds);
+    
+    // Check if should transition to CashOut
+    if (should_enter_cashout_phase()) {
+      g_phase = GamePhase::CashOut;
+      init_cashout_phase();
+    }
+  } else if (g_phase == GamePhase::CashOut) {
+    // CashOut phase - waiting for player decisions
+    // Phase transitions are handled by export functions (buy_shop_item, etc.)
+    
+    // Exit cashout when player is done (could add a "leave shop" button)
+    // For now, exit after spending most currency
+    if (g_gold < 20.0f && g_essence < 3.0f) {
+      g_phase = GamePhase::Explore;
+      g_wolf_kills_since_choice = 0;
+      g_room_count++;  // Increment room count for early room spawn logic
+    }
+  } else if (g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) {
+    // Check if should enter risk phase
+    if (should_enter_risk_phase()) {
+      g_phase = GamePhase::Risk;
+      trigger_risk_event();
+    }
+  }
+  
+  // Apply curse modifiers to player stats
+  if (g_curse_count > 0) {
+    // Apply weakness curse to damage (handled in attack logic)
+    // Apply slowness curse to movement
+    float slowMod = get_curse_modifier(CurseType::Slowness);
+    g_vel_x *= slowMod;
+    g_vel_y *= slowMod;
+    
+    // Apply exhaustion curse to stamina regen (handled in stamina update)
+  }
+  
+  // Passive HP regeneration
+  if (dtSeconds > 0.f && g_hp_regen_per_sec > 0.f) {
+    g_hp += g_hp_regen_per_sec * dtSeconds;
+    if (g_hp > 1.0f) g_hp = 1.0f;
+  }
+
+  // Update player animation state
+  if (g_player_anim_state == PlayerAnimState_Jumping || g_player_anim_state == PlayerAnimState_DoubleJumping) {
+      // Stay in jumping/double jumping state until grounded
+      if (g_is_grounded) {
+          g_player_anim_state = PlayerAnimState_Landing; // Transition to landing if just hit ground
+      }
+  } else if (g_player_anim_state == PlayerAnimState_Landing) {
+      // Transition from landing to idle/running after a short duration or immediately
+      if (vec_len(g_vel_x, g_vel_y) > 0.01f) {
+          g_player_anim_state = PlayerAnimState_Running;
+      } else {
+          g_player_anim_state = PlayerAnimState_Idle;
+      }
+  } else if (g_input_is_rolling) {
+      g_player_anim_state = PlayerAnimState_Rolling;
+  } else if (g_input_is_attacking) {
+      g_player_anim_state = PlayerAnimState_Attacking;
+  } else if (g_input_is_blocking) {
+      g_player_anim_state = PlayerAnimState_Blocking;
+  } else if (vec_len(g_vel_x, g_vel_y) > 0.01f) {
+      g_player_anim_state = PlayerAnimState_Running;
+  } else {
+      g_player_anim_state = PlayerAnimState_Idle;
+  }
+
+  // Record state start time when state changes (for UI timing)
+  if (g_player_anim_state != g_prev_player_anim_state) {
+    g_player_state_start_time = g_time_seconds;
+    g_prev_player_anim_state = g_player_anim_state;
+  }
+
+  // Update UI animation overlay values last so they're coherent with current frame state
+  update_anim_overlay_internal();
+}
+
+// Position getters
+__attribute__((export_name("get_x")))
+float get_x() { return g_pos_x; }
+
+__attribute__((export_name("get_y")))
+float get_y() { return g_pos_y; }
+
+// New: Velocity getters
+__attribute__((export_name("get_vel_x")))
+float get_vel_x() { return g_vel_x; }
+
+__attribute__((export_name("get_vel_y")))
+float get_vel_y() { return g_vel_y; }
+
+// Stamina getters/consumers
+__attribute__((export_name("get_stamina")))
+float get_stamina() { return g_stamina; }
+
+// HP getter for UI HUD (0..1)
+__attribute__((export_name("get_hp")))
+float get_hp() { return g_hp; }
+
+// Get current biome
+__attribute__((export_name("get_current_biome")))
+unsigned int get_current_biome() { return (unsigned int)g_current_biome; }
+
+// New export for player animation state
+__attribute__((export_name("get_player_anim_state")))
+unsigned int get_player_anim_state() {
+    return (unsigned int)g_player_anim_state;
+}
+
+// New export for grounded state
+__attribute__((export_name("get_is_grounded")))
+unsigned int get_is_grounded() {
+    return g_is_grounded;
+}
+
+// New export for jump count
+__attribute__((export_name("get_jump_count")))
+unsigned int get_jump_count() {
+    return g_jump_count;
+}
+
+// Time since current player state started (seconds)
+__attribute__((export_name("get_player_state_timer")))
+float get_player_state_timer() {
+  if (g_player_state_start_time < 0.0f) return 0.0f;
+  float dt = g_time_seconds - g_player_state_start_time;
+  return dt < 0.0f ? 0.0f : dt;
+}
+
+// Current simulation clock (seconds)
+__attribute__((export_name("get_time_seconds")))
+float get_time_seconds() { return g_time_seconds; }
+
+// Attack state and timings for UI
+__attribute__((export_name("get_attack_state")))
+unsigned int get_attack_state() { return (unsigned int)g_attack_state; }
+
+__attribute__((export_name("get_attack_state_time")))
+float get_attack_state_time() { return g_attack_state_time; }
+
+__attribute__((export_name("get_attack_windup_sec")))
+float get_attack_windup_sec() { return ATTACK_WINDUP_SEC; }
+
+__attribute__((export_name("get_attack_active_sec")))
+float get_attack_active_sec() { return ATTACK_ACTIVE_SEC; }
+
+__attribute__((export_name("get_attack_recovery_sec")))
+float get_attack_recovery_sec() { return ATTACK_RECOVERY_SEC; }
+
+// Rolling/intangibility helpers
+__attribute__((export_name("get_is_rolling")))
+unsigned int get_is_rolling() { return g_is_rolling ? 1u : 0u; }
+
+__attribute__((export_name("get_is_invulnerable")))
+unsigned int get_is_invulnerable() {
+  // Currently, rolling grants i-frames; extend here if other sources are added
+  return g_is_rolling ? 1u : 0u;
+}
+
+// Current movement speed cap (units per second)
+__attribute__((export_name("get_speed")))
+float get_speed() {
+  float s = BASE_SPEED * g_speed_mult;
+  if (g_is_rolling) s *= ROLL_SPEED_MULTIPLIER;
+  return s;
+}
+
+// Optional: quick parry action helper (enters block with parry window)
+__attribute__((export_name("on_parry")))
+int on_parry() {
+  // Apply block start cost if starting fresh
+  if (!g_blocking) {
+    if (g_stamina < STAMINA_BLOCK_START_COST) return 0;
+    g_stamina -= STAMINA_BLOCK_START_COST;
+    if (g_stamina < 0.f) g_stamina = 0.f;
+  }
+  g_blocking = 1;
+  g_block_start_time = g_time_seconds;
+  // Face current facing direction
+  g_block_face_x = g_face_x;
+  g_block_face_y = g_face_y;
+  return 1;
+}
+
+// Apply attack stamina cost immediately. Returns 1 if applied, 0 if no stamina (still clamps to 0).
+__attribute__((export_name("on_attack")))
+int on_attack() {
+  // Enforce attack cooldown
+  if ((g_time_seconds - g_last_attack_time) < ATTACK_COOLDOWN_SEC) { return 0; }
+  if (g_stamina < STAMINA_ATTACK_COST) { return 0; }
+  g_stamina -= STAMINA_ATTACK_COST;
+  if (g_stamina < 0.f) g_stamina = 0.f;
+  g_last_attack_time = g_time_seconds;
+  // Start attack state machine if idle or recovery complete
+  if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
+    // Attack direction is player's current facing
+    g_attack_dir_x = g_face_x;
+    g_attack_dir_y = g_face_y;
+    normalize(g_attack_dir_x, g_attack_dir_y);
+    g_attack_state = AttackState::Windup;
+    g_attack_state_time = g_time_seconds;
+  }
+  return 1;
+}
+
+// Attempt to start a roll: consumes start cost if any stamina remains. Returns 1 if applied, 0 otherwise.
+__attribute__((export_name("on_roll_start")))
+int on_roll_start() {
+  // Enforce roll cooldown
+  if ((g_time_seconds - g_last_roll_time) < ROLL_COOLDOWN_SEC) { return 0; }
+  if (g_stamina < STAMINA_ROLL_START_COST) { return 0; }
+  g_stamina -= STAMINA_ROLL_START_COST;
+  if (g_stamina < 0.f) g_stamina = 0.f;
+  g_last_roll_time = g_time_seconds;
+  return 1;
+}
+
+// Set or clear blocking state and update facing direction.
+// on: 0 = off, non-zero = on. When transitioning 0->1, records start time for parry window.
+// Returns 1 if blocking state is active after this call, 0 if activation failed due to stamina
+__attribute__((export_name("set_blocking")))
+int set_blocking(int on, float faceX, float faceY) {
+  // normalize facing input
+  normalize(faceX, faceY);
+  if (on) {
+    if (!g_blocking) {
+      g_block_start_time = g_time_seconds;
+      // Apply block start cost once on press if any stamina remains
+      if (g_stamina < STAMINA_BLOCK_START_COST) {
+        // Not enough stamina to begin blocking
+        return 0;
+      }
+      g_stamina -= STAMINA_BLOCK_START_COST;
+      if (g_stamina < 0.f) g_stamina = 0.f;
+    }
+    g_blocking = 1;
+    // keep facing updated while holding block
+    g_block_face_x = faceX;
+    g_block_face_y = faceY;
+    // player facing follows block facing while blocking
+    g_face_x = faceX;
+    g_face_y = faceY;
+    return 1;
+  } else {
+    g_blocking = 0;
+    return 1;
+  }
+}
+
+// Returns current blocking state (1 = blocking, 0 = not blocking)
+__attribute__((export_name("get_block_state")))
+int get_block_state() { return g_blocking ? 1 : 0; }
+
+// Evaluate an incoming attack against current defensive state.
+// Returns:
+//  -1 => out of range / no effect (e.g., i-frames)
+//   0 => hit (no block)
+//   1 => normal block
+//   2 => PERFECT PARRY
+__attribute__((export_name("handle_incoming_attack")))
+int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, float attackDirY) {
+  // i-frames while rolling
+  if (g_is_rolling) return -1;
+
+  // Check range
+  float toSelfX = g_pos_x - attackerX;
+  float toSelfY = g_pos_y - attackerY;
+  float dist = vec_len(toSelfX, toSelfY);
+  if (dist > ATTACK_RANGE) return -1;
+  if (dist <= 0.f) return -1;
+  toSelfX /= dist; toSelfY /= dist;
+
+  // If blocking, determine facing adequacy
+  if (g_blocking) {
+    float faceDot = g_block_face_x * toSelfX + g_block_face_y * toSelfY;
+    int facingOk = (faceDot >= BLOCK_FACING_COS_THRESHOLD);
+    if (facingOk) {
+      const float dt = g_time_seconds - g_block_start_time;
+      if (dt >= 0.f && dt <= PERFECT_PARRY_WINDOW) {
+        // Perfect parry: fully restore player stamina
+        g_stamina = 1.0f;
+        return 2; // PERFECT PARRY
+      }
+    }
+    return 1; // normal block
+  }
+
+  // Not blocking => hit
+  return 0;
+}
+
+// -------- Data getters for UI-only consumption --------
+__attribute__((export_name("get_attack_cooldown")))
+float get_attack_cooldown() { return ATTACK_COOLDOWN_SEC; }
+
+__attribute__((export_name("get_roll_duration")))
+float get_roll_duration() { return ROLL_DURATION_SEC; }
+
+__attribute__((export_name("get_roll_cooldown")))
+float get_roll_cooldown() { return ROLL_COOLDOWN_SEC; }
+
+__attribute__((export_name("get_parry_window")))
+float get_parry_window() { return PERFECT_PARRY_WINDOW; }
+
+// Landmarks/exits getters
+__attribute__((export_name("get_obstacle_count")))
+unsigned int get_obstacle_count() { return (unsigned int)g_obstacle_count; }
+
+__attribute__((export_name("get_obstacle_x")))
+float get_obstacle_x(unsigned int idx) { return (idx < g_obstacle_count) ? g_obstacles_x[idx] : 0.f; }
+
+__attribute__((export_name("get_obstacle_y")))
+float get_obstacle_y(unsigned int idx) { return (idx < g_obstacle_count) ? g_obstacles_y[idx] : 0.f; }
+
+__attribute__((export_name("get_obstacle_r")))
+float get_obstacle_r(unsigned int idx) { return (idx < g_obstacle_count) ? g_obstacles_r[idx] : 0.f; }
+
+__attribute__((export_name("get_landmark_count")))
+unsigned int get_landmark_count() { return (unsigned int)g_landmark_count; }
+
+__attribute__((export_name("get_landmark_x")))
+float get_landmark_x(unsigned int idx) { return (idx < g_landmark_count) ? g_landmarks_x[idx] : 0.f; }
+
+__attribute__((export_name("get_landmark_y")))
+float get_landmark_y(unsigned int idx) { return (idx < g_landmark_count) ? g_landmarks_y[idx] : 0.f; }
+
+__attribute__((export_name("get_exit_count")))
+unsigned int get_exit_count() { return (unsigned int)g_exit_count; }
+
+__attribute__((export_name("get_exit_x")))
+float get_exit_x(unsigned int idx) { return (idx < g_exit_count) ? g_exits_x[idx] : 0.f; }
+
+__attribute__((export_name("get_exit_y")))
+float get_exit_y(unsigned int idx) { return (idx < g_exit_count) ? g_exits_y[idx] : 0.f; }
+
+// ---------------- Enemy snapshot + controls (UI reads snapshot; UI forwards environment inputs) ----------------
+__attribute__((export_name("get_player_latched")))
+int get_player_latched() { return g_player_latched ? 1 : 0; }
+__attribute__((export_name("get_enemy_count")))
+unsigned int get_enemy_count() { return (unsigned int)g_enemy_count; }
+
+__attribute__((export_name("get_enemy_x")))
+float get_enemy_x(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].x : 0.f; }
+
+__attribute__((export_name("get_enemy_y")))
+float get_enemy_y(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].y : 0.f; }
+
+__attribute__((export_name("get_enemy_type")))
+unsigned int get_enemy_type(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemies[idx].type : 0u; }
+
+__attribute__((export_name("get_enemy_state")))
+unsigned int get_enemy_state(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemies[idx].state : 0u; }
+
+// Environment inputs
+__attribute__((export_name("set_wind")))
+void set_wind(float windX, float windY) {
+  g_wind_x = windX; g_wind_y = windY;
+}
+
+__attribute__((export_name("post_sound")))
+void post_sound(float x, float y, float intensity) {
+  // Store in a small ring; decay/processing can be added per-enemy
+  const int cap = MAX_SOUND_PINGS;
+  const int idx = (int)g_sound_count % cap;
+  g_sounds[idx].x = clamp01(x);
+  g_sounds[idx].y = clamp01(y);
+  g_sounds[idx].intensity = intensity < 0.f ? 0.f : (intensity > 1.f ? 1.f : intensity);
+  g_sounds[idx].timeSeconds = g_time_seconds;
+  if (g_sound_count < MAX_SOUND_PINGS) g_sound_count++;
+}
+
+// Danger/den API (blackboard)
+__attribute__((export_name("post_danger")))
+void post_danger(float x, float y, float radius, float strength, float ttlSeconds) {
+  if (radius <= 0.f || strength <= 0.f || ttlSeconds <= 0.f) return;
+  int idx = (int)g_danger_count;
+  if (idx < MAX_DANGER_ZONES) {
+    g_dangers[idx].x = clamp01(x);
+    g_dangers[idx].y = clamp01(y);
+    g_dangers[idx].radius = radius;
+    g_dangers[idx].strength = strength < 0.f ? 0.f : (strength > 1.f ? 1.f : strength);
+    g_dangers[idx].expiresAt = g_time_seconds + ttlSeconds;
+    g_danger_count++;
+  } else {
+    int oldest = 0; float tmin = g_dangers[0].expiresAt;
+    for (int i = 1; i < MAX_DANGER_ZONES; ++i) if (g_dangers[i].expiresAt < tmin) { tmin = g_dangers[i].expiresAt; oldest = i; }
+    g_dangers[oldest].x = clamp01(x);
+    g_dangers[oldest].y = clamp01(y);
+    g_dangers[oldest].radius = radius;
+    g_dangers[oldest].strength = strength < 0.f ? 0.f : (strength > 1.f ? 1.f : strength);
+    g_dangers[oldest].expiresAt = g_time_seconds + ttlSeconds;
+  }
+}
+
+__attribute__((export_name("set_den")))
+void set_den(float x, float y, float radius) {
+  g_den_x = clamp01(x);
+  g_den_y = clamp01(y);
+  g_den_radius = (radius < 0.f) ? 0.f : radius;
+}
+
+// Debug getters for UI
+__attribute__((export_name("get_pack_morale")))
+float get_pack_morale() { return g_pack_morale; }
+
+__attribute__((export_name("get_enemy_fatigue")))
+float get_enemy_fatigue(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].fatigue : 0.f; }
+
+// Optional UI getters for debugging pack logic
+__attribute__((export_name("get_pack_plan")))
+unsigned int get_pack_plan() { return (unsigned int)g_pack_plan; }
+
+__attribute__((export_name("get_enemy_role")))
+unsigned int get_enemy_role(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? (unsigned int)g_enemy_roles[idx] : (unsigned int)PackRole::None; }
+
+// Debug/admin controls (optional)
+__attribute__((export_name("clear_enemies")))
+void clear_enemies() {
+  for (int i = 0; i < MAX_ENEMIES; ++i) g_enemies[i].active = 0;
+  g_enemy_count = 0;
+}
+
+// Spawn N wolves at pseudo-random positions (deterministic via g_rng). Returns number spawned.
+__attribute__((export_name("spawn_wolves")))
+unsigned int spawn_wolves(unsigned int count) {
+  unsigned int spawned = 0u;
+  const float MIN_SPAWN_DISTANCE = 0.55f; // Outside player view
+  const float MAX_SPAWN_DISTANCE = 0.85f;
+  
+  for (unsigned int i = 0; i < count; ++i) {
+    int idx = enemy_alloc_slot();
+    if (idx < 0) break;
+    
+    // Spawn wolves outside player's view in random directions
+    float angle = rng_float01() * 2.f * 3.14159f;
+    float spawnDist = MIN_SPAWN_DISTANCE + (MAX_SPAWN_DISTANCE - MIN_SPAWN_DISTANCE) * rng_float01();
+    float ex = clamp01(g_pos_x + cosf(angle) * spawnDist);
+    float ey = clamp01(g_pos_y + sinf(angle) * spawnDist);
+    enemy_activate(idx, EnemyType::Wolf, ex, ey);
+    spawned += 1u;
+  }
+  // Refresh roles quickly; pack controller also updates each frame in update().
+  update_pack_controller();
+  return spawned;
+}
+
+// -------- Animation overlay getters (UI reads for rendering only) --------
+__attribute__((export_name("get_anim_scale_x")))
+float get_anim_scale_x() { return g_anim_scale_x; }
+
+__attribute__((export_name("get_anim_scale_y")))
+float get_anim_scale_y() { return g_anim_scale_y; }
+
+__attribute__((export_name("get_anim_rotation")))
+float get_anim_rotation() { return g_anim_rotation; }
+
+__attribute__((export_name("get_anim_offset_x")))
+float get_anim_offset_x() { return g_anim_offset_x; }
+
+__attribute__((export_name("get_anim_offset_y")))
+float get_anim_offset_y() { return g_anim_offset_y; }
+
+__attribute__((export_name("get_anim_pelvis_y")))
+float get_anim_pelvis_y() { return g_anim_pelvis_y; }
+
+// -------- Wolf Animation Data Getters (UI reads for rendering only) --------
+__attribute__((export_name("get_wolf_anim_count")))
+unsigned int get_wolf_anim_count() { return g_enemy_count; }
+
+__attribute__((export_name("get_wolf_anim_active")))
+unsigned int get_wolf_anim_active(unsigned int idx) { return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].anim_data.active : 0u; }
+
+__attribute__((export_name("get_wolf_anim_leg_x")))
+float get_wolf_anim_leg_x(unsigned int wolf_idx, unsigned int leg_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active && leg_idx < 4) ? g_enemies[wolf_idx].anim_data.leg_x[leg_idx] : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_leg_y")))
+float get_wolf_anim_leg_y(unsigned int wolf_idx, unsigned int leg_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active && leg_idx < 4) ? g_enemies[wolf_idx].anim_data.leg_y[leg_idx] : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_spine_bend")))
+float get_wolf_anim_spine_bend(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.spine_bend : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_tail_angle")))
+float get_wolf_anim_tail_angle(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.tail_angle : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_head_pitch")))
+float get_wolf_anim_head_pitch(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.head_pitch : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_head_yaw")))
+float get_wolf_anim_head_yaw(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.head_yaw : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_ear_rotation")))
+float get_wolf_anim_ear_rotation(unsigned int wolf_idx, unsigned int ear_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active && ear_idx < 2) ? g_enemies[wolf_idx].anim_data.ear_rotation[ear_idx] : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_body_stretch")))
+float get_wolf_anim_body_stretch(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.body_stretch : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_body_offset_y")))
+float get_wolf_anim_body_offset_y(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.body_offset_y : 0.f; }
+
+__attribute__((export_name("get_wolf_anim_fur_ruffle")))
+float get_wolf_anim_fur_ruffle(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.fur_ruffle : 0.f; }

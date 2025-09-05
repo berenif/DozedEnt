@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Knight Sprite Sheet • 32×32 • 6×6</title>
+  <style>
+    body { margin: 20px; font-family: system-ui, Arial, sans-serif; }
+    canvas { border: 1px solid #ccc; }
+    button { padding: 8px 14px; margin: 8px 6px 0 0; }
+    label { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Knight Sprite Sheet (192×192)</h1>
+  <canvas id="sheet" width="192" height="192"></canvas><br/>
+  <button id="regen">Generate</button>
+  <button id="dl1x">Download 1×</button>
+  <button id="dl10x">Download 10×</button>
+  <label><input type="checkbox" id="grid" checked> Show grid</label>
+
+<script>
+const S = 32, COLS = 6, ROWS = 6;
+const sheet = document.getElementById('sheet');
+const cx = sheet.getContext('2d');
+
+// Palette
+const C = {
+  steel: '#c8c8c8', steel2: '#9a9a9a', steelHi: '#eeeeee',
+  clothR: '#c0392b', clothR2: '#e74c3c',
+  gold: '#dfa600', gold2: '#ffd45a',
+  blue: '#1f5c93', blue2: '#2f78bf',
+  leather: '#5c3a2a', wood: '#7a523b', wood2: '#5a3a29',
+  shadow: 'rgba(0,0,0,0.15)'
+};
+
+// Helpers
+const cell = (c,r)=>({x:c*S,y:r*S});
+function drawGrid() {
+  if (!document.getElementById('grid').checked) return;
+  cx.save(); cx.globalAlpha=.4; cx.strokeStyle='#cfcfcf';
+  for(let i=1;i<COLS;i++){cx.beginPath();cx.moveTo(i*S,0);cx.lineTo(i*S,ROWS*S);cx.stroke();}
+  for(let j=1;j<ROWS;j++){cx.beginPath();cx.moveTo(0,j*S);cx.lineTo(COLS*S,j*S);cx.stroke();}
+  cx.restore();
+}
+function rect(x,y,w,h,fill){ cx.fillStyle=fill; cx.fillRect(x|0,y|0,w|0,h|0); }
+function line(x1,y1,x2,y2,w,fill){
+  cx.save(); cx.strokeStyle=fill; cx.lineWidth=w; cx.beginPath(); cx.moveTo(x1,y1); cx.lineTo(x2,y2); cx.stroke(); cx.restore();
+}
+function circle(x,y,r,fill){
+  cx.save(); cx.fillStyle=fill; cx.beginPath(); cx.arc(x,y,r,0,Math.PI*2); cx.fill(); cx.restore();
+}
+
+// Draw the knight at tile origin (ox, oy) with a pose object
+function drawKnight(ox, oy, pose = {}) {
+  const {
+    bob=0, tilt=0, stride=0, arm=0,
+    swordA=0, shieldRaise=0, crownTilt=0, cape=0, crouch=0, flash=0
+  } = pose;
+
+  // Tile local space
+  cx.save();
+  cx.translate(ox+16, oy+16);
+  if (tilt) cx.rotate(tilt*Math.PI/180);
+  if (crouch) cx.translate(0, crouch);
+  cx.translate(0, bob);
+
+  // Ground shadow
+  rect(-12, 11, 24, 3, C.shadow);
+
+  // Back leg + boot
+  rect(-8+stride, 6, 5, 6, C.blue);
+  rect(-8+stride, 10, 5, 4, C.blue2);
+  rect(-9+stride, 12, 7, 3, C.clothR);
+
+  // Front leg + boot
+  rect(3-stride, 6, 5, 6, C.blue);
+  rect(3-stride, 10, 5, 4, C.blue2);
+  rect(2-stride, 12, 7, 3, C.clothR);
+
+  // Torso armor
+  rect(-7, -3, 14, 11, C.steel);
+  rect(-7, 4, 14, 1, C.steel2);
+  rect(-7, -3, 14, 1, C.steelHi);
+
+  // Red tabard
+  rect(-2, -3, 4, 12, C.clothR);
+  rect(-2, 6, 4, 2, C.clothR2);
+
+  // Belt
+  rect(-7, 3, 14, 2, C.leather);
+  rect(-1, 3, 2, 2, C.gold);
+
+  // Left arm holding shield
+  rect(-10, -1, 4, 6, C.blue);
+  // Shield (raised by shieldRaise)
+  cx.save();
+  cx.translate(-14, -2-shieldRaise);
+  circle(0, 6, 7, C.wood);
+  circle(0, 6, 5.5, C.wood2);
+  circle(0, 6, 3, C.wood);
+  cx.restore();
+
+  // Right arm with sword swing
+  rect(8, -1, 4, 6, C.blue);
+
+  // Shoulder plates
+  rect(-8, -3, 4, 3, C.steel);
+  rect(4, -3, 4, 3, C.steel);
+
+  // Cape (simple flicker offset)
+  rect(-12, -2+cape, 8, 2, C.clothR);
+  rect(-13, 0+cape, 6, 2, C.clothR2);
+
+  // Helmet + visor
+  rect(-8, -10, 16, 7, C.steel);
+  rect(-8, -10, 16, 1, C.steelHi);
+  rect(-7, -6, 14, 3, C.steel2); // visor bar
+  // visor slits
+  for(let i=-5;i<=5;i+=2) rect(i, -6, 1, 3, '#333');
+
+  // Crown with tiny tilt
+  cx.save();
+  cx.translate(0, -10);
+  cx.rotate(crownTilt*Math.PI/180);
+  rect(-7, -6, 14, 3, C.gold);
+  for(let i=-6;i<=6;i+=4){ circle(i, -6, 2, C.gold2); rect(i-1, -8, 2, 3, C.gold); }
+  cx.restore();
+
+  // Sword: rotate at hand
+  cx.save();
+  cx.translate(10, -1+arm);
+  cx.rotate((swordA)*Math.PI/180);
+  // hilt
+  rect(-1, 0, 6, 2, C.gold);
+  rect(0, -1, 2, 3, C.gold2);
+  // blade
+  rect(2, -8, 2, 14, C.steel);
+  rect(2, -8, 2, 1, C.steelHi); // tip highlight
+  // optional slash smear
+  if (Math.abs(swordA) > 15) line(6, -6, 12, -2, 1, 'rgba(255,255,255,.4)');
+  cx.restore();
+
+  // Optional damage flash
+  if (flash) { cx.globalAlpha = 0.2; rect(-16,-16,32,32,'#ff4444'); }
+
+  cx.restore();
+}
+
+// State composers: always 6 frames
+const states = [
+  // Row 0: Idle
+  (i)=>({ bob:[0,1,0,0,1,0][i], crownTilt:[-2,0,2,1,0,-1][i], cape:[0,1,0,1,0,1][i], swordA:[-5,-3,-5,-4,-3,-4][i] }),
+  // Row 1: Run
+  (i)=>({ bob:[0,1,0,1,0,1][i], stride:[2,1,0,-1,-2,-1][i], arm:[-1,0,1,0,-1,0][i], swordA:[-10,-5,0,5,10,5][i] }),
+  // Row 2: Attack
+  (i)=>({ bob:[0,0,0,0,0,0][i], swordA:[-10,10,28,18,6,0][i], arm:[0,0,0,0,0,0][i] }),
+  // Row 3: Block
+  (i)=>({ shieldRaise:[2,3,4,4,3,2][i], bob:[0,0,0,0,0,0][i], swordA:[-6,-4,-2,-2,-4,-6][i] }),
+  // Row 4: Roll
+  (i)=>({ tilt:[0,60,120,180,240,300][i], crouch:2, bob:0 }),
+  // Row 5: Hurt
+  (i)=>({ tilt:[-10,-6,-2,0,-2,-4][i], bob:[0,1,2,1,0,1][i], flash:[1,1,0,1,0,0][i] })
+];
+
+function generate() {
+  cx.clearRect(0,0,sheet.width,sheet.height);
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const {x,y}=cell(c,r);
+      const pose = states[r](c);
+      drawKnight(x,y,pose);
+    }
+  }
+  drawGrid();
+}
+
+function download(scale=1){
+  const out=document.createElement('canvas');
+  out.width=sheet.width*scale; out.height=sheet.height*scale;
+  const ox=out.getContext('2d');
+  ox.imageSmoothingEnabled=false; // crisp pixels
+  ox.drawImage(sheet,0,0,out.width,out.height);
+  const a=document.createElement('a');
+  a.download = scale===1 ? 'knight_192.png' : 'knight_1920.png';
+  a.href = out.toDataURL('image/png'); a.click();
+}
+
+// UI
+document.getElementById('regen').onclick=generate;
+document.getElementById('dl1x').onclick=()=>download(1);
+document.getElementById('dl10x').onclick=()=>download(10);
+document.getElementById('grid').onchange=generate;
+
+// first render
+generate();
+</script>
+</body>
+</html>

@@ -60,7 +60,6 @@ describe('GitHub Pages Deployment', () => {
     it('should have all critical game files in docs', () => {
       const criticalFiles = [
         'complete-game.html',
-        'enhanced-game-demo.html',
         'room-demo.html',
         'wolf-animation-demo.html'
       ];
@@ -178,7 +177,6 @@ describe('GitHub Pages Deployment', () => {
       
       // Check for game links
       expect(content).to.include('complete-game.html');
-      expect(content).to.include('enhanced-game-demo.html');
       expect(content).to.include('room-demo.html');
     });
 

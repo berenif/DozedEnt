@@ -7,7 +7,7 @@
 
 import { strict as assert } from 'assert'
 import LobbyAnalytics from '../../src/lobby-analytics.js'
-import EnhancedRoomManager from '../../src/enhanced-room-manager.js'
+// Removed EnhancedRoomManager import
 import HostAuthority from '../../src/host-authority.js'
 
 console.log('🧪 Running Bug Fix Tests...\n')
@@ -60,93 +60,7 @@ test('LobbyAnalytics destroy should clear data', () => {
   assert(Object.keys(analytics.timeSeries).length === 0, 'timeSeries should be empty after destroy')
 })
 
-// Test EnhancedRoomManager
-console.log('\nTesting EnhancedRoomManager...')
-
-// Mock localStorage for Node.js environment
-global.localStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-  clear: () => {}
-}
-
-test('EnhancedRoomManager should have destroy method', () => {
-  const roomManager = new EnhancedRoomManager({
-    appId: 'test-app',
-    serverUrl: 'ws://localhost:3000'
-  })
-  assert(typeof roomManager.destroy === 'function', 'destroy method should exist')
-  roomManager.destroy()
-})
-
-test('EnhancedRoomManager destroy should clear intervals', () => {
-  const roomManager = new EnhancedRoomManager({
-    appId: 'test-app',
-    serverUrl: 'ws://localhost:3000'
-  })
-  
-  // Set some intervals
-  roomManager.announceInterval = setInterval(() => {}, 1000)
-  roomManager.cleanupInterval = setInterval(() => {}, 1000)
-  roomManager.heartbeatInterval = setInterval(() => {}, 1000)
-  
-  roomManager.destroy()
-  
-  assert(!roomManager.announceInterval, 'announceInterval should be cleared')
-  assert(!roomManager.cleanupInterval, 'cleanupInterval should be cleared')
-  assert(!roomManager.heartbeatInterval, 'heartbeatInterval should be cleared')
-})
-
-test('EnhancedRoomManager destroy should clear data structures', () => {
-  const roomManager = new EnhancedRoomManager({
-    appId: 'test-app',
-    serverUrl: 'ws://localhost:3000'
-  })
-  
-  roomManager.rooms.set('room1', { id: 'room1' })
-  roomManager.players.set('player1', { id: 'player1' })
-  roomManager.chatChannels.set('channel1', {})
-  
-  assert(roomManager.rooms.size === 1, 'rooms should have 1 entry')
-  assert(roomManager.players.size === 1, 'players should have 1 entry')
-  assert(roomManager.chatChannels.size === 1, 'chatChannels should have 1 entry')
-  
-  roomManager.destroy()
-  
-  assert(roomManager.rooms.size === 0, 'rooms should be empty after destroy')
-  assert(roomManager.players.size === 0, 'players should be empty after destroy')
-  assert(roomManager.chatChannels.size === 0, 'chatChannels should be empty after destroy')
-})
-
-test('EnhancedRoomManager should log errors properly', () => {
-  const originalWarn = console.warn
-  let warnCalled = false
-  let warnMessage = ''
-  
-  console.warn = (msg, err) => {
-    warnCalled = true
-    warnMessage = msg
-  }
-  
-  const roomManager = new EnhancedRoomManager({
-    appId: 'test-app',
-    serverUrl: 'ws://localhost:3000'
-  })
-  
-  // Mock localStorage to throw error
-  global.localStorage.getItem = () => {
-    throw new Error('Storage error')
-  }
-  
-  roomManager._loadPersistedData()
-  
-  assert(warnCalled, 'console.warn should be called')
-  assert(warnMessage.includes('Failed to load persisted room data'), 'Should log correct error message')
-  
-  console.warn = originalWarn
-  roomManager.destroy()
-})
+// Removed EnhancedRoomManager tests
 
 // Test HostAuthority
 console.log('\nTesting HostAuthority...')

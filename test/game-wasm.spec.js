@@ -108,4 +108,90 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
   expect(result.phaseAfterCommit).toBe(0) // Explore
 })
 
+test('Game WASM: player anim/state timers and overlay exports exist and behave', async ({page}) => {
+  await page.goto(testUrl)
+
+  // Load wasm helpers
+  await page.evaluate(async path => {
+    window.trysteroWasm = await import(path)
+  }, '../dist/trystero-wasm.min.js')
+
+  const result = await page.evaluate(async () => {
+    const {loadWasm} = window.trysteroWasm
+    const res = await fetch('../docs/game.wasm')
+    const {exports} = await loadWasm(res)
+    const api = exports
+
+    api.init_run(123n, 0)
+
+    // Basic existence
+    const has = {
+      get_player_anim_state: typeof api.get_player_anim_state === 'function',
+      get_player_state_timer: typeof api.get_player_state_timer === 'function',
+      get_time_seconds: typeof api.get_time_seconds === 'function',
+      get_attack_state: typeof api.get_attack_state === 'function',
+      get_attack_state_time: typeof api.get_attack_state_time === 'function',
+      get_attack_windup_sec: typeof api.get_attack_windup_sec === 'function',
+      get_attack_active_sec: typeof api.get_attack_active_sec === 'function',
+      get_attack_recovery_sec: typeof api.get_attack_recovery_sec === 'function',
+      get_is_rolling: typeof api.get_is_rolling === 'function',
+      get_is_invulnerable: typeof api.get_is_invulnerable === 'function',
+      get_speed: typeof api.get_speed === 'function'
+    }
+
+    // Let a few frames pass idle
+    for (let i = 0; i < 5; i++) api.update(1/60)
+
+    const s0 = api.get_player_anim_state()
+    const t0 = api.get_player_state_timer()
+    const time0 = api.get_time_seconds()
+
+    // Start a roll if possible and step during roll window
+    const acceptedRoll = api.on_roll_start()
+    api.set_player_input(1, 0, 1, 0, 0, 0)
+    for (let i = 0; i < 4; i++) api.update(1/60)
+    const rolling = api.get_is_rolling()
+    const invuln = api.get_is_invulnerable()
+    const speedCap = api.get_speed()
+    const s1 = api.get_player_anim_state()
+    const t1 = api.get_player_state_timer()
+
+    // Attack path: fast-forward cooldown, then start an attack and sample timings
+    const cd = api.get_attack_cooldown()
+    api.update(cd + 0.01)
+    const acceptedAtk = api.on_attack()
+    // Advance into attack windup a bit
+    api.update(1/30)
+    const aState = api.get_attack_state()
+    const aStateTime = api.get_attack_state_time()
+
+    return {
+      has,
+      s0, t0, time0,
+      acceptedRoll, rolling, invuln, speedCap, s1, t1,
+      acceptedAtk, aState, aStateTime
+    }
+  })
+
+  // Exports present
+  Object.entries(result.has).forEach(([k, v]) => expect(v, `missing ${k}`).toBe(true))
+
+  // State timer increases with time
+  expect(result.t0).toBeGreaterThanOrEqual(0)
+
+  // On roll, rolling flag toggles and invulnerability follows
+  if (result.acceptedRoll) {
+    expect(result.rolling).toBe(1)
+    expect(result.invuln).toBe(1)
+    expect(result.s1).toBeGreaterThanOrEqual(0)
+    expect(result.t1).toBeGreaterThanOrEqual(0)
+  }
+
+  // Attack state should become non-idle if accepted
+  if (result.acceptedAtk) {
+    expect(result.aState).not.toBe(0)
+    expect(result.aStateTime).toBeGreaterThanOrEqual(0)
+  }
+})
+
 

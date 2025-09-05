@@ -3,8 +3,16 @@ import terser from '@rollup/plugin-terser'
 
 const ecma = 2019
 
+const ignoreCodes = new Set(['THIS_IS_UNDEFINED'])
+const onwarn = (warning, warn) => {
+  if (ignoreCodes.has(warning.code)) return
+  warn(warning)
+}
+
 export default {
-  input: 'src/player-animator.js',
+  onwarn,
+  context: 'globalThis',
+  input: 'src/animation/player-animator.js',
   output: [
     {
       file: 'dist/player-animator.js',
@@ -37,16 +45,16 @@ export default {
     {
       file: 'dist/player-animator.umd.js',
       format: 'umd',
+      exports: 'named',
       name: 'AnimatedPlayer',
       sourcemap: true
     }
   ],
-  plugins: [
-    resolve({browser: true, preferBuiltins: false})
-  ],
+  plugins: [resolve({browser: true, preferBuiltins: false})],
   external: [
-    './animation-system.js',
     './sound-system.js',
     './particle-system.js'
   ]
 }
+
+

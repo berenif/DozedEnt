@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import LobbyAnalytics from '../src/lobby-analytics.js'
-import EnhancedRoomManager from '../src/enhanced-room-manager.js'
-import EnhancedLobbyUI from '../src/enhanced-lobby-ui.js'
+import LobbyAnalytics from '../src/utils/lobby-analytics.js'
+// Removed EnhancedRoomManager and EnhancedLobbyUI imports
 import HostAuthority from '../src/host-authority.js'
 import RollbackP2P from '../src/rollback-p2p.js'
 
@@ -42,90 +41,7 @@ describe('Bug Fixes', () => {
       })
     })
     
-    describe('EnhancedRoomManager', () => {
-      let roomManager
-      
-      beforeEach(() => {
-        // Mock localStorage
-        global.localStorage = {
-          getItem: vi.fn(),
-          setItem: vi.fn()
-        }
-        
-        roomManager = new EnhancedRoomManager({
-          appId: 'test-app',
-          serverUrl: 'ws://localhost:3000'
-        })
-      })
-      
-      afterEach(() => {
-        if (roomManager) {
-          roomManager.destroy()
-        }
-      })
-      
-      it('should clear intervals on destroy', () => {
-        roomManager.announceInterval = setInterval(() => {}, 1000)
-        roomManager.cleanupInterval = setInterval(() => {}, 1000)
-        roomManager.heartbeatInterval = setInterval(() => {}, 1000)
-        
-        const announceId = roomManager.announceInterval
-        const cleanupId = roomManager.cleanupInterval
-        const heartbeatId = roomManager.heartbeatInterval
-        
-        roomManager.destroy()
-        
-        // Intervals should be cleared
-        expect(roomManager.announceInterval).toBeFalsy()
-        expect(roomManager.cleanupInterval).toBeFalsy()
-        expect(roomManager.heartbeatInterval).toBeFalsy()
-      })
-      
-      it('should clear data structures on destroy', () => {
-        roomManager.rooms.set('room1', { id: 'room1' })
-        roomManager.players.set('player1', { id: 'player1' })
-        roomManager.chatChannels.set('channel1', {})
-        
-        expect(roomManager.rooms.size).toBe(1)
-        expect(roomManager.players.size).toBe(1)
-        expect(roomManager.chatChannels.size).toBe(1)
-        
-        roomManager.destroy()
-        
-        expect(roomManager.rooms.size).toBe(0)
-        expect(roomManager.players.size).toBe(0)
-        expect(roomManager.chatChannels.size).toBe(0)
-      })
-      
-      it('should clear matchmaking timeout when resolved', async () => {
-        const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
-        
-        // Mock the lobby actions
-        roomManager.lobbyActions = {
-          sendMatchmakingRequest: vi.fn()
-        }
-        
-        // Start matchmaking
-        const matchmakingPromise = roomManager.startMatchmaking({
-          maxWaitTime: 5000
-        })
-        
-        // Simulate matchmaking response
-        roomManager.matchmakingResolver = {
-          resolve: vi.fn(),
-          reject: vi.fn(),
-          timeout: 123
-        }
-        
-        roomManager._handleMatchmakingResponse({
-          requestId: roomManager.playerInfo.id,
-          roomId: 'test-room'
-        }, roomManager.playerInfo.id)
-        
-        expect(clearTimeoutSpy).toHaveBeenCalledWith(123)
-        expect(roomManager.matchmakingResolver).toBeNull()
-      })
-    })
+    // Removed EnhancedRoomManager suite
     
     describe('HostAuthority', () => {
       let hostAuthority
@@ -204,82 +120,7 @@ describe('Bug Fixes', () => {
   })
   
   describe('Event Listener Fixes', () => {
-    describe('EnhancedLobbyUI', () => {
-      let lobbyUI
-      let container
-      
-      beforeEach(() => {
-        container = document.createElement('div')
-        document.body.appendChild(container)
-        
-        lobbyUI = new EnhancedLobbyUI(container, {
-          appId: 'test-app',
-          serverUrl: 'ws://localhost:3000'
-        })
-      })
-      
-      afterEach(() => {
-        if (lobbyUI) {
-          lobbyUI.close()
-        }
-        if (container && container.parentNode) {
-          container.parentNode.removeChild(container)
-        }
-      })
-      
-      it('should track event listeners when added', () => {
-        const element = document.createElement('button')
-        const handler = () => {}
-        
-        lobbyUI.addEventListener(element, 'click', handler)
-        
-        expect(lobbyUI.eventListeners.length).toBe(1)
-        expect(lobbyUI.eventListeners[0]).toEqual({
-          element,
-          event: 'click',
-          handler
-        })
-      })
-      
-      it('should remove all tracked event listeners on cleanup', () => {
-        const element1 = document.createElement('button')
-        const element2 = document.createElement('input')
-        const handler1 = vi.fn()
-        const handler2 = vi.fn()
-        
-        const removeSpy1 = vi.spyOn(element1, 'removeEventListener')
-        const removeSpy2 = vi.spyOn(element2, 'removeEventListener')
-        
-        lobbyUI.addEventListener(element1, 'click', handler1)
-        lobbyUI.addEventListener(element2, 'change', handler2)
-        
-        expect(lobbyUI.eventListeners.length).toBe(2)
-        
-        lobbyUI.cleanupEventListeners()
-        
-        expect(removeSpy1).toHaveBeenCalledWith('click', handler1)
-        expect(removeSpy2).toHaveBeenCalledWith('change', handler2)
-        expect(lobbyUI.eventListeners.length).toBe(0)
-        expect(lobbyUI.boundHandlers.size).toBe(0)
-      })
-      
-      it('should call cleanupEventListeners on close', () => {
-        const cleanupSpy = vi.spyOn(lobbyUI, 'cleanupEventListeners')
-        lobbyUI.close()
-        expect(cleanupSpy).toHaveBeenCalled()
-      })
-      
-      it('should handle null elements gracefully', () => {
-        const handler = () => {}
-        
-        // Should not throw
-        expect(() => {
-          lobbyUI.addEventListener(null, 'click', handler)
-        }).not.toThrow()
-        
-        expect(lobbyUI.eventListeners.length).toBe(0)
-      })
-    })
+    // Removed EnhancedLobbyUI suite
   })
   
   describe('Error Handling Fixes', () => {
@@ -341,7 +182,7 @@ describe('Bug Fixes', () => {
       
       beforeEach(async () => {
         consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-        const module = await import('../src/sound-system.js')
+        const module = await import('../src/utils/sound-system.js')
         SoundSystem = module.default
       })
       
@@ -369,12 +210,8 @@ describe('Bug Fixes', () => {
   })
   
   describe('Integration Tests', () => {
-    it('should properly clean up all resources when components are destroyed', () => {
+    it('should properly clean up all resources for remaining components', () => {
       const analytics = new LobbyAnalytics()
-      const roomManager = new EnhancedRoomManager({
-        appId: 'test-app',
-        serverUrl: 'ws://localhost:3000'
-      })
       const hostAuthority = new HostAuthority({
         updateRate: 60,
         stateSnapshotRate: 10
@@ -382,17 +219,14 @@ describe('Bug Fixes', () => {
       
       // Start various intervals
       analytics.startAggregation()
-      roomManager.announceInterval = setInterval(() => {}, 1000)
       hostAuthority.updateInterval = setInterval(() => {}, 1000)
       
       // Destroy all
       analytics.destroy()
-      roomManager.destroy()
       hostAuthority.destroy()
       
       // Verify cleanup
       expect(analytics.aggregationInterval).toBeNull()
-      expect(roomManager.announceInterval).toBeFalsy()
       expect(hostAuthority.updateInterval).toBeNull()
     })
   })

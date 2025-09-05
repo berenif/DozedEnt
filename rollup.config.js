@@ -6,7 +6,16 @@ import terser from '@rollup/plugin-terser'
 const ecma = 2019
 const nodeEnv = '"production"'
 
-const config = {
+const ignoreCodes = new Set(['THIS_IS_UNDEFINED', 'CIRCULAR_DEPENDENCY'])
+
+const onwarn = (warning, warn) => {
+  if (ignoreCodes.has(warning.code)) return
+  warn(warning)
+}
+
+const baseConfig = {
+  onwarn,
+  context: 'globalThis',
   output: {
     compact: true,
     format: 'es',
@@ -39,13 +48,15 @@ const config = {
   ]
 }
 
-export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent', 'wasm'].map(
+export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent'].map(
   name => ({
-    ...config,
-    input: `src/${name}.js`,
+    ...baseConfig,
+    input: `src/netcode/${name}.js`,
     output: {
-      ...config.output,
+      ...baseConfig.output,
       file: `dist/trystero-${name}.min.js`
     }
   })
 )
+
+
