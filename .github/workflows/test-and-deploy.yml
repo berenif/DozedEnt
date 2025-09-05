@@ -86,39 +86,39 @@ jobs:
         run: |
           echo "🔍 Starting GitHub Pages validation..."
           echo "📁 Current directory: $(pwd)"
-          echo "📋 Contents of docs folder:"
-          ls -la docs/
+          echo "📋 Contents of root folder:"
+          ls -la
           echo ""
-          echo "📦 Contents of docs/dist folder:"
-          ls -la docs/dist/ || echo "dist folder not found"
+          echo "📦 Contents of dist folder:"
+          ls -la dist/ || echo "dist folder not found"
           echo ""
           echo "🚀 Running validation script..."
           node scripts/validate-github-pages.js
         
       - name: Check critical files
         run: |
-          echo "Checking docs folder structure..."
-          if [ ! -f "docs/index.html" ]; then
-            echo "Error: docs/index.html missing!"
+          echo "Checking root folder structure..."
+          if [ ! -f "index.html" ]; then
+            echo "Error: index.html missing!"
             exit 1
           fi
-          if [ ! -f "docs/.nojekyll" ]; then
-            echo "Error: docs/.nojekyll missing!"
+          if [ ! -f ".nojekyll" ]; then
+            echo "Error: .nojekyll missing!"
             exit 1
           fi
-          if [ ! -d "docs/dist" ]; then
-            echo "Error: docs/dist folder missing!"
+          if [ ! -d "dist" ]; then
+            echo "Error: dist folder missing!"
             exit 1
           fi
           echo "✅ All critical files present"
           
-      - name: List docs contents
+      - name: List deployment contents
         run: |
-          echo "📁 Docs folder contents:"
-          ls -la docs/
+          echo "📁 Root folder contents:"
+          ls -la
           echo ""
-          echo "📦 Docs/dist contents:"
-          ls -la docs/dist/ | head -20
+          echo "📦 Dist contents:"
+          ls -la dist/ | head -20
           
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
-          path: './docs'
+          path: '.'
 
   # Deployment job (only on main branch)
   deploy:
