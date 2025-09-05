@@ -74,6 +74,7 @@
     "predeploy": "npm run build:docs && npm run validate:github-pages",
     "wasm:build": "em++ src/wasm/game.cpp -O3 -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o game.wasm",
     "get-bundle-sizes": "node scripts/get-bundle-sizes.js",
+    "lint": "npx eslint src/ test/",
     "test": "playwright test ./test",
     "test-proxy": "PROXY=$(node scripts/find-proxy.js) npm run test",
     "test-ice": "node scripts/test-ice.js",
