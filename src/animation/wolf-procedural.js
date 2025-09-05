@@ -351,7 +351,7 @@ function updateHighLevelState(comp, dt) {
 		comp.stateBlendDur = clamp(baseDur * emotionalFactor * intelligenceFactor, 0.08, 0.3)
 	}
 	if (comp.stateBlendT < 1) {
-		comp.stateBlendT = Math.min(1, comp.stateBlendT + dt / Math.max(0.001, comp.stateBlendDur))
+		comp.stateBlendT = Math.min(1, comp.stateBlendT + dt / Math.max(0.001, comp.stateBlendDur || 0.1))
 	}
 }
 

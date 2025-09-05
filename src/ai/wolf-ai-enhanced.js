@@ -213,7 +213,7 @@ export class WolfVocalizationSystem {
     update() {
         const now = Date.now()
         this.activeVocalizations = this.activeVocalizations.filter(
-            v => now - v.startTime < v.duration
+            v => now - v.startTime < (v.duration || 1000)
         )
     }
     
@@ -225,6 +225,10 @@ export class WolfVocalizationSystem {
     
     // Calculate distance between two positions
     getDistance(pos1, pos2) {
+        if (!pos1 || !pos2 || typeof pos1.x !== 'number' || typeof pos1.y !== 'number' || 
+            typeof pos2.x !== 'number' || typeof pos2.y !== 'number') {
+            return Infinity // Return large distance if positions are invalid
+        }
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
         return Math.sqrt(dx * dx + dy * dy)
@@ -233,7 +237,7 @@ export class WolfVocalizationSystem {
     // Render vocalization indicators
     render(ctx, camera) {
         this.activeVocalizations.forEach(vocal => {
-            const progress = (Date.now() - vocal.startTime) / vocal.duration
+            const progress = (Date.now() - vocal.startTime) / Math.max(1, vocal.duration || 1000)
             const opacity = 1 - progress
             
             // Draw expanding rings for vocalizations

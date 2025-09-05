@@ -48,10 +48,10 @@ const baseConfig = {
   ]
 }
 
-export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent'].map(
+export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent', 'wasm'].map(
   name => ({
     ...baseConfig,
-    input: `src/netcode/${name}.js`,
+    input: name === 'wasm' ? `src/utils/${name}.js` : `src/netcode/${name}.js`,
     output: {
       ...baseConfig.output,
       file: `dist/trystero-${name}.min.js`

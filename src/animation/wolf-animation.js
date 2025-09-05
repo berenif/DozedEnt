@@ -422,7 +422,9 @@ export class WolfAnimationSystem {
         const wolfIndex = wolf.id; // Assuming wolf.id corresponds to WASM enemy array index
         if (!this.wasmModule.get_wolf_anim_active(wolfIndex)) { return } // Only animate active wolves
 
-        const time = g_time_seconds;
+        const time = (typeof globalThis.wasmExports?.get_time_seconds === 'function') 
+            ? globalThis.wasmExports.get_time_seconds() 
+            : performance.now() / 1000;
         const state = wolf.state;
         const animation = this.animations.get(state);
         

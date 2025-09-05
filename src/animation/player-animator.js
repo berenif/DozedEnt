@@ -516,7 +516,7 @@ export class AnimatedPlayer {
     }
     
     setState(newState, wasmDriven = false) { // Added wasmDriven parameter
-        if (this.state === newState && !wasmDriven) {return} // Only prevent change if not WASM-driven
+        if (this.state === newState) {return} // Prevent redundant state changes regardless of source
 
         this.previousState = this.state
         this.state = newState

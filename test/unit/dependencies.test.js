@@ -163,14 +163,14 @@ describe('Dependency Management', () => {
 
     it('should have all source files for build', () => {
       const sourceFiles = [
-        'src/index.js',
-        'src/firebase.js',
-        'src/ipfs.js',
-        'src/mqtt.js',
-        'src/nostr.js',
-        'src/supabase.js',
-        'src/torrent.js',
-        'src/wasm.js'
+        'src/utils/index.js',
+        'src/netcode/firebase.js',
+        'src/netcode/ipfs.js',
+        'src/netcode/mqtt.js',
+        'src/netcode/nostr.js',
+        'src/netcode/supabase.js',
+        'src/netcode/torrent.js',
+        'src/utils/wasm.js'
       ];
 
       const missingFiles = [];
