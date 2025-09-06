@@ -3,184 +3,1003 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trystero - Serverless WebRTC Matchmaking</title>
+    <title>DozedEnt - P2P Wolf Survival Game</title>
     <style>
+        :root {
+            --scale: 1;
+            --shake-x: 0px;
+            --shake-y: 0px;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        
+        .ready {
+            background: #0a0a0a;
         }
-        h1 {
-            text-align: center;
-            color: #333;
+        
+        /* Game Viewport */
+        #viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            transform: scale(var(--scale));
+            transform-origin: top left;
+            background: #0a0a0a;
+            overflow: hidden;
+        }
+        
+        /* Game Canvas */
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3840px;
+            height: 2160px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            transform: translate(var(--shake-x), var(--shake-y));
+        }
+        
+        /* Game Canvas for Enhanced Rendering */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1280px;
+            height: 720px;
+            background: transparent;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #333;
+            border-top: 3px solid #4a90e2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             margin-bottom: 20px;
-            font-size: 2.5em;
         }
-        .tagline {
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #fff;
+            font-size: 18px;
             text-align: center;
-            color: #666;
-            font-size: 1.2em;
-            margin-bottom: 40px;
         }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
+        
+        /* Player Elements */
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transition: all 0.1s ease;
+            z-index: 20;
         }
-        .feature {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
+        
+        .player.self {
+            background: #2196f3;
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+        }
+        
+        .player.attacking {
+            animation: attack-flash 0.2s ease;
+        }
+        
+        .player.rolling {
+            animation: roll-spin 0.18s linear;
+        }
+        
+        .player.blocking {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        @keyframes attack-flash {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        @keyframes roll-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Health and Stamina Bars */
+        .health, .stamina {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .health .fill, .stamina .fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .health .fill {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+        }
+        
+        .stamina .fill {
+            background: linear-gradient(90deg, #2196f3, #03a9f4);
+        }
+        
+        /* Shadows */
+        .shadow {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%) scale(var(--shadow-scale, 1));
+            width: 30px;
+            height: 8px;
+            background: rgba(0, 0, 0, var(--shadow-opacity, 0.65));
+            border-radius: 50%;
+            z-index: -1;
+        }
+        
+        /* Shield */
+        .shield {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1));
+            width: 20px;
+            height: 30px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            border: 2px solid #fff;
+            z-index: 15;
+        }
+        
+        /* Sword Attack Effect */
+        .sword {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1));
+            width: 40px;
+            height: 4px;
+            background: linear-gradient(90deg, #c0c0c0, #fff);
+            border-radius: 2px;
+            z-index: 15;
+            animation: sword-slash 0.2s ease;
+        }
+        
+        @keyframes sword-slash {
+            0% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(var(--mirror, 1)) scale(1); opacity: 0; }
+        }
+        
+        /* Enemy Elements */
+        .enemy {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #ff4444;
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            z-index: 15;
+        }
+        
+        .enemy.wolf {
+            background: linear-gradient(135deg, #6b5d54, #4a4038);
+        }
+        
+        .enemy.seek {
+            border-color: #ff6600;
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        .enemy.circle {
+            border-color: #ffaa00;
+            animation: circle-move 2s linear infinite;
+        }
+        
+        .enemy.harass {
+            border-color: #ff0000;
+            animation: harass-shake 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes circle-move {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes harass-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        
+        /* Role Tags */
+        .role-tag {
+            position: absolute;
+            left: 50%;
+            top: -14px;
+            transform: translateX(-50%);
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1px 3px;
+            border-radius: 3px;
+            font: 10px/1.1 system-ui, sans-serif;
+            pointer-events: none;
+        }
+        
+        /* Ambient Particles */
+        .ambient-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8), transparent);
+            border-radius: 50%;
+            animation: float var(--dur, 20s) linear infinite;
+            opacity: var(--op, 0.3);
+            transform: scale(var(--s, 1));
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1));
+                opacity: var(--op, 0.3);
+            }
+            50% {
+                transform: translate(calc(var(--x, 0px) + var(--dx, 0px)), calc(var(--y, 0px) + var(--dy, 0px))) scale(var(--s, 1));
+                opacity: calc(var(--op, 0.3) * 0.5);
+            }
+            100% {
+                transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1));
+                opacity: var(--op, 0.3);
+            }
+        }
+        
+        /* Trail Effects */
+        .trail {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, rgba(33, 150, 243, 0.8), transparent);
+            border-radius: 50%;
+            animation: trail-fade 0.45s ease-out forwards;
+        }
+        
+        @keyframes trail-fade {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+        
+        /* Spark Effects */
+        .spark {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #fff, #ffd700);
+            border-radius: 50%;
+            animation: spark-burst 0.42s ease-out forwards;
+        }
+        
+        .spark.parry {
+            background: radial-gradient(circle, #fff, #00ffff);
+            animation: parry-burst 0.42s ease-out forwards;
+        }
+        
+        @keyframes spark-burst {
+            0% {
+                opacity: 1;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(2);
+            }
+        }
+        
+        @keyframes parry-burst {
+            0% {
+                opacity: 1;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.5);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(3);
+            }
+        }
+        
+        /* Wall Elements */
+        .wall {
+            position: absolute;
+            background: linear-gradient(45deg, #2c2c2c, #1a1a1a);
+            border: 2px solid #444;
+        }
+        
+        /* Game Boundary */
+        .game-boundary {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* Markers */
+        .marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .marker.landmark {
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.8), transparent);
+            border-color: #ffd700;
+        }
+        
+        .marker.exit {
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.8), transparent);
+            border-color: #00ffff;
+        }
+        
+        /* UI Overlays */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Connection Status */
+        #connectionStatus {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 200;
+        }
+        
+        .status-connecting {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        
+        .status-connected {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        
+        .status-offline {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        
+        /* Player Count */
+        #playerCount {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            z-index: 200;
+        }
+        
+        /* Debug HUD */
+        #debug-hud {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 200;
+        }
+        
+        /* Mobile Controls */
+        .mobile-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            pointer-events: auto;
+            z-index: 300;
+        }
+        
+        /* Joystick */
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+        }
+        
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+        }
+        
+        /* Action Buttons */
+        #actions {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .action-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        /* Controls Tip */
+        #controls-tip {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 200;
+        }
+        
+        /* Orientation Overlay */
+        #orientation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #orientation-overlay h2 {
+            color: #fff;
+            margin-bottom: 20px;
             text-align: center;
-            border: 2px solid #eee;
         }
-        .feature h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        .feature p {
-            color: #666;
-            line-height: 1.6;
-        }
-        .emoji {
-            font-size: 2em;
-            margin-bottom: 15px;
-        }
-        .cta {
+        
+        #orientation-overlay p {
+            color: #ccc;
             text-align: center;
-            margin: 40px 0;
+            margin-bottom: 30px;
         }
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        
+        #overlay-start {
+            background: #4a90e2;
+            color: #fff;
+            border: none;
             padding: 15px 30px;
             border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            margin: 0 10px;
-            transition: transform 0.2s ease;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
         }
-        .cta-button:hover {
-            transform: scale(1.05);
+        
+        #overlay-start:hover {
+            background: #357abd;
         }
-        .docs-section {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 2px solid #eee;
-        }
-        .docs-links {
+        
+        /* Phase Overlays */
+        .phase-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
             display: flex;
+            flex-direction: column;
             justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
+            align-items: center;
+            z-index: 500;
+            pointer-events: auto;
         }
-        .doc-link {
-            color: #667eea;
-            text-decoration: none;
-            padding: 10px 20px;
-            border: 2px solid #667eea;
+        
+        .phase-overlay h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .phase-overlay p {
+            color: #ccc;
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+        
+        .phase-button {
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s ease;
+        }
+        
+        .phase-button:hover {
+            background: #357abd;
+        }
+        
+        .phase-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        /* Choice Overlay */
+        #choice-overlay {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(0, 0, 0, 0.9));
+        }
+        
+        .choice-button {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
             border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            min-width: 200px;
             transition: all 0.2s ease;
         }
-        .doc-link:hover {
-            background: #667eea;
-            color: white;
+        
+        .choice-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
         }
-        .code-example {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
+        
+        /* Risk Phase */
+        #risk-overlay {
+            background: linear-gradient(135deg, rgba(255, 102, 0, 0.1), rgba(0, 0, 0, 0.9));
+        }
+        
+        .risk-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             margin: 20px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            overflow-x: auto;
-            border-left: 4px solid #667eea;
+        }
+        
+        .risk-stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .risk-stat h3 {
+            color: #ff6600;
+            margin-bottom: 10px;
+        }
+        
+        /* Escalate Phase */
+        #escalate-overlay {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), rgba(0, 0, 0, 0.9));
+        }
+        
+        .escalate-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .escalate-stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .escalate-stat h3 {
+            color: #ff0000;
+            margin-bottom: 10px;
+        }
+        
+        /* CashOut Phase */
+        #cashout-overlay {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 0, 0, 0.9));
+        }
+        
+        .currency-display {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .currency {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .currency h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .shop-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .shop-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .shop-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .shop-item.purchased {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Game Over Overlay */
+        #gameOverOverlay {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(0, 0, 0, 0.9));
+        }
+        
+        /* Restart Button */
+        #restart-button, #rematch-button {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.2s ease;
+        }
+        
+        #restart-button:hover, #rematch-button:hover {
+            background: #218838;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .mobile-controls {
+                height: 150px;
+            }
+            
+            #joystick {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .action-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .phase-overlay h2 {
+                font-size: 1.5em;
+            }
+            
+            .choice-button {
+                min-width: 150px;
+                padding: 12px 24px;
+            }
+        }
+        
+        /* Hide elements when not needed */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 Trystero</h1>
-        <p class="tagline">Serverless WebRTC matchmaking for painless P2P</p>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading DozedEnt...</div>
+        <div class="loading-text" style="font-size: 14px; margin-top: 10px;">Initializing WASM game engine</div>
+    </div>
+
+    <!-- Main Game Viewport -->
+    <div id="viewport">
+        <!-- Game Canvas for Enhanced Rendering -->
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
         
-        <div class="features">
-            <div class="feature">
-                <div class="emoji">🌐</div>
-                <h3>Serverless P2P</h3>
-                <p>Connect peers directly without maintaining servers. Multiple signaling strategies included.</p>
-            </div>
-            
-            <div class="feature">
-                <div class="emoji">🚀</div>
-                <h3>Zero Configuration</h3>
-                <p>Get started in minutes with sensible defaults. No complex setup or infrastructure required.</p>
-            </div>
-            
-            <div class="feature">
-                <div class="emoji">🎯</div>
-                <h3>Game-Ready</h3>
-                <p>Built-in support for real-time multiplayer games with WASM integration and rollback netcode.</p>
-            </div>
-            
-            <div class="feature">
-                <div class="emoji">🔒</div>
-                <h3>Secure by Default</h3>
-                <p>End-to-end encryption and secure room management with optional password protection.</p>
-            </div>
-        </div>
+        <!-- Main Game Canvas -->
+        <div id="canvas"></div>
+    </div>
 
-        <div class="cta">
-            <a href="https://github.com/berenif/DozedEnt" class="cta-button">View on GitHub</a>
-            <a href="https://www.npmjs.com/package/trystero" class="cta-button">Install via NPM</a>
-        </div>
-
-        <div class="code-example">
-<strong>Quick Start:</strong>
-<pre>npm install trystero
-
-import {joinRoom} from 'trystero'
-
-const room = joinRoom({appId: 'my-app'}, 'room-id')
-const [sendMessage, getMessage] = room.makeAction('message')
-
-// Send data to peers
-sendMessage('Hello, world!')
-
-// Listen for data from peers
-getMessage((data, peerId) => {
-  console.log(`${peerId} says: ${data}`)
-})</pre>
-        </div>
-
-        <div class="docs-section">
-            <h2 style="text-align: center; color: #333; margin-bottom: 30px;">Documentation</h2>
-            <div class="docs-links">
-                <a href="API.md" class="doc-link">📚 API Reference</a>
-                <a href="GETTING_STARTED.md" class="doc-link">🚀 Getting Started</a>
-                <a href="https://github.com/berenif/DozedEnt#readme" class="doc-link">📖 README</a>
-            </div>
-        </div>
-
-        <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #eee;">
-            <p style="color: #666;">
-                <strong>Trystero</strong> - Making peer-to-peer connections simple and reliable<br>
-                <small>MIT License • Built with ❤️ for the web</small>
-            </p>
+    <!-- UI Overlays -->
+    <div class="ui-overlay">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="status-connecting">Connecting...</div>
+        
+        <!-- Player Count -->
+        <div id="playerCount">Players: 1</div>
+        
+        <!-- Debug HUD -->
+        <div id="debug-hud"></div>
+        
+        <!-- Controls Tip (Desktop) -->
+        <div id="controls-tip">
+            WASD to move • Space to jump • L to attack • K to roll • M to block
         </div>
     </div>
+
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <!-- Joystick -->
+        <div id="joystick">
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div id="actions">
+            <button id="rollBtn" class="action-btn" title="Roll (K)">🔄</button>
+            <button id="attackBtn" class="action-btn" title="Attack (L)">⚔️</button>
+            <button id="blockBtn" class="action-btn" title="Block (M)">🛡️</button>
+        </div>
+    </div>
+
+    <!-- Orientation Overlay (Mobile) -->
+    <div id="orientation-overlay">
+        <h2>🎮 DozedEnt</h2>
+        <p>Please rotate your device to landscape mode for the best gaming experience.</p>
+        <button id="overlay-start">Start Game</button>
+    </div>
+
+    <!-- Phase Overlays -->
+    
+    <!-- Choice Phase -->
+    <div id="choice-overlay" class="phase-overlay hidden">
+        <h2>🎯 Choose Your Path</h2>
+        <p>Select one of three options to continue your journey. Each choice will affect your character's abilities and the challenges ahead.</p>
+        <button id="choice-0" class="choice-button">Safe Choice</button>
+        <button id="choice-1" class="choice-button">Spicy Choice</button>
+        <button id="choice-2" class="choice-button">Weird Choice</button>
+    </div>
+
+    <!-- Risk Phase -->
+    <div id="risk-overlay" class="phase-overlay hidden">
+        <h2>🎲 Risk Phase</h2>
+        <p>Push your luck! The riskier you are, the greater the rewards, but also the greater the danger.</p>
+        
+        <div class="risk-stats">
+            <div class="risk-stat">
+                <h3>Risk Multiplier</h3>
+                <div id="risk-mult">1.0x</div>
+            </div>
+            <div class="risk-stat">
+                <h3>Active Curses</h3>
+                <ul id="curse-list"></ul>
+            </div>
+            <div class="risk-stat">
+                <h3>Timed Challenge</h3>
+                <div id="timed-challenge" class="hidden">
+                    <div>Progress: <span id="challenge-progress">0</span>/<span id="challenge-target">0</span></div>
+                    <div>Time: <span id="challenge-time">0.0</span>s</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="phase-button" onclick="wasmExports?.escape_risk?.()">Escape Risk</button>
+    </div>
+
+    <!-- Escalate Phase -->
+    <div id="escalate-overlay" class="phase-overlay hidden">
+        <h2>📈 Escalate Phase</h2>
+        <p>The difficulty is ramping up! Enemies are getting stronger, faster, and more numerous.</p>
+        
+        <div class="escalate-stats">
+            <div class="escalate-stat">
+                <h3>Escalation Level</h3>
+                <div id="escalation-lvl">0%</div>
+            </div>
+            <div class="escalate-stat">
+                <h3>Enemy Speed</h3>
+                <div id="enemy-speed">1.0x</div>
+            </div>
+            <div class="escalate-stat">
+                <h3>Enemy Damage</h3>
+                <div id="enemy-damage">1.0x</div>
+            </div>
+            <div class="escalate-stat">
+                <h3>Spawn Rate</h3>
+                <div id="spawn-rate">1.0x</div>
+            </div>
+        </div>
+        
+        <div id="miniboss-alert" class="hidden">
+            <h3>⚠️ Miniboss Alert!</h3>
+            <div class="miniboss-health">
+                <div class="miniboss-health-fill" style="width: 100%; height: 10px; background: #ff0000;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CashOut Phase -->
+    <div id="cashout-overlay" class="phase-overlay hidden">
+        <h2>💰 Shop Phase</h2>
+        <p>Spend your hard-earned currency on upgrades and healing.</p>
+        
+        <div class="currency-display">
+            <div class="currency">
+                <h3>🔶 Gold</h3>
+                <div id="gold-amount">0</div>
+            </div>
+            <div class="currency">
+                <h3>🔷 Essence</h3>
+                <div id="essence-amount">0</div>
+            </div>
+        </div>
+        
+        <div class="shop-items" id="shop-items">
+            <!-- Shop items will be populated dynamically -->
+        </div>
+        
+        <button class="phase-button" onclick="wasmExports?.buy_heal?.()">Buy Full Heal (50🔶 + 5🔷)</button>
+        <button class="phase-button" onclick="wasmExports?.reroll_shop_items?.()">Reroll Shop (20🔶)</button>
+        <button class="phase-button" onclick="wasmExports?.exit_cashout?.()">Continue</button>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameOverOverlay" class="phase-overlay hidden">
+        <h2>💀 Game Over</h2>
+        <p>Your journey has ended. Will you try again?</p>
+        <button id="restart-button">Restart Run</button>
+        <button id="rematch-button">New Run</button>
+    </div>
+
+    <!-- Load the main game script -->
+    <script type="module" src="site.js"></script>
 </body>
 </html>
