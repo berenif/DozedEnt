@@ -91,6 +91,16 @@ try {
   } catch {}
 } catch (e) {
   console.warn('WASM unavailable; core simulation requires WASM:', e)
+  
+  // Enable start game button even without WASM (for testing/debugging)
+  const startGameBtn = document.getElementById('start-game-btn')
+  if (startGameBtn) {
+    startGameBtn.disabled = false
+    startGameBtn.textContent = 'Start Game (No WASM)'
+    startGameBtn.style.background = '#ff6b6b'
+    startGameBtn.style.cursor = 'pointer'
+    console.log('WASM failed to load - Start Game button enabled with fallback')
+  }
 }
 
 const byId = document.getElementById.bind(document)
@@ -288,7 +298,7 @@ function showRoomInfo(room) {
       </div>
       <button onclick="leaveRoom()" style="padding: 5px 10px; background: #e74c3c; border: none; color: white; border-radius: 3px; cursor: pointer;">Leave Room</button>
       ${room.host === roomManager.localPlayer.id ? 
-        '<button onclick="startGame()" style="margin-left: 10px; padding: 5px 10px; background: #27ae60; border: none; color: white; border-radius: 3px; cursor: pointer;">Start Game</button>' : 
+        '<button onclick="startRoomGame()" style="margin-left: 10px; padding: 5px 10px; background: #27ae60; border: none; color: white; border-radius: 3px; cursor: pointer;">Start Game</button>' : 
         '<button onclick="toggleReady()" style="margin-left: 10px; padding: 5px 10px; background: #f39c12; border: none; color: white; border-radius: 3px; cursor: pointer;">Ready</button>'
       }
     </div>
@@ -301,7 +311,7 @@ window.leaveRoom = function() {
   updateRoomsList()
 }
 
-window.startGame = function() {
+window.startRoomGame = function() {
   if (!roomManager) return
   try {
     roomManager.startGame()
@@ -2293,6 +2303,7 @@ function startGame() {
   // Check if WASM is loaded
   if (!wasmExports || typeof wasmExports.update !== 'function') {
     console.warn('Cannot start game: WASM not loaded yet')
+    alert('Game cannot start: WASM engine not loaded. Please refresh the page and try again.')
     return
   }
   
