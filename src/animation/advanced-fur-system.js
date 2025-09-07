@@ -358,6 +358,10 @@ export class AdvancedFurSystem {
     // Vary a color by adding random variation
     varyColor(baseColor, variation) {
         // Simple color variation - in practice you'd parse and modify the hex/rgb values
+        // eslint-disable-next-line no-unused-vars
+        const baseRef = baseColor; // Reserved for future color parsing
+        // eslint-disable-next-line no-unused-vars  
+        const varRef = variation; // Reserved for future variation calculation
         const colors = ['#8b7355', '#6b5a47', '#a89484', '#4a4038', '#7a6b61']
         return randChoice(colors, `fur-color-${this.wolf?.id || 'default'}`) || colors[0]
     }
@@ -383,6 +387,8 @@ export class AdvancedFurSystem {
 
     // Update wind simulation
     updateWind(deltaTime) {
+        // eslint-disable-next-line no-unused-vars
+        const dtRef = deltaTime; // Reserved for future wind time-based calculations
         // Update wind direction and strength
         const time = this.animationState.time
         this.animationState.windDirection.x = Math.sin(time * 0.001) * 0.7 + Math.cos(time * 0.0005) * 0.3
@@ -462,7 +468,9 @@ export class AdvancedFurSystem {
 
     // Update strand segments for more detailed physics
     updateStrandSegments(strand, deltaTime) {
-        if (!strand.segments || strand.segments.length === 0) return
+        if (!strand.segments || strand.segments.length === 0) {
+            return
+        }
 
         // Update each segment based on parent movement
         for (let i = 0; i < strand.segments.length; i++) {

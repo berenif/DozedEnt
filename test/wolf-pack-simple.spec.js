@@ -115,9 +115,7 @@ test('Wolf Pack WASM Module: Compilation and API Export Verification', async ({p
   });
 
   // Run the test
-  const result = await page.evaluate(async () => {
-    return await window.testWasmModule();
-  });
+  const result = await page.evaluate(async () => await window.testWasmModule());
 
   // Validate results
   expect(result.wasmLoaded).toBe(true);

@@ -199,9 +199,9 @@ export class ProceduralAnimator {
             baseScale = 1.0,
             intensity = 0.015,
             speed = 2.0,
-            depthVariation = 0.3,
+            depthVariation = 0.3, // Reserved for future depth-based breathing
             asymmetry = 0.2,
-            heartRateSync = true
+            heartRateSync = true // Reserved for future heart rate synchronization
         } = options
 
         return {
@@ -513,7 +513,7 @@ export class ProceduralAnimator {
             segments = 5,
             length = 15,
             damping = 0.85,
-            stiffness = 0.3,
+            stiffness = 0.3, // Reserved for future spring stiffness calculations
             gravity = 0.5,
             windStrength = 0.1
         } = options
@@ -1188,7 +1188,9 @@ export class WolfAnimator {
     }
 
     setWolfState(newState) {
-        if (this.state === newState) return;
+        if (this.state === newState) {
+            return;
+        }
         this.state = newState;
         this.controller.play(newState);
         // Trigger procedural effects specific to wolf
@@ -1215,12 +1217,13 @@ export class WolfAnimator {
     }
 
     update(deltaTime, position, velocity = {x: 0, y: 0}, isGrounded = true) {
+        // velocity and isGrounded parameters reserved for future physics integration
         this.controller.update(deltaTime);
         
         const breathing = this.sniffing.update(deltaTime);
         const howling = this.howling.update(deltaTime);
 
-        let transform = {
+        const transform = {
             scaleX: 1,
             scaleY: 1,
             rotation: 0,

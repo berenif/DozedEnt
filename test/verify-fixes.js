@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import {shuffle, genId, toHex} from '../src/utils.js'
-import {genKey, encrypt, decrypt} from '../src/crypto.js'
-import createPeer from '../src/peer.js'
-import createRoom from '../src/room.js'
+import {shuffle, genId, toHex} from '../src/utils/utils.js'
+import {genKey, encrypt, decrypt} from '../src/utils/crypto.js'
+import createPeer from '../src/netcode/peer.js'
+import createRoom from '../src/netcode/room.js'
 import {
-  DeterministicGame,
   DeterministicRandom,
   toFixed,
   fromFixed,
@@ -13,7 +12,7 @@ import {
   fixedAdd,
   fixedSub,
   fixedMul
-} from '../src/deterministic-game.js'
+} from '../src/netcode/deterministic-game.js'
 
 console.log('🔍 Verifying bug fixes...\n')
 
@@ -97,7 +96,7 @@ await asyncTest('Crypto decrypt validation', async () => {
 // Test 3: Peer sendData validation
 test('Peer sendData validation', () => {
   // Mock RTCPeerConnection for Node.js environment
-  global.RTCPeerConnection = class {
+  globalThis.RTCPeerConnection = class {
     constructor() {
       this.connectionState = 'new'
     }

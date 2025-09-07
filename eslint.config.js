@@ -5,6 +5,25 @@ export default [
   {languageOptions: {globals: {...globals.browser, process: true}}},
   pluginJs.configs.recommended,
   {
+    files: ['test/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.mocha,
+        ...globals.node,
+        process: true,
+        Buffer: true,
+        global: true
+      }
+    },
+    rules: {
+      'no-undefined': 'off',
+      'prefer-arrow-callback': 'off',
+      'no-unused-expressions': 'off',
+      'require-await': 'off'
+    }
+  },
+  {
     rules: {
       'array-callback-return': 'error',
       'arrow-body-style': 'error',
