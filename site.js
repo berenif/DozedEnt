@@ -51,6 +51,12 @@ try {
     startGameBtn.style.background = '#4a90e2'
     startGameBtn.style.cursor = 'pointer'
     console.log('WASM loaded - Start Game button enabled')
+    
+    // Update loading text to indicate readiness
+    const loadingText = document.querySelector('.loading-text')
+    if (loadingText && loadingText.textContent.includes('Initializing WASM game engine')) {
+      loadingText.textContent = 'WASM game engine ready!'
+    }
   }
   // Seed and initialize a run inside WASM (logic stays in WASM)
   try {
@@ -100,6 +106,12 @@ try {
     startGameBtn.style.background = '#ff6b6b'
     startGameBtn.style.cursor = 'pointer'
     console.log('WASM failed to load - Start Game button enabled with fallback')
+    
+    // Update loading text to indicate WASM failure
+    const loadingText = document.querySelector('.loading-text')
+    if (loadingText && loadingText.textContent.includes('Initializing WASM game engine')) {
+      loadingText.textContent = 'WASM failed to load - running in fallback mode'
+    }
   }
 }
 
@@ -1419,7 +1431,15 @@ function setSpawnPointIfNeeded(force = false) {
   // Spawn resolved by WASM; just ensure our element exists
   if (hasSpawned && !force) return
   hasSpawned = true
+  
+  // Ensure the player element is created
   ensureSelfEl()
+  
+  // Make sure the player is positioned correctly
+  if (selfEl) {
+    setElPos(selfEl, posX, posY)
+    console.log(`Player spawned at position: (${posX.toFixed(3)}, ${posY.toFixed(3)})`)
+  }
 }
 
 function setElPos(el, x, y) {
@@ -2329,7 +2349,33 @@ function startGame() {
   // Initialize game if not already done
   if (!gameInitialized) {
     gameInitialized = true
-    console.log('Game initialized and started')
+    
+    // Ensure player spawns in the game area
+    setSpawnPointIfNeeded(true)
+    
+    // Initialize camera to center on player
+    updateCamera()
+    
+    // Make sure the game area is visible
+    const viewport = document.getElementById('viewport')
+    if (viewport) {
+      viewport.style.display = 'block'
+    }
+    
+    // Start the game loop if not already running
+    if (!lastFrameTs) {
+      requestAnimationFrame((ts) => gameLoop(ts).catch(console.error))
+    }
+    
+    // Add a brief visual effect to indicate game start
+    if (selfEl) {
+      selfEl.style.animation = 'self-pulse 0.5s ease-in-out'
+      setTimeout(() => {
+        if (selfEl) selfEl.style.animation = ''
+      }, 500)
+    }
+    
+    console.log('Game initialized and started - player spawned in game area')
   }
 }
 
