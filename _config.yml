@@ -32,11 +32,25 @@ include:
   - game.wasm
   - images
   - effects
+  - src/
+  - dist/
 
 # Disable Jekyll processing for certain files
 defaults:
   - scope:
       path: "*.wasm"
+    values:
+      layout: null
+  - scope:
+      path: "*.js"
+    values:
+      layout: null
+  - scope:
+      path: "src/**/*.js"
+    values:
+      layout: null
+  - scope:
+      path: "dist/**/*.js"
     values:
       layout: null
   - scope:
