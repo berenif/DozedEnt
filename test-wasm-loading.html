@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WASM Loading Test</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>WASM Loading Test</h1>
+    <div id="status">Testing WASM loading...</div>
+    <div id="log" style="font-family: monospace; white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 10px;"></div>
+    
+    <script type="module">
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function logMessage(message) {
+            console.log(message);
+            log.textContent += message + '\n';
+        }
+        
+        async function testWasmLoading() {
+            try {
+                logMessage('🔍 Starting WASM loading test...');
+                
+                // Test 1: Try to import the local WASM helper
+                logMessage('1️⃣ Testing local WASM helper import...');
+                let wasmHelperModule;
+                try {
+                    wasmHelperModule = await import('./dist/trystero-wasm.min.js');
+                    logMessage('✅ Local WASM helper imported successfully');
+                    logMessage('📦 Module keys: ' + Object.keys(wasmHelperModule).join(', '));
+                } catch (error) {
+                    logMessage('❌ Local import failed: ' + error.message);
+                    logMessage('🔄 Trying CDN fallback...');
+                    wasmHelperModule = await import('https://esm.run/trystero/wasm');
+                    logMessage('✅ CDN WASM helper imported successfully');
+                    logMessage('📦 Module keys: ' + Object.keys(wasmHelperModule).join(', '));
+                }
+                
+                // Test 2: Check if loadWasm function exists
+                logMessage('2️⃣ Testing loadWasm function...');
+                const {loadWasm} = wasmHelperModule;
+                if (typeof loadWasm === 'function') {
+                    logMessage('✅ loadWasm function found');
+                } else {
+                    logMessage('❌ loadWasm function not found');
+                    return;
+                }
+                
+                // Test 3: Try to load the WASM file
+                logMessage('3️⃣ Testing WASM file loading...');
+                const {exports} = await loadWasm('./game.wasm');
+                logMessage('✅ WASM loaded successfully!');
+                logMessage('📦 WASM exports: ' + Object.keys(exports).join(', '));
+                
+                // Test 4: Check for required functions
+                logMessage('4️⃣ Testing required WASM functions...');
+                if (typeof exports.start === 'function') {
+                    logMessage('✅ start() function exists');
+                    try {
+                        exports.start();
+                        logMessage('✅ start() function called successfully');
+                    } catch (error) {
+                        logMessage('❌ start() function failed: ' + error.message);
+                    }
+                } else {
+                    logMessage('❌ start() function missing');
+                }
+                
+                if (typeof exports.update === 'function') {
+                    logMessage('✅ update() function exists');
+                } else {
+                    logMessage('❌ update() function missing');
+                }
+                
+                logMessage('🎉 All WASM tests completed successfully!');
+                status.textContent = '✅ WASM loading successful';
+                status.style.color = 'green';
+                
+                // Make exports globally available for debugging
+                window.testWasmExports = exports;
+                logMessage('🔧 WASM exports available as window.testWasmExports');
+                
+            } catch (error) {
+                logMessage('💥 WASM loading failed: ' + error.name + ': ' + error.message);
+                if (error.stack) {
+                    logMessage('📋 Stack trace: ' + error.stack);
+                }
+                status.textContent = '❌ WASM loading failed';
+                status.style.color = 'red';
+            }
+        }
+        
+        testWasmLoading();
+    </script>
+</body>
+</html>
