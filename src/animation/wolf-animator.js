@@ -7,6 +7,15 @@ export class WolfAnimator extends CharacterAnimator {
         // For example, if wolf has different blend factors or default states
         this.blendSpeed = 0.15 // Wolf animations might blend differently
         this._animationTimeouts = new Set() // Track timeouts for cleanup
+        this.wasmManager = null
+    }
+
+    /**
+     * Set the WASM manager for accessing wolf animation data
+     * @param {WasmManager} wasmManager - The WASM manager instance
+     */
+    setWasmManager(wasmManager) {
+        this.wasmManager = wasmManager;
     }
 
     // Override or add wolf-specific state setting logic
@@ -20,11 +29,30 @@ export class WolfAnimator extends CharacterAnimator {
         // Call the parent update to get base character transformations
         const transform = super.update(deltaTime, position, velocity, isGrounded)
 
-        // TODO: Integrate WASM data here for wolf-specific procedural animations
-        // For example:
-        // const wasmWolfAnimationData = getWolfAnimationDataFromWASM()
-        // transform.rotation += wasmWolfAnimationData.spineBend
-        // transform.offsetY += wasmWolfAnimationData.legLift
+        // Integrate WASM data for wolf-specific procedural animations
+        // Get wolf animation data from WASM if available
+        if (this.wasmManager && this.wasmManager.exports) {
+            try {
+                const wolfCount = this.wasmManager.exports.get_enemy_count();
+                if (wolfCount > 0) {
+                    // Use first wolf's data for animation adjustments
+                    const wolfState = this.wasmManager.exports.get_enemy_state ? this.wasmManager.exports.get_enemy_state(0) : 0;
+                    const animationTime = this.wasmManager.exports.get_time_seconds ? this.wasmManager.exports.get_time_seconds() : 0;
+                    
+                    // Apply procedural spine bend based on movement
+                    const spineBend = Math.sin(animationTime * 0.01) * 0.1;
+                    transform.rotation += spineBend;
+                    
+                    // Apply leg lift during running state
+                    if (wolfState === 2) { // Running state
+                        const legLift = Math.abs(Math.sin(animationTime * 0.02)) * 2;
+                        transform.offsetY += legLift;
+                    }
+                }
+            } catch (error) {
+                // Silently ignore WASM errors and continue with base animation
+            }
+        }
 
         return transform
     }
