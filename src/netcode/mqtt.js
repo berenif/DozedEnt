@@ -10,7 +10,13 @@ const getClientId = ({options}) => options.host + options.path
 export const joinRoom = strategy({
   init: config =>
     getRelays(config, defaultRelayUrls, defaultRedundancy).map(url => {
-      const client = mqtt.connect(url)
+      const client = mqtt.connect(url, {
+        clientId: `trystero-${Math.random().toString(36).substr(2, 9)}`,
+        clean: true,
+        connectTimeout: 4000,
+        reconnectPeriod: 1000,
+        keepalive: 30
+      })
       const clientId = getClientId(client)
 
       sockets[clientId] = client.stream.socket
@@ -20,9 +26,32 @@ export const joinRoom = strategy({
         .on('message', (topic, buffer) =>
           msgHandlers[clientId][topic]?.(topic, buffer.toString())
         )
-        .on('error', err => console.error(err))
+        .on('error', err => {
+          console.error(`MQTT connection error for ${url}:`, err.message || err)
+          // Don't throw the error, let the client handle reconnection
+        })
+        .on('close', () => {
+          console.log(`MQTT connection closed for ${url}`)
+        })
+        .on('offline', () => {
+          console.log(`MQTT client offline for ${url}`)
+        })
 
-      return new Promise(res => client.on('connect', () => res(client)))
+      return new Promise((res, rej) => {
+        const timeout = setTimeout(() => {
+          rej(new Error(`Connection timeout for ${url}`))
+        }, 10000)
+        
+        client.on('connect', () => {
+          clearTimeout(timeout)
+          res(client)
+        })
+        
+        client.on('error', (err) => {
+          clearTimeout(timeout)
+          rej(err)
+        })
+      })
     }),
 
   subscribe: (client, rootTopic, selfTopic, onMessage) => {
@@ -55,5 +84,6 @@ export {selfId} from '../utils/utils.js'
 export const defaultRelayUrls = [
   'test.mosquitto.org:8081/mqtt',
   'broker.emqx.io:8084/mqtt',
-  'broker.hivemq.com:8884/mqtt'
+  'broker.hivemq.com:8884/mqtt',
+  'broker-cn.emqx.io:8084/mqtt'
 ].map(url => 'wss://' + url)
