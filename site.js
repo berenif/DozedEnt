@@ -840,7 +840,8 @@ const config = {
   relayUrls: [
     'wss://test.mosquitto.org:8081/mqtt',
     'wss://broker.emqx.io:8084/mqtt',
-    'wss://broker.hivemq.com:8884/mqtt'
+    'wss://broker.hivemq.com:8884/mqtt',
+    'wss://broker-cn.emqx.io:8084/mqtt'
   ],
   relayRedundancy: 2 // fewer concurrent relays reduces noisy reconnect errors
 }
