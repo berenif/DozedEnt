@@ -42,6 +42,16 @@ try {
   wasmExports = exports
   window.wasmExports = wasmExports // Make globally accessible for debugging
   if (typeof wasmExports.start === 'function') wasmExports.start()
+  
+  // Enable start game button now that WASM is loaded
+  const startGameBtn = document.getElementById('start-game-btn')
+  if (startGameBtn) {
+    startGameBtn.disabled = false
+    startGameBtn.textContent = 'Start Game'
+    startGameBtn.style.background = '#4a90e2'
+    startGameBtn.style.cursor = 'pointer'
+    console.log('WASM loaded - Start Game button enabled')
+  }
   // Seed and initialize a run inside WASM (logic stays in WASM)
   try {
     if (typeof wasmExports.init_run === 'function') {
@@ -1932,6 +1942,12 @@ async function gameLoop(ts) {
   const dt = lastFrameTs ? (ts - lastFrameTs) / 1000 : 0
   lastFrameTs = ts
 
+  // Only run game loop if game is started
+  if (!gameStarted) {
+    requestAnimationFrame(gameLoop)
+    return
+  }
+
   // Require WASM for simulation; no JS fallback
   if (!wasmExports || typeof wasmExports.update !== 'function') {
     requestAnimationFrame(gameLoop)
@@ -2258,11 +2274,62 @@ async function gameLoop(ts) {
   requestAnimationFrame((ts) => gameLoop(ts).catch(console.error))
 }
 
+// Game initialization state
+let gameInitialized = false
+let gameStarted = false
+
 // Hide loading screen when game initializes
 const loadingScreen = document.getElementById('loadingScreen')
 if (loadingScreen) {
-  loadingScreen.style.display = 'none'
-  console.log('Loading screen hidden - game initializing')
+  // Don't hide loading screen immediately - wait for proper initialization
+  console.log('Loading screen ready - waiting for game initialization')
+}
+
+// Function to properly start the game
+function startGame() {
+  if (gameStarted) return
+  
+  // Check if WASM is loaded
+  if (!wasmExports || typeof wasmExports.update !== 'function') {
+    console.warn('Cannot start game: WASM not loaded yet')
+    return
+  }
+  
+  console.log('Starting game...')
+  gameStarted = true
+  
+  // Hide loading screen
+  if (loadingScreen) {
+    loadingScreen.style.display = 'none'
+    console.log('Loading screen hidden - game starting')
+  }
+  
+  // Hide orientation overlay if visible
+  if (orientationOverlay) {
+    orientationOverlay.hidden = true
+  }
+  
+  // Show controls tip
+  if (controlsTip) {
+    controlsTip.hidden = false
+  }
+  
+  // Initialize game if not already done
+  if (!gameInitialized) {
+    gameInitialized = true
+    console.log('Game initialized and started')
+  }
+}
+
+// Make startGame globally available
+window.startGame = startGame
+
+// Add event listener for the start game button
+const startGameBtn = document.getElementById('start-game-btn')
+if (startGameBtn) {
+  startGameBtn.addEventListener('click', () => {
+    startGame()
+  })
 }
 
 // Add error handling for WASM loading
