@@ -1,8 +1,8 @@
-# Build Instructions for Player Animation System
+# 🛠️ Enhanced Build Instructions for Trystero Game Framework
 
 ## Overview
 
-This document provides instructions for building and deploying the player animation system to the docs directory for GitHub Pages or local hosting.
+This document provides comprehensive instructions for building and deploying the complete Trystero game framework, including player animations, wolf AI, WASM modules, and multiplayer systems to the docs directory for GitHub Pages or local hosting.
 
 ## Prerequisites
 

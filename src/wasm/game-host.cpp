@@ -16,13 +16,49 @@
 #define PLAYER_SPEED 200.0f // pixels per second
 #define PLAYER_RADIUS 16.0f
 
-// External JS functions
+// External JS functions - provide fallback implementations for standalone WASM
 extern "C" {
     void js_log(const char* msg, int len);
     double js_get_timestamp();
     double js_random();
     void js_broadcast_state(const char* json, int len);
 }
+
+// Fallback implementations for standalone WASM builds
+static double g_game_time = 0.0;
+static unsigned int g_rng_seed = 12345;
+
+// Simple LCG random number generator for deterministic behavior
+static double standalone_random() {
+    g_rng_seed = g_rng_seed * 1664525 + 1013904223;
+    return (double)(g_rng_seed % 1000000) / 1000000.0;
+}
+
+// Weak symbol implementations (will be used if JS functions are not available)
+__attribute__((weak))
+void js_log(const char* msg, int len) {
+    // No-op for standalone builds
+    (void)msg; (void)len;
+}
+
+__attribute__((weak))
+double js_get_timestamp() {
+    return g_game_time * 1000.0; // Convert to milliseconds
+}
+
+__attribute__((weak))
+double js_random() {
+    return standalone_random();
+}
+
+__attribute__((weak))
+void js_broadcast_state(const char* json, int len) {
+    // No-op for standalone builds
+    (void)json; (void)len;
+}
+
+// Main function required for standalone WASM
+int main() { return 0; }
 
 // Player state
 struct Player {
@@ -169,6 +205,9 @@ void game_update(GameState* state, float deltaTime) {
     if (!state) return;
     
     state->frameNumber++;
+    
+    // Update internal time for standalone builds
+    g_game_time += deltaTime / 1000.0f; // deltaTime is in milliseconds
     
     // Update all active players
     for (int i = 0; i < state->maxPlayers; i++) {

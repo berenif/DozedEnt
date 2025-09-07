@@ -9,7 +9,7 @@
 
 ## 📌 Overview
 
-This guide provides step-by-step instructions for deploying your Trystero documentation site to GitHub Pages with automatic continuous deployment via GitHub Actions.
+This guide provides step-by-step instructions for deploying your enhanced Trystero game framework to GitHub Pages with automatic continuous deployment via GitHub Actions.
 
 ### ✨ Key Features
 - **Automatic Deployment** - Push to main branch triggers deployment
@@ -17,6 +17,9 @@ This guide provides step-by-step instructions for deploying your Trystero docume
 - **Custom Domain Support** - Use your own domain name
 - **WASM Support** - Proper MIME types for WebAssembly files
 - **Jekyll Integration** - GitHub Pages processing with custom configuration
+- **Multiplayer Ready** - P2P networking with Trystero infrastructure
+- **Enhanced UI** - Modern lobby system with analytics dashboard
+- **Performance Optimized** - Deterministic WASM execution
 
 ## 📁 Files & Configuration
 

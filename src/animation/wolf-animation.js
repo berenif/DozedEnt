@@ -420,7 +420,10 @@ export class WolfAnimationSystem {
         // This assumes a direct mapping from the JS wolf object to the WASM enemy array index
         // In a more complex scenario, you might need a lookup table or pass the index from WASM
         const wolfIndex = wolf.id; // Assuming wolf.id corresponds to WASM enemy array index
-        if (!this.wasmModule.get_wolf_anim_active(wolfIndex)) { return } // Only animate active wolves
+        // Check if wolf animation is active with safety check
+        const isActive = typeof this.wasmModule.get_wolf_anim_active === 'function' ? 
+            this.wasmModule.get_wolf_anim_active(wolfIndex) : false;
+        if (!isActive) { return } // Only animate active wolves
 
         const time = (typeof globalThis.wasmExports?.get_time_seconds === 'function') 
             ? globalThis.wasmExports.get_time_seconds() 
@@ -476,32 +479,50 @@ export class WolfAnimationSystem {
     applyProceduralAnimations(wolf, wolfIndex, time) {
         if (!this.wasmModule) { return }
 
-        // Get procedural animation data from WASM
+        // Get procedural animation data from WASM with safety checks
         const anim_data = {
-            active: this.wasmModule.get_wolf_anim_active(wolfIndex),
+            active: typeof this.wasmModule.get_wolf_anim_active === 'function' ? 
+                this.wasmModule.get_wolf_anim_active(wolfIndex) : false,
             leg_x: [
-                this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 0),
-                this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 1),
-                this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 2),
-                this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 3)
+                typeof this.wasmModule.get_wolf_anim_leg_x === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 0) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_x === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 1) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_x === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 2) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_x === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_x(wolfIndex, 3) : 0
             ],
             leg_y: [
-                this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 0),
-                this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 1),
-                this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 2),
-                this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 3)
+                typeof this.wasmModule.get_wolf_anim_leg_y === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 0) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_y === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 1) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_y === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 2) : 0,
+                typeof this.wasmModule.get_wolf_anim_leg_y === 'function' ? 
+                    this.wasmModule.get_wolf_anim_leg_y(wolfIndex, 3) : 0
             ],
-            spine_bend: this.wasmModule.get_wolf_anim_spine_bend(wolfIndex),
-            tail_angle: this.wasmModule.get_wolf_anim_tail_angle(wolfIndex),
-            head_pitch: this.wasmModule.get_wolf_anim_head_pitch(wolfIndex),
-            head_yaw: this.wasmModule.get_wolf_anim_head_yaw(wolfIndex),
+            spine_bend: typeof this.wasmModule.get_wolf_anim_spine_bend === 'function' ? 
+                this.wasmModule.get_wolf_anim_spine_bend(wolfIndex) : 0,
+            tail_angle: typeof this.wasmModule.get_wolf_anim_tail_angle === 'function' ? 
+                this.wasmModule.get_wolf_anim_tail_angle(wolfIndex) : 0,
+            head_pitch: typeof this.wasmModule.get_wolf_anim_head_pitch === 'function' ? 
+                this.wasmModule.get_wolf_anim_head_pitch(wolfIndex) : 0,
+            head_yaw: typeof this.wasmModule.get_wolf_anim_head_yaw === 'function' ? 
+                this.wasmModule.get_wolf_anim_head_yaw(wolfIndex) : 0,
             ear_rotation: [
-                this.wasmModule.get_wolf_anim_ear_rotation(wolfIndex, 0),
-                this.wasmModule.get_wolf_anim_ear_rotation(wolfIndex, 1)
+                typeof this.wasmModule.get_wolf_anim_ear_rotation === 'function' ? 
+                    this.wasmModule.get_wolf_anim_ear_rotation(wolfIndex, 0) : 0,
+                typeof this.wasmModule.get_wolf_anim_ear_rotation === 'function' ? 
+                    this.wasmModule.get_wolf_anim_ear_rotation(wolfIndex, 1) : 0
             ],
-            body_stretch: this.wasmModule.get_wolf_anim_body_stretch(wolfIndex),
-            body_offset_y: this.wasmModule.get_wolf_anim_body_offset_y(wolfIndex),
-            fur_ruffle: this.wasmModule.get_wolf_anim_fur_ruffle(wolfIndex),
+            body_stretch: typeof this.wasmModule.get_wolf_anim_body_stretch === 'function' ? 
+                this.wasmModule.get_wolf_anim_body_stretch(wolfIndex) : 1,
+            body_offset_y: typeof this.wasmModule.get_wolf_anim_body_offset_y === 'function' ? 
+                this.wasmModule.get_wolf_anim_body_offset_y(wolfIndex) : 0,
+            fur_ruffle: typeof this.wasmModule.get_wolf_anim_fur_ruffle === 'function' ? 
+                this.wasmModule.get_wolf_anim_fur_ruffle(wolfIndex) : 0,
         };
 
         // Update wolf object with WASM data

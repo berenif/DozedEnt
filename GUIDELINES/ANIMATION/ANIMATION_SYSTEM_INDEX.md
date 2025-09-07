@@ -1,8 +1,8 @@
-# Animation System Documentation Index
+# 🎬 Enhanced Animation System Documentation Index
 
 ## Complete Animation System Overview
 
-The game's animation system provides comprehensive character animations with smooth transitions, procedural effects, and state management. This documentation covers all aspects of the animation implementation.
+The game's animation system provides comprehensive character animations with smooth transitions, procedural effects, state management, and WASM integration. This documentation covers all aspects of the enhanced animation implementation including player animations, wolf body systems, and environmental effects.
 
 ## Core Documentation
 
@@ -15,29 +15,39 @@ Complete documentation for all player character animations including:
 - **Movement Animations**: Idle and running states
 - **Death Animation**: Game over state
 
-### 2. Animation System Architecture
+### 2. Enhanced Animation System Architecture
 
 #### Core Components
 
 1. **Animation Frame System** (`src/animation/animation-system.js`)
-   - Frame-based sprite animation
-   - Timing and duration control
-   - Looping and one-shot animations
+   - Frame-based sprite animation with WASM integration
+   - Timing and duration control with deterministic updates
+   - Looping and one-shot animations with smooth transitions
 
 2. **Animation Controller** (`src/animation/animation-system.js`)
-   - State machine for animation transitions
-   - Smooth blending between animations
-   - Animation queueing and priorities
+   - Advanced state machine for animation transitions
+   - Smooth blending between animations with interpolation
+   - Animation queueing and priorities with conflict resolution
 
 3. **Character Animator** (`src/animation/animation-system.js`)
    - High-level character animation management
-   - Procedural animation overlays
-   - State-based animation selection
+   - Procedural animation overlays and effects
+   - State-based animation selection with WASM state sync
 
 4. **Player Animator** (`src/animation/player-animator.js`)
-   - Complete player implementation
+   - Complete player implementation with combat integration
    - Input handling and state management
-   - Combat system integration
+   - WASM synchronization for multiplayer consistency
+
+5. **Enhanced Wolf Body System** (`src/animation/enhanced-wolf-body.js`)
+   - Anatomically accurate wolf rendering
+   - Advanced fur simulation with physics
+   - Procedural variations and environmental adaptations
+
+6. **Wolf Animation System** (`src/animation/wolf-animation.js`)
+   - Complete wolf animation implementation
+   - Pack coordination and emotional state visualization
+   - Integration with enhanced AI system
 
 ## Quick Start Guide
 

@@ -15,3 +15,9 @@ struct WolfAnimData {
     float body_offset_y; // Vertical offset for body bobbing
     float fur_ruffle; // Intensity of fur ruffling
 };
+
+// Function to reset all wolf animation data
+static inline void reset_wolf_anim_data() {
+    // Wolf animation data is stored in the enemy structs, so nothing to reset here
+    // The function exists for compatibility but is effectively a no-op
+}

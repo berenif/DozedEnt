@@ -48,12 +48,33 @@ static float g_treasure_multiplier = 1.0f; // currency gain multiplier
 static float g_vision_radius_multiplier = 1.0f; // reserved for UI
 static float g_hp_regen_per_sec = 0.0f;   // passive health regen (0..1 per second)
 
-// Simple player attack state
+// Enhanced combat system - 5-button layout
 enum class AttackState : unsigned char { Idle = 0, Windup = 1, Active = 2, Recovery = 3 };
+enum class AttackType : unsigned char { Light = 0, Heavy = 1, Special = 2 };
 static AttackState g_attack_state = AttackState::Idle;
+static AttackType g_current_attack_type = AttackType::Light;
 static float g_attack_state_time = -1000.f;
 static float g_attack_dir_x = 1.f;
 static float g_attack_dir_y = 0.f;
+
+// Input buffer system
+static float g_light_attack_buffer = 0.f;
+static float g_heavy_attack_buffer = 0.f;
+static float g_special_buffer = 0.f;
+static float g_block_buffer = 0.f;
+static float g_roll_buffer = 0.f;
+
+// Enhanced roll state system
+enum class RollState : unsigned char { Idle = 0, Active = 1, Sliding = 2 };
+static RollState g_roll_state = RollState::Idle;
+static float g_roll_start_time = -1000.f;
+static float g_roll_direction_x = 1.f;
+static float g_roll_direction_y = 0.f;
+
+// Stun system for parry effects
+static int g_is_stunned = 0;
+static float g_stun_end_time = -1000.f;
+static int g_parry_stun_target = -1;  // Enemy index that got stunned by parry
 
 // Tunables
 static const float BASE_SPEED = 0.3f;
@@ -64,13 +85,37 @@ static const float JUMP_POWER = -0.45f; // New: Initial jump velocity
 static const float GRAVITY = 1.2f; // New: Gravity strength
 static const int MAX_JUMPS = 2; // New: Max allowed jumps
 
+// 5-Button Combat System Constants
+static const float INPUT_BUFFER_TIME = 0.12f;      // 120ms input buffer
+static const float PARRY_WINDOW = 0.12f;           // 120ms parry window
+static const float PARRY_STUN_DURATION = 0.30f;    // 300ms stun on successful parry
+static const float ROLL_IFRAME_DURATION = 0.30f;   // 300ms i-frames during roll
+
 // Combat tunables
 static const float ATTACK_RANGE = 0.055f;
 static const float BACK_ATTACK_COS_THRESHOLD = -0.3f;
 static const float BLOCK_FACING_COS_THRESHOLD = 0.5f;
-static const float PERFECT_PARRY_WINDOW = 0.16f;
+static const float PERFECT_PARRY_WINDOW = 0.12f;   // Updated to match spec
 
-// Player attack timings/arc
+// Light Attack (A1) timings
+static const float LIGHT_WINDUP_SEC = 0.05f;
+static const float LIGHT_ACTIVE_SEC = 0.08f;
+static const float LIGHT_RECOVERY_SEC = 0.15f;
+static const float LIGHT_DAMAGE = 0.20f;
+
+// Heavy Attack (A2) timings
+static const float HEAVY_WINDUP_SEC = 0.15f;       // Longer wind-up, can feint
+static const float HEAVY_ACTIVE_SEC = 0.12f;
+static const float HEAVY_RECOVERY_SEC = 0.25f;
+static const float HEAVY_DAMAGE = 0.45f;
+
+// Special Attack timings
+static const float SPECIAL_WINDUP_SEC = 0.20f;
+static const float SPECIAL_ACTIVE_SEC = 0.15f;
+static const float SPECIAL_RECOVERY_SEC = 0.30f;
+static const float SPECIAL_DAMAGE = 0.60f;
+
+// Legacy attack constants (for compatibility)
 static const float ATTACK_WINDUP_SEC = 0.08f;
 static const float ATTACK_ACTIVE_SEC = 0.12f;
 static const float ATTACK_RECOVERY_SEC = 0.22f;
@@ -81,8 +126,12 @@ static const float ATTACK_KNOCKBACK = 0.12f;
 
 // Data-driven timings
 static const float ATTACK_COOLDOWN_SEC = 0.35f;
-static const float ROLL_DURATION_SEC = 0.18f;
+static const float ROLL_DURATION_SEC = 0.30f;      // Updated for i-frames
 static const float ROLL_COOLDOWN_SEC = 0.80f;
+
+// Roll mechanics
+static const float ROLL_SLIDE_DURATION = 0.20f;    // Low traction slide after i-frames
+static const float ROLL_SLIDE_FRICTION = 0.3f;     // Reduced friction during slide
 
 // Stamina tunables
 static const float STAMINA_REGEN_PER_SEC = 0.10f;

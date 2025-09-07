@@ -11,7 +11,7 @@ export const joinRoom = strategy({
   init: config =>
     getRelays(config, defaultRelayUrls, defaultRedundancy).map(url => {
       const client = mqtt.connect(url, {
-        clientId: `trystero-${Math.random().toString(36).substr(2, 9)}`,
+        clientId: `trystero-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         clean: true,
         connectTimeout: 4000,
         reconnectPeriod: 1000,

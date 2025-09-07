@@ -2,6 +2,7 @@
 // Provides a complete player character with roll, attack, block, and hurt animations
 
 import { CharacterAnimator, AnimationPresets } from './animation-system.js'
+import RealisticProceduralAnimator from './realistic-procedural-animator.js'
 // SoundSystem and ParticleSystem imports removed - not used in this file
 
 export class AnimatedPlayer {
@@ -68,6 +69,15 @@ export class AnimatedPlayer {
         this.animator = new CharacterAnimator()
         this.animations = AnimationPresets.createPlayerAnimations()
         this.setupAnimations()
+        
+        // Realistic Procedural Animator - NEW!
+        this.proceduralAnimator = new RealisticProceduralAnimator({
+            ikEnabled: options.enableIK !== false,
+            renderSkeleton: options.debugMode || false,
+            renderIKTargets: options.debugMode || false,
+            renderSecondaryMotion: options.debugMode || false,
+            enableOptimizations: options.enableOptimizations !== false
+        })
         
         // Action cooldowns - now WASM-driven
         this.attackCooldown = 0
@@ -167,13 +177,23 @@ export class AnimatedPlayer {
         // Update simple IK before composing overlay
         this.updateIK(deltaTime)
 
-        // 1. Forward inputs to WASM
+        // 1. Forward inputs to WASM - 5-button combat system
         let inputX = 0; let inputY = 0
         if (input.left) {inputX -= 1}
         if (input.right) {inputX += 1}
         if (input.up) {inputY -= 1}
         if (input.down) {inputY += 1}
-        globalThis.wasmExports?.set_player_input?.(inputX, inputY, input.roll ? 1 : 0, input.jump ? 1 : 0, input.attack ? 1 : 0, input.block ? 1 : 0)
+        
+        // New 5-button combat system: A1(light), A2(heavy), Block, Roll, Special
+        globalThis.wasmExports?.set_player_input?.(
+            inputX, inputY, 
+            input.roll ? 1 : 0, 
+            input.jump ? 1 : 0, 
+            input.lightAttack ? 1 : 0, 
+            input.heavyAttack ? 1 : 0, 
+            input.block ? 1 : 0, 
+            input.special ? 1 : 0
+        )
 
         // 2. Read state for rendering
         // Assuming 800x600 canvas for now. Convert WASM's 0-1 range to world coordinates.
@@ -221,6 +241,15 @@ export class AnimatedPlayer {
             { x: globalThis.wasmExports?.get_vel_x?.() ?? 0, y: globalThis.wasmExports?.get_vel_y?.() ?? 0 },
             this.isGrounded
         ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }
+        
+        // Update realistic procedural animator with WASM data
+        const proceduralTransform = this.proceduralAnimator.update(deltaTime, {
+            // Pass any additional context the procedural animator might need
+            playerState: this.state,
+            inputState: input,
+            debugMode: this.debugMode
+        });
+        
         // Prefer WASM-driven overlay when available; fallback to local
         const overlay = (globalThis.wasmExports && typeof wx === 'number') ? {
             scaleX: wsx,
@@ -229,13 +258,21 @@ export class AnimatedPlayer {
             offsetX: wx,
             offsetY: wy
         } : this.computePoseOverlay(input)
+        
+        // Combine all transforms: base + procedural + overlay
         this.currentTransform = {
-            scaleX: baseTransform.scaleX * overlay.scaleX,
-            scaleY: baseTransform.scaleY * overlay.scaleY,
-            rotation: baseTransform.rotation + overlay.rotation,
-            offsetX: baseTransform.offsetX + overlay.offsetX,
-            offsetY: baseTransform.offsetY + overlay.offsetY,
-            trails: baseTransform.trails || []
+            scaleX: baseTransform.scaleX * overlay.scaleX * proceduralTransform.scaleX,
+            scaleY: baseTransform.scaleY * overlay.scaleY * proceduralTransform.scaleY,
+            rotation: baseTransform.rotation + overlay.rotation + proceduralTransform.rotation,
+            offsetX: baseTransform.offsetX + overlay.offsetX + proceduralTransform.offsetX,
+            offsetY: baseTransform.offsetY + overlay.offsetY + proceduralTransform.offsetY,
+            trails: baseTransform.trails || [],
+            
+            // Enhanced data from procedural animator
+            skeleton: proceduralTransform.skeleton,
+            secondaryMotion: proceduralTransform.secondaryMotion,
+            environmental: proceduralTransform.environmental,
+            debug: proceduralTransform.debug
         }
         
         // Physics handled by WASM
@@ -433,7 +470,7 @@ export class AnimatedPlayer {
     
     startBlock() {
         // This function now primarily triggers the WASM block action and handles local effects
-        if (!globalThis.wasmExports?.set_blocking?.(1, this.facing, 0)) { // Assuming a new WASM set_blocking function
+        if (!globalThis.wasmExports?.set_blocking?.(1, this.facing, 0)) {
             return; // Block failed in WASM (e.g., stamina)
         }
         // this.setState('blocking') // State is WASM-driven
@@ -452,7 +489,7 @@ export class AnimatedPlayer {
     
     stopBlock() {
         // This function now primarily triggers the WASM block action
-        globalThis.wasmExports?.set_blocking?.(0, this.facing, 0); // Assuming a new WASM set_blocking function
+        globalThis.wasmExports?.set_blocking?.(0, this.facing, 0);
         // this.setState('idle') // State is WASM-driven
         this.blockHeld = false
     }
@@ -588,7 +625,7 @@ export class AnimatedPlayer {
         const frame = this.animator.controller.getCurrentFrame()
         
         if (this.sprite && frame) {
-            // Draw sprite animation with procedural transform
+            // Draw sprite animation with enhanced procedural transform
             ctx.save()
             const t = this.currentTransform || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }
             const centerX = screenX + t.offsetX
@@ -596,12 +633,25 @@ export class AnimatedPlayer {
             ctx.translate(centerX, centerY)
             ctx.rotate(t.rotation)
             ctx.scale(this.facing < 0 ? -t.scaleX : t.scaleX, t.scaleY)
+            
+            // Render secondary motion effects first (behind character)
+            if (t.secondaryMotion && this.debugMode) {
+                this.renderSecondaryMotion(ctx, t.secondaryMotion)
+            }
+            
+            // Draw main character sprite
             ctx.drawImage(
                 this.sprite,
                 frame.x, frame.y, frame.width, frame.height,
                 -this.width/2, -this.height/2,
                 this.width, this.height
             )
+            
+            // Render enhanced skeletal overlay if available and in debug mode
+            if (t.skeleton && this.debugMode) {
+                this.renderSkeletalOverlay(ctx, t.skeleton)
+            }
+            
             ctx.restore()
         } else {
             // Fallback to colored rectangle
@@ -845,25 +895,140 @@ export class AnimatedPlayer {
             animation: this.animator.controller.currentAnimation?.name,
             frame: this.animator.controller.getCurrentFrame(),
             stateTimer: globalThis.wasmExports?.get_player_state_timer?.() ?? 0, // Assuming WASM exports player state timer
-            invulnerable: globalThis.wasmExports?.get_is_invulnerable?.() === 1
+            invulnerable: globalThis.wasmExports?.get_is_invulnerable?.() === 1,
+            
+            // Enhanced procedural animation info
+            proceduralData: this.currentTransform?.debug || null,
+            skeletalData: this.currentTransform?.skeleton || null,
+            secondaryMotion: this.currentTransform?.secondaryMotion || null,
+            environmental: this.currentTransform?.environmental || null
         }
     }
     
-    // Input helper to convert keyboard to player input
+    // Render secondary motion effects (cloth, hair, equipment)
+    renderSecondaryMotion(ctx, secondaryMotion) {
+        if (!secondaryMotion) return
+        
+        ctx.save()
+        ctx.globalAlpha = 0.8
+        
+        // Render cloth physics
+        if (secondaryMotion.cloth) {
+            ctx.strokeStyle = '#4A4A4A'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            secondaryMotion.cloth.forEach((point, index) => {
+                if (index === 0) {
+                    ctx.moveTo(point.position.x, point.position.y)
+                } else {
+                    ctx.lineTo(point.position.x, point.position.y)
+                }
+            })
+            ctx.stroke()
+        }
+        
+        // Render hair physics
+        if (secondaryMotion.hair) {
+            ctx.strokeStyle = '#8B4513'
+            ctx.lineWidth = 3
+            ctx.lineCap = 'round'
+            ctx.beginPath()
+            secondaryMotion.hair.forEach((segment, index) => {
+                if (index === 0) {
+                    ctx.moveTo(segment.position.x, segment.position.y)
+                } else {
+                    ctx.lineTo(segment.position.x, segment.position.y)
+                }
+            })
+            ctx.stroke()
+        }
+        
+        // Render equipment physics
+        if (secondaryMotion.equipment) {
+            secondaryMotion.equipment.forEach(item => {
+                ctx.fillStyle = item.type === 'sword' ? '#C0C0C0' : '#8B4513'
+                ctx.fillRect(item.position.x - 2, item.position.y - 1, 4, 2)
+            })
+        }
+        
+        ctx.restore()
+    }
+    
+    // Render skeletal overlay for debugging and enhanced visualization
+    renderSkeletalOverlay(ctx, skeleton) {
+        if (!skeleton) return
+        
+        ctx.save()
+        ctx.strokeStyle = '#00ff88'
+        ctx.fillStyle = '#ffff44'
+        ctx.lineWidth = 1
+        ctx.globalAlpha = 0.6
+        
+        // Draw bones
+        this.drawBone(ctx, skeleton.torso, skeleton.head)
+        this.drawBone(ctx, skeleton.torso, skeleton.pelvis)
+        
+        // Draw arms
+        this.drawBone(ctx, skeleton.leftArm.shoulder, skeleton.leftArm.elbow)
+        this.drawBone(ctx, skeleton.leftArm.elbow, skeleton.leftArm.hand)
+        this.drawBone(ctx, skeleton.rightArm.shoulder, skeleton.rightArm.elbow)
+        this.drawBone(ctx, skeleton.rightArm.elbow, skeleton.rightArm.hand)
+        
+        // Draw legs
+        this.drawBone(ctx, skeleton.leftLeg.hip, skeleton.leftLeg.knee)
+        this.drawBone(ctx, skeleton.leftLeg.knee, skeleton.leftLeg.foot)
+        this.drawBone(ctx, skeleton.rightLeg.hip, skeleton.rightLeg.knee)
+        this.drawBone(ctx, skeleton.rightLeg.knee, skeleton.rightLeg.foot)
+        
+        // Draw joints
+        const joints = [
+            skeleton.head, skeleton.torso, skeleton.pelvis,
+            skeleton.leftArm.shoulder, skeleton.leftArm.elbow, skeleton.leftArm.hand,
+            skeleton.rightArm.shoulder, skeleton.rightArm.elbow, skeleton.rightArm.hand,
+            skeleton.leftLeg.hip, skeleton.leftLeg.knee, skeleton.leftLeg.foot,
+            skeleton.rightLeg.hip, skeleton.rightLeg.knee, skeleton.rightLeg.foot
+        ]
+        
+        joints.forEach(joint => {
+            if (joint && joint.x !== undefined && joint.y !== undefined) {
+                ctx.beginPath()
+                ctx.arc(joint.x, joint.y, 2, 0, Math.PI * 2)
+                ctx.fill()
+            }
+        })
+        
+        ctx.restore()
+    }
+    
+    // Helper method to draw bones
+    drawBone(ctx, start, end) {
+        if (!start || !end || start.x === undefined || end.x === undefined) return
+        
+        ctx.beginPath()
+        ctx.moveTo(start.x, start.y)
+        ctx.lineTo(end.x, end.y)
+        ctx.stroke()
+    }
+    
+    // Input helper to convert keyboard to player input - 5-button combat system
     static createInputFromKeys(keys) {
         return {
+            // Movement
             left: keys.a || keys.arrowleft,
             right: keys.d || keys.arrowright,
             up: keys.w || keys.arrowup,
             down: keys.s || keys.arrowdown,
-            attack: keys[' '] || keys.j,
-            heavy: keys.h, // Heavy attack input, WASM will handle
-            parry: keys.p, // Parry input, WASM will handle
-            block: keys.shift || keys.k,
-            roll: keys.control || keys.l,
-            jump: keys.space || keys.z,
-            dash: keys.x || keys.shift, // Dash input, WASM will handle
-            chargeAttack: keys.c || keys.h // Charge attack input, WASM will handle
+            
+            // 5-Button Combat System
+            lightAttack: keys.j || keys['1'],        // A1 = Light Attack
+            heavyAttack: keys.k || keys['2'],        // A2 = Heavy Attack  
+            block: keys.shift || keys['3'],          // Block = Hold to guard, tap to parry
+            roll: keys.control || keys['4'],         // Roll = Dodge with i-frames
+            special: keys.l || keys['5'],            // Special = Hero move
+            
+            // Legacy support
+            attack: keys.j || keys[' '],             // Maps to light attack
+            jump: keys.space || keys.z
         }
     }
     

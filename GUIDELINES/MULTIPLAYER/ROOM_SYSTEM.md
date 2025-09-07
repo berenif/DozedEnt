@@ -10,11 +10,13 @@
 ## 📌 Overview
 
 A complete multiplayer room management solution built on Trystero's P2P infrastructure, featuring:
-- 🌐 **Serverless Architecture** - No backend required
-- 👑 **Host Authority** - Room creator manages game state
-- 🔄 **Automatic Migration** - Seamless host handoff
-- ⚡ **WASM Performance** - Game logic in WebAssembly
-- 🎆 **Live Updates** - Real-time room discovery
+- 🌐 **Serverless Architecture** - No backend required, fully P2P
+- 👑 **Host Authority** - Room creator manages authoritative game state
+- 🔄 **Automatic Migration** - Seamless host handoff with state preservation
+- ⚡ **WASM Performance** - Deterministic game logic in WebAssembly
+- 🎆 **Live Updates** - Real-time room discovery and player count updates
+- 🔒 **Security Features** - Password protection and input validation
+- 📊 **Analytics Integration** - Room metrics and performance monitoring
 
 ## ✨ Features
 

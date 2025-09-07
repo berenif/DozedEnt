@@ -13,7 +13,16 @@ enum class HazardType : unsigned char {
   Fire_Trap = 4,       // Burning damage over time
   Ice_Patch = 5,       // Slippery surface, loss of control
   Spike_Wall = 6,      // Wall-mounted spikes that extend periodically
-  Electric_Field = 7   // Periodic shock damage in area
+  Electric_Field = 7,  // Periodic shock damage in area
+  // Biome-specific hazards
+  Foliage = 8,         // Dense vegetation, concealment
+  Mud = 9,             // Slowing mud pits
+  Water = 10,          // Slow-moving water
+  Quicksand = 11,      // Trapping quicksand
+  Ice = 12,            // Ice patches (alias for Ice_Patch for biome consistency)
+  Rockfall = 13,       // Falling rocks
+  TallGrass = 14,      // Concealing tall grass
+  Wind = 15            // Strong wind effects
 };
 
 // Hazard state
@@ -57,6 +66,26 @@ static const float PIT_HOLE_STUN_TIME = 2.0f;     // Stun for 2 seconds after fa
 static const float ICE_PATCH_DURATION = 1.5f;     // Slip effect lasts 1.5 seconds
 static const float FIRE_TRAP_DURATION = 3.0f;     // Burn for 3 seconds
 static const float POISON_GAS_DURATION = 5.0f;    // Poison for 5 seconds
+
+// Add a hazard to the world
+static inline void add_hazard(float x, float y, float radius, HazardType type, float damage, float cooldown) {
+  if (g_hazard_count >= MAX_HAZARDS) return;
+  
+  Hazard& h = g_hazards[g_hazard_count];
+  h.type = type;
+  h.x = clamp01(x);
+  h.y = clamp01(y);
+  h.radius = radius;
+  h.damage = damage;
+  h.cooldown = cooldown;
+  h.lastTrigger = -1000.f;
+  h.active = true;
+  h.triggered = false;
+  h.duration = -1.f; // Permanent by default
+  h.activateTime = 0.f; // Active immediately
+  
+  g_hazard_count++;
+}
 
 // Clear all hazards
 static inline void hazard_clear() { 
@@ -210,6 +239,56 @@ static inline void update_hazards(float dt) {
             h.lastTrigger = g_time_seconds;
           }
           break;
+          
+        // Biome-specific hazards
+        case HazardType::Foliage:
+        case HazardType::TallGrass:
+          // Concealment hazards - no damage, just visual effect
+          break;
+          
+        case HazardType::Mud:
+          // Slowing effect
+          if (!g_is_rolling) {
+            g_player_slow_until = g_time_seconds + 0.5f;
+          }
+          break;
+          
+        case HazardType::Water:
+          // Slight slowing
+          if (!g_is_rolling) {
+            g_player_slow_until = g_time_seconds + 0.3f;
+          }
+          break;
+          
+        case HazardType::Quicksand:
+          // Trapping hazard
+          if (!h.triggered && !g_is_rolling) {
+            shouldTrigger = true;
+            h.triggered = true;
+            g_player_trapped = 1;
+            g_trap_release_time = g_time_seconds + 4.0f; // Longer than bear trap
+          }
+          break;
+          
+        case HazardType::Ice:
+          // Same as Ice_Patch
+          if (!g_is_rolling) {
+            g_player_slow_until = g_time_seconds + 0.5f;
+          }
+          break;
+          
+        case HazardType::Rockfall:
+          // Periodic falling rocks
+          if (g_time_seconds - h.lastTrigger >= 2.0f) {
+            shouldTrigger = true;
+            h.lastTrigger = g_time_seconds;
+          }
+          break;
+          
+        case HazardType::Wind:
+          // Wind effect - pushes player
+          // Could add wind force here in the future
+          break;
       }
       
       // Apply damage if triggered
@@ -244,7 +323,7 @@ static void generate_hazards() {
         add_hazard(0.1f + 0.8f * rng_float01(), 0.1f + 0.8f * rng_float01(), 0.07f + rng_float01() * 0.06f, HazardType::Quicksand, 0.7f, 12.0f);
       }
       for (int i = 0; i < 2; ++i) {
-        add_hazard(0.1f + 0.8f * rng_float01(), 0.1f + 0.8f * rng_float01(), 0.04f + rng_float01() * 0.04f, HazardType::PoisonGas, 0.3f, 7.0f);
+        add_hazard(0.1f + 0.8f * rng_float01(), 0.1f + 0.8f * rng_float01(), 0.04f + rng_float01() * 0.04f, HazardType::Poison_Gas, 0.3f, 7.0f);
       }
       break;
     case BiomeType::Mountains:

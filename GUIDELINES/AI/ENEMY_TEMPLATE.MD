@@ -1,45 +1,57 @@
-# Enemy Character Template & Design Guidelines
+# 🎮 Enhanced Enemy Character Template & Design Guidelines
 
 ## Overview
-This document outlines the standardized rules and patterns for building enemy characters in the game. All enemy implementations should follow these guidelines to ensure consistency, maintainability, and optimal gameplay experience.
+This document outlines the comprehensive standardized rules and patterns for building enemy characters in the game. All enemy implementations follow these guidelines to ensure consistency, maintainability, optimal gameplay experience, and seamless integration with the WASM-first architecture.
 
 ---
 
 ## Core Enemy Structure
 
-### 1. Base Properties
+### 1. Enhanced Base Properties
 
-Every enemy character MUST include these fundamental properties:
+Every enemy character MUST include these fundamental properties with WASM integration:
 
 ```javascript
-// Position and Physics
-position: { x, y }
-velocity: { x: 0, y: 0 }
-acceleration: { x: 0, y: 0 }
+// Position and Physics (WASM-managed)
+position: { x, y }           // Managed by WASM physics
+velocity: { x: 0, y: 0 }     // Calculated in WASM
+acceleration: { x: 0, y: 0 } // Applied in WASM
 
-// Dimensions
-width: [enemy-specific]
-height: [enemy-specific]
-facing: 1 // 1 for right, -1 for left
+// Dimensions (WASM collision)
+width: [enemy-specific]      // Used for WASM collision detection
+height: [enemy-specific]     // Used for WASM collision detection
+facing: 1                    // 1 for right, -1 for left
 
-// Combat Properties
-health: [base-health]
-maxHealth: [base-health]
-damage: [base-damage]
-attackRange: [attack-distance]
-detectionRange: [detection-distance]
+// Combat Properties (WASM-managed)
+health: [base-health]        // Managed by WASM combat system
+maxHealth: [base-health]    // Set by WASM initialization
+damage: [base-damage]        // Calculated by WASM
+attackRange: [attack-distance] // Used by WASM AI
+detectionRange: [detection-distance] // Used by WASM perception
 
-// Movement Properties
-speed: [base-speed]
-maxSpeed: [max-speed]
-friction: 0.85 // Standard friction value
-isGrounded: true
+// Movement Properties (WASM-physics)
+speed: [base-speed]          // Base movement speed
+maxSpeed: [max-speed]        // Maximum velocity cap
+friction: 0.85              // Standard friction value
+isGrounded: true            // Ground collision state
 
-// State Management
-state: 'idle' // Current animation/behavior state
-animationFrame: 0
-animationTime: 0
-animationSpeed: 0.1
+// Enhanced State Management
+state: 'idle'               // Current animation/behavior state
+animationFrame: 0           // Current animation frame
+animationTime: 0            // Animation timing
+animationSpeed: 0.1         // Animation playback speed
+
+// AI Attributes (WASM-managed)
+aggression: 0.5             // Attack frequency (0-1)
+intelligence: 0.6           // Tactical decision making (0-1)
+coordination: 0.7           // Pack behavior (0-1)
+morale: 0.8                 // Confidence level (0-1)
+stamina: 1.0                // Action availability (0-1)
+awareness: 0.9              // Perception radius (0-1)
+
+// Emotional State (WASM-managed)
+emotionalState: 'calm'      // Current emotional state
+emotionalIntensity: 0.0     // Emotional intensity (0-1)
 ```
 
 ### 2. Enemy Type System

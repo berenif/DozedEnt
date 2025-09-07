@@ -1,6 +1,6 @@
 # 🐺 Enhanced Wolf Body System
 
-A comprehensive wolf character enhancement system for the game, featuring anatomically accurate proportions, advanced fur simulation, procedural variations, and realistic physics.
+A comprehensive wolf character enhancement system for the game, featuring anatomically accurate proportions, advanced fur simulation, procedural variations, realistic physics, and seamless integration with the enhanced AI system and WASM architecture.
 
 ## 📁 File Structure
 

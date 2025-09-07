@@ -13,28 +13,41 @@
 #include "escalate.h"
 #include "cashout.h"
 #include "anim_overlay.h"
+#include "physics_backbone.h"
+#include "force_propagation.h"
+#include "constraint_logic.h"
+#include "chemistry_system.h"
+#include "world_simulation.h"
+#include "weapons.h"
 
-// Player input variables
+// External reference to world simulation
+extern WorldSimulation g_world_sim;
+
+// Player input variables - 5-button combat system
 static float g_input_x = 0.f;
 static float g_input_y = 0.f;
 static int g_input_is_rolling = 0;
-static int g_input_is_jumping = 0; // New: Jumping input
-static int g_input_is_attacking = 0; // New: Attack input
-static int g_input_is_blocking = 0; // New: Blocking input
+static int g_input_is_jumping = 0;
+static int g_input_light_attack = 0;    // A1 - Light attack
+static int g_input_heavy_attack = 0;    // A2 - Heavy attack  
+static int g_input_is_blocking = 0;     // Block - Hold to guard, tap to parry
+static int g_input_special = 0;         // Special - Hero move
 
 // Player animation state global
 PlayerAnimState g_player_anim_state = PlayerAnimState_Idle;
 static PlayerAnimState g_prev_player_anim_state = PlayerAnimState_Idle;
 
-// Setter for player input
+// Setter for player input - 5-button combat system
 __attribute__((export_name("set_player_input")))
-void set_player_input(float inputX, float inputY, int isRolling, int isJumping, int isAttacking, int isBlocking) {
+void set_player_input(float inputX, float inputY, int isRolling, int isJumping, int lightAttack, int heavyAttack, int isBlocking, int special) {
   g_input_x = inputX;
   g_input_y = inputY;
   g_input_is_rolling = isRolling;
-  g_input_is_jumping = isJumping; // New
-  g_input_is_attacking = isAttacking; // New
-  g_input_is_blocking = isBlocking; // New
+  g_input_is_jumping = isJumping;
+  g_input_light_attack = lightAttack;
+  g_input_heavy_attack = heavyAttack;
+  g_input_is_blocking = isBlocking;
+  g_input_special = special;
 }
 
 int main() { return 0; }
@@ -49,7 +62,25 @@ int main() { return 0; }
 
 __attribute__((export_name("init_run")))
 void init_run(unsigned long long seed, unsigned int start_weapon) {
-  (void)start_weapon; // unused in scaffold
+  // Initialize weapon system
+  init_weapon_system();
+  
+  // Set weapon based on start_weapon parameter
+  if (start_weapon < (unsigned int)WeaponType::Count) {
+    WeaponType weapon = (WeaponType)start_weapon;
+    
+    // Determine character type based on weapon
+    CharacterType character = CharacterType::None;
+    if (weapon == WeaponType::WardenLongsword) {
+      character = CharacterType::Warden;
+    } else if (weapon == WeaponType::RaiderGreataxe) {
+      character = CharacterType::Raider;
+    } else if (weapon == WeaponType::KenseiKatana) {
+      character = CharacterType::Kensei;
+    }
+    
+    set_character_weapon(character, weapon);
+  }
   g_rng = (seed ? seed : 1ull);
   g_phase = GamePhase::Explore;
   g_wolf_kills_since_choice = 0;
@@ -85,8 +116,26 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   g_pack_peak_wolves = 0;
   g_howl_cooldown_until = -1000.f;
   for (int i = 0; i < MAX_ENEMIES; ++i) g_enemy_roles[i] = (unsigned char)PackRole::None;
+  
+  // Initialize wolf pack management system
+  init_wolf_pack_system();
   // Clear wolf animation data
   reset_wolf_anim_data();
+
+  // Initialize physics system
+  physics_init();
+  
+  // Initialize force propagation system
+  force_propagation_init();
+  
+  // Initialize constraint system
+  constraint_system_init();
+  
+  // Initialize chemistry system
+  chemistry_system_init();
+  
+  // Initialize world simulation system
+  world_simulation_init();
 
   // Randomly select a biome for the new run
   g_current_biome = (BiomeType)(rng_u32() % (unsigned int)BiomeType::Count);
@@ -133,14 +182,19 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
     g_obstacle_count = 0;
   }
 
-  // Spawn initial wolf pack - early rooms have fewer enemies for quick regain of flow
-  unsigned int initial_pack_size = 4;
+  // Spawn initial wolf packs - create 3 packs to maintain constant pressure
+  unsigned int initial_pack_size = 3;
   if (g_room_count < 3) {
     // First 3 rooms are shorter with fewer enemies
     initial_pack_size = 2 + (g_room_count > 0 ? 1 : 0);  // 2, 3, 3 enemies
   }
-  spawn_wolf_pack(initial_pack_size);
-  // Initial role assignment
+  
+  // Create 3 initial tracked wolf packs
+  for (int pack_num = 0; pack_num < MAX_WOLF_PACKS; ++pack_num) {
+    create_tracked_wolf_pack(initial_pack_size);
+  }
+  
+  // Initial role assignment for all spawned wolves
   for (int i = 0; i < MAX_ENEMIES; ++i) if (g_enemies[i].active) g_enemy_roles[i] = (unsigned char)PackRole::Harasser;
   // Clear den/danger boards
   g_den_radius = 0.f;
@@ -373,15 +427,64 @@ void update(float dtSeconds) {
     g_input_y /= len;
   }
 
-  const float speed = (BASE_SPEED * g_speed_mult) * (g_input_is_rolling ? ROLL_SPEED_MULTIPLIER : 1.f);
+  // Stun prevents all input
+  if (g_is_stunned) {
+    g_input_x = 0.f;
+    g_input_y = 0.f;
+    g_input_is_rolling = 0;
+    g_input_light_attack = 0;
+    g_input_heavy_attack = 0;
+    g_input_is_blocking = 0;
+    g_input_special = 0;
+  }
+  
+  // Enhanced roll mechanics - different behavior for each roll state
+  float speed_multiplier = 1.f;
+  float friction_multiplier = 1.f;
+  
+  if (g_roll_state == RollState::Active) {
+    speed_multiplier = ROLL_SPEED_MULTIPLIER;
+    // During active roll, use roll direction instead of input
+    g_input_x = g_roll_direction_x;
+    g_input_y = g_roll_direction_y;
+  } else if (g_roll_state == RollState::Sliding) {
+    speed_multiplier = ROLL_SPEED_MULTIPLIER * 0.7f; // Maintain some speed
+    friction_multiplier = ROLL_SLIDE_FRICTION; // Low traction
+    // Continue in roll direction, ignore input during slide
+    g_input_x = g_roll_direction_x * 0.5f; // Gradually reduce momentum
+    g_input_y = g_roll_direction_y * 0.5f;
+  }
+  
+  const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier;
   const float acceleration = PLAYER_ACCEL * dtSeconds;
-  const float friction = PLAYER_FRICTION * dtSeconds;
+  const float friction = PLAYER_FRICTION * dtSeconds * friction_multiplier;
 
-  // Cache rolling flag for combat checks
-  g_is_rolling = g_input_is_rolling ? 1 : 0;
+  // Update roll state machine
+  if (g_roll_state == RollState::Active) {
+    float roll_time = g_time_seconds - g_roll_start_time;
+    if (roll_time >= ROLL_IFRAME_DURATION) {
+      // Transition from active roll to sliding
+      g_roll_state = RollState::Sliding;
+    }
+  } else if (g_roll_state == RollState::Sliding) {
+    float roll_time = g_time_seconds - g_roll_start_time;
+    if (roll_time >= (ROLL_IFRAME_DURATION + ROLL_SLIDE_DURATION)) {
+      // End of roll sequence
+      g_roll_state = RollState::Idle;
+    }
+  }
+  
+  // Update stun state
+  if (g_is_stunned && g_time_seconds >= g_stun_end_time) {
+    g_is_stunned = 0;
+  }
+  
+  // Cache rolling flag for combat checks - only true during i-frame period
+  g_is_rolling = (g_roll_state == RollState::Active) ? 1 : 0;
 
   // Jump handling with improved mechanics
   static float g_last_jump_time = -1000.f;
+  static int g_prev_is_grounded = 1;
   const float JUMP_BUFFER_TIME = 0.1f; // Allow jump input slightly before landing
   const float COYOTE_TIME = 0.15f; // Allow jump slightly after leaving platform
   static float g_left_ground_time = -1000.f;
@@ -426,8 +529,6 @@ void update(float dtSeconds) {
     }
   }
   
-  static int g_prev_is_grounded = 1;
-
   // Apply gravity if not grounded
   if (!g_is_grounded) {
       g_vel_y += GRAVITY * dtSeconds;
@@ -712,6 +813,9 @@ void update(float dtSeconds) {
         }
       }
     }
+    // Update wolf pack management system (temporarily disabled for debugging)
+    // update_wolf_pack_system(dtSeconds);
+    
     // Howl-based reinforcement spawns
     maybe_handle_howl_spawns();
     update_pack_controller();
@@ -830,7 +934,7 @@ void update(float dtSeconds) {
   // Update player animation state with improved transitions
   PlayerAnimState new_state = g_player_anim_state;
   
-  if (g_input_is_rolling && g_is_rolling) {
+  if (g_roll_state == RollState::Active || g_roll_state == RollState::Sliding) {
       new_state = PlayerAnimState_Rolling;
   } else if (g_attack_state != AttackState::Idle) {
       new_state = PlayerAnimState_Attacking;
@@ -892,6 +996,21 @@ void update(float dtSeconds) {
     g_prev_player_anim_state = g_player_anim_state;
   }
 
+  // Update physics system
+  physics_step(dtSeconds);
+  
+  // Update force propagation system
+  force_propagation_update(dtSeconds);
+  
+  // Update constraint system
+  constraint_system_update(dtSeconds);
+  
+  // Update chemistry system
+  chemistry_system_update(dtSeconds);
+  
+  // Update world simulation system
+  world_simulation_update(dtSeconds);
+
   // Update UI animation overlay values last so they're coherent with current frame state
   update_anim_overlay_internal();
 }
@@ -899,6 +1018,64 @@ void update(float dtSeconds) {
 // Position getters
 __attribute__((export_name("get_x")))
 float get_x() { return g_pos_x; }
+
+// Enhanced animation overlay getters
+__attribute__((export_name("get_anim_spine_curve")))
+float get_anim_spine_curve() { return g_anim_spine_curve; }
+
+__attribute__((export_name("get_anim_shoulder_rotation")))
+float get_anim_shoulder_rotation() { return g_anim_shoulder_rotation; }
+
+__attribute__((export_name("get_anim_head_bob_x")))
+float get_anim_head_bob_x() { return g_anim_head_bob_x; }
+
+__attribute__((export_name("get_anim_head_bob_y")))
+float get_anim_head_bob_y() { return g_anim_head_bob_y; }
+
+__attribute__((export_name("get_anim_arm_swing_left")))
+float get_anim_arm_swing_left() { return g_anim_arm_swing_left; }
+
+__attribute__((export_name("get_anim_arm_swing_right")))
+float get_anim_arm_swing_right() { return g_anim_arm_swing_right; }
+
+__attribute__((export_name("get_anim_leg_lift_left")))
+float get_anim_leg_lift_left() { return g_anim_leg_lift_left; }
+
+__attribute__((export_name("get_anim_leg_lift_right")))
+float get_anim_leg_lift_right() { return g_anim_leg_lift_right; }
+
+__attribute__((export_name("get_anim_torso_twist")))
+float get_anim_torso_twist() { return g_anim_torso_twist; }
+
+__attribute__((export_name("get_anim_breathing_intensity")))
+float get_anim_breathing_intensity() { return g_anim_breathing_intensity; }
+
+__attribute__((export_name("get_anim_fatigue_factor")))
+float get_anim_fatigue_factor() { return g_anim_fatigue_factor; }
+
+__attribute__((export_name("get_anim_momentum_x")))
+float get_anim_momentum_x() { return g_anim_momentum_x; }
+
+__attribute__((export_name("get_anim_momentum_y")))
+float get_anim_momentum_y() { return g_anim_momentum_y; }
+
+__attribute__((export_name("get_anim_cloth_sway")))
+float get_anim_cloth_sway() { return g_anim_cloth_sway; }
+
+__attribute__((export_name("get_anim_hair_bounce")))
+float get_anim_hair_bounce() { return g_anim_hair_bounce; }
+
+__attribute__((export_name("get_anim_equipment_jiggle")))
+float get_anim_equipment_jiggle() { return g_anim_equipment_jiggle; }
+
+__attribute__((export_name("get_anim_wind_response")))
+float get_anim_wind_response() { return g_anim_wind_response; }
+
+__attribute__((export_name("get_anim_ground_adapt")))
+float get_anim_ground_adapt() { return g_anim_ground_adapt; }
+
+__attribute__((export_name("get_anim_temperature_shiver")))
+float get_anim_temperature_shiver() { return g_anim_temperature_shiver; }
 
 __attribute__((export_name("get_y")))
 float get_y() { return g_pos_y; }
@@ -986,6 +1163,45 @@ unsigned int get_is_invulnerable() {
   return g_is_rolling ? 1u : 0u;
 }
 
+// Enhanced roll state exports
+__attribute__((export_name("get_roll_state")))
+unsigned int get_roll_state() { return (unsigned int)g_roll_state; }
+
+__attribute__((export_name("get_is_roll_sliding")))
+unsigned int get_is_roll_sliding() { return (g_roll_state == RollState::Sliding) ? 1u : 0u; }
+
+__attribute__((export_name("get_roll_time")))
+float get_roll_time() { 
+  if (g_roll_state == RollState::Idle) return 0.f;
+  return g_time_seconds - g_roll_start_time;
+}
+
+// Stun system exports
+__attribute__((export_name("get_is_stunned")))
+unsigned int get_is_stunned() { return g_is_stunned ? 1u : 0u; }
+
+__attribute__((export_name("get_stun_remaining")))
+float get_stun_remaining() {
+  if (!g_is_stunned) return 0.f;
+  float remaining = g_stun_end_time - g_time_seconds;
+  return remaining > 0.f ? remaining : 0.f;
+}
+
+// Apply stun to player (for enemy attacks that cause stun)
+__attribute__((export_name("apply_stun")))
+void apply_stun(float duration) {
+  g_is_stunned = 1;
+  g_stun_end_time = g_time_seconds + duration;
+}
+
+// Apply parry stun to specific enemy
+__attribute__((export_name("apply_parry_stun")))
+void apply_parry_stun(int enemy_index) {
+  g_parry_stun_target = enemy_index;
+  // Enemy stun logic would be handled in enemy system
+  // For now, we just track which enemy was stunned
+}
+
 // Current movement speed cap (units per second)
 __attribute__((export_name("get_speed")))
 float get_speed() {
@@ -1011,18 +1227,23 @@ int on_parry() {
   return 1;
 }
 
-// Apply attack stamina cost immediately. Returns 1 if applied, 0 if no stamina (still clamps to 0).
-__attribute__((export_name("on_attack")))
-int on_attack() {
-  // Enforce attack cooldown
-  if ((g_time_seconds - g_last_attack_time) < ATTACK_COOLDOWN_SEC) { return 0; }
-  if (g_stamina < STAMINA_ATTACK_COST) { return 0; }
-  g_stamina -= STAMINA_ATTACK_COST;
+// Light Attack (A1) - Fast, can combo
+__attribute__((export_name("on_light_attack")))
+int on_light_attack() {
+  // Apply weapon speed modifier to cooldown
+  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
+  
+  // Apply weapon stamina cost modifier
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * get_weapon_stamina_cost_multiplier();
+  if (g_stamina < weapon_stamina_cost) { return 0; }
+  g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
-  // Start attack state machine if idle or recovery complete
+  
+  // Start light attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
-    // Attack direction is player's current facing
+    g_current_attack_type = AttackType::Light;
     g_attack_dir_x = g_face_x;
     g_attack_dir_y = g_face_y;
     normalize(g_attack_dir_x, g_attack_dir_y);
@@ -1032,16 +1253,100 @@ int on_attack() {
   return 1;
 }
 
+// Heavy Attack (A2) - Slower, more damage, can feint during windup
+__attribute__((export_name("on_heavy_attack")))
+int on_heavy_attack() {
+  // Apply weapon speed modifier to cooldown
+  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
+  
+  // Apply weapon stamina cost modifier (heavy costs more)
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * 1.5f * get_weapon_stamina_cost_multiplier();
+  if (g_stamina < weapon_stamina_cost) { return 0; }
+  g_stamina -= weapon_stamina_cost;
+  if (g_stamina < 0.f) g_stamina = 0.f;
+  g_last_attack_time = g_time_seconds;
+  
+  // Start heavy attack state machine
+  if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
+    g_current_attack_type = AttackType::Heavy;
+    g_attack_dir_x = g_face_x;
+    g_attack_dir_y = g_face_y;
+    normalize(g_attack_dir_x, g_attack_dir_y);
+    g_attack_state = AttackState::Windup;
+    g_attack_state_time = g_time_seconds;
+  }
+  return 1;
+}
+
+// Special Attack - Hero move, unique per character
+__attribute__((export_name("on_special_attack")))
+int on_special_attack() {
+  // Apply weapon speed modifier to cooldown (special has longer base cooldown)
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * 2.0f) / get_weapon_speed_multiplier();
+  if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
+  
+  // Apply weapon stamina cost modifier (special costs more)
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * 2.0f * get_weapon_stamina_cost_multiplier();
+  if (g_stamina < weapon_stamina_cost) { return 0; }
+  g_stamina -= weapon_stamina_cost;
+  if (g_stamina < 0.f) g_stamina = 0.f;
+  g_last_attack_time = g_time_seconds;
+  
+  // Start special attack state machine
+  if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
+    g_current_attack_type = AttackType::Special;
+    g_attack_dir_x = g_face_x;
+    g_attack_dir_y = g_face_y;
+    normalize(g_attack_dir_x, g_attack_dir_y);
+    g_attack_state = AttackState::Windup;
+    g_attack_state_time = g_time_seconds;
+  }
+  return 1;
+}
+
+// Legacy attack function (for compatibility)
+__attribute__((export_name("on_attack")))
+int on_attack() {
+  return on_light_attack(); // Default to light attack
+}
+
 // Attempt to start a roll: consumes start cost if any stamina remains. Returns 1 if applied, 0 otherwise.
 __attribute__((export_name("on_roll_start")))
 int on_roll_start() {
+  // Can't roll if already rolling
+  if (g_roll_state != RollState::Idle) { return 0; }
+  
   // Enforce roll cooldown
   if ((g_time_seconds - g_last_roll_time) < ROLL_COOLDOWN_SEC) { return 0; }
   if (g_stamina < STAMINA_ROLL_START_COST) { return 0; }
   g_stamina -= STAMINA_ROLL_START_COST;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_roll_time = g_time_seconds;
+  
+  // Initialize roll state
+  g_roll_state = RollState::Active;
+  g_roll_start_time = g_time_seconds;
+  
+  // Set roll direction based on current input or facing direction
+  if (g_input_x != 0.f || g_input_y != 0.f) {
+    g_roll_direction_x = g_input_x;
+    g_roll_direction_y = g_input_y;
+    normalize(g_roll_direction_x, g_roll_direction_y);
+  } else {
+    // No input, roll in facing direction
+    g_roll_direction_x = g_face_x;
+    g_roll_direction_y = g_face_y;
+  }
+  
   return 1;
+}
+
+// Heavy attack feint - can cancel heavy attack during windup by blocking
+__attribute__((export_name("can_feint_heavy")))
+int can_feint_heavy() {
+  return (g_current_attack_type == AttackType::Heavy && 
+          g_attack_state == AttackState::Windup) ? 1 : 0;
 }
 
 // Set or clear blocking state and update facing direction.
@@ -1052,6 +1357,12 @@ int set_blocking(int on, float faceX, float faceY) {
   // normalize facing input
   normalize(faceX, faceY);
   if (on) {
+    // Heavy attack feinting - can cancel heavy attack during windup
+    if (can_feint_heavy()) {
+      g_attack_state = AttackState::Idle;
+      g_current_attack_type = AttackType::Light; // Reset to default
+    }
+    
     if (!g_blocking) {
       g_block_start_time = g_time_seconds;
       // Apply block start cost once on press if any stamina remains
@@ -1105,10 +1416,15 @@ int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, f
     int facingOk = (faceDot >= BLOCK_FACING_COS_THRESHOLD);
     if (facingOk) {
       const float dt = g_time_seconds - g_block_start_time;
-      if (dt >= 0.f && dt <= PERFECT_PARRY_WINDOW) {
-        // Perfect parry: fully restore player stamina
+      if (dt >= 0.f && dt <= PARRY_WINDOW) {
+        // Perfect parry: fully restore player stamina and stun attacker
         g_stamina = 1.0f;
-        return 2; // PERFECT PARRY
+        
+        // Apply 300ms stun to the attacker (this would be handled by enemy system)
+        // For now, we signal that a parry stun should be applied
+        apply_parry_stun(-1); // -1 means "whoever attacked us"
+        
+        return 2; // PERFECT PARRY (causes 300ms stun)
       }
     }
     return 1; // normal block
@@ -1273,6 +1589,55 @@ unsigned int spawn_wolves(unsigned int count) {
   return spawned;
 }
 
+// Wolf pack management API functions
+__attribute__((export_name("get_wolf_pack_count")))
+unsigned int get_wolf_pack_count() {
+  // Count active packs dynamically to ensure accuracy
+  unsigned int active_count = 0;
+  for (int i = 0; i < MAX_WOLF_PACKS; ++i) {
+    if (g_wolf_packs[i].active) {
+      active_count++;
+    }
+  }
+  return active_count;
+}
+
+__attribute__((export_name("debug_pack_system")))
+unsigned int debug_pack_system() {
+  // Return total number of active enemies for debugging
+  unsigned int active_enemies = 0;
+  for (int i = 0; i < MAX_ENEMIES; ++i) {
+    if (g_enemies[i].active) active_enemies++;
+  }
+  return active_enemies;
+}
+
+__attribute__((export_name("debug_enemy_count_raw")))
+unsigned int debug_enemy_count_raw() {
+  // Return the raw g_enemy_count value
+  return g_enemy_count;
+}
+
+__attribute__((export_name("get_wolf_pack_active")))
+unsigned int get_wolf_pack_active(unsigned int pack_idx) {
+  return (pack_idx < MAX_WOLF_PACKS && g_wolf_packs[pack_idx].active) ? 1 : 0;
+}
+
+__attribute__((export_name("get_wolf_pack_alive")))
+unsigned int get_wolf_pack_alive(unsigned int pack_idx) {
+  return (pack_idx < MAX_WOLF_PACKS && g_wolf_packs[pack_idx].active && g_wolf_packs[pack_idx].alive) ? 1 : 0;
+}
+
+__attribute__((export_name("get_wolf_pack_respawn_timer")))
+float get_wolf_pack_respawn_timer(unsigned int pack_idx) {
+  return (pack_idx < MAX_WOLF_PACKS && g_wolf_packs[pack_idx].active) ? g_wolf_packs[pack_idx].respawn_timer : -1.0f;
+}
+
+__attribute__((export_name("get_wolf_pack_member_count")))
+unsigned int get_wolf_pack_member_count(unsigned int pack_idx) {
+  return (pack_idx < MAX_WOLF_PACKS && g_wolf_packs[pack_idx].active) ? g_wolf_packs[pack_idx].member_count : 0;
+}
+
 // -------- Animation overlay getters (UI reads for rendering only) --------
 __attribute__((export_name("get_anim_scale_x")))
 float get_anim_scale_x() { return g_anim_scale_x; }
@@ -1328,3 +1693,234 @@ float get_wolf_anim_body_offset_y(unsigned int wolf_idx) { return (wolf_idx < g_
 
 __attribute__((export_name("get_wolf_anim_fur_ruffle")))
 float get_wolf_anim_fur_ruffle(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.fur_ruffle : 0.f; }
+
+// ============================================================================
+// Weapon System Exports
+// ============================================================================
+
+// Get current weapon type
+__attribute__((export_name("get_current_weapon")))
+int get_current_weapon() {
+  return (int)g_current_weapon;
+}
+
+// Get current character type
+__attribute__((export_name("get_character_type")))
+int get_character_type() {
+  return (int)g_character_type;
+}
+
+// Set character and weapon
+__attribute__((export_name("set_character_and_weapon")))
+void set_character_and_weapon(int character, int weapon) {
+  if (character >= 0 && character < (int)CharacterType::Count &&
+      weapon >= 0 && weapon < (int)WeaponType::Count) {
+    set_character_weapon((CharacterType)character, (WeaponType)weapon);
+  }
+}
+
+// Get weapon damage multiplier
+__attribute__((export_name("get_weapon_damage_mult")))
+float get_weapon_damage_mult() {
+  return get_weapon_damage_multiplier();
+}
+
+// Get weapon speed multiplier
+__attribute__((export_name("get_weapon_speed_mult")))
+float get_weapon_speed_mult() {
+  return get_weapon_speed_multiplier();
+}
+
+// Get weapon reach multiplier
+__attribute__((export_name("get_weapon_reach_mult")))
+float get_weapon_reach_mult() {
+  return get_weapon_reach_multiplier();
+}
+
+// Check if weapon has specific tag
+__attribute__((export_name("weapon_has_hyperarmor")))
+int weapon_has_hyperarmor() {
+  return weapon_has_tag(WEAPON_TAG_HYPERARMOR) ? 1 : 0;
+}
+
+__attribute__((export_name("weapon_has_flow_combo")))
+int weapon_has_flow_combo() {
+  return weapon_has_tag(WEAPON_TAG_FLOW_COMBO) ? 1 : 0;
+}
+
+__attribute__((export_name("weapon_has_bash_synergy")))
+int weapon_has_bash_synergy() {
+  return weapon_has_tag(WEAPON_TAG_BASH_SYNERGY) ? 1 : 0;
+}
+
+// ============================================================================
+// Environment System Exports
+// ============================================================================
+
+// Generate environment for specific biome
+__attribute__((export_name("generate_environment")))
+void generate_environment(int biome_type, int seed) {
+  g_world_sim.generate_environment(static_cast<BiomeType>(biome_type), static_cast<uint32_t>(seed));
+}
+
+
+// Get environment object count
+__attribute__((export_name("get_environment_object_count")))
+int get_environment_object_count() {
+  return static_cast<int>(g_world_sim.environment_object_count);
+}
+
+// Get environment object data
+__attribute__((export_name("get_environment_object_type")))
+int get_environment_object_type(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return -1;
+  return static_cast<int>(g_world_sim.environment_objects[index].type);
+}
+
+__attribute__((export_name("get_environment_object_x")))
+float get_environment_object_x(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0.0f;
+  return g_world_sim.environment_objects[index].position.x;
+}
+
+__attribute__((export_name("get_environment_object_y")))
+float get_environment_object_y(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0.0f;
+  return g_world_sim.environment_objects[index].position.y;
+}
+
+__attribute__((export_name("get_environment_object_width")))
+float get_environment_object_width(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0.0f;
+  return g_world_sim.environment_objects[index].size.x;
+}
+
+__attribute__((export_name("get_environment_object_height")))
+float get_environment_object_height(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0.0f;
+  return g_world_sim.environment_objects[index].size.y;
+}
+
+__attribute__((export_name("get_environment_object_is_interactable")))
+int get_environment_object_is_interactable(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0;
+  return g_world_sim.environment_objects[index].is_interactable ? 1 : 0;
+}
+
+__attribute__((export_name("get_environment_object_is_solid")))
+int get_environment_object_is_solid(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0;
+  return g_world_sim.environment_objects[index].is_solid ? 1 : 0;
+}
+
+__attribute__((export_name("get_environment_object_state_flags")))
+int get_environment_object_state_flags(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.environment_object_count)) return 0;
+  return static_cast<int>(g_world_sim.environment_objects[index].state_flags);
+}
+
+// Weather system exports
+__attribute__((export_name("get_weather_rain_intensity")))
+float get_weather_rain_intensity() {
+  return g_world_sim.weather.rain_intensity;
+}
+
+
+
+__attribute__((export_name("get_weather_humidity")))
+float get_weather_humidity() {
+  return g_world_sim.weather.humidity;
+}
+
+__attribute__((export_name("is_lightning_active")))
+int is_lightning_active() {
+  return g_world_sim.weather.lightning_active ? 1 : 0;
+}
+
+// Terrain and physics integration exports
+__attribute__((export_name("get_terrain_friction")))
+float get_terrain_friction(float world_x, float world_y) {
+  // Convert world coordinates to terrain grid coordinates
+  int grid_x = (int)((world_x / 3840.0f) * TERRAIN_GRID_SIZE);
+  int grid_y = (int)((world_y / 2160.0f) * TERRAIN_GRID_SIZE);
+  
+  if (grid_x < 0 || grid_x >= TERRAIN_GRID_SIZE || grid_y < 0 || grid_y >= TERRAIN_GRID_SIZE) {
+    return 0.5f; // Default friction
+  }
+  
+  return g_world_sim.terrain[grid_x][grid_y].material.kinetic_friction;
+}
+
+__attribute__((export_name("get_terrain_temperature")))
+float get_terrain_temperature(float world_x, float world_y) {
+  int grid_x = (int)((world_x / 3840.0f) * TERRAIN_GRID_SIZE);
+  int grid_y = (int)((world_y / 2160.0f) * TERRAIN_GRID_SIZE);
+  
+  if (grid_x < 0 || grid_x >= TERRAIN_GRID_SIZE || grid_y < 0 || grid_y >= TERRAIN_GRID_SIZE) {
+    return 20.0f; // Default temperature
+  }
+  
+  return g_world_sim.terrain[grid_x][grid_y].temperature;
+}
+
+
+// Environmental hazards
+
+// Hazard functions are now provided by terrain_hazards.h to avoid duplicates
+
+__attribute__((export_name("get_hazard_intensity")))
+float get_hazard_intensity(int index) {
+  if (index < 0 || index >= static_cast<int>(g_world_sim.hazard_count)) return 0.0f;
+  return g_world_sim.hazards[index].intensity;
+}
+
+// Check if player is in hazardous area
+__attribute__((export_name("check_player_in_hazard")))
+int check_player_in_hazard(float player_x, float player_y) {
+  for (uint32_t i = 0; i < g_world_sim.hazard_count; i++) {
+    HazardVolume& hazard = g_world_sim.hazards[i];
+    float dx = player_x - hazard.position.x;
+    float dy = player_y - hazard.position.y;
+    float distance = sqrt(dx * dx + dy * dy);
+    
+    if (distance <= hazard.radius) {
+      return static_cast<int>(hazard.type);
+    }
+  }
+  return -1; // No hazard
+}
+
+// Environmental interactions
+__attribute__((export_name("interact_with_environment_object")))
+int interact_with_environment_object(int object_index) {
+  if (object_index < 0 || object_index >= static_cast<int>(g_world_sim.environment_object_count)) {
+    return 0; // Failed
+  }
+  
+  EnvironmentObject& obj = g_world_sim.environment_objects[object_index];
+  
+  if (!obj.is_interactable) {
+    return 0; // Not interactable
+  }
+  
+  // Handle different interaction types
+  switch (obj.type) {
+    case ENV_CHEST:
+      obj.state_flags |= 1; // Mark as opened
+      return 1; // Success
+      
+    case ENV_LEVER:
+      obj.state_flags ^= 2; // Toggle activated state
+      return 1; // Success
+      
+    case ENV_DOOR:
+      if ((obj.state_flags & 4) == 0) { // Not locked
+        obj.state_flags ^= 1; // Toggle open/closed
+        return 1; // Success
+      }
+      return 0; // Locked
+      
+    default:
+      return 0; // No interaction defined
+  }
+}

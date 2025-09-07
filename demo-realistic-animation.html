@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Procedural Player Animation Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .demo-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .canvas-container {
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            background: #000000;
+        }
+        
+        .controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            color: #00ff88;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #00cc66;
+        }
+        
+        button.active {
+            background: #ff4444;
+            color: #fff;
+        }
+        
+        .debug-info {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .instructions {
+            background: #2a2a4a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h2 {
+            color: #88ccff;
+            margin-top: 0;
+        }
+        
+        .key-binding {
+            display: inline-block;
+            background: #444;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 2px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>🎮 Realistic Procedural Player Animation Demo</h2>
+        <p><strong>Controls:</strong></p>
+        <p>
+            <span class="key-binding">WASD</span> or <span class="key-binding">Arrow Keys</span> - Move
+            <span class="key-binding">Space</span> - Light Attack
+            <span class="key-binding">Shift</span> - Block (Hold)
+            <span class="key-binding">Ctrl</span> - Roll/Dodge
+        </p>
+        <p><strong>Features:</strong> Advanced IK system, realistic gait patterns, physics-based secondary motion, environmental responses, fatigue simulation, and momentum-based movement.</p>
+    </div>
+
+    <div class="demo-container">
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h3>🎯 Animation Settings</h3>
+                <div class="control-row">
+                    <label>IK Enabled:</label>
+                    <button id="toggleIK" class="active">ON</button>
+                </div>
+                <div class="control-row">
+                    <label>Show Skeleton:</label>
+                    <button id="toggleSkeleton">OFF</button>
+                </div>
+                <div class="control-row">
+                    <label>Show Secondary Motion:</label>
+                    <button id="toggleSecondary">OFF</button>
+                </div>
+                <div class="control-row">
+                    <label>Show IK Targets:</label>
+                    <button id="toggleIKTargets">OFF</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>⚡ Physics Parameters</h3>
+                <div class="control-row">
+                    <label>Fatigue Level:</label>
+                    <input type="range" id="fatigueSlider" min="0" max="100" value="0">
+                    <span id="fatigueValue">0%</span>
+                </div>
+                <div class="control-row">
+                    <label>Wind Strength:</label>
+                    <input type="range" id="windSlider" min="-100" max="100" value="0">
+                    <span id="windValue">0%</span>
+                </div>
+                <div class="control-row">
+                    <label>Temperature:</label>
+                    <input type="range" id="tempSlider" min="0" max="100" value="75">
+                    <span id="tempValue">75%</span>
+                </div>
+                <div class="control-row">
+                    <label>Breathing Rate:</label>
+                    <input type="range" id="breathingSlider" min="50" max="200" value="100">
+                    <span id="breathingValue">100%</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🎬 Animation States</h3>
+                <button id="testIdle">Idle</button>
+                <button id="testWalk">Walk</button>
+                <button id="testRun">Run</button>
+                <button id="testAttack">Attack</button>
+                <button id="testBlock">Block</button>
+                <button id="testRoll">Roll</button>
+                <button id="testHurt">Hurt</button>
+            </div>
+            
+            <div class="control-group">
+                <h3>📊 Debug Information</h3>
+                <div id="debugInfo" class="debug-info">
+                    Debug information will appear here...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import RealisticProceduralAnimator from './src/animation/realistic-procedural-animator.js';
+        
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Mock WASM exports for demo
+        globalThis.wasmExports = {
+            get_x: () => mockPlayer.position.x,
+            get_y: () => mockPlayer.position.y,
+            get_vel_x: () => mockPlayer.velocity.x,
+            get_vel_y: () => mockPlayer.velocity.y,
+            get_stamina: () => mockPlayer.stamina,
+            get_hp: () => mockPlayer.health,
+            get_is_grounded: () => mockPlayer.isGrounded ? 1 : 0,
+            get_player_anim_state: () => mockPlayer.animState,
+            get_is_invulnerable: () => mockPlayer.invulnerable ? 1 : 0,
+            
+            // Enhanced animation data (mock values that change based on movement)
+            get_anim_scale_x: () => 1.0 + Math.sin(Date.now() * 0.001) * 0.02,
+            get_anim_scale_y: () => 1.0 + Math.cos(Date.now() * 0.002) * 0.015,
+            get_anim_rotation: () => mockPlayer.velocity.x * 0.1,
+            get_anim_offset_x: () => mockPlayer.velocity.x * 2,
+            get_anim_offset_y: () => Math.sin(Date.now() * 0.005) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 3,
+            get_anim_pelvis_y: () => Math.sin(Date.now() * 0.008) * Math.sqrt(mockPlayer.velocity.x * mockPlayer.velocity.x + mockPlayer.velocity.y * mockPlayer.velocity.y) * 2,
+            
+            get_anim_spine_curve: () => mockPlayer.velocity.x * 0.08,
+            get_anim_shoulder_rotation: () => -mockPlayer.velocity.x * 0.05,
+            get_anim_head_bob_x: () => Math.sin(Date.now() * 0.006) * Math.abs(mockPlayer.velocity.x) * 0.5,
+            get_anim_head_bob_y: () => Math.cos(Date.now() * 0.012) * Math.abs(mockPlayer.velocity.y) * 0.3,
+            get_anim_arm_swing_left: () => Math.sin(Date.now() * 0.01) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 0.4,
+            get_anim_arm_swing_right: () => Math.sin(Date.now() * 0.01 + Math.PI) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 0.4,
+            get_anim_leg_lift_left: () => Math.max(0, Math.sin(Date.now() * 0.01)) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 0.6,
+            get_anim_leg_lift_right: () => Math.max(0, Math.sin(Date.now() * 0.01 + Math.PI)) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 0.6,
+            get_anim_torso_twist: () => Math.sin(Date.now() * 0.008) * (Math.abs(mockPlayer.velocity.x) + Math.abs(mockPlayer.velocity.y)) * 0.08,
+            get_anim_breathing_intensity: () => mockPlayer.breathingIntensity,
+            get_anim_fatigue_factor: () => mockPlayer.fatigueLevel,
+            get_anim_momentum_x: () => mockPlayer.momentum.x,
+            get_anim_momentum_y: () => mockPlayer.momentum.y,
+            
+            get_anim_cloth_sway: () => Math.sin(Date.now() * 0.003) * (0.8 + Math.abs(mockPlayer.velocity.x) * 0.5) + mockPlayer.windStrength * 0.5,
+            get_anim_hair_bounce: () => mockPlayer.pelvisBob * 0.6 * (1 + Math.abs(mockPlayer.velocity.x) * 0.3) + mockPlayer.windStrength * 0.3,
+            get_anim_equipment_jiggle: () => mockPlayer.pelvisBob * 0.4 + Math.abs(mockPlayer.velocity.x) * 0.2,
+            
+            get_anim_wind_response: () => mockPlayer.windStrength,
+            get_anim_ground_adapt: () => 0.0,
+            get_anim_temperature_shiver: () => mockPlayer.temperatureShiver
+        };
+        
+        // Mock player state
+        const mockPlayer = {
+            position: { x: 0.5, y: 0.5 },
+            velocity: { x: 0, y: 0 },
+            momentum: { x: 0, y: 0 },
+            stamina: 1.0,
+            health: 1.0,
+            isGrounded: true,
+            animState: 0,
+            invulnerable: false,
+            breathingIntensity: 1.0,
+            fatigueLevel: 0.0,
+            windStrength: 0.0,
+            temperatureShiver: 0.0,
+            pelvisBob: 0.0
+        };
+        
+        // Input state
+        const input = {
+            left: false, right: false, up: false, down: false,
+            attack: false, block: false, roll: false
+        };
+        
+        // Create realistic procedural animator
+        const animator = new RealisticProceduralAnimator({
+            ikEnabled: true,
+            renderSkeleton: false,
+            renderIKTargets: false,
+            renderSecondaryMotion: false,
+            enableOptimizations: true
+        });
+        
+        // Input handling
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            updateInput();
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            updateInput();
+        });
+        
+        function updateInput() {
+            input.left = keys['a'] || keys['arrowleft'];
+            input.right = keys['d'] || keys['arrowright'];
+            input.up = keys['w'] || keys['arrowup'];
+            input.down = keys['s'] || keys['arrowdown'];
+            input.attack = keys[' '];
+            input.block = keys['shift'];
+            input.roll = keys['control'];
+        }
+        
+        // Control handlers
+        document.getElementById('toggleIK').addEventListener('click', (e) => {
+            animator.config.ikEnabled = !animator.config.ikEnabled;
+            e.target.textContent = animator.config.ikEnabled ? 'ON' : 'OFF';
+            e.target.classList.toggle('active', animator.config.ikEnabled);
+        });
+        
+        document.getElementById('toggleSkeleton').addEventListener('click', (e) => {
+            animator.config.renderSkeleton = !animator.config.renderSkeleton;
+            e.target.textContent = animator.config.renderSkeleton ? 'ON' : 'OFF';
+            e.target.classList.toggle('active', animator.config.renderSkeleton);
+        });
+        
+        document.getElementById('toggleSecondary').addEventListener('click', (e) => {
+            animator.config.renderSecondaryMotion = !animator.config.renderSecondaryMotion;
+            e.target.textContent = animator.config.renderSecondaryMotion ? 'ON' : 'OFF';
+            e.target.classList.toggle('active', animator.config.renderSecondaryMotion);
+        });
+        
+        document.getElementById('toggleIKTargets').addEventListener('click', (e) => {
+            animator.config.renderIKTargets = !animator.config.renderIKTargets;
+            e.target.textContent = animator.config.renderIKTargets ? 'ON' : 'OFF';
+            e.target.classList.toggle('active', animator.config.renderIKTargets);
+        });
+        
+        // Sliders
+        const fatigueSlider = document.getElementById('fatigueSlider');
+        const fatigueValue = document.getElementById('fatigueValue');
+        fatigueSlider.addEventListener('input', (e) => {
+            mockPlayer.fatigueLevel = e.target.value / 100;
+            fatigueValue.textContent = e.target.value + '%';
+        });
+        
+        const windSlider = document.getElementById('windSlider');
+        const windValue = document.getElementById('windValue');
+        windSlider.addEventListener('input', (e) => {
+            mockPlayer.windStrength = e.target.value / 100;
+            windValue.textContent = e.target.value + '%';
+        });
+        
+        const tempSlider = document.getElementById('tempSlider');
+        const tempValue = document.getElementById('tempValue');
+        tempSlider.addEventListener('input', (e) => {
+            const temp = e.target.value / 100;
+            mockPlayer.temperatureShiver = temp < 0.3 ? Math.sin(Date.now() * 0.012) * (0.3 - temp) / 0.3 * 0.02 : 0;
+            tempValue.textContent = e.target.value + '%';
+        });
+        
+        const breathingSlider = document.getElementById('breathingSlider');
+        const breathingValue = document.getElementById('breathingValue');
+        breathingSlider.addEventListener('input', (e) => {
+            mockPlayer.breathingIntensity = e.target.value / 100;
+            breathingValue.textContent = e.target.value + '%';
+        });
+        
+        // Animation state test buttons
+        document.getElementById('testIdle').addEventListener('click', () => {
+            mockPlayer.velocity = { x: 0, y: 0 };
+            mockPlayer.animState = 0;
+        });
+        
+        document.getElementById('testWalk').addEventListener('click', () => {
+            mockPlayer.velocity = { x: 0.1, y: 0 };
+            mockPlayer.animState = 1;
+        });
+        
+        document.getElementById('testRun').addEventListener('click', () => {
+            mockPlayer.velocity = { x: 0.3, y: 0 };
+            mockPlayer.animState = 1;
+        });
+        
+        // Update mock player state
+        function updateMockPlayer(deltaTime) {
+            const speed = 0.3;
+            const damping = 0.85;
+            
+            // Update velocity based on input
+            if (input.left) mockPlayer.velocity.x -= speed * deltaTime;
+            if (input.right) mockPlayer.velocity.x += speed * deltaTime;
+            if (input.up) mockPlayer.velocity.y -= speed * deltaTime;
+            if (input.down) mockPlayer.velocity.y += speed * deltaTime;
+            
+            // Apply damping
+            mockPlayer.velocity.x *= damping;
+            mockPlayer.velocity.y *= damping;
+            
+            // Update momentum
+            mockPlayer.momentum.x = mockPlayer.momentum.x * 0.85 + mockPlayer.velocity.x * 0.15;
+            mockPlayer.momentum.y = mockPlayer.momentum.y * 0.85 + mockPlayer.velocity.y * 0.15;
+            
+            // Update position
+            mockPlayer.position.x += mockPlayer.velocity.x * deltaTime;
+            mockPlayer.position.y += mockPlayer.velocity.y * deltaTime;
+            
+            // Keep in bounds
+            mockPlayer.position.x = Math.max(0.1, Math.min(0.9, mockPlayer.position.x));
+            mockPlayer.position.y = Math.max(0.1, Math.min(0.9, mockPlayer.position.y));
+            
+            // Calculate pelvis bob
+            const speed_magnitude = Math.sqrt(mockPlayer.velocity.x * mockPlayer.velocity.x + mockPlayer.velocity.y * mockPlayer.velocity.y);
+            mockPlayer.pelvisBob = Math.sin(Date.now() * 0.008) * speed_magnitude * 2;
+            
+            // Update animation state
+            if (speed_magnitude > 0.05) {
+                mockPlayer.animState = 1; // Running
+            } else {
+                mockPlayer.animState = 0; // Idle
+            }
+        }
+        
+        // Render functions
+        function renderPlayer(ctx, transform) {
+            const screenX = mockPlayer.position.x * canvas.width;
+            const screenY = mockPlayer.position.y * canvas.height;
+            
+            ctx.save();
+            
+            // Apply transform
+            ctx.translate(screenX + transform.offsetX, screenY + transform.offsetY);
+            ctx.rotate(transform.rotation);
+            ctx.scale(transform.scaleX, transform.scaleY);
+            
+            // Render secondary motion first (behind player)
+            if (transform.secondaryMotion && animator.config.renderSecondaryMotion) {
+                renderSecondaryMotion(ctx, transform.secondaryMotion);
+            }
+            
+            // Draw player body
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(-16, -16, 32, 32);
+            
+            // Draw facing direction indicator
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(8, -2, 8, 4);
+            
+            // Render skeleton overlay
+            if (transform.skeleton && animator.config.renderSkeleton) {
+                renderSkeleton(ctx, transform.skeleton);
+            }
+            
+            ctx.restore();
+            
+            // Render debug info
+            if (animator.config.renderIKTargets) {
+                animator.renderDebug(ctx, screenX, screenY, 1.0);
+            }
+        }
+        
+        function renderSecondaryMotion(ctx, secondaryMotion) {
+            ctx.globalAlpha = 0.8;
+            
+            // Render cloth
+            if (secondaryMotion.cloth && secondaryMotion.cloth.length > 0) {
+                ctx.strokeStyle = '#4A4A4A';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                secondaryMotion.cloth.forEach((point, index) => {
+                    if (index === 0) {
+                        ctx.moveTo(point.position.x, point.position.y);
+                    } else {
+                        ctx.lineTo(point.position.x, point.position.y);
+                    }
+                });
+                ctx.stroke();
+            }
+            
+            // Render hair
+            if (secondaryMotion.hair && secondaryMotion.hair.length > 0) {
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                secondaryMotion.hair.forEach((segment, index) => {
+                    if (index === 0) {
+                        ctx.moveTo(segment.position.x, segment.position.y);
+                    } else {
+                        ctx.lineTo(segment.position.x, segment.position.y);
+                    }
+                });
+                ctx.stroke();
+            }
+            
+            ctx.globalAlpha = 1.0;
+        }
+        
+        function renderSkeleton(ctx, skeleton) {
+            if (!skeleton) return;
+            
+            ctx.strokeStyle = '#00ff88';
+            ctx.fillStyle = '#ffff44';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.6;
+            
+            // Draw bones
+            drawBone(ctx, skeleton.torso, skeleton.head);
+            drawBone(ctx, skeleton.torso, skeleton.pelvis);
+            
+            // Arms
+            if (skeleton.leftArm) {
+                drawBone(ctx, skeleton.leftArm.shoulder, skeleton.leftArm.elbow);
+                drawBone(ctx, skeleton.leftArm.elbow, skeleton.leftArm.hand);
+            }
+            if (skeleton.rightArm) {
+                drawBone(ctx, skeleton.rightArm.shoulder, skeleton.rightArm.elbow);
+                drawBone(ctx, skeleton.rightArm.elbow, skeleton.rightArm.hand);
+            }
+            
+            // Legs
+            if (skeleton.leftLeg) {
+                drawBone(ctx, skeleton.leftLeg.hip, skeleton.leftLeg.knee);
+                drawBone(ctx, skeleton.leftLeg.knee, skeleton.leftLeg.foot);
+            }
+            if (skeleton.rightLeg) {
+                drawBone(ctx, skeleton.rightLeg.hip, skeleton.rightLeg.knee);
+                drawBone(ctx, skeleton.rightLeg.knee, skeleton.rightLeg.foot);
+            }
+            
+            // Draw joints
+            const joints = [
+                skeleton.head, skeleton.torso, skeleton.pelvis
+            ];
+            
+            if (skeleton.leftArm) joints.push(skeleton.leftArm.shoulder, skeleton.leftArm.elbow, skeleton.leftArm.hand);
+            if (skeleton.rightArm) joints.push(skeleton.rightArm.shoulder, skeleton.rightArm.elbow, skeleton.rightArm.hand);
+            if (skeleton.leftLeg) joints.push(skeleton.leftLeg.hip, skeleton.leftLeg.knee, skeleton.leftLeg.foot);
+            if (skeleton.rightLeg) joints.push(skeleton.rightLeg.hip, skeleton.rightLeg.knee, skeleton.rightLeg.foot);
+            
+            joints.forEach(joint => {
+                if (joint && joint.x !== undefined && joint.y !== undefined) {
+                    ctx.beginPath();
+                    ctx.arc(joint.x, joint.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            
+            ctx.globalAlpha = 1.0;
+        }
+        
+        function drawBone(ctx, start, end) {
+            if (!start || !end || start.x === undefined || end.x === undefined) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+        }
+        
+        function updateDebugInfo(transform) {
+            const debugElement = document.getElementById('debugInfo');
+            const info = [];
+            
+            info.push(`Position: (${mockPlayer.position.x.toFixed(2)}, ${mockPlayer.position.y.toFixed(2)})`);
+            info.push(`Velocity: (${mockPlayer.velocity.x.toFixed(2)}, ${mockPlayer.velocity.y.toFixed(2)})`);
+            info.push(`Momentum: (${mockPlayer.momentum.x.toFixed(2)}, ${mockPlayer.momentum.y.toFixed(2)})`);
+            info.push(`Animation State: ${mockPlayer.animState}`);
+            info.push(`Fatigue: ${(mockPlayer.fatigueLevel * 100).toFixed(1)}%`);
+            info.push(`Breathing: ${mockPlayer.breathingIntensity.toFixed(2)}x`);
+            
+            if (transform.debug) {
+                info.push(`Frame: ${transform.debug.frameCount}`);
+            }
+            
+            if (transform.skeleton) {
+                info.push(`IK Enabled: ${animator.config.ikEnabled}`);
+                info.push(`Skeleton Active: Yes`);
+            }
+            
+            if (transform.secondaryMotion) {
+                if (transform.secondaryMotion.hair) {
+                    info.push(`Hair Segments: ${transform.secondaryMotion.hair.length}`);
+                }
+                if (transform.secondaryMotion.cloth) {
+                    info.push(`Cloth Points: ${transform.secondaryMotion.cloth.length}`);
+                }
+            }
+            
+            if (transform.environmental) {
+                info.push(`Wind: ${(transform.environmental.windResponse * 100).toFixed(1)}%`);
+                info.push(`Temperature: ${transform.environmental.temperatureShiver !== 0 ? 'Cold' : 'Normal'}`);
+            }
+            
+            debugElement.innerHTML = info.join('<br>');
+        }
+        
+        // Main game loop
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const deltaTime = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            
+            // Update mock player
+            updateMockPlayer(deltaTime);
+            
+            // Update realistic procedural animator
+            const transform = animator.update(deltaTime, {
+                playerState: mockPlayer.animState,
+                inputState: input,
+                debugMode: animator.config.renderSkeleton || animator.config.renderIKTargets
+            });
+            
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Render player with enhanced animation
+            renderPlayer(ctx, transform);
+            
+            // Update debug info
+            updateDebugInfo(transform);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start the demo
+        requestAnimationFrame(gameLoop);
+        
+        console.log('🎮 Realistic Procedural Player Animation Demo Started!');
+        console.log('Features:');
+        console.log('- Advanced IK system for realistic limb movement');
+        console.log('- Physics-based secondary motion (cloth, hair, equipment)');
+        console.log('- Realistic gait patterns and foot placement');
+        console.log('- Environmental responses (wind, temperature)');
+        console.log('- Fatigue simulation affecting movement');
+        console.log('- Momentum-based animation adjustments');
+        console.log('- Real-time debug visualization');
+    </script>
+</body>
+</html>

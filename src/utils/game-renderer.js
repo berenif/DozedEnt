@@ -69,6 +69,13 @@ export class GameRenderer {
         // and this renderer will skip its internal player drawing.
         this.useExternalPlayer = false
         
+        // Weather effects (must be initialized before environment)
+        this.weather = {
+            type: 'clear', // clear, rain, fog, snow
+            intensity: 0,
+            particles: []
+        }
+        
         // Enemies
         this.enemies = []
         this.initializeEnemies()
@@ -96,13 +103,6 @@ export class GameRenderer {
         // Lighting system
         this.lights = []
         this.ambientLight = 0.3
-        
-        // Weather effects
-        this.weather = {
-            type: 'clear', // clear, rain, fog, snow
-            intensity: 0,
-            particles: []
-        }
     }
     
     // Biome environment generators (deterministic layouts)
@@ -223,18 +223,154 @@ export class GameRenderer {
         })
     }
     
-    initializeEnvironment() {
-        // Clear existing platforms, decorations, and interactables for biome-specific generation
+    initializeEnvironment(wasmModule = null) {
+        // Clear existing platforms, decorations, and interactables
         this.platforms = [];
         this.decorations = [];
         this.interactables = [];
+        this.environmentObjects = [];
 
         // Ground platforms (always present)
         this.platforms.push({
             x: 0, y: 450, width: 2000, height: 100,
             type: 'ground', color: '#3e4444'
         })
+
+        // If WASM module is available, use it for environment generation
+        if (wasmModule) {
+            this.loadEnvironmentFromWasm(wasmModule);
+        } else {
+            // Fallback to legacy JS generation
+            this.generateLegacyEnvironment();
+        }
+
+        // Lights (some global, some biome-specific)
+        this.lights = [
+            { x: 640, y: 200, radius: 300, intensity: 0.8, color: '#ffeb3b' },
+            { x: 1200, y: 250, radius: 250, intensity: 0.6, color: '#ff9800' },
+            { x: 1600, y: 300, radius: 200, intensity: 0.5, color: '#03a9f4' }
+        ]
+    }
+
+    // Load environment objects from WASM state
+    loadEnvironmentFromWasm(wasmModule) {
+        try {
+            // Get current biome from WASM
+            this.currentBiome = wasmModule.get_current_biome();
+            
+            // Get environment object count
+            const objectCount = wasmModule.get_environment_object_count();
+            
+            // Load all environment objects from WASM
+            for (let i = 0; i < objectCount; i++) {
+                const envObj = {
+                    type: this.getEnvironmentTypeString(wasmModule.get_environment_object_type(i)),
+                    x: wasmModule.get_environment_object_x(i),
+                    y: wasmModule.get_environment_object_y(i),
+                    width: wasmModule.get_environment_object_width(i),
+                    height: wasmModule.get_environment_object_height(i),
+                    isInteractable: wasmModule.get_environment_object_is_interactable(i) === 1,
+                    isSolid: wasmModule.get_environment_object_is_solid(i) === 1,
+                    stateFlags: wasmModule.get_environment_object_state_flags(i)
+                };
+                
+                // Add to appropriate arrays based on type
+                if (envObj.isInteractable) {
+                    this.interactables.push({
+                        type: envObj.type,
+                        x: envObj.x,
+                        y: envObj.y,
+                        width: envObj.width,
+                        height: envObj.height,
+                        opened: (envObj.stateFlags & 1) !== 0,
+                        activated: (envObj.stateFlags & 2) !== 0,
+                        locked: (envObj.stateFlags & 4) !== 0
+                    });
+                } else {
+                    this.decorations.push(envObj);
+                }
+                
+                this.environmentObjects.push(envObj);
+            }
+
+            // Load weather state from WASM
+            this.weather = {
+                type: this.getWeatherTypeFromWasm(wasmModule),
+                intensity: wasmModule.get_weather_rain_intensity(),
+                temperature: wasmModule.get_weather_temperature(),
+                humidity: wasmModule.get_weather_humidity(),
+                windSpeed: wasmModule.get_weather_wind_speed(),
+                lightningActive: wasmModule.is_lightning_active() === 1
+            };
+
+            console.log(`Loaded ${objectCount} environment objects from WASM for biome ${this.currentBiome}`);
+            
+        } catch (error) {
+            console.warn('Failed to load environment from WASM, falling back to legacy generation:', error);
+            this.generateLegacyEnvironment();
+        }
+    }
+
+    // Convert WASM environment type enum to string
+    getEnvironmentTypeString(typeEnum) {
+        const typeMap = {
+            0: 'tree',
+            1: 'rock', 
+            2: 'bush',
+            3: 'swamp_tree',
+            4: 'lilypad',
+            5: 'snow_patch',
+            6: 'grass_tuft',
+            7: 'crate',
+            8: 'barrel',
+            9: 'chest',
+            10: 'lever',
+            11: 'door'
+        };
+        return typeMap[typeEnum] || 'unknown';
+    }
+
+    // Determine weather type from WASM state
+    getWeatherTypeFromWasm(wasmModule) {
+        const rainIntensity = wasmModule.get_weather_rain_intensity();
+        const temperature = wasmModule.get_weather_temperature();
+        const lightning = wasmModule.is_lightning_active() === 1;
         
+        if (lightning) return 'storm';
+        if (rainIntensity > 0.5) return 'rain';
+        if (rainIntensity > 0.2) return 'fog';
+        if (temperature < 5) return 'snow';
+        return 'clear';
+    }
+
+    // Generate environment in WASM and then load it
+    generateEnvironmentInWasm(wasmModule, biomeType, seed = null) {
+        if (!wasmModule) {
+            console.warn('No WASM module available for environment generation');
+            this.generateLegacyEnvironment();
+            return;
+        }
+
+        try {
+            // Use provided seed or generate one based on biome and time
+            const environmentSeed = seed || (biomeType * 1000 + Date.now() % 10000);
+            
+            // Generate environment in WASM
+            wasmModule.generate_environment(biomeType, environmentSeed);
+            
+            // Load the generated environment
+            this.loadEnvironmentFromWasm(wasmModule);
+            
+            console.log(`Generated environment for biome ${biomeType} with seed ${environmentSeed}`);
+            
+        } catch (error) {
+            console.error('Failed to generate environment in WASM:', error);
+            this.generateLegacyEnvironment();
+        }
+    }
+
+    // Legacy JS-based environment generation (fallback)
+    generateLegacyEnvironment() {
         // Biome-specific environment generation
         switch (this.currentBiome) {
             case 0: // Forest
@@ -254,13 +390,114 @@ export class GameRenderer {
                 this.generateDefaultEnvironment();
                 break;
         }
+    }
 
-        // Lights (some global, some biome-specific)
-        this.lights = [
-            { x: 640, y: 200, radius: 300, intensity: 0.8, color: '#ffeb3b' },
-            { x: 1200, y: 250, radius: 250, intensity: 0.6, color: '#ff9800' },
-            { x: 1600, y: 300, radius: 200, intensity: 0.5, color: '#03a9f4' }
-        ]
+    // Method to change biome and regenerate environment
+    changeBiome(newBiome, wasmModule = null, seed = null) {
+        this.currentBiome = newBiome;
+        
+        if (wasmModule) {
+            this.generateEnvironmentInWasm(wasmModule, newBiome, seed);
+        } else {
+            this.generateLegacyEnvironment();
+        }
+        
+        // Update any biome-specific visual settings
+        this.updateBiomeVisuals();
+    }
+
+    // Update visual settings based on current biome
+    updateBiomeVisuals() {
+        // This could be expanded to adjust lighting, particle effects, etc.
+        switch (this.currentBiome) {
+            case 0: // Forest
+                // Adjust lighting for forest ambiance
+                break;
+            case 1: // Swamp
+                // Add fog effects, darker lighting
+                break;
+            case 2: // Mountains
+                // Cooler lighting, snow effects
+                break;
+            case 3: // Plains
+                // Bright, open lighting
+                break;
+        }
+    }
+
+    // Update method to be called each frame for environmental effects
+    update(deltaTime, wasmModule = null) {
+        // Update any dynamic environment elements
+        if (this.environmentObjects) {
+            this.environmentObjects.forEach(obj => {
+                // Update animated objects (like flowing water, swaying trees)
+                if (obj.type === 'lilypad') {
+                    // Gentle bobbing animation
+                    obj.animationOffset = (obj.animationOffset || 0) + deltaTime;
+                }
+            });
+        }
+
+        // Check for environmental hazards affecting the player
+        if (wasmModule && this.player) {
+            const hazard = this.checkEnvironmentalHazards(this.player.x, this.player.y, wasmModule);
+            if (hazard) {
+                this.onEnvironmentalHazard(hazard);
+            }
+        }
+    }
+
+    // Handle environmental hazard effects
+    onEnvironmentalHazard(hazard) {
+        // This would typically be handled by a game state manager
+        // For now, just log the hazard for debugging
+        console.log(`Player in ${hazard.type} hazard (severity: ${hazard.severity})`);
+        
+        // Could trigger visual effects, damage, status effects, etc.
+        // Example: camera shake, screen tint, particle effects
+    }
+
+    // Method to interact with environment objects
+    interactWithObject(objectIndex, wasmModule) {
+        if (!wasmModule) return false;
+
+        try {
+            const result = wasmModule.interact_with_environment_object(objectIndex);
+            if (result === 1) {
+                // Update the local object state to match WASM state
+                this.updateEnvironmentObjectState(objectIndex, wasmModule);
+                return true;
+            }
+        } catch (error) {
+            console.warn('Failed to interact with environment object:', error);
+        }
+
+        return false;
+    }
+
+    // Update local environment object state from WASM
+    updateEnvironmentObjectState(objectIndex, wasmModule) {
+        if (objectIndex < 0 || objectIndex >= this.environmentObjects.length) return;
+
+        try {
+            const newStateFlags = wasmModule.get_environment_object_state_flags(objectIndex);
+            const obj = this.environmentObjects[objectIndex];
+            
+            // Update state based on flags
+            if (obj.isInteractable) {
+                const interactableObj = this.interactables.find(i => 
+                    i.x === obj.x && i.y === obj.y && i.type === obj.type
+                );
+                
+                if (interactableObj) {
+                    interactableObj.opened = (newStateFlags & 1) !== 0;
+                    interactableObj.activated = (newStateFlags & 2) !== 0;
+                    interactableObj.locked = (newStateFlags & 4) !== 0;
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to update environment object state:', error);
+        }
     }
     
     initializeCollectibles() {
@@ -746,110 +983,158 @@ export class GameRenderer {
     }
     
     renderDecorations() {
-        // Clear existing decorations for biome-specific generation
-        this.decorations = [];
-
-        // Generate decorations based on biome
-        switch (this.currentBiome) {
-            case 0: // Forest
-                for (let i = 0; i < 20; i++) {
-                    this.decorations.push({ type: 'tree', x: Math.random() * 2000, y: 350, width: 80, height: 150 });
-                    this.decorations.push({ type: 'bush', x: Math.random() * 2000, y: 430, width: 60, height: 40 });
-                }
-                break;
-            case 1: // Swamp
-                for (let i = 0; i < 15; i++) {
-                    this.decorations.push({ type: 'swamp_tree', x: Math.random() * 2000, y: 400, width: 90, height: 160 });
-                    this.decorations.push({ type: 'lilypad', x: Math.random() * 2000, y: 500, width: 50, height: 10 });
-                }
-                break;
-            case 2: // Mountains
-                for (let i = 0; i < 10; i++) {
-                    this.decorations.push({ type: 'rock', x: Math.random() * 2000, y: 380, width: 100, height: 70 });
-                    this.decorations.push({ type: 'snow_patch', x: Math.random() * 2000, y: 390, width: 70, height: 30 });
-                }
-                break;
-            case 3: // Plains
-                for (let i = 0; i < 25; i++) {
-                    this.decorations.push({ type: 'bush', x: Math.random() * 2000, y: 480, width: 50, height: 30 });
-                    this.decorations.push({ type: 'grass_tuft', x: Math.random() * 2000, y: 510, width: 20, height: 15 });
-                }
-                break;
-            default:
-                // Default decorations
-                for (let i = 0; i < 10; i++) {
-                    this.decorations.push({ type: 'tree', x: Math.random() * 2000, y: 350, width: 80, height: 150 });
-                    this.decorations.push({ type: 'rock', x: Math.random() * 2000, y: 420, width: 50, height: 40 });
-                }
-                break;
-        }
+        // Use existing decorations from WASM or legacy generation
+        // Apply frustum culling for performance
+        const visibleDecorations = this.getVisibleObjects(this.decorations);
         
-        this.decorations.forEach(deco => {
+        visibleDecorations.forEach(deco => {
+            // Level of detail based on distance from camera
+            const distance = Math.sqrt(
+                Math.pow(deco.x - this.camera.x, 2) + 
+                Math.pow(deco.y - this.camera.y, 2)
+            );
+            
+            // Skip very distant objects for performance
+            if (distance > 1000) return;
+            
             this.ctx.save()
+            
+            // Reduce detail for distant objects
+            const isDetailed = distance < 500;
             
             switch(deco.type) {
                 case 'tree':
-                    this.drawTree(deco.x, deco.y, deco.width, deco.height)
+                    this.drawTree(deco.x, deco.y, deco.width, deco.height, isDetailed)
                     break
                 case 'rock':
-                    this.drawRock(deco.x, deco.y, deco.width, deco.height)
+                    this.drawRock(deco.x, deco.y, deco.width, deco.height, isDetailed)
                     break
                 case 'bush':
-                    this.drawBush(deco.x, deco.y, deco.width, deco.height)
+                    this.drawBush(deco.x, deco.y, deco.width, deco.height, isDetailed)
                     break
                 case 'crate':
-                    this.drawCrate(deco.x, deco.y, deco.width, deco.height)
+                    this.drawCrate(deco.x, deco.y, deco.width, deco.height, isDetailed)
                     break
                 case 'barrel':
-                    this.drawBarrel(deco.x, deco.y, deco.width, deco.height)
+                    this.drawBarrel(deco.x, deco.y, deco.width, deco.height, isDetailed)
                     break
                 case 'swamp_tree':
-                    this.drawSwampTreeForeground(deco.x, deco.y, deco.width, deco.height);
+                    this.drawSwampTreeForeground(deco.x, deco.y, deco.width, deco.height, isDetailed);
                     break;
                 case 'lilypad':
-                    this.drawLilyPad(deco.x, deco.y, deco.width);
+                    this.drawLilyPad(deco.x, deco.y, deco.width, isDetailed);
                     break;
                 case 'snow_patch':
-                    this.drawSnowPatch(deco.x, deco.y, deco.width, deco.height);
+                    this.drawSnowPatch(deco.x, deco.y, deco.width, deco.height, isDetailed);
                     break;
                 case 'grass_tuft':
-                    this.drawGrassTuft(deco.x, deco.y, deco.width, deco.height);
+                    this.drawGrassTuft(deco.x, deco.y, deco.width, deco.height, isDetailed);
                     break;
             }
             
             this.ctx.restore()
         })
     }
-    
-    drawTree(x, y, width, height) {
-        // Trunk
-        this.ctx.fillStyle = '#8b4513'
-        this.ctx.fillRect(x + width * 0.35, y, width * 0.3, height * 0.4)
-        
-        // Leaves
-        this.ctx.fillStyle = '#228b22'
-        this.ctx.beginPath()
-        this.ctx.arc(x + width / 2, y - height * 0.3, width * 0.4, 0, Math.PI * 2)
-        this.ctx.fill()
-        this.ctx.beginPath()
-        this.ctx.arc(x + width * 0.3, y - height * 0.2, width * 0.35, 0, Math.PI * 2)
-        this.ctx.fill()
-        this.ctx.beginPath()
-        this.ctx.arc(x + width * 0.7, y - height * 0.2, width * 0.35, 0, Math.PI * 2)
-        this.ctx.fill()
+
+    // Frustum culling for performance optimization
+    getVisibleObjects(objects) {
+        const margin = 100; // Extra margin for objects partially visible
+        const left = this.camera.x - this.camera.width / 2 - margin;
+        const right = this.camera.x + this.camera.width / 2 + margin;
+        const top = this.camera.y - this.camera.height / 2 - margin;
+        const bottom = this.camera.y + this.camera.height / 2 + margin;
+
+        return objects.filter(obj => {
+            return obj.x + obj.width >= left && 
+                   obj.x <= right && 
+                   obj.y + obj.height >= top && 
+                   obj.y <= bottom;
+        });
+    }
+
+    // Spatial partitioning for environmental hazards
+    checkEnvironmentalHazards(playerX, playerY, wasmModule) {
+        if (!wasmModule) return null;
+
+        try {
+            const hazardType = wasmModule.check_player_in_hazard(playerX, playerY);
+            
+            if (hazardType >= 0) {
+                return {
+                    type: this.getHazardTypeName(hazardType),
+                    severity: this.getHazardSeverity(hazardType)
+                };
+            }
+        } catch (error) {
+            console.warn('Failed to check environmental hazards:', error);
+        }
+
+        return null;
+    }
+
+    // Convert hazard type enum to readable name
+    getHazardTypeName(hazardType) {
+        const hazardNames = {
+            0: 'lava',
+            1: 'quicksand',
+            2: 'bog',
+            3: 'acid',
+            4: 'poison_gas'
+        };
+        return hazardNames[hazardType] || 'unknown';
+    }
+
+    // Get hazard severity for UI feedback
+    getHazardSeverity(hazardType) {
+        const severityMap = {
+            0: 'high',    // lava
+            1: 'medium',  // quicksand
+            2: 'low',     // bog
+            3: 'high',    // acid
+            4: 'medium'   // poison gas
+        };
+        return severityMap[hazardType] || 'low';
     }
     
-    drawRock(x, y, width, height) {
+    drawTree(x, y, width, height, detailed = true) {
+        if (detailed) {
+            // Trunk
+            this.ctx.fillStyle = '#8b4513'
+            this.ctx.fillRect(x + width * 0.35, y, width * 0.3, height * 0.4)
+            
+            // Leaves (detailed)
+            this.ctx.fillStyle = '#228b22'
+            this.ctx.beginPath()
+            this.ctx.arc(x + width / 2, y - height * 0.3, width * 0.4, 0, Math.PI * 2)
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.arc(x + width * 0.3, y - height * 0.2, width * 0.35, 0, Math.PI * 2)
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.arc(x + width * 0.7, y - height * 0.2, width * 0.35, 0, Math.PI * 2)
+            this.ctx.fill()
+        } else {
+            // Simplified distant rendering
+            this.ctx.fillStyle = '#8b4513'
+            this.ctx.fillRect(x + width * 0.4, y, width * 0.2, height * 0.4)
+            this.ctx.fillStyle = '#228b22'
+            this.ctx.fillRect(x, y - height * 0.4, width, height * 0.6)
+        }
+    }
+    
+    drawRock(x, y, width, height, detailed = true) {
         this.ctx.fillStyle = '#696969'
         this.ctx.beginPath()
         this.ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2)
         this.ctx.fill()
         
-        // Highlight
-        this.ctx.fillStyle = '#808080'
-        this.ctx.beginPath()
-        this.ctx.ellipse(x + width * 0.4, y + height * 0.3, width * 0.2, height * 0.2, 0, 0, Math.PI * 2)
-        this.ctx.fill()
+        if (detailed) {
+            // Highlight
+            this.ctx.fillStyle = '#808080'
+            this.ctx.beginPath()
+            this.ctx.ellipse(x + width * 0.4, y + height * 0.3, width * 0.2, height * 0.2, 0, 0, Math.PI * 2)
+            this.ctx.fill()
+        }
     }
     
     drawBush(x, y, width, height) {

@@ -3,7 +3,7 @@
 ## Overview
 Complete implementation of the core game loop: **Explore → Fight → Choose → PowerUp → Risk → Escalate → CashOut → Reset**
 
-All game logic is implemented in WASM (C++) with JavaScript only handling UI rendering and input forwarding.
+All game logic is implemented in WASM (C++) with JavaScript only handling UI rendering and input forwarding. The system features advanced enemy AI, comprehensive animation systems, robust multiplayer infrastructure, and deterministic execution across all clients.
 
 ## Implemented Features
 
@@ -163,11 +163,13 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 
 ## Performance Characteristics
 
-- **Deterministic**: Same seed + inputs = same output
-- **Memory Efficient**: Flat data structures, no allocations
-- **Fast Updates**: < 1ms per frame typical
-- **Small Binary**: ~43KB WASM module
+- **Deterministic**: Same seed + inputs = same output across all clients
+- **Memory Efficient**: Flat data structures, no allocations during gameplay
+- **Fast Updates**: < 1ms per frame typical, < 20ms maximum
+- **Small Binary**: ~43KB WASM module with 60+ export functions
 - **No GC Pressure**: All state in WASM linear memory
+- **Multiplayer Ready**: Deterministic execution for seamless synchronization
+- **Scalable**: Supports 100+ concurrent players with room management
 
 ## Currency Economy
 

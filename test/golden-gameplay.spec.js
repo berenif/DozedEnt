@@ -66,7 +66,7 @@ test.describe('Golden Gameplay Tests', () => {
             break
           case 'block':
             if (window.wasmExports.set_blocking) {
-              window.wasmExports.set_blocking(1, input.faceX, input.faceY, performance.now() / 1000)
+              window.wasmExports.set_blocking(1, input.faceX, input.faceY)
             }
             break
         }
@@ -127,7 +127,7 @@ test.describe('Golden Gameplay Tests', () => {
             break
           case 'block':
             if (window.wasmExports.set_blocking) {
-              window.wasmExports.set_blocking(1, input.faceX, input.faceY, performance.now() / 1000)
+              window.wasmExports.set_blocking(1, input.faceX, input.faceY)
             }
             break
         }

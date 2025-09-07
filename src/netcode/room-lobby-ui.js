@@ -90,7 +90,7 @@ export class RoomLobbyUI {
             </div>
             
             <div class="button-group">
-              <button id="start-game-btn" type="button" class="primary-btn" hidden>START GAME</button>
+              <button id="start-room-game-btn" type="button" class="primary-btn" hidden>START GAME</button>
               <button id="leave-room-btn" type="button" class="danger-btn">LEAVE ROOM</button>
             </div>
           </div>
@@ -719,7 +719,7 @@ export class RoomLobbyUI {
     })
     
     // In room
-    document.getElementById('start-game-btn')?.addEventListener('click', () => {
+    document.getElementById('start-room-game-btn')?.addEventListener('click', () => {
       this.startGame()
     })
     
@@ -807,7 +807,7 @@ export class RoomLobbyUI {
   async quickPlay() {
     if (!this.roomManager) {return}
     
-    const rooms = this.roomManager.getRoomList()
+    const rooms = this.roomManager.getRoomList() || []
     const availableRooms = rooms.filter(r => r.playerCount < r.maxPlayers)
     
     if (availableRooms.length > 0) {
@@ -859,7 +859,10 @@ export class RoomLobbyUI {
       return
     }
     
-    roomListEl.innerHTML = rooms.map(room => `
+    // Ensure rooms is an array
+    const roomArray = Array.isArray(rooms) ? rooms : []
+    
+    roomListEl.innerHTML = roomArray.map(room => `
       <div class="room-item" data-room-id="${room.id}">
         <div class="room-item-header">
           <span class="room-name">${this.escapeHtml(room.name)}</span>
@@ -888,7 +891,7 @@ export class RoomLobbyUI {
     document.getElementById('max-player-count').textContent = room.maxPlayers
     
     // Show start button only for host
-    const startBtn = document.getElementById('start-game-btn')
+    const startBtn = document.getElementById('start-room-game-btn')
     if (startBtn) {
       startBtn.hidden = !this.roomManager.isHost
     }
@@ -906,9 +909,12 @@ export class RoomLobbyUI {
     
     if (!playerListEl) {return}
     
-    playerCountEl.textContent = room.players.length
+    // Ensure room.players is an array
+    const players = Array.isArray(room.players) ? room.players : []
     
-    playerListEl.innerHTML = room.players.map(playerId => {
+    playerCountEl.textContent = players.length
+    
+    playerListEl.innerHTML = players.map(playerId => {
       const isHost = playerId === room.hostId
       const isSelf = playerId === this.roomManager.selfId
       const classes = ['player-item']

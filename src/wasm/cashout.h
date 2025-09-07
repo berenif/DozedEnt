@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cmath>
+#include "weapons.h"
 
 // Additional tags for shop items
 #define TAG_CRIT (1 << 16)
@@ -102,6 +103,18 @@ static void generate_shop_items() {
       item.power = 0.3f + rng_float01() * 0.4f;
       item.goldCost = 50.0f + item.power * 100.0f;
       item.essenceCost = 0.0f;
+      
+      // Assign specific weapon IDs for character weapons
+      unsigned int weapon_roll = rng_u32() % 4;
+      if (weapon_roll == 0) {
+        item.id = (unsigned int)WeaponType::WardenLongsword;
+      } else if (weapon_roll == 1) {
+        item.id = (unsigned int)WeaponType::RaiderGreataxe;
+      } else if (weapon_roll == 2) {
+        item.id = (unsigned int)WeaponType::KenseiKatana;
+      } else {
+        item.id = (unsigned int)WeaponType::BasicSword;
+      }
     } else if (roll < 55) {
       item.type = ShopItemType::Armor;
       item.power = 0.3f + rng_float01() * 0.4f;

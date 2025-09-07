@@ -178,29 +178,40 @@ export class WolfCharacter {
         
         // Update animation system with WASM data
         if (this.wasmModule) {
-            // Get current WASM enemy data for this wolf
-            const wasmEnemyType = this.wasmModule.get_enemy_type(this.id);
-            const wasmEnemyState = this.wasmModule.get_enemy_state(this.id);
-            const wasmEnemyFacingX = this.wasmModule.get_enemy_face_x(this.id);
-            const wasmEnemyFacingY = this.wasmModule.get_enemy_face_y(this.id);
-            const wasmEnemyVX = this.wasmModule.get_enemy_vx(this.id);
-            const wasmEnemyVY = this.wasmModule.get_enemy_vy(this.id);
+            try {
+                // Get current WASM enemy data for this wolf
+                const wasmEnemyType = typeof this.wasmModule.get_enemy_type === 'function' ? 
+                    this.wasmModule.get_enemy_type(this.id) : 0;
+                const wasmEnemyState = typeof this.wasmModule.get_enemy_state === 'function' ? 
+                    this.wasmModule.get_enemy_state(this.id) : 0;
+                const wasmEnemyFacingX = typeof this.wasmModule.get_enemy_face_x === 'function' ? 
+                    this.wasmModule.get_enemy_face_x(this.id) : 1;
+                const wasmEnemyFacingY = typeof this.wasmModule.get_enemy_face_y === 'function' ? 
+                    this.wasmModule.get_enemy_face_y(this.id) : 0;
+                const wasmEnemyVX = typeof this.wasmModule.get_enemy_vx === 'function' ? 
+                    this.wasmModule.get_enemy_vx(this.id) : 0;
+                const wasmEnemyVY = typeof this.wasmModule.get_enemy_vy === 'function' ? 
+                    this.wasmModule.get_enemy_vy(this.id) : 0;
 
-            // Update wolf's JS-side state based on WASM state
-            this.type = this.getWolfTypeFromWasm(wasmEnemyType);
-            switch(wasmEnemyState) {
-                case 1: this.state = 'running'; break; // seek
-                case 2: this.state = 'prowling'; break; // circle
-                case 3: this.state = 'attacking'; break; // harass
-                case 4: this.state = 'hurt'; break; // recover
-                default: this.state = 'idle'; break;
+                // Update wolf's JS-side state based on WASM state
+                this.type = this.getWolfTypeFromWasm(wasmEnemyType);
+                switch(wasmEnemyState) {
+                    case 1: this.state = 'running'; break; // seek
+                    case 2: this.state = 'prowling'; break; // circle
+                    case 3: this.state = 'attacking'; break; // harass
+                    case 4: this.state = 'hurt'; break; // recover
+                    default: this.state = 'idle'; break;
+                }
+
+                this.facing = (wasmEnemyFacingX >= 0) ? 1 : -1;
+                this.velocity.x = wasmEnemyVX;
+                this.velocity.y = wasmEnemyVY;
+
+                this.animationSystem.applyAnimation(this, deltaTime);
+            } catch (error) {
+                console.warn('WASM function call failed in wolf update:', error);
+                // Continue with fallback behavior
             }
-
-            this.facing = (wasmEnemyFacingX >= 0) ? 1 : -1;
-            this.velocity.x = wasmEnemyVX;
-            this.velocity.y = wasmEnemyVY;
-
-            this.animationSystem.applyAnimation(this, deltaTime);
         }
         
         // Handle lunge attack
@@ -278,6 +289,10 @@ export class WolfCharacter {
     }
     
     startLungeCharge(target) {
+        if (!target || !target.position) {
+            return
+        }
+        
         this.lungeState.charging = true
         this.lungeState.chargeTime = 0
         this.state = 'prowling'
@@ -287,6 +302,10 @@ export class WolfCharacter {
     }
     
     executeLunge(target) {
+        if (!target || !target.position) {
+            return
+        }
+        
         this.lungeState.active = true
         this.lungeState.charging = false
         this.lungeState.lungeProgress = 0
@@ -340,37 +359,48 @@ export class WolfCharacter {
     render(ctx, camera) {
         // Draw procedural animation overlays from WASM data
         if (this.wasmModule) {
-            const wolfId = this.id;
-            if (!this.wasmModule.get_wolf_anim_active(wolfId)) return;
+            try {
+                const wolfId = this.id;
+                
+                // Check if wolf animation is active
+                const isActive = typeof this.wasmModule.get_wolf_anim_active === 'function' ? 
+                    this.wasmModule.get_wolf_anim_active(wolfId) : false;
+                    
+                if (!isActive) return;
 
-            // Apply spine bend
-            const spineBend = this.wasmModule.get_wolf_anim_spine_bend(wolfId);
-            // ctx.rotate(spineBend); // This would rotate the whole canvas, need to rotate individual parts
+                // Apply spine bend
+                const spineBend = typeof this.wasmModule.get_wolf_anim_spine_bend === 'function' ? 
+                    this.wasmModule.get_wolf_anim_spine_bend(wolfId) : 0;
+                // ctx.rotate(spineBend); // This would rotate the whole canvas, need to rotate individual parts
 
-            // Apply body offset (bobbing)
-            const bodyOffsetY = this.wasmModule.get_wolf_anim_body_offset_y(wolfId);
-            ctx.translate(0, bodyOffsetY);
+                // Apply body offset (bobbing)
+                const bodyOffsetY = typeof this.wasmModule.get_wolf_anim_body_offset_y === 'function' ? 
+                    this.wasmModule.get_wolf_anim_body_offset_y(wolfId) : 0;
+                ctx.translate(0, bodyOffsetY);
 
-            // Render legs procedurally
-            for (let i = 0; i < 4; i++) {
-                const legX = this.wasmModule.get_wolf_anim_leg_x(wolfId, i);
-                const legY = this.wasmModule.get_wolf_anim_leg_y(wolfId, i);
-                // Draw leg at (this.position.x + legX, this.position.y + legY)
-                // This requires more granular drawing, currently drawWolfBody handles full body
-                // For now, we will draw simple circles for leg positions as a debug visual
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                ctx.beginPath();
-                ctx.arc(this.position.x - camera.x + legX, this.position.y - camera.y + legY, 5, 0, Math.PI * 2);
-                ctx.fill();
+                // Render legs procedurally
+                for (let i = 0; i < 4; i++) {
+                    const legX = typeof this.wasmModule.get_wolf_anim_leg_x === 'function' ? 
+                        this.wasmModule.get_wolf_anim_leg_x(wolfId, i) : 0;
+                    const legY = typeof this.wasmModule.get_wolf_anim_leg_y === 'function' ? 
+                        this.wasmModule.get_wolf_anim_leg_y(wolfId, i) : 0;
+                    // Draw leg at (this.position.x + legX, this.position.y + legY)
+                    // This requires more granular drawing, currently drawWolfBody handles full body
+                    // For now, we will draw simple circles for leg positions as a debug visual
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.beginPath();
+                    ctx.arc(this.position.x - camera.x + legX, this.position.y - camera.y + legY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Reset translation after drawing specific elements that use it
+                ctx.translate(0, -bodyOffsetY);
+            } catch (error) {
+                console.warn('WASM function call failed in wolf render:', error);
+                // Continue with fallback rendering
             }
-            // Reset translation after drawing specific elements that use it
-            ctx.translate(0, -bodyOffsetY);
         }
 
-        // Render base wolf body using animation system (which now takes WASM data into account)
-        this.animationSystem.drawWolfBody(ctx, this.position.x - camera.x, this.position.y - camera.y, this.size.width, this.size.height, this.state, this.animationFrame, this.facing, this.type);
-
-        // Render the wolf with realistic features
+        // Render the wolf with realistic features using the animation system
         this.animationSystem.renderAnimatedWolf(ctx, this, camera)
     }
     
@@ -707,8 +737,20 @@ export class WolfCharacter {
     }
     
     moveTowards(target, speed = null) {
-        const dx = target.x - this.position.x
-        const dy = target.y - this.position.y
+        if (!target) {
+            return
+        }
+        
+        // Handle both target.position and direct target coordinates
+        const targetX = target.position ? target.position.x : target.x
+        const targetY = target.position ? target.position.y : target.y
+        
+        if (targetX === undefined || targetY === undefined) {
+            return
+        }
+        
+        const dx = targetX - this.position.x
+        const dy = targetY - this.position.y
         const distance = Math.sqrt(dx * dx + dy * dy)
         
         if (distance > 0) {

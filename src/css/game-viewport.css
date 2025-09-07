@@ -1,0 +1,35 @@
+/* Game Viewport */
+#viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    transform: scale(var(--scale));
+    transform-origin: top left;
+    background: #0a0a0a;
+    overflow: hidden;
+}
+
+/* Game Canvas */
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3840px;
+    height: 2160px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    transform: translate(var(--shake-x), var(--shake-y));
+}
+
+/* Game Canvas for Enhanced Rendering */
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1280px;
+    height: 720px;
+    background: transparent;
+    pointer-events: none;
+    z-index: 10;
+}

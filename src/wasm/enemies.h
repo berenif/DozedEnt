@@ -2,9 +2,10 @@
 #pragma once
 
 #include "internal_core.h"
+#include "wolf_anim_data.h"
 
 enum class EnemyType : unsigned char { Wolf = 0, Dummy = 1 };
-enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass = 3, Recover = 4, Ambush = 5, Flank = 6, Retreat = 7 };
+enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass = 3, Recover = 4, Ambush = 5, Flank = 6, Retreat = 7, Prowl = 8, Howl = 9 };
 
 // Emotional states that affect behavior
 enum class EmotionalState : unsigned char {
@@ -13,7 +14,8 @@ enum class EmotionalState : unsigned char {
     Fearful = 2,    // More cautious, likely to retreat
     Desperate = 3,  // Will take risks, ignore fatigue
     Confident = 4,  // Better coordination, less hesitation
-    Frustrated = 5  // More feints, unpredictable
+    Frustrated = 5, // More feints, unpredictable
+    Hurt = 6        // Recently damaged, defensive behavior
 };
 enum class PackRole : unsigned char { Lead = 0, FlankL = 1, FlankR = 2, Harasser = 3, PupGuard = 4, Scout = 5, Ambusher = 6, None = 255 };
 
@@ -188,6 +190,26 @@ static float g_pack_last_failure_time = -1000.f;
 static int g_pack_successful_hunts = 0;
 static int g_pack_failed_hunts = 0;
 static float g_player_skill_estimate = 0.5f; // 0-1, pack's estimate of player skill
+
+// Wolf pack management system - maintain 3 active packs
+#define MAX_WOLF_PACKS 3
+#define PACK_RESPAWN_DELAY 30.0f // 30 seconds
+
+struct WolfPack {
+    unsigned char active;           // Is this pack slot active
+    unsigned char alive;            // Is this pack still alive (has living members)
+    unsigned char pack_id;          // Unique pack identifier
+    float spawn_time;              // When this pack was spawned
+    float death_time;              // When this pack was eliminated (-1 if alive)
+    float respawn_timer;           // Countdown to respawn (-1 if not counting down)
+    unsigned char member_count;     // Number of wolves in this pack
+    unsigned char member_indices[6]; // Indices into g_enemies array (max 6 wolves per pack)
+    float center_x, center_y;      // Pack spawn center
+};
+
+static WolfPack g_wolf_packs[MAX_WOLF_PACKS];
+static unsigned char g_active_pack_count = 0;
+static unsigned char g_next_pack_id = 1;
 
 static inline void assign_default_roles() { for (int i = 0; i < MAX_ENEMIES; ++i) g_enemy_roles[i] = (unsigned char)PackRole::None; }
 
@@ -653,10 +675,8 @@ static void update_enemy_wolf(Enemy &e, float dt) {
   // Apply adaptive difficulty modifiers
   float adaptiveSpeedMod = 0.8f + g_player_skill_estimate * 0.4f; // 0.8 to 1.2 based on player skill
   // Apply global escalation enemy speed modifier if available
-  if (get_enemy_speed_modifier) {
-    float escalMod = get_enemy_speed_modifier();
-    if (escalMod > 0.0f) adaptiveSpeedMod *= escalMod;
-  }
+  float escalMod = get_enemy_speed_modifier();
+  if (escalMod > 0.0f) adaptiveSpeedMod *= escalMod;
   float speed = ENEMY_BASE_SPEED * adaptiveSpeedMod; 
   if (stateOut == EnemyState::Harass) speed *= 0.85f; 
   if (g_pack_plan == PackPlan::Commit) speed *= 1.35f; 
@@ -993,6 +1013,183 @@ static unsigned int spawn_wolf_pack(unsigned int packSize) {
   }
   update_pack_controller();
   return spawned;
+}
+
+// Initialize wolf pack management system
+static inline void init_wolf_pack_system() {
+  for (int i = 0; i < MAX_WOLF_PACKS; ++i) {
+    g_wolf_packs[i].active = 0;
+    g_wolf_packs[i].alive = 0;
+    g_wolf_packs[i].pack_id = 0;
+    g_wolf_packs[i].spawn_time = -1.0f;
+    g_wolf_packs[i].death_time = -1.0f;
+    g_wolf_packs[i].respawn_timer = -1.0f;
+    g_wolf_packs[i].member_count = 0;
+    for (int j = 0; j < 6; ++j) {
+      g_wolf_packs[i].member_indices[j] = 255; // Invalid index
+    }
+    g_wolf_packs[i].center_x = 0.5f;
+    g_wolf_packs[i].center_y = 0.5f;
+  }
+  g_active_pack_count = 0;
+  g_next_pack_id = 1;
+}
+
+// Create a new wolf pack and track it
+static inline unsigned int create_tracked_wolf_pack(unsigned int packSize) {
+  // Find empty pack slot
+  int pack_slot = -1;
+  for (int i = 0; i < MAX_WOLF_PACKS; ++i) {
+    if (!g_wolf_packs[i].active) {
+      pack_slot = i;
+      break;
+    }
+  }
+  
+  if (pack_slot == -1) return 0; // No available pack slots
+  
+  // Spawn the actual wolves using existing spawn_wolf_pack function
+  unsigned int spawned = spawn_wolf_pack(packSize);
+  
+  if (spawned > 0) {
+    WolfPack &pack = g_wolf_packs[pack_slot];
+    pack.active = 1;
+    pack.alive = 1;
+    pack.pack_id = g_next_pack_id++;
+    pack.spawn_time = g_time_seconds;
+    pack.death_time = -1.0f;
+    pack.respawn_timer = -1.0f;
+    pack.member_count = 0;
+    
+    // Track which enemies belong to this pack
+    // Find the most recently spawned wolves
+    int wolves_found = 0;
+    for (int i = (int)g_enemy_count - 1; i >= 0 && wolves_found < (int)spawned; --i) {
+      if (i < MAX_ENEMIES && g_enemies[i].active && g_enemies[i].type == EnemyType::Wolf) {
+        if (pack.member_count < 6) { // Ensure we don't exceed member array bounds
+          pack.member_indices[pack.member_count] = i;
+          pack.member_count++;
+          wolves_found++;
+        }
+      }
+    }
+    
+    g_active_pack_count++;
+  }
+  
+  return spawned;
+}
+
+// Check if a pack is still alive (has living members)
+static inline unsigned char is_pack_alive(int pack_index) {
+  if (pack_index < 0 || pack_index >= MAX_WOLF_PACKS) return 0;
+  if (!g_wolf_packs[pack_index].active) return 0;
+  
+  WolfPack &pack = g_wolf_packs[pack_index];
+  for (int i = 0; i < pack.member_count && i < 6; ++i) { // Bounds check member_count
+    int enemy_idx = pack.member_indices[i];
+    if (enemy_idx >= 0 && enemy_idx < MAX_ENEMIES && g_enemies[enemy_idx].active && g_enemies[enemy_idx].health > 0.0f) {
+      return 1; // At least one wolf is alive
+    }
+  }
+  return 0; // No living wolves found
+}
+
+// Update wolf pack system - check for dead packs and handle respawning
+static inline void update_wolf_pack_system(float dtSeconds) {
+  // Check each pack for death and start respawn timers
+  for (int i = 0; i < MAX_WOLF_PACKS; ++i) {
+    WolfPack &pack = g_wolf_packs[i];
+    if (!pack.active) continue;
+    
+    if (pack.alive && !is_pack_alive(i)) {
+      // Pack just died, start respawn timer
+      pack.alive = 0;
+      pack.death_time = g_time_seconds;
+      pack.respawn_timer = PACK_RESPAWN_DELAY;
+      g_active_pack_count--;
+    }
+    
+    // Update respawn timer for dead packs
+    if (!pack.alive && pack.respawn_timer > 0.0f) {
+      pack.respawn_timer -= dtSeconds;
+      
+      if (pack.respawn_timer <= 0.0f) {
+        // Time to respawn this pack
+        pack.respawn_timer = -1.0f;
+        
+        // Determine pack size based on current game state
+        unsigned int new_pack_size = 3 + (rng_u32() % 3); // 3-5 wolves
+        
+        // Adjust based on current biome
+        switch (g_current_biome) {
+          case BiomeType::Forest:
+            new_pack_size += (rng_u32() % 2); // 0-1 additional
+            break;
+          case BiomeType::Mountains:
+            new_pack_size += (rng_u32() % 3); // 0-2 additional
+            break;
+          case BiomeType::Plains:
+            new_pack_size += 1 + (rng_u32() % 2); // 1-2 additional
+            break;
+          default:
+            break;
+        }
+        
+        // Clamp to reasonable limits
+        if (new_pack_size > 6) new_pack_size = 6;
+        
+        // Respawn the pack
+        unsigned int spawned = spawn_wolf_pack(new_pack_size);
+        
+        if (spawned > 0) {
+          // Update pack tracking
+          pack.alive = 1;
+          pack.spawn_time = g_time_seconds;
+          pack.death_time = -1.0f;
+          pack.member_count = 0;
+          
+          // Track the new wolves
+          int wolves_found = 0;
+          for (int j = (int)g_enemy_count - 1; j >= 0 && wolves_found < (int)spawned; --j) {
+            if (j < MAX_ENEMIES && g_enemies[j].active && g_enemies[j].type == EnemyType::Wolf) {
+              // Check if this wolf is already tracked by another pack
+              unsigned char already_tracked = 0;
+              for (int k = 0; k < MAX_WOLF_PACKS; ++k) {
+                if (k == i || !g_wolf_packs[k].active || !g_wolf_packs[k].alive) continue;
+                for (int l = 0; l < g_wolf_packs[k].member_count && l < 6; ++l) {
+                  if (g_wolf_packs[k].member_indices[l] == j) {
+                    already_tracked = 1;
+                    break;
+                  }
+                }
+                if (already_tracked) break;
+              }
+              
+              if (!already_tracked && pack.member_count < 6) {
+                pack.member_indices[pack.member_count] = j;
+                pack.member_count++;
+                wolves_found++;
+              }
+            }
+          }
+          
+          g_active_pack_count++;
+        } else {
+          // Failed to spawn, deactivate pack slot
+          pack.active = 0;
+        }
+      }
+    }
+  }
+  
+  // Ensure we maintain 3 active packs by spawning new ones if needed
+  while (g_active_pack_count < MAX_WOLF_PACKS) {
+    unsigned int pack_size = 3 + (rng_u32() % 3); // 3-5 wolves
+    if (create_tracked_wolf_pack(pack_size) == 0) {
+      break; // Failed to create pack, stop trying
+    }
+  }
 }
 
 // Update pack morale and track casualties/den bonuses

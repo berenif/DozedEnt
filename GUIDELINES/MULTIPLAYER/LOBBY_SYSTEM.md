@@ -11,12 +11,14 @@
 
 A comprehensive multiplayer lobby system built on Trystero's P2P infrastructure, featuring:
 
-- 🏠 **Advanced Room Management** - Create, join, and manage game rooms
-- 🎯 **Smart Matchmaking** - Skill-based player matching
-- 💬 **Real-time Chat** - In-lobby and in-room communication
-- 👁️ **Spectator Mode** - Watch ongoing games
-- 📊 **Analytics Dashboard** - Detailed metrics and insights
-- 🌐 **No Server Required** - Fully P2P architecture
+- 🏠 **Advanced Room Management** - Create, join, and manage game rooms with WASM integration
+- 🎯 **Smart Matchmaking** - Skill-based player matching with adaptive algorithms
+- 💬 **Real-time Chat** - In-lobby and in-room communication with emoji support
+- 👁️ **Spectator Mode** - Watch ongoing games with late-join capabilities
+- 📊 **Analytics Dashboard** - Detailed metrics, insights, and AI-powered recommendations
+- 🌐 **No Server Required** - Fully P2P architecture with automatic host migration
+- ⚡ **WASM Integration** - Deterministic game state synchronization
+- 🔒 **Security Features** - Password protection, rate limiting, and input validation
 
 ## ✨ Features
 

@@ -9,13 +9,14 @@
 
 ## 🎯 Overview
 
-The wolf AI system has undergone a complete overhaul, introducing sophisticated behavioral patterns that create truly challenging and unpredictable encounters:
+The wolf AI system represents the pinnacle of enemy AI implementation, featuring sophisticated behavioral patterns that create truly challenging and unpredictable encounters. All logic runs deterministically in WASM for seamless multiplayer synchronization:
 
-- 🦾 **Pack Intelligence** - Coordinated hunting strategies
-- 📈 **Adaptive Difficulty** - AI that learns from player behavior
-- 🌲 **Environmental Awareness** - Tactical use of terrain
-- 🧠 **Memory System** - Remembers player patterns
-- 💔 **Emotional States** - Dynamic mood-based behaviors
+- 🦾 **Advanced Pack Intelligence** - Coordinated hunting strategies with 7 distinct plans
+- 📈 **Dynamic Adaptive Difficulty** - Real-time AI that learns and adapts to player behavior
+- 🌲 **Environmental Awareness** - Tactical use of 6 terrain types for positioning
+- 🧠 **Enhanced Memory System** - Remembers player patterns and predicts movements
+- 💔 **Emotional State Machine** - 6 emotional states affecting behavior and performance
+- ⚡ **WASM Integration** - All AI logic runs deterministically for multiplayer consistency
 
 ## 🔑 Key Enhancements
 

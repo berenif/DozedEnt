@@ -1,0 +1,6 @@
+--recursive
+--timeout 5000
+--bail
+--reporter spec
+--require test/setup.js
+test/unit/**/*.test.js

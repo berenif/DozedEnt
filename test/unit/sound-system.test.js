@@ -1,373 +1,646 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
+import { SoundSystem } from '../../src/utils/sound-system.js';
 
-// Mock Web Audio API
-global.AudioContext = class MockAudioContext {
-  constructor() {
-    this.destination = { connect: sinon.stub() };
-    this.currentTime = 0;
-    this.sampleRate = 44100;
-    this.state = 'running';
-  }
-  
-  createGain() {
-    return {
-      gain: { value: 1, setValueAtTime: sinon.stub(), linearRampToValueAtTime: sinon.stub() },
+describe('SoundSystem', () => {
+  let soundSystem;
+  let mockAudioContext;
+  let mockGainNode;
+  let mockCompressor;
+  let mockReverb;
+  let mockLowPassFilter;
+
+  beforeEach(() => {
+    // Create mock audio context and nodes
+    mockGainNode = {
       connect: sinon.stub(),
-      disconnect: sinon.stub()
+      disconnect: sinon.stub(),
+      gain: { value: 1.0 }
     };
-  }
-  
-  createDynamicsCompressor() {
-    return {
+
+    mockCompressor = {
+      connect: sinon.stub(),
+      disconnect: sinon.stub(),
       threshold: { value: -24 },
       knee: { value: 30 },
       ratio: { value: 12 },
       attack: { value: 0.003 },
-      release: { value: 0.25 },
-      connect: sinon.stub(),
-      disconnect: sinon.stub()
+      release: { value: 0.25 }
     };
-  }
-  
-  createBiquadFilter() {
-    return {
-      type: 'lowpass',
-      frequency: { value: 1000, setValueAtTime: sinon.stub() },
-      Q: { value: 1 },
-      connect: sinon.stub(),
-      disconnect: sinon.stub()
-    };
-  }
-  
-  createConvolver() {
-    return {
-      buffer: null,
-      connect: sinon.stub(),
-      disconnect: sinon.stub()
-    };
-  }
-  
-  createBufferSource() {
-    return {
-      buffer: null,
-      loop: false,
-      playbackRate: { value: 1 },
+
+    mockReverb = {
       connect: sinon.stub(),
       disconnect: sinon.stub(),
-      start: sinon.stub(),
-      stop: sinon.stub()
+      wet: { value: 0.3 },
+      dry: { value: 0.7 }
     };
-  }
-  
-  createOscillator() {
-    return {
-      type: 'sine',
-      frequency: { value: 440, setValueAtTime: sinon.stub() },
+
+    mockLowPassFilter = {
       connect: sinon.stub(),
       disconnect: sinon.stub(),
-      start: sinon.stub(),
-      stop: sinon.stub()
+      frequency: { value: 20000 },
+      Q: { value: 1 }
     };
-  }
-  
-  decodeAudioData(data, success, error) {
-    const mockBuffer = {
-      duration: 1.0,
-      length: 44100,
-      numberOfChannels: 2,
-      sampleRate: 44100
+
+    mockAudioContext = {
+      createGain: sinon.stub().returns(mockGainNode),
+      createDynamicsCompressor: sinon.stub().returns(mockCompressor),
+      createConvolver: sinon.stub().returns(mockReverb),
+      createBiquadFilter: sinon.stub().returns(mockLowPassFilter),
+      createBufferSource: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        start: sinon.stub(),
+        stop: sinon.stub(),
+        buffer: null,
+        loop: false,
+        playbackRate: { value: 1.0 }
+      }),
+      createBuffer: sinon.stub().returns({
+        length: 44100,
+        sampleRate: 44100,
+        numberOfChannels: 2,
+        getChannelData: sinon.stub().returns(new Float32Array(44100))
+      }),
+      createOscillator: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        start: sinon.stub(),
+        stop: sinon.stub(),
+        frequency: { value: 440 },
+        type: 'sine'
+      }),
+      createAnalyser: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        fftSize: 2048,
+        frequencyBinCount: 1024,
+        getByteFrequencyData: sinon.stub(),
+        getByteTimeDomainData: sinon.stub()
+      }),
+      createPanner: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        positionX: { value: 0 },
+        positionY: { value: 0 },
+        positionZ: { value: 0 },
+        orientationX: { value: 0 },
+        orientationY: { value: 0 },
+        orientationZ: { value: 1 },
+        panningModel: 'equalpower',
+        distanceModel: 'inverse',
+        refDistance: 1,
+        maxDistance: 10000,
+        rolloffFactor: 1,
+        coneInnerAngle: 360,
+        coneOuterAngle: 360,
+        coneOuterGain: 0
+      }),
+      createDelay: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        delayTime: { value: 0.1 },
+        maxDelayTime: 1
+      }),
+      createBiquadFilter: sinon.stub().returns(mockLowPassFilter),
+      createWaveShaper: sinon.stub().returns({
+        connect: sinon.stub(),
+        disconnect: sinon.stub(),
+        curve: null,
+        oversample: 'none'
+      }),
+      createGain: sinon.stub().returns(mockGainNode),
+      destination: { connect: sinon.stub() },
+      sampleRate: 44100,
+      currentTime: 0,
+      state: 'running',
+      suspend: sinon.stub().returns(Promise.resolve()),
+      resume: sinon.stub().returns(Promise.resolve()),
+      close: sinon.stub().returns(Promise.resolve())
     };
-    if (success) success(mockBuffer);
-    return Promise.resolve(mockBuffer);
-  }
-  
-  resume() {
-    return Promise.resolve();
-  }
-  
-  suspend() {
-    return Promise.resolve();
-  }
-};
 
-import { SoundSystem } from '../../src/sound-system.js';
+    // Mock Web Audio API
+    global.AudioContext = sinon.stub().returns(mockAudioContext);
+    global.webkitAudioContext = sinon.stub().returns(mockAudioContext);
 
-describe('Sound System', () => {
-  let soundSystem;
-  let audioContext;
-
-  beforeEach(() => {
-    audioContext = new AudioContext();
-    soundSystem = new SoundSystem(audioContext);
+    soundSystem = new SoundSystem();
   });
 
-  describe('initialization', () => {
-    it('should initialize with default values', () => {
-      expect(soundSystem.context).to.equal(audioContext);
-      expect(soundSystem.masterVolume).to.equal(1.0);
+  describe('Configuration', () => {
+    it('should accept custom configuration options', () => {
+      const customConfig = {
+        masterVolume: 0.5,
+        enableDynamicRange: false,
+        enableReverb: false,
+        enableCompression: false
+      };
+      const customSoundSystem = new SoundSystem(customConfig);
+      expect(customSoundSystem.config.masterVolume).to.equal(0.5);
+      expect(customSoundSystem.config.enableDynamicRange).to.be.false;
+      expect(customSoundSystem.config.enableReverb).to.be.false;
+      expect(customSoundSystem.config.enableCompression).to.be.false;
+    });
+
+    it('should merge custom config with defaults', () => {
+      const partialConfig = { masterVolume: 0.3 };
+      const customSoundSystem = new SoundSystem(partialConfig);
+      expect(customSoundSystem.config.masterVolume).to.equal(0.3);
+      expect(customSoundSystem.config.enableDynamicRange).to.be.true; // Default
+    });
+
+    it('should handle invalid configuration gracefully', () => {
+      const invalidConfig = {
+        masterVolume: 'invalid',
+        enableDynamicRange: 'not-boolean'
+      };
+      const system = new SoundSystem(invalidConfig);
+      expect(system.config.masterVolume).to.equal(0.7); // Should use default
+    });
+  });
+
+  describe('Constructor', () => {
+    it('should create sound system with default properties', () => {
+      expect(soundSystem.audioContext).to.be.null;
+      expect(soundSystem.masterGain).to.be.null;
       expect(soundSystem.sounds).to.be.an('object');
-      expect(soundSystem.music).to.be.an('object');
-      expect(soundSystem.soundVolume).to.equal(1.0);
-      expect(soundSystem.musicVolume).to.equal(0.7);
-      expect(soundSystem.isMuted).to.be.false;
+      expect(soundSystem.playingSounds).to.be.an('object');
+      expect(soundSystem.musicTracks).to.be.an('object');
+      expect(soundSystem.currentMusic).to.be.null;
+      expect(soundSystem.listenerPosition).to.deep.equal({ x: 640, y: 360 });
+      expect(soundSystem.initialized).to.be.false;
     });
 
-    it('should create audio nodes', () => {
-      expect(soundSystem.masterGain).to.exist;
-      expect(soundSystem.soundGain).to.exist;
-      expect(soundSystem.musicGain).to.exist;
-      expect(soundSystem.compressor).to.exist;
+    it('should initialize audio buses', () => {
+      expect(soundSystem.buses).to.have.property('master');
+      expect(soundSystem.buses).to.have.property('sfx');
+      expect(soundSystem.buses).to.have.property('music');
+      expect(soundSystem.buses).to.have.property('ambient');
+      expect(soundSystem.buses).to.have.property('ui');
+    });
+
+    it('should initialize audio effects', () => {
+      expect(soundSystem.compressor).to.be.null;
+      expect(soundSystem.reverb).to.be.null;
+      expect(soundSystem.reverbWet).to.be.null;
+      expect(soundSystem.reverbDry).to.be.null;
+      expect(soundSystem.lowPassFilter).to.be.null;
     });
   });
 
-  describe('volume control', () => {
+  describe('Initialization', () => {
+    it('should initialize audio context on first call', async () => {
+      await soundSystem.initialize();
+      
+      expect(soundSystem.audioContext).to.equal(mockAudioContext);
+      expect(soundSystem.initialized).to.be.true;
+    });
+
+    it('should not initialize twice', async () => {
+      await soundSystem.initialize();
+      const firstContext = soundSystem.audioContext;
+      
+      await soundSystem.initialize();
+      expect(soundSystem.audioContext).to.equal(firstContext);
+    });
+
+    it('should create audio buses', async () => {
+      await soundSystem.initialize();
+      
+      expect(soundSystem.buses.master).to.exist;
+      expect(soundSystem.buses.sfx).to.exist;
+      expect(soundSystem.buses.music).to.exist;
+      expect(soundSystem.buses.ambient).to.exist;
+      expect(soundSystem.buses.ui).to.exist;
+    });
+
+    it('should create audio effects', async () => {
+      await soundSystem.initialize();
+      
+      expect(soundSystem.compressor).to.exist;
+      expect(soundSystem.reverb).to.exist;
+      expect(soundSystem.reverbWet).to.exist;
+      expect(soundSystem.reverbDry).to.exist;
+      expect(soundSystem.lowPassFilter).to.exist;
+    });
+
+    it('should handle initialization errors gracefully', async () => {
+      global.AudioContext = sinon.stub().throws(new Error('Audio not supported'));
+      
+      await soundSystem.initialize();
+      expect(soundSystem.initialized).to.be.false;
+    });
+  });
+
+  describe('Sound Loading', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+    });
+
+    it('should load sound from URL', async () => {
+      const mockResponse = {
+        arrayBuffer: sinon.stub().returns(Promise.resolve(new ArrayBuffer(8)))
+      };
+      global.fetch = sinon.stub().returns(Promise.resolve(mockResponse));
+      
+      const sound = await soundSystem.loadSound('test-sound', 'audio/test.mp3');
+      
+      expect(sound).to.exist;
+      expect(soundSystem.sounds.get('test-sound')).to.exist;
+    });
+
+    it('should load sound from buffer', async () => {
+      const buffer = mockAudioContext.createBuffer();
+      const sound = await soundSystem.loadSoundFromBuffer('test-sound', buffer);
+      
+      expect(sound).to.exist;
+      expect(soundSystem.sounds.get('test-sound')).to.exist;
+    });
+
+    it('should handle sound loading errors', async () => {
+      global.fetch = sinon.stub().returns(Promise.reject(new Error('Network error')));
+      
+      try {
+        await soundSystem.loadSound('test-sound', 'audio/test.mp3');
+      } catch (error) {
+        expect(error.message).to.equal('Network error');
+      }
+    });
+  });
+
+  describe('Sound Playback', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+      
+      // Create a mock sound
+      const mockSound = {
+        buffer: mockAudioContext.createBuffer(),
+        volume: 1.0,
+        pitch: 1.0,
+        loop: false,
+        spatial: false
+      };
+      soundSystem.sounds.set('test-sound', mockSound);
+    });
+
+    it('should play sound', () => {
+      const soundId = soundSystem.playSound('test-sound');
+      
+      expect(soundId).to.exist;
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+
+    it('should play sound with options', () => {
+      const options = {
+        volume: 0.5,
+        pitch: 1.5,
+        loop: true,
+        spatial: true,
+        position: { x: 100, y: 200 }
+      };
+      
+      const soundId = soundSystem.playSound('test-sound', options);
+      
+      expect(soundId).to.exist;
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+
+    it('should stop sound', () => {
+      const soundId = soundSystem.playSound('test-sound');
+      soundSystem.stopSound(soundId);
+      
+      expect(soundSystem.playingSounds.has(soundId)).to.be.false;
+    });
+
+    it('should stop all sounds', () => {
+      soundSystem.playSound('test-sound');
+      soundSystem.playSound('test-sound');
+      
+      soundSystem.stopAllSounds();
+      expect(soundSystem.playingSounds.size).to.equal(0);
+    });
+
+    it('should pause sound', () => {
+      const soundId = soundSystem.playSound('test-sound');
+      soundSystem.pauseSound(soundId);
+      
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+
+    it('should resume sound', () => {
+      const soundId = soundSystem.playSound('test-sound');
+      soundSystem.pauseSound(soundId);
+      soundSystem.resumeSound(soundId);
+      
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+  });
+
+  describe('Music System', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+      
+      // Create a mock music track
+      const mockTrack = {
+        buffer: mockAudioContext.createBuffer(),
+        volume: 0.7,
+        loop: true,
+        fadeIn: 2000,
+        fadeOut: 2000
+      };
+      soundSystem.musicTracks.set('background-music', mockTrack);
+    });
+
+    it('should play music', () => {
+      soundSystem.playMusic('background-music');
+      
+      expect(soundSystem.currentMusic).to.exist;
+    });
+
+    it('should stop music', () => {
+      soundSystem.playMusic('background-music');
+      soundSystem.stopMusic();
+      
+      expect(soundSystem.currentMusic).to.be.null;
+    });
+
+    it('should fade in music', () => {
+      soundSystem.playMusic('background-music', { fadeIn: 1000 });
+      
+      expect(soundSystem.currentMusic).to.exist;
+    });
+
+    it('should fade out music', () => {
+      soundSystem.playMusic('background-music');
+      soundSystem.stopMusic({ fadeOut: 1000 });
+      
+      expect(soundSystem.currentMusic).to.be.null;
+    });
+
+    it('should crossfade between tracks', () => {
+      soundSystem.playMusic('background-music');
+      soundSystem.playMusic('background-music', { crossfade: 2000 });
+      
+      expect(soundSystem.currentMusic).to.exist;
+    });
+  });
+
+  describe('Spatial Audio', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+      
+      const mockSound = {
+        buffer: mockAudioContext.createBuffer(),
+        volume: 1.0,
+        pitch: 1.0,
+        loop: false,
+        spatial: true
+      };
+      soundSystem.sounds.set('spatial-sound', mockSound);
+    });
+
+    it('should play spatial sound', () => {
+      const position = { x: 100, y: 200 };
+      const soundId = soundSystem.playSound('spatial-sound', { spatial: true, position });
+      
+      expect(soundId).to.exist;
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+
+    it('should update listener position', () => {
+      const newPosition = { x: 200, y: 300 };
+      soundSystem.setListenerPosition(newPosition.x, newPosition.y);
+      
+      expect(soundSystem.listenerPosition).to.deep.equal(newPosition);
+    });
+
+    it('should update sound position', () => {
+      const soundId = soundSystem.playSound('spatial-sound', { spatial: true });
+      const newPosition = { x: 150, y: 250 };
+      
+      soundSystem.updateSoundPosition(soundId, newPosition.x, newPosition.y);
+      
+      expect(soundSystem.playingSounds.has(soundId)).to.be.true;
+    });
+  });
+
+  describe('Audio Effects', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+    });
+
     it('should set master volume', () => {
       soundSystem.setMasterVolume(0.5);
-      expect(soundSystem.masterVolume).to.equal(0.5);
-      expect(soundSystem.masterGain.gain.value).to.equal(0.5);
+      expect(soundSystem.buses.master.gain.value).to.equal(0.5);
     });
 
-    it('should clamp volume to valid range', () => {
-      soundSystem.setMasterVolume(2.0);
-      expect(soundSystem.masterVolume).to.equal(1.0);
-      
-      soundSystem.setMasterVolume(-1.0);
-      expect(soundSystem.masterVolume).to.equal(0.0);
-    });
-
-    it('should set sound volume', () => {
-      soundSystem.setSoundVolume(0.8);
-      expect(soundSystem.soundVolume).to.equal(0.8);
-      expect(soundSystem.soundGain.gain.value).to.equal(0.8);
+    it('should set SFX volume', () => {
+      soundSystem.setSFXVolume(0.7);
+      expect(soundSystem.buses.sfx.gain.value).to.equal(0.7);
     });
 
     it('should set music volume', () => {
       soundSystem.setMusicVolume(0.6);
-      expect(soundSystem.musicVolume).to.equal(0.6);
-      expect(soundSystem.musicGain.gain.value).to.equal(0.6);
+      expect(soundSystem.buses.music.gain.value).to.equal(0.6);
     });
 
-    it('should mute all sounds', () => {
-      const originalVolume = soundSystem.masterVolume;
-      soundSystem.mute();
-      
-      expect(soundSystem.isMuted).to.be.true;
-      expect(soundSystem.masterGain.gain.value).to.equal(0);
-      expect(soundSystem.previousVolume).to.equal(originalVolume);
+    it('should set ambient volume', () => {
+      soundSystem.setAmbientVolume(0.4);
+      expect(soundSystem.buses.ambient.gain.value).to.equal(0.4);
     });
 
-    it('should unmute and restore previous volume', () => {
-      soundSystem.setMasterVolume(0.7);
-      soundSystem.mute();
-      soundSystem.unmute();
-      
-      expect(soundSystem.isMuted).to.be.false;
-      expect(soundSystem.masterGain.gain.value).to.equal(0.7);
-    });
-  });
-
-  describe('sound loading', () => {
-    it('should load a sound buffer', async () => {
-      const mockArrayBuffer = new ArrayBuffer(100);
-      const promise = soundSystem.loadSound('test', mockArrayBuffer);
-      
-      await promise;
-      
-      expect(soundSystem.sounds.test).to.exist;
-      expect(soundSystem.sounds.test.duration).to.equal(1.0);
+    it('should set UI volume', () => {
+      soundSystem.setUIVolume(0.8);
+      expect(soundSystem.buses.ui.gain.value).to.equal(0.8);
     });
 
-    it('should handle multiple sound loads', async () => {
-      const buffer1 = new ArrayBuffer(100);
-      const buffer2 = new ArrayBuffer(200);
+    it('should set reverb amount', () => {
+      soundSystem.setReverbAmount(0.5);
+      expect(soundSystem.reverbWet.gain.value).to.equal(0.5);
+      expect(soundSystem.reverbDry.gain.value).to.equal(0.5);
+    });
+
+    it('should set low-pass filter frequency', () => {
+      soundSystem.setLowPassFrequency(1000);
+      expect(soundSystem.lowPassFilter.frequency.value).to.equal(1000);
+    });
+
+    it('should set compressor settings', () => {
+      soundSystem.setCompressorSettings({
+        threshold: -20,
+        knee: 25,
+        ratio: 10,
+        attack: 0.002,
+        release: 0.2
+      });
       
-      await Promise.all([
-        soundSystem.loadSound('sound1', buffer1),
-        soundSystem.loadSound('sound2', buffer2)
-      ]);
-      
-      expect(soundSystem.sounds.sound1).to.exist;
-      expect(soundSystem.sounds.sound2).to.exist;
+      expect(soundSystem.compressor.threshold.value).to.equal(-20);
+      expect(soundSystem.compressor.knee.value).to.equal(25);
+      expect(soundSystem.compressor.ratio.value).to.equal(10);
+      expect(soundSystem.compressor.attack.value).to.equal(0.002);
+      expect(soundSystem.compressor.release.value).to.equal(0.2);
     });
   });
 
-  describe('sound playback', () => {
+  describe('Dynamic Range Compression', () => {
     beforeEach(async () => {
-      const mockBuffer = new ArrayBuffer(100);
-      await soundSystem.loadSound('testSound', mockBuffer);
+      await soundSystem.initialize();
     });
 
-    it('should play a loaded sound', () => {
-      const source = soundSystem.playSound('testSound');
+    it('should apply compression to audio', () => {
+      const mockSource = mockAudioContext.createBufferSource();
+      soundSystem.applyCompression(mockSource);
       
-      expect(source).to.exist;
-      expect(source.start.calledOnce).to.be.true;
+      expect(mockSource.connect.called).to.be.true;
     });
 
-    it('should play sound with custom volume', () => {
-      const source = soundSystem.playSound('testSound', 0.5);
+    it('should adjust compression based on audio level', () => {
+      const mockAnalyser = mockAudioContext.createAnalyser();
+      const mockData = new Uint8Array(1024);
       
-      expect(source).to.exist;
-      // Volume should be applied through gain node
-    });
-
-    it('should play sound with pitch adjustment', () => {
-      const source = soundSystem.playSound('testSound', 1.0, 1.5);
+      // Simulate high audio level
+      for (let i = 0; i < 1024; i++) {
+        mockData[i] = 200;
+      }
       
-      expect(source).to.exist;
-      expect(source.playbackRate.value).to.equal(1.5);
-    });
-
-    it('should not play non-existent sound', () => {
-      const consoleSpy = sinon.spy(console, 'warn');
-      const source = soundSystem.playSound('nonExistent');
+      mockAnalyser.getByteFrequencyData.returns(mockData);
       
-      expect(source).to.be.null;
-      expect(consoleSpy.called).to.be.true;
+      soundSystem.updateDynamicCompression(mockAnalyser);
       
-      consoleSpy.restore();
-    });
-
-    it('should loop a sound', () => {
-      const source = soundSystem.playSound('testSound', 1.0, 1.0, true);
-      
-      expect(source).to.exist;
-      expect(source.loop).to.be.true;
+      expect(soundSystem.compressor.threshold.value).to.be.lessThan(-24);
     });
   });
 
-  describe('music playback', () => {
+  describe('Environmental Effects', () => {
     beforeEach(async () => {
-      const mockBuffer = new ArrayBuffer(1000);
-      await soundSystem.loadSound('bgMusic', mockBuffer);
+      await soundSystem.initialize();
     });
 
-    it('should play music', () => {
-      soundSystem.playMusic('bgMusic');
-      
-      expect(soundSystem.currentMusic).to.exist;
-      expect(soundSystem.currentMusicName).to.equal('bgMusic');
+    it('should apply underwater effect', () => {
+      soundSystem.applyUnderwaterEffect(true);
+      expect(soundSystem.lowPassFilter.frequency.value).to.be.lessThan(20000);
     });
 
-    it('should stop current music before playing new one', () => {
-      soundSystem.playMusic('bgMusic');
-      const firstMusic = soundSystem.currentMusic;
-      
-      soundSystem.playMusic('bgMusic');
-      
-      expect(firstMusic.stop.calledOnce).to.be.true;
+    it('should remove underwater effect', () => {
+      soundSystem.applyUnderwaterEffect(false);
+      expect(soundSystem.lowPassFilter.frequency.value).to.equal(20000);
     });
 
-    it('should stop music', () => {
-      soundSystem.playMusic('bgMusic');
-      const music = soundSystem.currentMusic;
-      
-      soundSystem.stopMusic();
-      
-      expect(music.stop.calledOnce).to.be.true;
-      expect(soundSystem.currentMusic).to.be.null;
-      expect(soundSystem.currentMusicName).to.be.null;
+    it('should apply cave reverb', () => {
+      soundSystem.applyCaveReverb(true);
+      expect(soundSystem.reverbWet.gain.value).to.be.greaterThan(0.3);
     });
 
-    it('should fade music in', () => {
-      const clock = sinon.useFakeTimers();
-      
-      soundSystem.playMusic('bgMusic', true, 1000);
-      
-      expect(soundSystem.musicGain.gain.setValueAtTime.called).to.be.true;
-      expect(soundSystem.musicGain.gain.linearRampToValueAtTime.called).to.be.true;
-      
-      clock.restore();
-    });
-
-    it('should fade music out', () => {
-      soundSystem.playMusic('bgMusic');
-      
-      soundSystem.fadeOutMusic(500);
-      
-      expect(soundSystem.musicGain.gain.linearRampToValueAtTime.called).to.be.true;
+    it('should remove cave reverb', () => {
+      soundSystem.applyCaveReverb(false);
+      expect(soundSystem.reverbWet.gain.value).to.equal(0.3);
     });
   });
 
-  describe('3D spatial audio', () => {
-    it('should play sound at position', () => {
-      // Note: This would require mocking PannerNode which is complex
-      // For now, just test that the method exists and doesn't throw
-      expect(soundSystem.playSoundAtPosition).to.be.a('function');
-    });
-
-    it('should update listener position', () => {
-      soundSystem.updateListenerPosition(10, 20, 30);
-      // Would need to mock AudioListener
-      expect(true).to.be.true;
-    });
-  });
-
-  describe('sound effects', () => {
+  describe('Performance Monitoring', () => {
     beforeEach(async () => {
-      const mockBuffer = new ArrayBuffer(100);
-      await soundSystem.loadSound('effect', mockBuffer);
+      await soundSystem.initialize();
     });
 
-    it('should play one-shot sound', () => {
-      const source = soundSystem.playOneShot('effect', 0.8, 1.2);
+    it('should track playing sounds count', () => {
+      soundSystem.playSound('test-sound');
+      soundSystem.playSound('test-sound');
       
-      expect(source).to.exist;
-      expect(source.start.calledOnce).to.be.true;
+      expect(soundSystem.getPlayingSoundsCount()).to.equal(2);
     });
 
-    it('should play random pitch sound', () => {
-      const source = soundSystem.playRandomPitch('effect', 0.8, 1.2);
-      
-      expect(source).to.exist;
-      expect(source.playbackRate.value).to.be.at.least(0.8);
-      expect(source.playbackRate.value).to.be.at.most(1.2);
+    it('should get memory usage', () => {
+      const memoryUsage = soundSystem.getMemoryUsage();
+      expect(memoryUsage).to.be.a('number');
+      expect(memoryUsage).to.be.greaterThan(0);
     });
 
-    it('should play impact sound based on force', () => {
-      soundSystem.playImpactSound(0.5);
-      // Would need to mock oscillator creation
-      expect(true).to.be.true;
-    });
-
-    it('should play footstep sound', () => {
-      soundSystem.playFootstep('grass');
-      // Would need to mock oscillator creation
-      expect(true).to.be.true;
+    it('should get CPU usage', () => {
+      const cpuUsage = soundSystem.getCPUUsage();
+      expect(cpuUsage).to.be.a('number');
+      expect(cpuUsage).to.be.at.least(0);
     });
   });
 
-  describe('audio context management', () => {
-    it('should resume audio context', async () => {
-      await soundSystem.resumeContext();
-      expect(audioContext.resume.called).to.be.true;
+  describe('Cleanup', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
     });
 
-    it('should suspend audio context', async () => {
-      await soundSystem.suspendContext();
-      expect(audioContext.suspend.called).to.be.true;
-    });
-  });
-
-  describe('cleanup', () => {
-    it('should stop all sounds', () => {
-      soundSystem.playSound('test');
-      soundSystem.playMusic('bgMusic');
-      
-      const stopAllSpy = sinon.spy(soundSystem, 'stopAllSounds');
-      soundSystem.stopAllSounds();
-      
-      expect(stopAllSpy.calledOnce).to.be.true;
-      expect(soundSystem.currentMusic).to.be.null;
-    });
-
-    it('should clean up resources', () => {
+    it('should cleanup resources', () => {
+      soundSystem.playSound('test-sound');
       soundSystem.cleanup();
       
-      expect(soundSystem.sounds).to.deep.equal({});
-      expect(soundSystem.music).to.deep.equal({});
+      expect(soundSystem.playingSounds.size).to.equal(0);
       expect(soundSystem.currentMusic).to.be.null;
     });
+
+    it('should close audio context', async () => {
+      await soundSystem.cleanup();
+      expect(mockAudioContext.close.called).to.be.true;
+    });
   });
+
+  describe('Error Handling', () => {
+    it('should handle missing audio context', () => {
+      expect(() => soundSystem.playSound('test-sound')).to.not.throw();
+    });
+
+    it('should handle missing sound', async () => {
+      await soundSystem.initialize();
+      expect(() => soundSystem.playSound('nonexistent-sound')).to.not.throw();
+    });
+
+    it('should handle audio context errors', async () => {
+      mockAudioContext.createBufferSource.throws(new Error('Audio context error'));
+      await soundSystem.initialize();
+      
+      expect(() => soundSystem.playSound('test-sound')).to.not.throw();
+    });
+  });
+
+  describe('Performance', () => {
+    beforeEach(async () => {
+      await soundSystem.initialize();
+      
+      const mockSound = {
+        buffer: mockAudioContext.createBuffer(),
+        volume: 1.0,
+        pitch: 1.0,
+        loop: false,
+        spatial: false
+      };
+      soundSystem.sounds.set('test-sound', mockSound);
+    });
+
+    it('should play sounds efficiently', () => {
+      const startTime = performance.now();
+      
+      for (let i = 0; i < 100; i++) {
+        soundSystem.playSound('test-sound');
+      }
+      
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      
+      // Should complete 100 sound plays in less than 50ms
+      expect(duration).to.be.lessThan(50);
+    });
+
+    it('should update efficiently', () => {
+      soundSystem.playSound('test-sound');
+      
+      const startTime = performance.now();
+      
+      for (let i = 0; i < 1000; i++) {
+        soundSystem.update(16);
+      }
+      
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      
+      // Should complete 1000 updates in less than 100ms
+      expect(duration).to.be.lessThan(100);
+    });
+  });
+});
 });

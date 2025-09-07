@@ -1,8 +1,8 @@
-# Player Animation System Documentation
+# 🎮 Enhanced Player Animation System Documentation
 
 ## Overview
 
-The player animation system provides a complete set of character animations including idle, movement, combat, and defensive actions. The system is built on top of the modular animation framework and includes smooth transitions, procedural effects, and state management.
+The enhanced player animation system provides a complete set of character animations including idle, movement, combat, and defensive actions. The system is built on top of the modular animation framework with WASM integration and includes smooth transitions, procedural effects, state management, and multiplayer synchronization.
 
 ## Table of Contents
 

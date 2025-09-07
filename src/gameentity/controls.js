@@ -1,6 +1,7 @@
-// Game Control System
+// Enhanced Mobile Game Controls - Integrated with InputManager
 class MobileGameControls {
-    constructor() {
+    constructor(inputManager = null) {
+        this.inputManager = inputManager;
         this.pressedKeys = new Set();
         this.touchPoints = new Map();
         this.gameState = {
@@ -14,6 +15,14 @@ class MobileGameControls {
         };
         this.cooldowns = new Map();
         this.vibrationEnabled = true;
+        
+        // Enhanced touch support
+        this.multiTouchEnabled = true;
+        this.gestureSupport = {
+            swipe: true,
+            pinch: false, // Disabled for now
+            longPress: true
+        };
         
         this.init();
     }
@@ -39,7 +48,16 @@ class MobileGameControls {
     }
 
     setupControls() {
-        // D-Pad controls
+        // Enhanced action buttons with proper 5-button combat system mapping
+        this.setupActionButtons();
+        
+        // Enhanced joystick (already handled by InputManager, but add visual enhancements)
+        this.enhanceJoystick();
+        
+        // Setup gesture recognition
+        this.setupGestures();
+        
+        // D-Pad controls (if present)
         const dpadButtons = document.querySelectorAll('.dpad-btn');
         dpadButtons.forEach(btn => {
             // Touch events for mobile
@@ -65,21 +83,44 @@ class MobileGameControls {
                 this.handleDirectionRelease(btn.dataset.direction);
             });
         });
-
-        // Action buttons
+    }
+    
+    /**
+     * Setup enhanced action buttons with 5-button combat system
+     */
+    setupActionButtons() {
+        // Create enhanced action buttons if they don't exist
+        this.createEnhancedActionButtons();
+        
         const actionButtons = document.querySelectorAll('.action-btn');
         actionButtons.forEach(btn => {
+            // Enhanced touch events with haptic feedback
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                this.handleAction(btn.dataset.action);
-                this.vibrate(20);
+                const action = this.getButtonAction(btn);
+                this.handleActionStart(action, btn);
+                this.vibrate(this.getVibrationIntensity(action));
                 this.createRippleEffect(btn);
             });
+            
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const action = this.getButtonAction(btn);
+                this.handleActionEnd(action, btn);
+            });
 
+            // Mouse events for desktop testing
             btn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
-                this.handleAction(btn.dataset.action);
+                const action = this.getButtonAction(btn);
+                this.handleActionStart(action, btn);
                 this.createRippleEffect(btn);
+            });
+            
+            btn.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                const action = this.getButtonAction(btn);
+                this.handleActionEnd(action, btn);
             });
         });
 
@@ -323,11 +364,15 @@ class MobileGameControls {
         
         console.log(`Action: ${action}`);
         
-        // Map actions to keyboard keys used by the game
+        // Map actions to keyboard keys used by the game - 5-button combat system
         const actionKeyMap = {
-            'attack': 'l',
-            'roll': 'k',
-            'block': 'm'
+            'lightAttack': 'j',     // A1 - Light Attack
+            'heavyAttack': 'k',     // A2 - Heavy Attack
+            'block': 'shift',       // Block - Hold to guard
+            'roll': 'control',      // Roll - Dodge
+            'special': 'l',         // Special - Hero move
+            // Legacy
+            'attack': 'j'           // Maps to light attack
         };
         
         const key = actionKeyMap[action];
@@ -354,17 +399,30 @@ class MobileGameControls {
         }
         
         switch(action) {
-            case 'attack':
-                this.performAttack();
-                this.setCooldown(action, 500);
+            case 'lightAttack':
+                this.performLightAttack();
+                this.setCooldown(action, 350); // Fast attacks
                 break;
-            case 'roll':
-                this.performRoll();
-                this.setCooldown(action, 1500);
+            case 'heavyAttack':
+                this.performHeavyAttack();
+                this.setCooldown(action, 800); // Slower heavy attacks
+                break;
+            case 'special':
+                this.performSpecial();
+                this.setCooldown(action, 2000); // Long cooldown for hero moves
                 break;
             case 'block':
                 this.performBlock();
-                this.setCooldown(action, 1000);
+                this.setCooldown(action, 100); // Short cooldown for blocking
+                break;
+            case 'roll':
+                this.performRoll();
+                this.setCooldown(action, 800); // Roll cooldown matches WASM
+                break;
+            // Legacy
+            case 'attack':
+                this.performLightAttack(); // Maps to light attack
+                this.setCooldown(action, 350);
                 break;
             case 'jump':
                 this.performJump();
@@ -414,9 +472,245 @@ class MobileGameControls {
         }
     }
 
+    /**
+     * Create enhanced action buttons for 5-button combat system
+     */
+    createEnhancedActionButtons() {
+        const actionsContainer = document.getElementById('actions');
+        if (!actionsContainer) return;
+        
+        // Check if enhanced buttons already exist
+        if (actionsContainer.querySelector('[data-action="lightAttack"]')) return;
+        
+        // Clear existing buttons
+        actionsContainer.innerHTML = '';
+        
+        // Create 5-button combat system buttons
+        const buttons = [
+            { action: 'lightAttack', emoji: '⚡', title: 'Light Attack (J/1)', color: '#ffaa00' },
+            { action: 'heavyAttack', emoji: '💥', title: 'Heavy Attack (K/2)', color: '#ff4444' },
+            { action: 'block', emoji: '🛡️', title: 'Block (Shift/3)', color: '#4488ff' },
+            { action: 'roll', emoji: '🔄', title: 'Roll (Space/4)', color: '#44ff44' },
+            { action: 'special', emoji: '✨', title: 'Special (L/5)', color: '#ff44ff' }
+        ];
+        
+        buttons.forEach(btn => {
+            const button = document.createElement('button');
+            button.className = 'action-btn enhanced-btn';
+            button.dataset.action = btn.action;
+            button.title = btn.title;
+            button.innerHTML = `
+                <span class="btn-emoji">${btn.emoji}</span>
+                <div class="cooldown-overlay" style="--btn-color: ${btn.color}"></div>
+            `;
+            button.style.setProperty('--btn-color', btn.color);
+            actionsContainer.appendChild(button);
+        });
+    }
+    
+    /**
+     * Get button action from element
+     */
+    getButtonAction(btn) {
+        return btn.dataset.action || btn.id.replace('Btn', '').replace('-button', '');
+    }
+    
+    /**
+     * Get vibration intensity for action
+     */
+    getVibrationIntensity(action) {
+        const intensities = {
+            'lightAttack': 15,
+            'heavyAttack': 30,
+            'special': 40,
+            'block': 10,
+            'roll': 20,
+            // Legacy
+            'attack': 20
+        };
+        return intensities[action] || 15;
+    }
+    
+    /**
+     * Handle action start with enhanced feedback
+     */
+    handleActionStart(action, button) {
+        if (this.isOnCooldown(action)) {
+            this.vibrate(5); // Light vibration for cooldown feedback
+            return;
+        }
+        
+        // Visual feedback
+        button.classList.add('pressed');
+        
+        // Handle action through InputManager if available
+        if (this.inputManager) {
+            // InputManager will handle the actual input
+            return;
+        }
+        
+        // Fallback to legacy handling
+        this.handleAction(action);
+    }
+    
+    /**
+     * Handle action end
+     */
+    handleActionEnd(action, button) {
+        // Remove visual feedback
+        button.classList.remove('pressed');
+    }
+    
+    /**
+     * Enhance joystick with visual improvements
+     */
+    enhanceJoystick() {
+        const joystick = document.getElementById('joystick-base');
+        if (!joystick) return;
+        
+        // Add glow effect on touch
+        joystick.addEventListener('touchstart', () => {
+            joystick.classList.add('active');
+        });
+        
+        joystick.addEventListener('touchend', () => {
+            joystick.classList.remove('active');
+        });
+        
+        // Add directional indicators
+        const indicators = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        indicators.forEach((dir, index) => {
+            const indicator = document.createElement('div');
+            indicator.className = 'direction-indicator';
+            indicator.textContent = dir;
+            const angle = (index * 45) - 90; // Start from top
+            indicator.style.transform = `rotate(${angle}deg) translateY(-65px) rotate(-${angle}deg)`;
+            joystick.appendChild(indicator);
+        });
+    }
+    
+    /**
+     * Setup gesture recognition
+     */
+    setupGestures() {
+        if (!this.gestureSupport.swipe && !this.gestureSupport.longPress) return;
+        
+        let touchStartTime = 0;
+        let touchStartPos = { x: 0, y: 0 };
+        let longPressTimer = null;
+        
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.mobile-controls')) return; // Skip for control elements
+            
+            touchStartTime = Date.now();
+            const touch = e.touches[0];
+            touchStartPos = { x: touch.clientX, y: touch.clientY };
+            
+            // Long press detection
+            if (this.gestureSupport.longPress) {
+                longPressTimer = setTimeout(() => {
+                    this.handleLongPress(touch.clientX, touch.clientY);
+                }, 800);
+            }
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            
+            const touchEndTime = Date.now();
+            const touch = e.changedTouches[0];
+            
+            // Swipe detection
+            if (this.gestureSupport.swipe && touchEndTime - touchStartTime < 500) {
+                const deltaX = touch.clientX - touchStartPos.x;
+                const deltaY = touch.clientY - touchStartPos.y;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                if (distance > 50) {
+                    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+                    this.handleSwipe(angle, distance);
+                }
+            }
+        });
+    }
+    
+    /**
+     * Handle swipe gesture
+     */
+    handleSwipe(angle, distance) {
+        // Map swipe to actions
+        if (angle > -45 && angle < 45) {
+            // Right swipe - could be dodge right or special attack
+            this.handleAction('special');
+        } else if (angle > 45 && angle < 135) {
+            // Down swipe - could be heavy attack
+            this.handleAction('heavyAttack');
+        } else if (angle > 135 || angle < -135) {
+            // Left swipe - could be dodge left or block
+            this.handleAction('block');
+        } else {
+            // Up swipe - could be light attack or jump
+            this.handleAction('lightAttack');
+        }
+        
+        this.vibrate(20);
+    }
+    
+    /**
+     * Handle long press gesture
+     */
+    handleLongPress(x, y) {
+        // Long press could trigger special abilities or context menu
+        this.handleAction('special');
+        this.vibrate(50);
+        
+        // Create visual feedback
+        const feedback = document.createElement('div');
+        feedback.className = 'long-press-feedback';
+        feedback.style.cssText = `
+            position: fixed;
+            left: ${x - 25}px;
+            top: ${y - 25}px;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            animation: longPressPulse 0.5s ease-out;
+        `;
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 500);
+    }
+
     performAttack() {
         this.createVisualEffect('attack');
         this.updateScore(10);
+    }
+    
+    performLightAttack() {
+        this.createVisualEffect('lightAttack');
+        this.updateScore(10);
+    }
+    
+    performHeavyAttack() {
+        this.createVisualEffect('heavyAttack');
+        this.updateScore(20);
+    }
+    
+    performSpecial() {
+        this.createVisualEffect('special');
+        this.updateScore(50);
     }
 
     performRoll() {

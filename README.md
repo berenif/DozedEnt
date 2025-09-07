@@ -3,10 +3,10 @@
 **Build instant multiplayer web apps & games, no server required**
 
 👉 **[TRY THE DEMO](https://oxism.com/trystero)** 👈  
-🎮 **[ANIMATION SHOWCASE](docs/animations-showcase.html)** 🎮  
-🐺 **[WOLF AI DEMO](docs/wolf-animation-demo.html)** 🐺  
-🏠 **[LOBBY SYSTEM DEMO](demo/enhanced-lobby-demo.html)** 🏠  
-⚔️ **[COMPLETE GAME DEMO](demo/complete-game.html)** ⚔️
+🎮 **[MAIN GAME](index.html)** 🎮  
+📚 **[GETTING STARTED](GUIDELINES/GETTING_STARTED.md)** 📚  
+🔧 **[BUILD INSTRUCTIONS](GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md)** 🔧  
+⚔️ **[INTEGRATION TEST](test/integration-test.html)** ⚔️
 
 Trystero manages a clandestine courier network that lets your application's
 users talk directly with one another, encrypted and without a server middleman.
@@ -415,9 +415,9 @@ npm run wasm:build
 
 ### Documentation
 
-- 📖 [Full Animation Documentation](docs/PLAYER_ANIMATIONS.md)
-- 🎮 [Live Demo](docs/animations-showcase.html)
-- 🔧 [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
+- 📖 [Full Animation Documentation](GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md)
+- 🎮 [Main Game Demo](index.html)
+- 🔧 [Build Instructions](GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md)
 
 ## Wolf AI System
 
@@ -452,9 +452,9 @@ const alphawolf = new WolfCharacter(400, 300, {
 
 ### Documentation
 
-- 📖 [Wolf AI Documentation](WOLF_AI_ENHANCEMENTS.md)
-- 🐺 [Live Wolf Demo](docs/wolf-animation-demo.html)
-- 🎮 [Wolf Showcase](docs/wolf-showcase.html)
+- 📖 [Wolf AI Documentation](GUIDELINES/AI/WOLF_AI.md)
+- 🐺 [AI System Overview](GUIDELINES/AI/ENEMY_AI.md)
+- 🎮 [Main Game with Wolf AI](index.html)
 
 ## Combat System
 
@@ -517,8 +517,8 @@ netcode.start()
 
 ### Documentation
 
-- 📖 [Rollback Netcode Guide](docs/ROLLBACK_GUIDE.md)
-- 🎮 [Rollback Demo](demo/rollback-demo.html)
+- 📖 [Rollback Netcode Implementation](src/netcode/rollback-netcode.js)
+- 🎮 [Integration Test](test/integration-test.html)
 
 ## Lobby & Matchmaking
 
@@ -556,9 +556,9 @@ lobby.onPlayerJoin(player => {
 
 ### Documentation
 
-- 📖 [Lobby System Documentation](docs/LOBBY_SYSTEM.md)
-- 🏠 [Room System Guide](docs/ROOM_SYSTEM.md)
-- 🎮 [Lobby Demo](demo/enhanced-lobby-demo.html)
+- 📖 [Lobby System Documentation](GUIDELINES/GAME/LOBBY_SYSTEM.md)
+- 🏠 [Room System Guide](GUIDELINES/GAME/ROOM_SYSTEM.md)
+- 🎮 [Main Game with Lobby](index.html)
 
 ## Game Renderer
 
@@ -1495,22 +1495,20 @@ Trystero now includes a comprehensive game development framework that transforms
 ### 📚 Resources
 
 **Documentation:**
-- [Player Animations Guide](docs/PLAYER_ANIMATIONS.md)
-- [Wolf AI Documentation](WOLF_AI_ENHANCEMENTS.md)
-- [Lobby System Guide](docs/LOBBY_SYSTEM.md)
-- [Build Instructions](docs/BUILD_INSTRUCTIONS.md)
+- [Player Animations Guide](GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md)
+- [Wolf AI Documentation](GUIDELINES/AI/WOLF_AI.md)
+- [Lobby System Guide](GUIDELINES/GAME/LOBBY_SYSTEM.md)
+- [Build Instructions](GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md)
 
 **Live Demos:**
-- [Complete Game Demo](demo/complete-game.html)
-- [Animation Showcase](docs/animations-showcase.html)
-- [Wolf AI Demo](docs/wolf-animation-demo.html)
-- [Lobby System Demo](demo/enhanced-lobby-demo.html)
-- [Rollback Demo](demo/rollback-demo.html)
+- [Main Game](index.html) - Complete multiplayer survival game
+- [Integration Test](test/integration-test.html) - System functionality tests
+- [Getting Started Guide](GUIDELINES/GETTING_STARTED.md) - Step-by-step tutorial
 
 **Example Projects:**
-- [Survival Game](demo/complete-game.html) - Full multiplayer survival game
-- [Battle Arena](demo/enhanced-game-demo.html) - PvP combat arena
-- [Wolf Hunt](docs/wolf-showcase.html) - AI pack hunting game
+- [DozedEnt Main Game](index.html) - Full multiplayer survival game with WASM core
+- [Integration Tests](test/integration-test.html) - Comprehensive system testing
+- [Build Examples](GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md) - Build system documentation
 
 ---
 

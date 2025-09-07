@@ -1,0 +1,37 @@
+{
+  "all": true,
+  "include": [
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "src/wasm/**/*.js",
+    "src/css/**/*.js",
+    "src/images/**/*.js",
+    "src/effects/**/*.js",
+    "**/*.spec.js",
+    "**/*.test.js",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "reporter": [
+    "text",
+    "text-summary",
+    "html",
+    "lcov",
+    "json"
+  ],
+  "reports-dir": "coverage",
+  "temp-directory": ".c8_output",
+  "check-coverage": true,
+  "statements": 80,
+  "branches": 75,
+  "functions": 80,
+  "lines": 80,
+  "watermarks": {
+    "statements": [80, 95],
+    "functions": [80, 95],
+    "branches": [75, 90],
+    "lines": [80, 95]
+  }
+}
