@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIME Type Test</title>
+</head>
+<body>
+    <h1>MIME Type Test</h1>
+    <p>This page tests if JavaScript modules are served with correct MIME types.</p>
+    
+    <script type="module">
+        // Test loading the trystero-mqtt module
+        try {
+            const module = await import('./dist/trystero-mqtt.min.js');
+            console.log('✅ trystero-mqtt.min.js loaded successfully');
+            console.log('Module exports:', Object.keys(module));
+        } catch (error) {
+            console.error('❌ Failed to load trystero-mqtt.min.js:', error);
+            document.body.innerHTML += '<p style="color: red;">❌ Failed to load trystero-mqtt.min.js: ' + error.message + '</p>';
+        }
+        
+        // Test loading other modules
+        try {
+            const rngModule = await import('./src/utils/rng.js');
+            console.log('✅ rng.js loaded successfully');
+        } catch (error) {
+            console.error('❌ Failed to load rng.js:', error);
+            document.body.innerHTML += '<p style="color: red;">❌ Failed to load rng.js: ' + error.message + '</p>';
+        }
+        
+        try {
+            const gameRendererModule = await import('./src/utils/game-renderer.js');
+            console.log('✅ game-renderer.js loaded successfully');
+        } catch (error) {
+            console.error('❌ Failed to load game-renderer.js:', error);
+            document.body.innerHTML += '<p style="color: red;">❌ Failed to load game-renderer.js: ' + error.message + '</p>';
+        }
+    </script>
+</body>
+</html>
