@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DozedEnt - P2P Survival Game</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <!-- Game Stylesheets -->
     <link rel="stylesheet" href="src/css/base.css">
     <link rel="stylesheet" href="src/css/game-viewport.css">
@@ -204,6 +205,38 @@
         <p>Your journey has ended. Will you try again?</p>
         <button id="restart-button">Restart Run</button>
         <button id="rematch-button">New Run</button>
+    </div>
+
+    <!-- Chat System (for multiplayer) -->
+    <div id="chat-container" class="chat-container hidden">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-container">
+            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
+            <button id="chat-send-btn">Send</button>
+        </div>
+    </div>
+
+    <!-- Tab System -->
+    <div id="tab-container" class="tab-container hidden">
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="lobby">Lobby</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+            <button class="tab-btn" data-tab="stats">Stats</button>
+        </div>
+        <div class="tab-contents">
+            <div id="lobbyTab" class="tab-content">
+                <h3>Game Lobby</h3>
+                <p>Waiting for players...</p>
+            </div>
+            <div id="settingsTab" class="tab-content" style="display: none;">
+                <h3>Settings</h3>
+                <p>Game settings will appear here.</p>
+            </div>
+            <div id="statsTab" class="tab-content" style="display: none;">
+                <h3>Statistics</h3>
+                <p>Player statistics will appear here.</p>
+            </div>
+        </div>
     </div>
 
     <!-- Load the main game script -->

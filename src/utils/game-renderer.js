@@ -261,18 +261,22 @@ export class GameRenderer {
             // Get environment object count
             const objectCount = wasmModule.get_environment_object_count();
             
+            // Validate object count to prevent bounds errors
+            const safeObjectCount = Number.isInteger(objectCount) && objectCount >= 0 ? Math.min(objectCount, 1000) : 0;
+            
             // Load all environment objects from WASM
-            for (let i = 0; i < objectCount; i++) {
-                const envObj = {
-                    type: this.getEnvironmentTypeString(wasmModule.get_environment_object_type(i)),
-                    x: wasmModule.get_environment_object_x(i),
-                    y: wasmModule.get_environment_object_y(i),
-                    width: wasmModule.get_environment_object_width(i),
-                    height: wasmModule.get_environment_object_height(i),
-                    isInteractable: wasmModule.get_environment_object_is_interactable(i) === 1,
-                    isSolid: wasmModule.get_environment_object_is_solid(i) === 1,
-                    stateFlags: wasmModule.get_environment_object_state_flags(i)
-                };
+            for (let i = 0; i < safeObjectCount; i++) {
+                try {
+                    const envObj = {
+                        type: this.getEnvironmentTypeString(wasmModule.get_environment_object_type(i)),
+                        x: wasmModule.get_environment_object_x(i),
+                        y: wasmModule.get_environment_object_y(i),
+                        width: wasmModule.get_environment_object_width(i),
+                        height: wasmModule.get_environment_object_height(i),
+                        isInteractable: wasmModule.get_environment_object_is_interactable(i) === 1,
+                        isSolid: wasmModule.get_environment_object_is_solid(i) === 1,
+                        stateFlags: wasmModule.get_environment_object_state_flags(i)
+                    };
                 
                 // Add to appropriate arrays based on type
                 if (envObj.isInteractable) {
@@ -291,6 +295,10 @@ export class GameRenderer {
                 }
                 
                 this.environmentObjects.push(envObj);
+                } catch (objError) {
+                    console.error(`Error loading environment object at index ${i}:`, objError);
+                    break; // Stop processing if we hit an index error
+                }
             }
 
             // Load weather state from WASM
@@ -769,14 +777,18 @@ export class GameRenderer {
         if (window.wasmExports && typeof window.wasmExports.get_obstacle_count === 'function') {
             const obstacleCount = window.wasmExports.get_obstacle_count();
             
-            for (let i = 0; i < obstacleCount; i++) {
+            // Validate obstacle count to prevent bounds errors
+            const safeObstacleCount = Number.isInteger(obstacleCount) && obstacleCount >= 0 ? Math.min(obstacleCount, 1000) : 0;
+            
+            for (let i = 0; i < safeObstacleCount; i++) {
                 if (typeof window.wasmExports.get_obstacle_x === 'function' &&
                     typeof window.wasmExports.get_obstacle_y === 'function' &&
                     typeof window.wasmExports.get_obstacle_r === 'function') {
                     
-                    const wasmX = window.wasmExports.get_obstacle_x(i);
-                    const wasmY = window.wasmExports.get_obstacle_y(i);
-                    const wasmR = window.wasmExports.get_obstacle_r(i);
+                    try {
+                        const wasmX = window.wasmExports.get_obstacle_x(i);
+                        const wasmY = window.wasmExports.get_obstacle_y(i);
+                        const wasmR = window.wasmExports.get_obstacle_r(i);
                     
                     // Convert WASM coordinates to world coordinates
                     const worldPos = this.wasmToWorld(wasmX, wasmY);
@@ -795,6 +807,10 @@ export class GameRenderer {
                         centerY: worldPos.y,
                         radius: worldRadius
                     });
+                    } catch (obstacleError) {
+                        console.error(`Error loading obstacle at index ${i}:`, obstacleError);
+                        break; // Stop processing if we hit an index error
+                    }
                 }
             }
         }
@@ -1371,36 +1387,60 @@ export class GameRenderer {
     renderWasmLandmarks() {
         if (!window.wasmExports || typeof window.wasmExports.get_landmark_count !== 'function') return;
         
-        const landmarkCount = window.wasmExports.get_landmark_count();
-        
-        for (let i = 0; i < landmarkCount; i++) {
-            if (typeof window.wasmExports.get_landmark_x === 'function' &&
-                typeof window.wasmExports.get_landmark_y === 'function') {
-                
-                const wasmX = window.wasmExports.get_landmark_x(i);
-                const wasmY = window.wasmExports.get_landmark_y(i);
-                const worldPos = this.wasmToWorld(wasmX, wasmY);
-                
-                this.drawLandmark(worldPos.x, worldPos.y, i);
+        try {
+            const landmarkCount = window.wasmExports.get_landmark_count();
+            
+            // Validate landmark count to prevent bounds errors
+            const safeLandmarkCount = Number.isInteger(landmarkCount) && landmarkCount >= 0 ? Math.min(landmarkCount, 100) : 0;
+            
+            for (let i = 0; i < safeLandmarkCount; i++) {
+                if (typeof window.wasmExports.get_landmark_x === 'function' &&
+                    typeof window.wasmExports.get_landmark_y === 'function') {
+                    
+                    try {
+                        const wasmX = window.wasmExports.get_landmark_x(i);
+                        const wasmY = window.wasmExports.get_landmark_y(i);
+                        const worldPos = this.wasmToWorld(wasmX, wasmY);
+                        
+                        this.drawLandmark(worldPos.x, worldPos.y, i);
+                    } catch (landmarkError) {
+                        console.error(`Error rendering landmark at index ${i}:`, landmarkError);
+                        break; // Stop processing if we hit an index error
+                    }
+                }
             }
+        } catch (error) {
+            console.error('Error rendering WASM landmarks:', error);
         }
     }
     
     renderWasmExits() {
         if (!window.wasmExports || typeof window.wasmExports.get_exit_count !== 'function') return;
         
-        const exitCount = window.wasmExports.get_exit_count();
-        
-        for (let i = 0; i < exitCount; i++) {
-            if (typeof window.wasmExports.get_exit_x === 'function' &&
-                typeof window.wasmExports.get_exit_y === 'function') {
-                
-                const wasmX = window.wasmExports.get_exit_x(i);
-                const wasmY = window.wasmExports.get_exit_y(i);
-                const worldPos = this.wasmToWorld(wasmX, wasmY);
-                
-                this.drawExit(worldPos.x, worldPos.y, i);
+        try {
+            const exitCount = window.wasmExports.get_exit_count();
+            
+            // Validate exit count to prevent bounds errors
+            const safeExitCount = Number.isInteger(exitCount) && exitCount >= 0 ? Math.min(exitCount, 50) : 0;
+            
+            for (let i = 0; i < safeExitCount; i++) {
+                if (typeof window.wasmExports.get_exit_x === 'function' &&
+                    typeof window.wasmExports.get_exit_y === 'function') {
+                    
+                    try {
+                        const wasmX = window.wasmExports.get_exit_x(i);
+                        const wasmY = window.wasmExports.get_exit_y(i);
+                        const worldPos = this.wasmToWorld(wasmX, wasmY);
+                        
+                        this.drawExit(worldPos.x, worldPos.y, i);
+                    } catch (exitError) {
+                        console.error(`Error rendering exit at index ${i}:`, exitError);
+                        break; // Stop processing if we hit an index error
+                    }
+                }
             }
+        } catch (error) {
+            console.error('Error rendering WASM exits:', error);
         }
     }
     

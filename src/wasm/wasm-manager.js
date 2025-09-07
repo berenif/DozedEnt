@@ -246,6 +246,17 @@ export class WasmManager {
     const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime > 0 ? Math.min(deltaTime, 0.1) : 0.016; // Cap at 100ms, default to 16ms
     
     try {
+      // Validate WASM state before update to prevent corruption
+      const currentPhase = this.getPhase();
+      if (currentPhase > 7) {
+        console.warn(`Invalid phase detected (${currentPhase}), resetting WASM state`);
+        // Try to reinitialize if phase is corrupted
+        if (typeof this.exports.init_run === 'function') {
+          this.exports.init_run(this.runSeed, 0);
+        }
+        return; // Skip this update cycle
+      }
+      
       // Set player input first using the correct WASM API
       if (typeof this.exports.set_player_input === 'function') {
         // set_player_input(inputX, inputY, isRolling, isJumping, lightAttack, heavyAttack, isBlocking, special)
@@ -263,10 +274,29 @@ export class WasmManager {
       
       // Then call update with just deltaTime
       this.exports.update(safeDeltaTime);
+      
+      // Validate state after update
+      const newPhase = this.getPhase();
+      if (newPhase > 7) {
+        console.error(`WASM phase corrupted after update (${newPhase}), stopping updates`);
+        this.isLoaded = false; // Prevent further updates
+        return;
+      }
+      
     } catch (error) {
       console.error('WASM update error:', error, {
-        inputs: { dirX: safeDirectionX, dirY: safeDirY, isRolling: safeIsRolling, deltaTime: safeDeltaTime }
+        inputs: { dirX: safeDirectionX, dirY: safeDirY, isRolling: safeIsRolling, deltaTime: safeDeltaTime },
+        phase: this.getPhase(),
+        isLoaded: this.isLoaded
       });
+      
+      // If we get repeated bounds errors, disable WASM updates
+      this.errorCount = (this.errorCount || 0) + 1;
+      if (this.errorCount > 5) {
+        console.error('Too many WASM errors, disabling WASM updates');
+        this.isLoaded = false;
+      }
+      
       // Don't rethrow - allow game to continue with fallback behavior
     }
   }
@@ -575,7 +605,17 @@ export class WasmManager {
    */
   getCurseType(index) {
     if (!this.isLoaded || typeof this.exports.get_curse_type !== 'function') return 0;
-    return this.exports.get_curse_type(index);
+    
+    // Validate index bounds
+    const curseCount = this.getCurseCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < curseCount ? index : 0;
+    
+    try {
+      return this.exports.get_curse_type(safeIndex);
+    } catch (error) {
+      console.error(`Error getting curse type at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**
@@ -585,7 +625,17 @@ export class WasmManager {
    */
   getCurseIntensity(index) {
     if (!this.isLoaded || typeof this.exports.get_curse_intensity !== 'function') return 0;
-    return this.exports.get_curse_intensity(index);
+    
+    // Validate index bounds
+    const curseCount = this.getCurseCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < curseCount ? index : 0;
+    
+    try {
+      return this.exports.get_curse_intensity(safeIndex);
+    } catch (error) {
+      console.error(`Error getting curse intensity at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**

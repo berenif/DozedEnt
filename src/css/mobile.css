@@ -295,18 +295,7 @@
     }
 }
 
-/* Enhanced Mobile Controls Container */
-.mobile-controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 200px;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-    pointer-events: auto;
-    z-index: 300;
-    transition: opacity 0.3s ease;
-}
+/* Enhanced Mobile Controls Container - Consolidated */
 
 .mobile-controls.hidden {
     opacity: 0;

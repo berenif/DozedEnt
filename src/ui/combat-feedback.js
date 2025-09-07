@@ -385,12 +385,33 @@ export class CombatFeedback {
    * Cleanup and destroy
    */
   destroy() {
+    // Clear all active feedback elements
+    this.feedbackElements.forEach(feedback => {
+      if (feedback.element && feedback.element.parentNode) {
+        feedback.element.remove();
+      }
+    });
+    
+    // Clear all screen effects
+    this.screenEffects.forEach(effect => {
+      if (effect.element && effect.element.parentNode) {
+        effect.element.remove();
+      }
+    });
+    
+    // Remove the main overlay
     const overlay = document.getElementById('combat-feedback-system');
     if (overlay) {
       overlay.remove();
     }
     
+    // Clear arrays and reset state
     this.feedbackElements = [];
     this.screenEffects = [];
+    this.comboState = {
+      count: 0,
+      lastHitTime: 0,
+      multiplier: 1.0
+    };
   }
 }

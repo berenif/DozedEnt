@@ -197,7 +197,16 @@ export class RoguelikeHUD {
    */
   initializeMinimap() {
     this.minimapCanvas = document.getElementById('minimap-canvas');
+    if (!this.minimapCanvas) {
+      console.warn('Minimap canvas element not found');
+      return;
+    }
+    
     this.minimapCtx = this.minimapCanvas.getContext('2d');
+    if (!this.minimapCtx) {
+      console.error('Failed to get 2D context for minimap canvas');
+      return;
+    }
     
     // Minimap settings
     this.minimapSettings = {

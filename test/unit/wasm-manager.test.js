@@ -559,4 +559,98 @@ describe('WasmManager', () => {
       expect(() => wasmManager.cleanup()).to.not.throw();
     });
   });
+
+  describe('Bounds Checking and Error Handling', () => {
+    beforeEach(async () => {
+      await wasmManager.initialize();
+    });
+
+    it('should handle out of bounds choice access gracefully', () => {
+      // Mock choice count to return 3
+      mockWasmModule.get_choice_count.returns(3);
+      
+      // Try to access choice at index 5 (out of bounds)
+      const choice = wasmManager.getChoice(5);
+      
+      // Should return null for out of bounds access
+      expect(choice).to.be.null;
+    });
+
+    it('should handle negative choice index gracefully', () => {
+      mockWasmModule.get_choice_count.returns(3);
+      
+      // Try to access choice at negative index
+      const choice = wasmManager.getChoice(-1);
+      
+      // Should return null for negative index
+      expect(choice).to.be.null;
+    });
+
+    it('should handle invalid choice count gracefully', () => {
+      // Mock choice count to return invalid value
+      mockWasmModule.get_choice_count.returns(NaN);
+      
+      // Try to access choice
+      const choice = wasmManager.getChoice(0);
+      
+      // Should return null for invalid count
+      expect(choice).to.be.null;
+    });
+
+    it('should handle WASM function throwing error during bounds checking', () => {
+      mockWasmModule.get_choice_count.returns(3);
+      mockWasmModule.get_choice_id.throws(new Error('WASM index out of bounds'));
+      
+      // Try to access choice that throws error
+      const choice = wasmManager.getChoice(0);
+      
+      // Should return null when WASM function throws
+      expect(choice).to.be.null;
+    });
+
+    it('should handle curse bounds checking', () => {
+      mockWasmModule.get_curse_count.returns(2);
+      
+      // Valid index should work
+      const curseType = wasmManager.getCurseType(1);
+      expect(curseType).to.equal(0); // Mock returns 0
+      
+      // Out of bounds index should be clamped to 0
+      mockWasmModule.get_curse_type.resetHistory();
+      wasmManager.getCurseType(5);
+      expect(mockWasmModule.get_curse_type.calledWith(0)).to.be.true;
+    });
+
+    it('should handle hazards bounds checking', () => {
+      mockWasmModule.get_hazard_count.returns(2);
+      mockWasmModule.get_hazard_type = sinon.stub().returns(1);
+      mockWasmModule.get_hazard_x = sinon.stub().returns(0.5);
+      mockWasmModule.get_hazard_y = sinon.stub().returns(0.5);
+      mockWasmModule.get_hazard_radius = sinon.stub().returns(10);
+      mockWasmModule.get_hazard_intensity = sinon.stub().returns(0.8);
+      
+      const hazards = wasmManager.getHazards();
+      
+      // Should return array with 2 hazards
+      expect(hazards).to.be.an('array');
+      expect(hazards.length).to.equal(2);
+    });
+
+    it('should handle hazards with error during iteration', () => {
+      mockWasmModule.get_hazard_count.returns(3);
+      mockWasmModule.get_hazard_type = sinon.stub();
+      mockWasmModule.get_hazard_type.onCall(0).returns(1);
+      mockWasmModule.get_hazard_type.onCall(1).throws(new Error('Index out of bounds'));
+      mockWasmModule.get_hazard_x = sinon.stub().returns(0.5);
+      mockWasmModule.get_hazard_y = sinon.stub().returns(0.5);
+      mockWasmModule.get_hazard_radius = sinon.stub().returns(10);
+      mockWasmModule.get_hazard_intensity = sinon.stub().returns(0.8);
+      
+      const hazards = wasmManager.getHazards();
+      
+      // Should return only the first hazard before error
+      expect(hazards).to.be.an('array');
+      expect(hazards.length).to.equal(1);
+    });
+  });
 });

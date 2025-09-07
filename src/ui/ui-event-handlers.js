@@ -459,11 +459,20 @@ export class UIEventHandlers {
   handleChatSubmit() {
     if (this.roomManager) {
       const input = document.getElementById('chatInput');
+      if (!input) {
+        console.warn('Chat input element not found');
+        return;
+      }
+      
       const message = input.value.trim();
       
       if (message) {
-        this.roomManager.sendChatMessage(message);
-        input.value = '';
+        try {
+          this.roomManager.sendChatMessage(message);
+          input.value = '';
+        } catch (error) {
+          console.error('Failed to send chat message:', error);
+        }
       }
     }
   }
@@ -475,10 +484,16 @@ export class UIEventHandlers {
     // Update canvas size if needed
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
-      // Trigger resize event for game renderer
-      window.dispatchEvent(new CustomEvent('gameCanvasResize', {
-        detail: { canvas }
-      }));
+      try {
+        // Trigger resize event for game renderer
+        window.dispatchEvent(new CustomEvent('gameCanvasResize', {
+          detail: { canvas }
+        }));
+      } catch (error) {
+        console.error('Failed to dispatch canvas resize event:', error);
+      }
+    } else {
+      console.warn('Game canvas element not found during resize');
     }
   }
 

@@ -200,14 +200,27 @@ export class GameStateManager {
 
     // Update available choices if in choice phase
     if (phase === 2) { // Choose phase
-      const choiceCount = this.wasmManager.getChoiceCount();
-      this.phaseState.availableChoices = [];
-      
-      for (let i = 0; i < choiceCount; i++) {
-        const choice = this.wasmManager.getChoice(i);
-        if (choice) {
-          this.phaseState.availableChoices.push(choice);
+      try {
+        const choiceCount = this.wasmManager.getChoiceCount();
+        this.phaseState.availableChoices = [];
+        
+        // Validate choice count to prevent bounds errors
+        const safeChoiceCount = Number.isInteger(choiceCount) && choiceCount >= 0 ? Math.min(choiceCount, 10) : 0;
+        
+        for (let i = 0; i < safeChoiceCount; i++) {
+          try {
+            const choice = this.wasmManager.getChoice(i);
+            if (choice) {
+              this.phaseState.availableChoices.push(choice);
+            }
+          } catch (choiceError) {
+            console.error(`Error getting choice at index ${i}:`, choiceError);
+            break; // Stop processing if we hit an index error
+          }
         }
+      } catch (error) {
+        console.error('Error updating choice state:', error);
+        this.phaseState.availableChoices = [];
       }
     }
   }
