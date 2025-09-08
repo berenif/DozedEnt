@@ -38,7 +38,7 @@ export class WasmManager {
       const { loadWasm } = wasmHelperModule;
       
       // Try multiple WASM file paths
-      const wasmPaths = ['./game.wasm', '../game.wasm', '../../game.wasm', '/game.wasm'];
+      const wasmPaths = ['../../dist/game.wasm', './game.wasm', '../game.wasm', '../../game.wasm', '/game.wasm'];
       let exports = null;
       let wasmPath = null;
       
