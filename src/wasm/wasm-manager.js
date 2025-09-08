@@ -66,7 +66,7 @@ export class WasmManager {
       this.isLoaded = true;
       
       // Make globally accessible for debugging
-      window.wasmExports = this.exports;
+      globalThis.wasmExports = this.exports;
       
       // Initialize WASM runtime
       if (typeof this.exports.start === 'function') {
@@ -806,10 +806,7 @@ export class WasmManager {
    * Get available choices count
    * @returns {number} Number of choices
    */
-  getChoiceCount() {
-    if (!this.isLoaded || typeof this.exports.get_choice_count !== 'function') return 0;
-    return this.exports.get_choice_count();
-  }
+  // (removed duplicate getChoiceCount definition)
 
   /**
    * Get choice details
@@ -841,14 +838,7 @@ export class WasmManager {
     }
   }
 
-  /**
-   * Commit selected choice
-   * @param {number} choiceId - Choice ID to commit
-   */
-  commitChoice(choiceId) {
-    if (!this.isLoaded || typeof this.exports.commit_choice !== 'function') return;
-    this.exports.commit_choice(choiceId);
-  }
+  // (deduplicated commitChoice; see method later in file)
 
   /**
    * Reset game run with new seed

@@ -183,6 +183,62 @@ export class Particle {
     }
 }
 
+export class ParticleEmitter {
+    constructor(x, y, config = {}) {
+        this.x = x
+        this.y = y
+        this.active = true
+        this.emissionRate = config.emissionRate || 10 // particles per second
+        this.emissionTimer = 0
+        this.lifetime = config.lifetime || Infinity
+        this.age = 0
+        this.particleConfig = config.particleConfig || {}
+        this.spread = config.spread || Math.PI * 2
+        this.direction = config.direction || 0
+        this.system = null
+    }
+
+    update(deltaTime) {
+        this.age += deltaTime
+        if (this.age >= this.lifetime) {
+            this.active = false
+            return
+        }
+
+        this.emissionTimer += deltaTime
+        const emissionInterval = 1 / this.emissionRate
+        
+        while (this.emissionTimer >= emissionInterval && this.active) {
+            this.emissionTimer -= emissionInterval
+            this.emit()
+        }
+    }
+
+    emit() {
+        if (!this.system) {return}
+        
+        const angle = this.direction + (Math.random() - 0.5) * this.spread
+        const config = { ...this.particleConfig }
+        
+        if (config.speed) {
+            config.vx = Math.cos(angle) * config.speed
+            config.vy = Math.sin(angle) * config.speed
+            delete config.speed
+        }
+        
+        this.system.addParticle(new Particle(this.x, this.y, config))
+    }
+
+    setPosition(x, y) {
+        this.x = x
+        this.y = y
+    }
+
+    stop() {
+        this.active = false
+    }
+}
+
 export class ParticleSystem {
     constructor() {
         this.particles = []
@@ -241,9 +297,10 @@ export class ParticleSystem {
             const m = effect.particleColor.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\)/i)
             if (m) {
                 color = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) }
-                alpha = m[4] != null ? Number(m[4]) : 1
+                alpha = (typeof m[4] !== 'undefined' && m[4] !== null) ? Number(m[4]) : 1
             }
         }
+        let seed = Number((globalThis.runSeedForVisuals ?? 1n) % 0xffffffffn) >>> 0
         for (let i = 0; i < count; i++) {
             // cheap LCG
             seed = (seed * 1664525 + 1013904223) >>> 0
@@ -760,62 +817,6 @@ export class ParticleSystem {
             shape: 'star',
             blendMode: 'screen'
         }))
-    }
-}
-
-export class ParticleEmitter {
-    constructor(x, y, config = {}) {
-        this.x = x
-        this.y = y
-        this.active = true
-        this.emissionRate = config.emissionRate || 10 // particles per second
-        this.emissionTimer = 0
-        this.lifetime = config.lifetime || Infinity
-        this.age = 0
-        this.particleConfig = config.particleConfig || {}
-        this.spread = config.spread || Math.PI * 2
-        this.direction = config.direction || 0
-        this.system = null
-    }
-
-    update(deltaTime) {
-        this.age += deltaTime
-        if (this.age >= this.lifetime) {
-            this.active = false
-            return
-        }
-
-        this.emissionTimer += deltaTime
-        const emissionInterval = 1 / this.emissionRate
-        
-        while (this.emissionTimer >= emissionInterval && this.active) {
-            this.emissionTimer -= emissionInterval
-            this.emit()
-        }
-    }
-
-    emit() {
-        if (!this.system) {return}
-        
-        const angle = this.direction + (Math.random() - 0.5) * this.spread
-        const config = { ...this.particleConfig }
-        
-        if (config.speed) {
-            config.vx = Math.cos(angle) * config.speed
-            config.vy = Math.sin(angle) * config.speed
-            delete config.speed
-        }
-        
-        this.system.addParticle(new Particle(this.x, this.y, config))
-    }
-
-    setPosition(x, y) {
-        this.x = x
-        this.y = y
-    }
-
-    stop() {
-        this.active = false
     }
 }
 

@@ -745,7 +745,7 @@ export class WolfCharacter {
         const targetX = target.position ? target.position.x : target.x
         const targetY = target.position ? target.position.y : target.y
         
-        if (targetX === undefined || targetY === undefined) {
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
             return
         }
         

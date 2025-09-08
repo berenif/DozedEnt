@@ -60,10 +60,10 @@ const createWasiPreview1 = (memory) => {
 	// Safe crypto access that works under SES lockdown
 	const getCrypto = () => {
 		try {
-			// Use explicit property access to avoid SES intrinsic issues
-			const global = (function() { return this; })() || globalThis;
-			return global && global.crypto && typeof global.crypto.getRandomValues === 'function' 
-				? global.crypto 
+			// Use globalThis directly to avoid invalid 'this' under strict mode/ESM
+			const g = typeof globalThis !== 'undefined' ? globalThis : null;
+			return g && g.crypto && typeof g.crypto.getRandomValues === 'function' 
+				? g.crypto 
 				: null;
 		} catch (e) {
 			return null;
@@ -221,16 +221,18 @@ export const loadWasm = async (source, imports = {}) => {
     imports?.env?.memory || new WebAssembly.Memory({initial: 16})
 
   // Merge default env with user imports (user wins on conflicts)
+  const base = defaultEnv(memory)
+  const user = imports && typeof imports === 'object' ? imports : {}
   const mergedImports = {
-    ...defaultEnv(memory),
-    ...imports,
+    ...base,
+    ...user,
     env: {
-      ...defaultEnv(memory).env,
-      ...(imports.env || {})
+      ...base.env,
+      ...(user.env || {})
     },
     // Provide a minimal WASI if caller did not supply a valid object
-    wasi_snapshot_preview1: ensureWasiObject(imports.wasi_snapshot_preview1, memory),
-    wasi_unstable: ensureWasiObject(imports.wasi_unstable, memory)
+    wasi_snapshot_preview1: ensureWasiObject(user.wasi_snapshot_preview1, memory),
+    wasi_unstable: ensureWasiObject(user.wasi_unstable, memory)
   }
 
   const {instance, module} = await getInstantiate(source, mergedImports)

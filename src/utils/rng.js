@@ -62,14 +62,14 @@ export function randFloat(stream = 'default') {
 
 /** Integer in [0, max) from a named stream */
 export function randInt(max, stream = 'default') {
-  if (!Number.isFinite(max) || max <= 0) return 0
+  if (!Number.isFinite(max) || max <= 0) { return 0 }
   const f = getStream(stream).nextFloat01()
   return Math.floor(f * max)
 }
 
 /** Choose an element from an array via named stream */
 export function randChoice(arr, stream = 'default') {
-  if (!arr || arr.length === 0) return undefined
+  if (!arr || arr.length === 0) { return undefined }
   return arr[randInt(arr.length, stream)]
 }
 
