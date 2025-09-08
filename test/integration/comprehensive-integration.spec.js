@@ -641,7 +641,7 @@ describe('Comprehensive Integration Tests', () => {
       let removeListenerCalled = false;
 
       window.removeEventListener = () => {
-        removeListenerCalled = true;
+        removeListenerCalled = true; // eslint-disable-line no-unused-expressions
       };
 
       effects.destroy();

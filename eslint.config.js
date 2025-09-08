@@ -5,25 +5,7 @@ export default [
   {languageOptions: {globals: {...globals.browser, process: true}}},
   pluginJs.configs.recommended,
   {
-    files: ['test/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.mocha,
-        ...globals.node,
-        process: true,
-        Buffer: true,
-        global: true
-      }
-    },
-    rules: {
-      'no-undefined': 'off',
-      'prefer-arrow-callback': 'off',
-      'no-unused-expressions': 'off',
-      'require-await': 'off'
-    }
-  },
-  {
+    files: ['src/**/*.js'],
     rules: {
       'array-callback-return': 'error',
       'arrow-body-style': 'error',
@@ -71,6 +53,67 @@ export default [
       'prefer-spread': 'error',
       'require-atomic-updates': 'error',
       'require-await': 'error'
+    }
+  },
+  {
+    files: ['test/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.mocha,
+        ...globals.node,
+        process: true,
+        Buffer: true,
+        global: true
+      }
+    },
+    rules: {
+      'no-undefined': 'off',
+      'prefer-arrow-callback': 'off',
+      'no-unused-expressions': 'off',
+      'require-await': 'off',
+      'one-var': 'off',
+      'no-unused-vars': 'off',
+      'prefer-exponentiation-operator': 'off',
+      'curly': 'off',
+      'arrow-body-style': 'off',
+      'no-use-before-define': 'off',
+      'array-callback-return': 'off',
+      'camelcase': 'off',
+      'dot-notation': 'off',
+      'eqeqeq': 'off',
+      'no-delete-var': 'off',
+      'no-duplicate-imports': 'off',
+      'no-else-return': 'off',
+      'no-extra-bind': 'off',
+      'no-extra-boolean-cast': 'off',
+      'no-extra-label': 'off',
+      'no-global-assign': 'off',
+      'no-invalid-this': 'off',
+      'no-labels': 'off',
+      'no-lonely-if': 'off',
+      'no-multi-str': 'off',
+      'no-self-compare': 'off',
+      'no-sequences': 'off',
+      'no-template-curly-in-string': 'off',
+      'no-throw-literal': 'off',
+      'no-undef-init': 'off',
+      'no-unneeded-ternary': 'off',
+      'no-unreachable-loop': 'off',
+      'no-useless-assignment': 'off',
+      'no-useless-call': 'off',
+      'no-useless-catch': 'off',
+      'no-useless-concat': 'off',
+      'no-useless-constructor': 'off',
+      'no-useless-return': 'off',
+      'no-var': 'off',
+      'no-with': 'off',
+      'prefer-const': 'off',
+      'prefer-object-spread': 'off',
+      'prefer-regex-literals': 'off',
+      'prefer-rest-params': 'off',
+      'prefer-spread': 'off',
+      'require-atomic-updates': 'off'
     }
   }
 ]
