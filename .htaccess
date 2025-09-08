@@ -1,25 +1,16 @@
-# MIME type configuration for JavaScript modules
-# This ensures JavaScript files are served with correct MIME types
-
-# ES Modules
-AddType application/javascript .js
-AddType application/javascript .mjs
-
-# WASM files
+# Configure MIME types for WASM files
 AddType application/wasm .wasm
 
-# JSON files
-AddType application/json .json
-
-# CSS files
-AddType text/css .css
-
-# HTML files
-AddType text/html .html
-
-# Enable CORS for modules
-<IfModule mod_headers.c>
+# Enable CORS for WASM files
+<Files "*.wasm">
     Header set Access-Control-Allow-Origin "*"
     Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type"
-</IfModule>
+</Files>
+
+# Enable CORS for JavaScript modules
+<Files "*.js">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</Files>
