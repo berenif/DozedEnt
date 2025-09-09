@@ -56,7 +56,17 @@ export class WolfCharacter {
         
         // Visual properties
         this.colors = this.getWolfColors()
-        this.furPattern = Math.random() // Unique fur pattern for each wolf
+        // Deterministic visual pattern seeded from global run seed if available
+        try {
+            const seed = (typeof globalThis !== 'undefined' && typeof globalThis.runSeedForVisuals !== 'undefined') ? globalThis.runSeedForVisuals : 1n
+            // Simple hash combine with id to diversify per-wolf
+            const mixed = (typeof seed === 'bigint' ? Number((seed ^ BigInt((id>>>0) || 1)) & 0xffffffffn) : ((seed>>>0) ^ ((id>>>0)||1))) >>> 0
+            let x = mixed || 0x9E3779B9
+            x = (Math.imul(x, 1664525) + 1013904223) >>> 0
+            this.furPattern = (x & 0xffffff) / 16777216
+        } catch {
+            this.furPattern = 0.5
+        }
         this.tailPosition = 0 // For tail animation
         this.earRotation = 0 // For ear animation
         this.breathingOffset = 0 // For idle breathing animation

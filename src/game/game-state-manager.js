@@ -183,6 +183,11 @@ export class GameStateManager {
 
     // Get blocking state from WASM
     this.playerState.isBlocking = this.wasmManager.isBlocking();
+
+    // Authoritative rolling state from WASM if available
+    if (typeof this.wasmManager.isRolling === 'function') {
+      this.playerState.isRolling = this.wasmManager.isRolling();
+    }
   }
 
   /**
@@ -337,11 +342,6 @@ export class GameStateManager {
       this.playerState.isRolling = true;
       this.playerState.lastRollTime = performance.now();
       this.emit('playerRolled', { timestamp: this.playerState.lastRollTime });
-      
-      // Reset rolling state after duration
-      setTimeout(() => {
-        this.playerState.isRolling = false;
-      }, this.wasmManager.getTimingConstants().rollDuration * 1000);
     }
     
     return success;

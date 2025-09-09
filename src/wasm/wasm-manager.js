@@ -3,6 +3,8 @@
  * Follows WASM-first architecture principles from AGENTS.MD
  */
 
+import { setGlobalSeed as setVisualRngSeed } from '../utils/rng.js'
+
 export class WasmManager {
   constructor() {
     this.exports = null;
@@ -74,7 +76,7 @@ export class WasmManager {
       }
 
       // Initialize game run with seed
-      await this.initializeGameRun();
+      this.initializeGameRun();
       
       // Load timing constants from WASM
       this.loadTimingConstants();
@@ -112,11 +114,9 @@ export class WasmManager {
         this.runSeed = BigInt(urlSeed);
         console.log('Using URL seed:', this.runSeed.toString());
       } else {
-        // Use deterministic seed generation instead of Math.random()
-        // Generate seed based on current time but make it deterministic
-        const timeSeed = Math.floor(Date.now() / 1000); // Use seconds for deterministic seeding
-        this.runSeed = BigInt(timeSeed);
-        console.log('Generated deterministic seed:', this.runSeed.toString());
+        // Use stable default when no seed is provided
+        this.runSeed = 1n;
+        console.log('Using default seed:', this.runSeed.toString());
       }
 
       // Initialize WASM run with starting weapon (0 = default)
@@ -126,6 +126,7 @@ export class WasmManager {
       
       // Make seed available for visual RNG
       globalThis.runSeedForVisuals = this.runSeed;
+      try { setVisualRngSeed(this.runSeed); } catch {}
       
       // Verify initialization by checking basic functions
       this.verifyWasmInitialization();
@@ -856,6 +857,19 @@ export class WasmManager {
    */
   getTimingConstants() {
     return { ...this.timingConstants };
+  }
+
+  /**
+   * Query roll state from WASM
+   * @returns {boolean}
+   */
+  isRolling() {
+    if (!this.isLoaded || typeof this.exports.get_is_rolling !== 'function') return false;
+    try {
+      return this.exports.get_is_rolling() === 1;
+    } catch {
+      return false;
+    }
   }
 
   /**
