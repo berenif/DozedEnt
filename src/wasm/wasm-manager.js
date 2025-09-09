@@ -39,22 +39,49 @@ export class WasmManager {
 
       const { loadWasm } = wasmHelperModule;
       
-      // Try multiple WASM file paths
-      const wasmPaths = ['../../dist/game.wasm', './game.wasm', '../game.wasm', '../../game.wasm', '/game.wasm'];
+      // Try multiple WASM file paths, resolved against the current document base URL
+      const resolveUrl = (p) => {
+        try {
+          return new URL(p, document.baseURI).toString();
+        } catch (_) {
+          return p; // fallback to raw if URL construction fails (non-browser env)
+        }
+      };
+
+      const candidatePaths = [
+        'game.wasm',
+        'dist/game.wasm',
+        'src/wasm/game.wasm'
+      ];
+
+      // On GitHub Pages, ensure we also try with the repo prefix explicitly
+      try {
+        if (location && /\.github\.io$/.test(location.hostname)) {
+          const parts = location.pathname.split('/').filter(Boolean);
+          if (parts.length > 0) {
+            const repo = parts[0];
+            candidatePaths.push(`${repo}/game.wasm`);
+            candidatePaths.push(`${repo}/dist/game.wasm`);
+          }
+        }
+      } catch (_) {}
+
+      const wasmUrls = candidatePaths.map(resolveUrl);
+
       let exports = null;
       let wasmPath = null;
       
-      for (const path of wasmPaths) {
+      for (const url of wasmUrls) {
         try {
-          console.log(`Attempting to load WASM from: ${path}`);
-          const result = await loadWasm(path);
+          console.log(`Attempting to load WASM from: ${url}`);
+          const result = await loadWasm(url);
           exports = result.exports;
-          wasmPath = path;
-          console.log(`Successfully loaded WASM from: ${path}`);
+          wasmPath = url;
+          console.log(`Successfully loaded WASM from: ${url}`);
           break;
         } catch (error) {
-          console.warn(`Failed to load WASM from ${path}:`, error.message);
-          // Continue to next path instead of throwing
+          console.warn(`Failed to load WASM from ${url}:`, error.message);
+          // Continue to next candidate instead of throwing
         }
       }
       
