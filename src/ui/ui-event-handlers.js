@@ -404,10 +404,10 @@ export class UIEventHandlers {
    */
   handleRestartGame() {
     if (this.gameStateManager.wasmManager) {
-      // Generate deterministic seed based on current time (seconds)
-      const newSeed = BigInt(Math.floor(Date.now() / 1000));
-      this.gameStateManager.wasmManager.resetRun(newSeed);
-      console.log('Game restarted with seed:', newSeed.toString());
+      const mgr = this.gameStateManager.wasmManager;
+      const currentSeed = typeof mgr.getRunSeed === 'function' ? mgr.getRunSeed() : 1n;
+      mgr.resetRun(currentSeed);
+      console.log('Game restarted with seed:', currentSeed.toString());
     }
   }
 

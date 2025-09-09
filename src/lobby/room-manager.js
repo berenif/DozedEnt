@@ -231,8 +231,14 @@ export class RoomManager {
       return false;
     }
 
+    // Derive a deterministic seed to start the game and broadcast to clients
+    const params = new URLSearchParams(location.search);
+    const urlSeed = params.get('seed');
+    const startSeed = urlSeed && /^\d+$/.test(urlSeed) ? BigInt(urlSeed) : 1n;
+
     this.currentRoom.status = 'playing';
-    this.emit('gameStarted', this.currentRoom);
+    this.currentRoom.startSeed = startSeed.toString();
+    this.emit('gameStarted', { ...this.currentRoom });
     console.log('Game starting!');
     
     return true;

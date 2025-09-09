@@ -1327,11 +1327,15 @@ export class WasmManager {
       
       // Game loop functions
       init_run: (seed, startWeapon) => {
-        this.runSeed = BigInt(seed || Date.now());
+        if (seed !== undefined && seed !== null) {
+          this.runSeed = BigInt(seed);
+        }
         console.log('Fallback: WASM init_run() called with seed:', this.runSeed);
       },
       reset_run: (newSeed) => {
-        this.runSeed = BigInt(newSeed || Date.now());
+        if (newSeed !== undefined && newSeed !== null) {
+          this.runSeed = BigInt(newSeed);
+        }
         console.log('Fallback: WASM reset_run() called with seed:', this.runSeed);
       },
       get_phase: () => 0, // Explore phase

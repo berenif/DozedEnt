@@ -347,7 +347,7 @@ class GameApplication {
     if (startGameBtn) {
       console.log('✅ Start button found, enabling...');
       startGameBtn.disabled = false;
-      startGameBtn.textContent = wasmSuccess ? 'Start Game' : 'Start Game (No WASM)';
+      startGameBtn.textContent = wasmSuccess ? 'Start Game' : 'Start (UI Only)';
       startGameBtn.style.background = wasmSuccess ? '#4a90e2' : '#ff6b6b';
       startGameBtn.style.cursor = 'pointer';
       
@@ -446,7 +446,8 @@ class GameApplication {
     
     // Verify WASM is ready
     if (!this.wasmManager.isLoaded) {
-      console.warn('⚠️ WASM not loaded - starting in fallback mode');
+      console.error('❌ WASM not loaded - cannot start deterministic gameplay');
+      return;
     } else {
       console.log('✅ WASM engine ready, starting deterministic gameplay');
     }
@@ -1070,9 +1071,8 @@ class GameApplication {
     console.log('🔄 Restarting game...');
     
     if (this.wasmManager?.isLoaded && typeof this.wasmManager.resetRun === 'function') {
-      // Generate new seed for restart
-      const newSeed = BigInt(Math.floor(Date.now() / 1000));
-      this.wasmManager.resetRun(newSeed);
+      const seed = this.wasmManager.getRunSeed?.() ?? 1n;
+      this.wasmManager.resetRun(seed);
     }
     
     // Hide game over overlay
@@ -1094,9 +1094,9 @@ class GameApplication {
     console.log('🆕 Starting new game...');
     
     if (this.wasmManager?.isLoaded && typeof this.wasmManager.initRun === 'function') {
-      // Generate completely new seed
-      const newSeed = BigInt(Math.floor(Date.now() / 1000));
-      this.wasmManager.initRun(newSeed, 0); // 0 = default weapon
+      const seedParam = new URLSearchParams(location.search).get('seed');
+      const newSeed = seedParam && /^\d+$/.test(seedParam) ? BigInt(seedParam) : 1n;
+      this.wasmManager.initRun(newSeed, 0);
     }
     
     // Hide game over overlay

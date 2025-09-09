@@ -356,7 +356,7 @@ export class GameStateManager {
   setBlocking(isBlocking, faceX, faceY) {
     if (!this.wasmManager) return;
 
-    const success = this.wasmManager.setBlocking(isBlocking, faceX, faceY, performance.now() / 1000);
+    const success = this.wasmManager.setBlocking(isBlocking, faceX, faceY);
     if (success) {
       this.playerState.isBlocking = isBlocking;
       this.playerState.facing = { x: faceX, y: faceY };
