@@ -724,10 +724,10 @@ void update(float dtSeconds) {
         if (dot >= ATTACK_ARC_COS_THRESHOLD) {
           // Apply damage and brief stun/knockback
           float prevHealth = e.health;
-          float damage = ATTACK_DAMAGE * g_attack_damage_mult;
+          float damage = ATTACK_DAMAGE * g_attack_damage_mult * get_weapon_damage_multiplier();
           damage *= get_curse_modifier(CurseType::Weakness);
           if (e.type == EnemyType::Wolf) { damage *= g_wolf_damage_mult; }
-          if (rng_float01() < g_crit_chance) { damage *= 2.0f; }
+          if (rng_float01() < (g_crit_chance + get_weapon_crit_bonus())) { damage *= 2.0f; }
           e.health -= damage;
           if (e.health < 0.f) e.health = 0.f;
           if (damage > 0.f && g_lifesteal > 0.f) { g_hp += damage * g_lifesteal; if (g_hp > 1.0f) g_hp = 1.0f; }
@@ -1120,9 +1120,7 @@ unsigned int get_jump_count() {
 // New export for wall sliding state
 __attribute__((export_name("get_is_wall_sliding")))
 unsigned int get_is_wall_sliding() {
-    // Access the static variable from the update function scope
-    // For now, we'll derive this from animation state
-    return (g_player_anim_state == PlayerAnimState_WallSliding) ? 1 : 0;
+    return g_is_wall_sliding ? 1u : 0u;
 }
 
 // Time since current player state started (seconds)
@@ -1445,7 +1443,7 @@ __attribute__((export_name("get_roll_cooldown")))
 float get_roll_cooldown() { return ROLL_COOLDOWN_SEC; }
 
 __attribute__((export_name("get_parry_window")))
-float get_parry_window() { return PERFECT_PARRY_WINDOW; }
+float get_parry_window() { return PARRY_WINDOW; }
 
 // Landmarks/exits getters
 __attribute__((export_name("get_obstacle_count")))
@@ -1848,7 +1846,10 @@ float get_terrain_friction(float world_x, float world_y) {
     return 0.5f; // Default friction
   }
   
-  return g_world_sim.terrain[grid_x][grid_y].material.kinetic_friction;
+  float base_kf = g_world_sim.terrain[grid_x][grid_y].material.kinetic_friction;
+  float rain_factor = (1.0f - g_world_sim.weather.rain_intensity * 0.3f);
+  if (rain_factor < 0.1f) rain_factor = 0.1f;
+  return base_kf * rain_factor;
 }
 
 __attribute__((export_name("get_terrain_temperature")))

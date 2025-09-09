@@ -411,6 +411,7 @@ struct WorldSimulation {
     EnvironmentObject environment_objects[MAX_ENVIRONMENT_OBJECTS];
     uint32_t environment_object_count;
     uint32_t environment_seed;
+    uint64_t env_rng;
     
     // Time system
     TimeSystem time;
@@ -433,7 +434,7 @@ struct WorldSimulation {
     uint32_t sound_write_index;
     
     WorldSimulation() : current_biome(BIOME_FOREST), environment_object_count(0), environment_seed(12345),
-                       hazard_count(0), persistent_count(0), status_count(0), 
+                       env_rng(0), hazard_count(0), persistent_count(0), status_count(0), 
                        gloom_count(0), heat_source_count(0), sound_event_count(0), sound_write_index(0) {
         initialize_terrain();
         initialize_biome_configs();
@@ -518,18 +519,31 @@ private:
     }
 
 public:
+    // Deterministic RNG seeded by environment_seed
+    inline uint64_t ws_rng_next() {
+        if (env_rng == 0) {
+            env_rng = ((uint64_t)environment_seed) ^ 0x9E3779B97F4A7C15ull;
+            if (env_rng == 0) env_rng = 0xDA3E39CB94B95BDBull;
+        }
+        uint64_t x = env_rng;
+        x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
+        env_rng = x;
+        return x * 2685821657736338717ull;
+    }
+    inline uint32_t ws_rng_u32() { return (uint32_t)(ws_rng_next() >> 32); }
+    inline float ws_rng_float01() { return (float)((ws_rng_next() >> 40) / 16777216.0); }
     // Environment generation functions
     void generate_environment(BiomeType biome_type, uint32_t seed) {
         current_biome = biome_type;
         environment_seed = seed;
+        env_rng = 0; // reset rng for deterministic generation per seed
         environment_object_count = 0;
         hazard_count = 0; // Clear existing hazards
         
         // Set weather based on biome
         weather = biome_configs[(int)biome_type].default_weather;
         
-        // Generate environment objects deterministically
-        srand(seed);
+        // Generate environment objects (no std::rand to preserve determinism)
         
         BiomeConfiguration& config = biome_configs[(int)biome_type];
         
@@ -556,18 +570,18 @@ private:
     void generate_forest_environment(const BiomeConfiguration& config) {
         // Generate trees
         for (int i = 0; i < 20; i++) {
-            if ((float)rand() / (float)RAND_MAX < config.tree_probability) {
+            if (ws_rng_float01() < config.tree_probability) {
                 add_environment_object(ENV_TREE, 
-                    Vector3(100 + i * 150 + (rand() % 100), 360, 0), 
+                    Vector3(100 + i * 150 + (int)(ws_rng_u32() % 100u), 360, 0), 
                     Vector2(80, 150), true, true);
             }
         }
         
         // Generate bushes
         for (int i = 0; i < 25; i++) {
-            if ((float)rand() / (float)RAND_MAX < 0.6f) {
+            if (ws_rng_float01() < 0.6f) {
                 add_environment_object(ENV_BUSH, 
-                    Vector3(180 + i * 120 + (rand() % 80), 430, 0), 
+                    Vector3(180 + i * 120 + (int)(ws_rng_u32() % 80u), 430, 0), 
                     Vector2(60, 40), false, false);
             }
         }
@@ -581,9 +595,9 @@ private:
     void generate_swamp_environment(const BiomeConfiguration& config) {
         // Generate swamp trees
         for (int i = 0; i < 15; i++) {
-            if ((float)rand() / (float)RAND_MAX < config.tree_probability) {
+            if (ws_rng_float01() < config.tree_probability) {
                 add_environment_object(ENV_SWAMP_TREE, 
-                    Vector3(120 + i * 180 + (rand() % 100), 420, 0), 
+                    Vector3(120 + i * 180 + (int)(ws_rng_u32() % 100u), 420, 0), 
                     Vector2(90, 160), true, true);
             }
         }
@@ -591,7 +605,7 @@ private:
         // Generate lilypads
         for (int i = 0; i < 20; i++) {
             add_environment_object(ENV_LILYPAD, 
-                Vector3(160 + i * 100 + (rand() % 80), 500, 0), 
+                Vector3(160 + i * 100 + (int)(ws_rng_u32() % 80u), 500, 0), 
                 Vector2(50, 10), false, false);
         }
         
@@ -607,9 +621,9 @@ private:
     void generate_mountain_environment(const BiomeConfiguration& config) {
         // Generate rocks
         for (int i = 0; i < 12; i++) {
-            if ((float)rand() / (float)RAND_MAX < config.rock_probability) {
+            if (ws_rng_float01() < config.rock_probability) {
                 add_environment_object(ENV_ROCK, 
-                    Vector3(180 + i * 200 + (rand() % 120), 380, 0), 
+                    Vector3(180 + i * 200 + (int)(ws_rng_u32() % 120u), 380, 0), 
                     Vector2(100, 70), true, true);
             }
         }
@@ -617,7 +631,7 @@ private:
         // Generate snow patches
         for (int i = 0; i < 15; i++) {
             add_environment_object(ENV_SNOW_PATCH, 
-                Vector3(260 + i * 130 + (rand() % 100), 390, 0), 
+                Vector3(260 + i * 130 + (int)(ws_rng_u32() % 100u), 390, 0), 
                 Vector2(70, 30), false, false);
         }
         
@@ -631,9 +645,9 @@ private:
     void generate_plains_environment(const BiomeConfiguration& config) {
         // Generate bushes
         for (int i = 0; i < 30; i++) {
-            if ((float)rand() / (float)RAND_MAX < 0.7f) {
+            if (ws_rng_float01() < 0.7f) {
                 add_environment_object(ENV_BUSH, 
-                    Vector3(100 + i * 120 + (rand() % 80), 480, 0), 
+                    Vector3(100 + i * 120 + (int)(ws_rng_u32() % 80u), 480, 0), 
                     Vector2(50, 30), false, false);
             }
         }
@@ -641,7 +655,7 @@ private:
         // Generate grass tufts
         for (int i = 0; i < 40; i++) {
             add_environment_object(ENV_GRASS_TUFT, 
-                Vector3(140 + i * 80 + (rand() % 60), 510, 0), 
+                Vector3(140 + i * 80 + (int)(ws_rng_u32() % 60u), 510, 0), 
                 Vector2(20, 15), false, false);
         }
         
@@ -716,26 +730,23 @@ static WorldSimulation g_world_sim;
 void update_weather_effects(float dt) {
     WeatherState& weather = g_world_sim.weather;
     
-    // Rain reduces surface friction
+    // Rain increases moisture; friction computed at query-time
     if (weather.rain_intensity > 0.1f) {
         for (int x = 0; x < TERRAIN_GRID_SIZE; x++) {
             for (int y = 0; y < TERRAIN_GRID_SIZE; y++) {
                 TerrainCell& cell = g_world_sim.terrain[x][y];
                 cell.moisture += weather.rain_intensity * dt * 0.1f;
                 if (cell.moisture > 1.0f) cell.moisture = 1.0f;
-                
-                // Reduce friction when wet
-                cell.material.kinetic_friction *= (1.0f - weather.rain_intensity * 0.3f);
             }
         }
     }
     
-    // Lightning strikes
-    if (weather.lightning_active && (rand() % 1000) < 5) { // 0.5% chance per frame
+    // Lightning strikes (deterministic)
+    if (weather.lightning_active && (g_world_sim.ws_rng_u32() % 1000u) < 5u) { // ~0.5% chance per frame
         // Strike random conductive object
         Vector3 strike_pos(
-            (float)(rand() % 100) / 100.0f,
-            (float)(rand() % 100) / 100.0f,
+            g_world_sim.ws_rng_float01(),
+            g_world_sim.ws_rng_float01(),
             0.0f
         );
         
@@ -786,12 +797,9 @@ void update_time_system(float dt) {
         time_sys.current_time -= 24.0f;
         time_sys.day_count++;
         
-        // Check for blood moon (every 7-10 days)
-        if (time_sys.day_count % (7 + (rand() % 4)) == 0) {
-            time_sys.is_blood_moon = true;
-        } else {
-            time_sys.is_blood_moon = false;
-        }
+        // Deterministic blood moon cadence (7-10 days) based on environment_seed
+        uint32_t period = 7u + (g_world_sim.environment_seed % 4u);
+        time_sys.is_blood_moon = (period != 0u) ? ((time_sys.day_count % period) == 0u) : 0;
     }
     
     // Update persistent objects

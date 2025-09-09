@@ -13,6 +13,9 @@ static int g_is_grounded = 1; // New: Player grounded status
 static int g_jump_count = 0; // New: Tracks current jumps
 // Track when the current player animation state started (for UI timing)
 static float g_player_state_start_time = -1000.f;
+// Wall slide state (exported)
+static int g_is_wall_sliding = 0;
+static float g_wall_slide_timer = 0.f;
 
 // Block/parry state
 static int g_blocking = 0;

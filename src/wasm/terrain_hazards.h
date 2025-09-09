@@ -207,11 +207,8 @@ static inline void update_hazards(float dt) {
           
         case HazardType::Poison_Gas:
         case HazardType::Fire_Trap:
-          // Continuous damage while in area
-          if (g_time_seconds - h.lastTrigger >= 0.1f) {  // Apply every 0.1 seconds
-            shouldTrigger = true;
-            h.lastTrigger = g_time_seconds;
-          }
+          // Continuous damage while in area (damage per second scaled by dt)
+          apply_hazard_damage(h.damage * dt, h.type);
           break;
           
         case HazardType::Ice_Patch:
