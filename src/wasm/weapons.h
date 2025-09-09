@@ -136,12 +136,8 @@ static void set_character_weapon(CharacterType character, WeaponType weapon) {
 
 // Apply weapon stats to global combat multipliers
 static void apply_weapon_stats() {
-  // Update global combat multipliers based on weapon stats
-  g_attack_damage_mult *= g_weapon_stats.damage_multiplier;
-  g_crit_chance += g_weapon_stats.crit_chance_bonus;
-  
-  // Weapon-specific stamina costs will be applied in attack functions
-  // Speed multipliers will be applied to attack timing constants
+  // Global multipliers are applied at usage sites to avoid stacking.
+  // Stamina costs and timing multipliers are applied in attack functions.
 }
 
 // Check if current weapon has a specific tag

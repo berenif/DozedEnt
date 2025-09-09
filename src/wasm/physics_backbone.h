@@ -445,24 +445,22 @@ void physics_resolve_collision(RigidBody& a, RigidBody& b, const CollisionPair& 
 
 // Buoyancy calculations
 void physics_update_buoyancy(RigidBody& body, float fluid_level) {
-    if (body.position.z > fluid_level) {
+    // Compute submerged height h of sphere within fluid (assuming fluid occupies z <= fluid_level)
+    const float R = body.radius;
+    const float h = fluid_level - (body.position.z - R);
+    if (h <= 0.0f) {
         body.in_fluid = false;
         body.submerged_volume = 0.0f;
         return;
     }
-    
     body.in_fluid = true;
-    
-    // Calculate submerged volume for sphere
-    float depth = fluid_level - body.position.z;
-    if (depth >= body.radius) {
-        // Fully submerged
-        body.submerged_volume = (4.0f / 3.0f) * 3.14159f * body.radius * body.radius * body.radius;
-    } else {
-        // Partially submerged - spherical cap volume
-        float h = depth + body.radius; // Height of submerged cap
-        body.submerged_volume = 3.14159f * h * h * (3.0f * body.radius - h) / 3.0f;
+    if (h >= 2.0f * R) {
+        // Fully submerged sphere volume
+        body.submerged_volume = (4.0f / 3.0f) * 3.14159f * R * R * R;
+        return;
     }
+    // Partially submerged: spherical cap volume V = π h^2 (R - h/3)
+    body.submerged_volume = 3.14159f * h * h * (R - (h / 3.0f));
 }
 
 // Main physics update
