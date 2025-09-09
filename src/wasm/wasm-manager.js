@@ -251,7 +251,7 @@ export class WasmManager {
    * @returns {number} Biome type
    */
   getCurrentBiome() {
-    if (typeof this.exports.get_current_biome === 'function') {
+    if (this.exports && typeof this.exports.get_current_biome === 'function') {
       return this.exports.get_current_biome();
     }
     return 0; // Default to Forest
@@ -1377,7 +1377,71 @@ export class WasmManager {
       escape_risk: () => console.log('Fallback: WASM escape_risk() called'),
       buy_heal: () => console.log('Fallback: WASM buy_heal() called'),
       reroll_shop_items: () => console.log('Fallback: WASM reroll_shop_items() called'),
-      exit_cashout: () => console.log('Fallback: WASM exit_cashout() called')
+      exit_cashout: () => console.log('Fallback: WASM exit_cashout() called'),
+      
+      // Biome and environment functions
+      get_current_biome: () => 0, // Default to Forest biome
+      
+      // Timing constants
+      get_attack_cooldown: () => 0.35,
+      get_roll_duration: () => 0.18,
+      get_roll_cooldown: () => 0.8,
+      
+      // Health system
+      get_hp: () => 1.0,
+      get_max_hp: () => 100,
+      
+      // Room and phase management
+      get_room_count: () => 1,
+      
+      // Rolling state
+      get_is_rolling: () => 0,
+      
+      // Weapon system
+      get_current_weapon: () => 0,
+      get_character_type: () => 0,
+      set_character_and_weapon: () => {},
+      get_weapon_damage_mult: () => 1.0,
+      get_weapon_speed_mult: () => 1.0,
+      get_weapon_reach_mult: () => 1.0,
+      weapon_has_hyperarmor: () => 0,
+      weapon_has_flow_combo: () => 0,
+      weapon_has_bash_synergy: () => 0,
+      
+      // Wind and weather
+      set_wind: () => {},
+      
+      // Enemy count
+      get_enemy_count: () => 0,
+      
+      // Risk phase
+      get_curse_count: () => 0,
+      get_curse_type: () => 0,
+      get_curse_intensity: () => 0,
+      get_risk_multiplier: () => 1.0,
+      get_elite_active: () => 0,
+      
+      // Escalate phase
+      get_escalation_level: () => 0,
+      get_spawn_rate_modifier: () => 1.0,
+      get_miniboss_active: () => 0,
+      get_miniboss_x: () => 0,
+      get_miniboss_y: () => 0,
+      damage_miniboss: () => {},
+      
+      // Cashout phase
+      get_gold: () => 0,
+      get_essence: () => 0,
+      get_shop_item_count: () => 0,
+      buy_shop_item: () => {},
+      
+      // Hazards
+      get_hazard_count: () => 0,
+      get_hazard_type: () => 0,
+      get_hazard_x: () => 0,
+      get_hazard_y: () => 0,
+      get_hazard_radius: () => 0,
+      get_hazard_intensity: () => 0
     };
   }
 }

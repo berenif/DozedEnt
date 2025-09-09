@@ -55,15 +55,23 @@ export class GameStateManager {
   initialize(wasmManager) {
     this.wasmManager = wasmManager;
     
-    // Get initial biome from WASM
-    this.currentBiome = wasmManager.getCurrentBiome();
-    
-    // Initialize player position
-    const position = wasmManager.getPlayerPosition();
-    this.playerState.position = position;
-    
-    // Initialize stamina
-    this.playerState.stamina = wasmManager.getStamina();
+    try {
+      // Get initial biome from WASM
+      this.currentBiome = wasmManager.getCurrentBiome();
+      
+      // Initialize player position
+      const position = wasmManager.getPlayerPosition();
+      this.playerState.position = position;
+      
+      // Initialize stamina
+      this.playerState.stamina = wasmManager.getStamina();
+    } catch (error) {
+      console.warn('Failed to initialize from WASM, using defaults:', error);
+      // Use default values if WASM fails
+      this.currentBiome = 0; // Forest
+      this.playerState.position = { x: 0.5, y: 0.5 };
+      this.playerState.stamina = 1.0;
+    }
     
     this.emit('stateInitialized', this.getStateSnapshot());
   }
