@@ -901,7 +901,7 @@ void test_flow_system() {
 ## 📚 Related Documentation
 
 - [PLAYER_CHARACTERS.md](PLAYER_CHARACTERS.md) - Character-specific abilities and movesets
-- [AGENTS.MD](../AGENTS.MD) - WASM-first architecture principles  
+- [AGENTS.md](../AGENTS.md) - WASM-first architecture principles  
 - [CORE_WORLD_SIMULATION.md](CORE_WORLD_SIMULATION.md) - Physics and world systems
 - [TESTING.md](../TESTING.md) - Testing frameworks and validation
 

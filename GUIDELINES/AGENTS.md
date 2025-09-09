@@ -35,7 +35,7 @@ This repository implements a **WebAssembly-first multiplayer game architecture**
 Use these documents when working on agents, enemies, animations, core loop, and multiplayer systems. Keep gameplay logic in WASM and use JS only for rendering, inputs, and networking.
 
 ### AI
-- [Enemy AI Template](./AI/ENEMY_TEMPLATE.MD) — Baseline rules, state machine structure, properties, combat patterns, animation integration, performance, and testing checklist for all enemies.
+- [Enemy AI Template](./AI/ENEMY_TEMPLATE.md) — Baseline rules, state machine structure, properties, combat patterns, animation integration, performance, and testing checklist for all enemies.
 - [Enemy AI (System Overview)](./AI/ENEMY_AI.md) — Modular behavior system: states, attributes, memory, adaptive difficulty, terrain awareness, roles, comms, and performance.
 - [Wolf AI](./AI/WOLF_AI.md) — Concrete predator/pack AI: coordinated plans, adaptive tuning, emotions, memory, terrain exploitation, and future roadmap.
 
@@ -48,8 +48,8 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 - [Core Loop Checklist](./GAME/CORE_LOOP_CHECKLIST.md) — Per-feature validation for determinism, WASM-only logic, API constraints, phase-specific criteria, and tests.
 
 ### Multiplayer (Lobby & Rooms)
-- [Lobby System](./GAME/LOBBY_SYSTEM.md) — Enhanced lobby UX, matchmaking, chat, analytics, events, config, and performance.
-- [Room System](./GAME/ROOM_SYSTEM.md) — Host-authoritative rooms, migration, WASM integration, state sync, events, and performance tips.
+- [Lobby System](./MULTIPLAYER/LOBBY_SYSTEM.md) — Enhanced lobby UX, matchmaking, chat, analytics, events, config, and performance.
+- [Room System](./MULTIPLAYER/ROOM_SYSTEM.md) — Host-authoritative rooms, migration, WASM integration, state sync, events, and performance tips.
 
 ### Build, Deploy, and Testing
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.
