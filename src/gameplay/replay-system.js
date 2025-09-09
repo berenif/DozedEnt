@@ -167,7 +167,7 @@ export class ReplaySystem {
       gameVersion: '1.0.0',
       timestamp: Date.now(),
       duration: 0,
-      seed: this.wasmManager.exports?.get_seed?.() || Math.random() * 0xFFFFFFFF,
+      seed: this.wasmManager.exports?.get_seed?.() ?? (typeof globalThis.runSeedForVisuals !== 'undefined' ? globalThis.runSeedForVisuals : 1),
       playerName: localStorage.getItem('playerName') || 'Anonymous',
       score: 0,
       result: 'unknown',

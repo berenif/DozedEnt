@@ -57,6 +57,25 @@ const createWasiPreview1 = (memory) => {
 	const u8 = () => new Uint8Array(memory.buffer)
 	const dv = () => new DataView(memory.buffer)
 	
+	// Deterministic PRNG fallback (LCG) for environments without crypto
+	// Seed from globalThis.runSeedForVisuals when available, else a constant
+	let __wasiPrngState = (() => {
+		try {
+			const seedBig = (typeof globalThis !== 'undefined' && typeof globalThis.runSeedForVisuals !== 'undefined')
+				? globalThis.runSeedForVisuals
+				: 0xC0FFEE ^ 0x9E3779B9;
+			const seedNum = typeof seedBig === 'bigint' ? Number(seedBig & 0xffffffffn) : (seedBig >>> 0);
+			return (seedNum >>> 0) || 0x9E3779B9;
+		} catch {
+			return 0x9E3779B9;
+		}
+	})();
+	const __wasiNextByte = () => {
+		// LCG parameters (Numerical Recipes)
+		__wasiPrngState = (Math.imul(__wasiPrngState, 1664525) + 1013904223) >>> 0;
+		return __wasiPrngState & 0xff;
+	};
+	
 	// Safe crypto access that works under SES lockdown
 	const getCrypto = () => {
 		try {
@@ -114,9 +133,9 @@ const createWasiPreview1 = (memory) => {
 			if (crypto) {
 				crypto.getRandomValues(view);
 			} else {
-				// Fallback for environments without crypto
+				// Deterministic fallback for environments without crypto
 				for (let i = 0; i < view.length; i++) {
-					view[i] = (Math.random() * 256) | 0;
+					view[i] = __wasiNextByte();
 				}
 			}
 			return 0;
