@@ -106,7 +106,7 @@ export class WasmManager {
     }
 
     try {
-      // Get seed from URL or generate new one
+      // Get seed from URL or use a deterministic default
       const urlParams = new URLSearchParams(location.search);
       const urlSeed = urlParams.get('seed');
       
@@ -878,6 +878,23 @@ export class WasmManager {
    */
   getRunSeed() {
     return this.runSeed;
+  }
+
+  /**
+   * Initialize a new run explicitly with a given seed and starting weapon.
+   * @param {bigint|number|string} seed - Seed value (will be coerced to BigInt)
+   * @param {number} weapon - Starting weapon id
+   */
+  initRun(seed, weapon = 0) {
+    if (!this.isLoaded || typeof this.exports.init_run !== 'function') return;
+    try {
+      const newSeed = typeof seed === 'bigint' ? seed : BigInt(String(seed));
+      this.runSeed = newSeed;
+      this.exports.init_run(newSeed, weapon);
+      globalThis.runSeedForVisuals = newSeed;
+    } catch (error) {
+      console.error('initRun failed:', error);
+    }
   }
 
   // ============================================================================
