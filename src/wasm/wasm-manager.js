@@ -104,7 +104,7 @@ export class WasmManager {
     }
 
     try {
-      // Get seed from URL or generate new one
+      // Get seed from URL or use a deterministic default
       const urlParams = new URLSearchParams(location.search);
       const urlSeed = urlParams.get('seed');
       
@@ -112,11 +112,11 @@ export class WasmManager {
         this.runSeed = BigInt(urlSeed);
         console.log('Using URL seed:', this.runSeed.toString());
       } else {
-        // Use deterministic seed generation instead of Math.random()
-        // Generate seed based on current time but make it deterministic
-        const timeSeed = Math.floor(Date.now() / 1000); // Use seconds for deterministic seeding
-        this.runSeed = BigInt(timeSeed);
-        console.log('Generated deterministic seed:', this.runSeed.toString());
+        // Do not use time-based seeds; fall back to explicit default
+        if (typeof this.runSeed !== 'bigint') {
+          this.runSeed = 0n;
+        }
+        console.log('No URL seed provided; using default seed:', this.runSeed.toString());
       }
 
       // Initialize WASM run with starting weapon (0 = default)
@@ -864,6 +864,23 @@ export class WasmManager {
    */
   getRunSeed() {
     return this.runSeed;
+  }
+
+  /**
+   * Initialize a new run explicitly with a given seed and starting weapon.
+   * @param {bigint|number|string} seed - Seed value (will be coerced to BigInt)
+   * @param {number} weapon - Starting weapon id
+   */
+  initRun(seed, weapon = 0) {
+    if (!this.isLoaded || typeof this.exports.init_run !== 'function') return;
+    try {
+      const newSeed = typeof seed === 'bigint' ? seed : BigInt(String(seed));
+      this.runSeed = newSeed;
+      this.exports.init_run(newSeed, weapon);
+      globalThis.runSeedForVisuals = newSeed;
+    } catch (error) {
+      console.error('initRun failed:', error);
+    }
   }
 
   // ============================================================================
