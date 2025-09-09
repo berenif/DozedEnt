@@ -360,8 +360,8 @@ export class GameRenderer {
         }
 
         try {
-            // Use provided seed or generate one based on biome and time
-            const environmentSeed = seed || (biomeType * 1000 + Date.now() % 10000);
+            // Use provided seed or derive deterministically (callers pass seed from run seed)
+            const environmentSeed = (seed != null) ? seed : 0;
             
             // Generate environment in WASM
             wasmModule.generate_environment(biomeType, environmentSeed);
@@ -543,10 +543,16 @@ export class GameRenderer {
     
     // Update camera bounds based on world size
     updateCameraBounds() {
-        this.camera.bounds.minX = this.camera.width / 2
-        this.camera.bounds.minY = this.camera.height / 2
-        this.camera.bounds.maxX = this.world.width - this.camera.width / 2
-        this.camera.bounds.maxY = this.world.height - this.camera.height / 2
+        // Clamp camera to the playable center third area
+        const playableWidth = this.world.width / 3
+        const playableHeight = this.world.height / 3
+        const offsetX = this.world.width / 3
+        const offsetY = this.world.height / 3
+
+        this.camera.bounds.minX = offsetX + this.camera.width / 2
+        this.camera.bounds.minY = offsetY + this.camera.height / 2
+        this.camera.bounds.maxX = offsetX + playableWidth - this.camera.width / 2
+        this.camera.bounds.maxY = offsetY + playableHeight - this.camera.height / 2
     }
     
     // Update camera to follow target
@@ -1073,7 +1079,9 @@ export class GameRenderer {
         if (!wasmModule) return null;
 
         try {
-            const hazardType = wasmModule.check_player_in_hazard(playerX, playerY);
+            // Convert world coordinates to normalized WASM coordinates before querying WASM
+            const norm = this.worldToWasm(playerX, playerY)
+            const hazardType = wasmModule.check_player_in_hazard(norm.x, norm.y);
             
             if (hazardType >= 0) {
                 return {
@@ -1695,9 +1703,9 @@ export class GameRenderer {
         // Convert player position from WASM normalized coordinates to world coordinates
         const playerWorldPos = this.wasmToWorld(wasmX, wasmY)
 
-        // Update internal player state for compatibility
-        this.player.x = wasmX;
-        this.player.y = wasmY;
+        // Update internal player state in world coordinates for consistency
+        this.player.x = playerWorldPos.x;
+        this.player.y = playerWorldPos.y;
         this.player.velocityX = velX;
         this.player.velocityY = velY;
         this.player.isGrounded = isGrounded;

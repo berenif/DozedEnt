@@ -76,11 +76,13 @@ class GameApplication {
     }
 
     try {
-      // Generate environment in WASM for the initial biome
+      // Generate environment in WASM for the initial biome, seeded from current run seed for determinism
+      const runSeedBig = this.wasmManager.getRunSeed?.() ?? 0n;
+      const envSeed = Number(runSeedBig % 2147483647n);
       this.gameRenderer.generateEnvironmentInWasm(
         this.wasmManager.module, 
         this.initialBiome, 
-        12345 // Deterministic seed for consistent results
+        envSeed
       );
       
       console.log('Successfully initialized WASM-based environment system');
@@ -97,10 +99,12 @@ class GameApplication {
   changeBiome(biomeType, seed = null) {
     if (!this.gameRenderer) return;
     
+    const runSeedBig = this.wasmManager?.getRunSeed?.() ?? 0n;
+    const fallbackSeed = Number(runSeedBig % 2147483647n);
     this.gameRenderer.changeBiome(
       biomeType, 
       this.wasmManager?.module,
-      seed || (biomeType * 1000 + Date.now() % 10000)
+      seed ?? fallbackSeed
     );
     
     // Update any game state related to biome change
@@ -130,6 +134,16 @@ class GameApplication {
         
         // Initialize WASM-based environment system now that WASM is ready
         this.initializeWasmEnvironment();
+
+        // Seed deterministic visual RNG from the current run seed
+        try {
+          const seed = this.wasmManager.getRunSeed?.();
+          if (seed !== undefined && seed !== null) {
+            setGlobalSeed(seed);
+          }
+        } catch (e) {
+          console.warn('Failed to seed visual RNG:', e);
+        }
       }
 
       // Initialize game systems
