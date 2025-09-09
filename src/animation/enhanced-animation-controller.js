@@ -201,7 +201,7 @@ export class EnhancedAnimationController {
           enabled: false
         },
         rightLeg: {
-          joints: ['hip_l', 'knee_r', 'ankle_r'],
+          joints: ['hip_r', 'knee_r', 'ankle_r'],
           target: { x: 0, y: 0, z: 0 },
           enabled: false
         }
@@ -343,7 +343,7 @@ export class EnhancedAnimationController {
     }
     
     // Trigger animation events
-    this.checkAnimationEvents(currentStateData);
+    this.checkAnimationEvents(currentStateData, deltaTime);
   }
   
   /**
@@ -527,7 +527,7 @@ export class EnhancedAnimationController {
   /**
    * Check for animation events at specific frames
    */
-  checkAnimationEvents(stateData) {
+  checkAnimationEvents(stateData, deltaTime) {
     const normalizedTime = this.stateMachine.stateTime / stateData.duration;
     
     // Define frame events for different states
@@ -550,7 +550,7 @@ export class EnhancedAnimationController {
     if (events) {
       events.forEach(eventData => {
         const frameTime = eventData.frame * stateData.duration;
-        const prevFrameTime = frameTime - 0.016; // Approximate frame time
+        const prevFrameTime = frameTime - (deltaTime || 0.016); // Approximate frame time
         
         if (this.stateMachine.stateTime >= frameTime && 
             this.stateMachine.stateTime - deltaTime < frameTime) {
