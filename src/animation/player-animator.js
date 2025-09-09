@@ -41,14 +41,14 @@ export class AnimatedPlayer {
         // Deterministic animation/event parameters - these are mostly cues for animation
         this.params = {
             roll: {
-                duration: 0.5,
+                duration: 0.4,
                 iFrameStart: 0.08,
                 iFrameEnd: 0.36,
                 staminaCost: 25,
-                cooldown: 0.6
+                cooldown: 0.8
             },
             attackLight: {
-                duration: 0.42,
+                duration: 0.4,
                 activeStart: 0.28,
                 activeEnd: 0.38,
                 staminaCost: 12,
@@ -123,6 +123,13 @@ export class AnimatedPlayer {
 
         // Debug flag
         this.debugMode = false
+
+        // Optional WASM module injection support for testing/integration
+        try {
+            if (options.wasmModule && !globalThis.wasmExports) {
+                globalThis.wasmExports = options.wasmModule
+            }
+        } catch {}
     }
 
     loadSpriteSheet() {
@@ -684,7 +691,7 @@ export class AnimatedPlayer {
         ctx.fillRect(screenX - barWidth/2, barY, barWidth, barHeight)
         
         // Health - get from WASM
-        const currentHealth = globalThis.wasmExports?.get_hp?.() ?? this.health;
+        const currentHealth = globalThis.wasmExports?.get_hp?.() ?? globalThis.wasmExports?.get_health?.() ?? this.health;
         const maxHealth = this.maxHealth; // Max health can still be local or WASM-driven if dynamic
         const healthPercent = currentHealth / maxHealth
         ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : 
@@ -727,8 +734,8 @@ export class AnimatedPlayer {
         // Need to pass WASM-driven velocity to CharacterAnimator.update as well.
         // For now, let's assume CharacterAnimator is updated with correct velocity from WASM.
         // We need an export for WASM player velocity (get_vel_x, get_vel_y)
-        const currentVx = globalThis.wasmExports?.get_vel_x?.() ?? this.vx;
-        const currentVy = globalThis.wasmExports?.get_vel_y?.() ?? this.vy;
+        const currentVx = globalThis.wasmExports?.get_vel_x?.() ?? 0;
+        const currentVy = globalThis.wasmExports?.get_vel_y?.() ?? 0;
         const currentSpeed = Math.hypot(currentVx, currentVy);
         const playerSpeed = globalThis.wasmExports?.get_speed?.() ?? this.speed; // Assuming WASM provides player speed
 

@@ -63,7 +63,17 @@ export class Animation {
         this.elapsedTime += deltaTime * this.speed * 1000 // Convert to milliseconds
 
         const currentFrameData = this.frames[this.currentFrame]
-        
+
+        // Handle frames with non-positive duration as indefinite holds
+        if (currentFrameData && currentFrameData.duration <= 0) {
+            if (!this.loop && this.currentFrame === this.frames.length - 1) {
+                this.isPlaying = false
+                this.hasCompleted = true
+                if (this.onComplete) {this.onComplete()}
+            }
+            return
+        }
+
         if (this.elapsedTime >= currentFrameData.duration) {
             this.elapsedTime -= currentFrameData.duration
             
@@ -94,12 +104,19 @@ export class Animation {
 
     getCurrentFrame() {
         if (this.frames.length === 0) {return null}
+        if (this.currentFrame < 0 || this.currentFrame >= this.frames.length) {return null}
         return this.frames[this.currentFrame]
     }
 
     getProgress() {
         if (this.frames.length === 0) {return 0}
         return this.currentFrame / (this.frames.length - 1)
+    }
+
+    // Utility: get frame by index with bounds checking
+    getFrameAt(index) {
+        if (index < 0 || index >= this.frames.length) {return null}
+        return this.frames[index]
     }
 }
 
@@ -113,7 +130,12 @@ export class AnimationController {
         this.blendProgress = 0
     }
 
-    addAnimation(animation) {
+    addAnimation(nameOrAnimation, maybeAnimation) {
+        if (typeof nameOrAnimation === 'string' && maybeAnimation) {
+            this.animations.set(nameOrAnimation, maybeAnimation)
+            return
+        }
+        const animation = nameOrAnimation
         this.animations.set(animation.name, animation)
     }
 
@@ -762,7 +784,8 @@ export class CharacterAnimator {
         })
         
         // State
-        this.state = 'idle'
+        this.state = 0 // numeric state code; default to idle
+        this.stateName = 'idle'
         this.facing = 'right'
         this.moving = false
         this.attacking = false
@@ -780,18 +803,18 @@ export class CharacterAnimator {
         // Animation blending
         this.blendFactors = {
             idle: 1,
-            run: 0,
-            attack: 0,
-            block: 0,
-            roll: 0,
+            running: 0,
+            attacking: 0,
+            blocking: 0,
+            rolling: 0,
             hurt: 0,
-            jump: 0,
-            doubleJump: 0,
-            land: 0,
-            wallSlide: 0,
-            dash: 0,
-            chargeAttack: 0,
-            death: 0
+            jumping: 0,
+            doubleJumping: 0,
+            landing: 0,
+            wallSliding: 0,
+            dashing: 0,
+            chargingAttack: 0,
+            dead: 0
         }
         
         this.targetBlendFactors = { ...this.blendFactors }
@@ -822,15 +845,16 @@ export class CharacterAnimator {
         if (this.state === newState) {return}
         
         this.state = newState
+        this.stateName = this.getAnimStateName(newState)
         
         // Update target blend factors
         Object.keys(this.targetBlendFactors).forEach(key => {
             this.targetBlendFactors[key] = 0
         })
-        this.targetBlendFactors[this.getAnimStateName(newState)] = 1
+        this.targetBlendFactors[this.stateName] = 1
         
         // Play animation based on state
-        this.controller.play(this.getAnimStateName(newState), { transition: 100 })
+        this.controller.play(this.stateName, { transition: 0.1 })
         
         // Trigger procedural animations
         switch(newState) {
@@ -880,7 +904,7 @@ export class CharacterAnimator {
         })
 
         // Update enhanced breathing with state modulation
-        this.breathing.modulateForState(this.state)
+        this.breathing.modulateForState(this.stateName)
         const breathing = this.breathing.update(deltaTime)
 
         // Update momentum system
@@ -912,7 +936,7 @@ export class CharacterAnimator {
         }
 
         // Apply enhanced breathing
-        if (this.blendFactors.idle > 0 || this.blendFactors.run > 0) {
+        if (this.blendFactors.idle > 0 || this.blendFactors.running > 0) {
             transform.scaleX *= breathing.scaleX
             transform.scaleY *= breathing.scaleY
             transform.offsetY += breathing.offsetY
@@ -933,7 +957,7 @@ export class CharacterAnimator {
         transform.rotation += wobble.rotation
 
         // Apply anticipation
-        if (this.state === 'attack' || this.state === 'chargeAttack') {
+        if (this.stateName === 'attacking' || this.stateName === 'chargingAttack') {
             transform.scaleX *= anticipation.scaleX
             transform.scaleY *= anticipation.scaleY
             transform.offsetX += anticipation.offsetX
@@ -975,7 +999,7 @@ export class CharacterAnimator {
             if (this.state === 4) { // Roll
                 this.setAnimState(0) // Idle
             }
-        }, 300)
+        }, 400)
     }
 
     triggerBlock() {
@@ -1009,7 +1033,7 @@ export const AnimationPresets = {
                 new AnimationFrame(64, 0, 32, 32, 200),
                 new AnimationFrame(96, 0, 32, 32, 200)
             ]),
-            run: new Animation('run', [
+            running: new Animation('running', [
                 new AnimationFrame(0, 32, 32, 32, 100),
                 new AnimationFrame(32, 32, 32, 32, 100),
                 new AnimationFrame(64, 32, 32, 32, 100),
@@ -1017,16 +1041,16 @@ export const AnimationPresets = {
                 new AnimationFrame(128, 32, 32, 32, 100),
                 new AnimationFrame(160, 32, 32, 32, 100)
             ]),
-            attack: new Animation('attack', [
+            attacking: new Animation('attacking', [
                 new AnimationFrame(0, 64, 32, 32, 50),
                 new AnimationFrame(32, 64, 32, 32, 50),
                 new AnimationFrame(64, 64, 32, 32, 100),
                 new AnimationFrame(96, 64, 32, 32, 50)
             ], { loop: false }),
-            block: new Animation('block', [
+            blocking: new Animation('blocking', [
                 new AnimationFrame(0, 96, 32, 32, 100)
             ], { loop: false }),
-            roll: new Animation('roll', [
+            rolling: new Animation('rolling', [
                 new AnimationFrame(0, 128, 32, 32, 50),
                 new AnimationFrame(32, 128, 32, 32, 50),
                 new AnimationFrame(64, 128, 32, 32, 50),
@@ -1036,19 +1060,19 @@ export const AnimationPresets = {
                 new AnimationFrame(0, 160, 32, 32, 100),
                 new AnimationFrame(32, 160, 32, 32, 100)
             ], { loop: false }),
-            death: new Animation('death', [
+            dead: new Animation('dead', [
                 new AnimationFrame(0, 192, 32, 32, 100),
                 new AnimationFrame(32, 192, 32, 32, 100),
                 new AnimationFrame(64, 192, 32, 32, 100),
                 new AnimationFrame(96, 192, 32, 32, 200),
                 new AnimationFrame(128, 192, 32, 32, -1) // Final frame, holds indefinitely
             ], { loop: false }),
-            jump: new Animation('jump', [
+            jumping: new Animation('jumping', [
                 new AnimationFrame(0, 224, 32, 32, 100),
                 new AnimationFrame(32, 224, 32, 32, 100),
                 new AnimationFrame(64, 224, 32, 32, -1) // Hold in air
             ], { loop: false }),
-            doubleJump: new Animation('doubleJump', [
+            doubleJumping: new Animation('doubleJumping', [
                 new AnimationFrame(0, 256, 32, 32, 50),
                 new AnimationFrame(32, 256, 32, 32, 50),
                 new AnimationFrame(64, 256, 32, 32, 50),
@@ -1058,22 +1082,22 @@ export const AnimationPresets = {
                 new AnimationFrame(192, 256, 32, 32, 50),
                 new AnimationFrame(224, 256, 32, 32, -1) // Complete flip
             ], { loop: false }),
-            land: new Animation('land', [
+            landing: new Animation('landing', [
                 new AnimationFrame(0, 288, 32, 32, 50),
                 new AnimationFrame(32, 288, 32, 32, 50),
                 new AnimationFrame(64, 288, 32, 32, 100)
             ], { loop: false }),
-            wallSlide: new Animation('wallSlide', [
+            wallSliding: new Animation('wallSliding', [
                 new AnimationFrame(0, 320, 32, 32, 100),
                 new AnimationFrame(32, 320, 32, 32, 100)
             ], { loop: true }),
-            dash: new Animation('dash', [
+            dashing: new Animation('dashing', [
                 new AnimationFrame(0, 352, 32, 32, 50),
                 new AnimationFrame(32, 352, 32, 32, 50),
                 new AnimationFrame(64, 352, 32, 32, 100),
                 new AnimationFrame(96, 352, 32, 32, 50)
             ], { loop: false }),
-            chargeAttack: new Animation('chargeAttack', [
+            chargingAttack: new Animation('chargingAttack', [
                 new AnimationFrame(0, 384, 32, 32, 100),
                 new AnimationFrame(32, 384, 32, 32, 100),
                 new AnimationFrame(64, 384, 32, 32, 100),
