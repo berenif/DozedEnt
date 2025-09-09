@@ -70,7 +70,7 @@
     "build:animations": "rollup -c rollup.config.animations.js",
     "build:wolf": "rollup -c rollup.config.wolf.js",
     "build:docs": "node scripts/build-docs.js",
-    "build:all": "npm run build && npm run build:animations && npm run build:wolf && npm run wasm:build:all",
+    "build:all": "npm run build && npm run build:animations && npm run build:wolf",
     "build:check": "node scripts/pre-build-check.js",
     "validate:github-pages": "node scripts/validate-github-pages.js",
     "predeploy": "npm run build:docs && npm run validate:github-pages",
