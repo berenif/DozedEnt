@@ -1427,7 +1427,7 @@ void test_combat_rollback() {
 
 - [PLAYER_CHARACTERS.md](PLAYER_CHARACTERS.md) - Character-specific combat abilities
 - [GAMEPLAY_MECHANICS.md](GAMEPLAY_MECHANICS.md) - Core input and timing systems
-- [AGENTS.MD](../AGENTS.MD) - WASM-first architecture principles
+- [AGENTS.md](../AGENTS.md) - WASM-first architecture principles
 - [CORE_WORLD_SIMULATION.md](CORE_WORLD_SIMULATION.md) - Physics integration
 - [TESTING.md](../TESTING.md) - Testing frameworks and validation
 

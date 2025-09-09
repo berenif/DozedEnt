@@ -881,7 +881,7 @@ struct PerformanceMetrics {
 
 ## 📚 Related Documentation
 
-- [AGENTS.MD](../AGENTS.MD) - WASM-first architecture principles
+- [AGENTS.md](../AGENTS.md) - WASM-first architecture principles
 - [ENEMY_AI.md](../AI/ENEMY_AI.md) - AI behavior systems
 - [ANIMATION_SYSTEM_INDEX.md](../ANIMATION/ANIMATION_SYSTEM_INDEX.md) - Visual effects integration
 - [TESTING.md](../TESTING.md) - Simulation testing frameworks
