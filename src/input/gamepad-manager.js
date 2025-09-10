@@ -325,8 +325,18 @@ export class GamepadManager {
     
     const input = this.getProcessedInput();
     
-    // Update game state manager with gamepad input
-    if (this.gameStateManager.updateInput) {
+    // Update input manager with gamepad input
+    if (this.gameStateManager.inputState) {
+      // Update InputManager's input state directly
+      this.gameStateManager.inputState.direction.x = input.moveX;
+      this.gameStateManager.inputState.direction.y = input.moveY;
+      this.gameStateManager.inputState.lightAttack = input.lightAttack;
+      this.gameStateManager.inputState.heavyAttack = input.heavyAttack;
+      this.gameStateManager.inputState.special = input.special;
+      this.gameStateManager.inputState.roll = input.roll;
+      this.gameStateManager.inputState.block = input.block;
+    } else if (this.gameStateManager.updateInput) {
+      // Fallback to updateInput method if available
       this.gameStateManager.updateInput(input);
     }
   }
@@ -445,6 +455,13 @@ export class GamepadManager {
       activeGamepad: this.getActiveGamepadInfo(),
       config: this.config
     };
+  }
+  
+  /**
+   * Get number of connected gamepads
+   */
+  getConnectedCount() {
+    return this.gamepads.size;
   }
   
   /**
