@@ -1222,3 +1222,568 @@ export default {
 }
 
 
+
+// ---------------------------------------------
+// Enhanced system additions (merged)
+// ---------------------------------------------
+
+export const EnhancedWolfGait = Object.freeze({
+	...WolfGait,
+	Bound: 4,
+	Pace: 5,
+	Stalking: 6,
+	Pounce: 7
+})
+
+export const EnhancedWolfBehavior = Object.freeze({
+	Resting: 0,
+	Patrolling: 1,
+	Hunting: 2,
+	Stalking: 3,
+	Chasing: 4,
+	Attacking: 5,
+	Defending: 6,
+	Socializing: 7,
+	Marking: 8,
+	Howling: 9,
+	Investigating: 10,
+	Fleeing: 11,
+	Playing: 12,
+	Grooming: 13
+})
+
+export const WolfAnatomy = Object.freeze({
+	shoulderHeight: 1.0,
+	bodyLength: 1.6,
+	legLength: 0.75,
+	neckLength: 0.4,
+	headLength: 0.25,
+	tailLength: 0.5,
+	spineMaxBend: 0.3,
+	neckMaxPitch: 1.2,
+	neckMaxYaw: 1.0,
+	shoulderRange: 0.8,
+	hipRange: 0.9,
+	frontWeightRatio: 0.4,
+	hindWeightRatio: 0.6,
+	hindLegPower: 1.0,
+	frontLegPower: 0.6
+})
+
+export function createEnhancedWolfAnimComponent(overrides = {}) {
+	const baseComponent = createWolfAnimComponent(overrides)
+	return {
+		...baseComponent,
+		gaitTransitionSpeed: 0.5,
+		strideFrequency: 1.0,
+		strideLength: 1.0,
+		groundClearance: 0.05,
+		centerOfMass: { x: 0, y: 0.6, z: 0 },
+		spineSegments: 12,
+		neckSegments: 7,
+		tailSegments: 20,
+		momentum: { x: 0, y: 0, z: 0 },
+		angularMomentum: 0,
+		balancePoint: { x: 0, y: 0 },
+		weightDistribution: [0.25, 0.25, 0.25, 0.25],
+		behavior: EnhancedWolfBehavior.Resting,
+		behaviorTimer: 0,
+		lastBehavior: EnhancedWolfBehavior.Resting,
+		behaviorIntensity: 0,
+		packPosition: { x: 0, y: 0 },
+		packFormation: 'loose',
+		packRank: 0.5,
+		socialInteractionTarget: -1,
+		windDirection: { x: 0, y: 0 },
+		windStrength: 0,
+		surfaceType: 'grass',
+		surfaceFriction: 1.0,
+		surfaceSlope: 0,
+		scentStrength: 0,
+		markingUrge: 0,
+		lastMarkingTime: 0,
+		breathingRate: 1.0,
+		heartRate: 1.5,
+		fatigueLevel: 0,
+		temperature: 0.5,
+		furState: { raised: 0, wetness: 0, windRuffle: 0, movement: { x: 0, y: 0 } },
+		muscleTension: { neck: 0, shoulders: 0, back: 0, hips: 0, legs: [0, 0, 0, 0] },
+		individualSeed: Math.random() * 1000000,
+		personalityTraits: { confidence: 0.5, playfulness: 0.5, aggression: 0.5, curiosity: 0.5 },
+		...overrides
+	}
+}
+
+export function updateEnhancedWolfAnimation(comp, deltaTime, raycastGround, environmentData = {}) {
+	updateWolfAnimation(comp, deltaTime, raycastGround)
+	updateBehavioralState(comp, deltaTime, environmentData)
+	updateBiomechanics(comp, deltaTime)
+	updatePackDynamics(comp, deltaTime, environmentData)
+	updateEnvironmentalEffects(comp, deltaTime, environmentData)
+	updateProceduralVariations(comp, deltaTime)
+	updateAdvancedSecondaryMotion(comp, deltaTime)
+	return comp
+}
+
+function updateBehavioralState(comp, deltaTime, environmentData) {
+	comp.behaviorTimer += deltaTime
+	const speed = comp.speed
+	const alertness = comp.alertness
+	const emotional = comp.emotionalState
+	const fatigue = comp.fatigueLevel
+	let targetBehavior = comp.behavior
+	if (comp.stunTimer > 0) {
+		targetBehavior = EnhancedWolfBehavior.Defending
+	} else if (speed > 3.0 && alertness > 0.8) {
+		targetBehavior = EnhancedWolfBehavior.Chasing
+	} else if (speed > 0.1 && alertness > 0.6) {
+		targetBehavior = EnhancedWolfBehavior.Hunting
+	} else if (alertness > 0.8 && speed < 0.5) {
+		targetBehavior = EnhancedWolfBehavior.Stalking
+	} else if (speed < 0.1 && alertness < 0.3 && fatigue > 0.6) {
+		targetBehavior = EnhancedWolfBehavior.Resting
+	} else if (speed < 0.5) {
+		targetBehavior = EnhancedWolfBehavior.Patrolling
+	}
+	if (targetBehavior !== comp.behavior) {
+		if (comp.behaviorTimer > 0.5) {
+			comp.lastBehavior = comp.behavior
+			comp.behavior = targetBehavior
+			comp.behaviorTimer = 0
+			comp.behaviorIntensity = 0
+		}
+	}
+	const targetIntensity = getBehaviorIntensity(comp.behavior, comp)
+	comp.behaviorIntensity += (targetIntensity - comp.behaviorIntensity) * deltaTime * 3
+	applyBehavioralModifications(comp)
+}
+
+function getBehaviorIntensity(behavior, comp) {
+	switch (behavior) {
+		case EnhancedWolfBehavior.Resting: return 0.1
+		case EnhancedWolfBehavior.Patrolling: return 0.3
+		case EnhancedWolfBehavior.Hunting: return 0.7
+		case EnhancedWolfBehavior.Stalking: return 0.9
+		case EnhancedWolfBehavior.Chasing: return 1.0
+		case EnhancedWolfBehavior.Attacking: return 1.0
+		case EnhancedWolfBehavior.Defending: return 0.8
+		case EnhancedWolfBehavior.Howling: return 0.6
+		case EnhancedWolfBehavior.Playing: return 0.8
+		default: return 0.5
+	}
+}
+
+function applyBehavioralModifications(comp) {
+	const behavior = comp.behavior
+	const intensity = comp.behaviorIntensity
+	switch (behavior) {
+		case EnhancedWolfBehavior.Stalking:
+			comp.root.height *= 0.8
+			comp.gait = WolfGait.Prowl
+			comp.muscleTension.neck = intensity * 0.8
+			comp.furState.raised = intensity * 0.3
+			break
+		case EnhancedWolfBehavior.Hunting:
+			comp.headPitch = -0.2 * intensity
+			comp.muscleTension.shoulders = intensity * 0.6
+			comp.alertness = Math.max(comp.alertness, intensity * 0.8)
+			break
+		case EnhancedWolfBehavior.Chasing:
+			comp.gait = WolfGait.Gallop
+			comp.bodyStretch = 1 + intensity * 0.3
+			comp.muscleTension.hips = intensity * 0.9
+			break
+		case EnhancedWolfBehavior.Defending:
+			comp.furState.raised = intensity
+			comp.muscleTension.neck = intensity
+			comp.muscleTension.shoulders = intensity * 0.8
+			comp.root.height *= 1.1
+			break
+		case EnhancedWolfBehavior.Resting:
+			comp.root.height *= 0.6
+			comp.breathingRate = 0.5
+			comp.muscleTension.neck = 0.1
+			break
+		case EnhancedWolfBehavior.Playing:
+			if (Math.sin(comp.time * 2) > 0.5) {
+				comp.root.height *= 0.7
+				comp.headPitch = -0.3
+			}
+			break
+	}
+}
+
+function updateBiomechanics(comp, deltaTime) {
+	updateCenterOfMass(comp)
+	updateWeightDistribution(comp)
+	updateMomentum(comp, deltaTime)
+	updateSpineDynamics(comp, deltaTime)
+	updateMuscleTension(comp, deltaTime)
+	updateMetabolism(comp, deltaTime)
+}
+
+function updateCenterOfMass(comp) {
+	const anatomy = WolfAnatomy
+	let comX = 0
+	let comY = anatomy.shoulderHeight * 0.6
+	let comZ = 0
+	if (comp.behavior === EnhancedWolfBehavior.Resting) { comY *= 0.5 }
+	else if (comp.behavior === EnhancedWolfBehavior.Defending) { comY *= 1.1 }
+	const speedFactor = Math.min(comp.speed / 4.0, 1.0)
+	comX += speedFactor * 0.1
+	comX += comp.spineCurve * 0.2
+	comp.centerOfMass.x = comX
+	comp.centerOfMass.y = comY
+	comp.centerOfMass.z = comZ
+}
+
+function updateWeightDistribution(comp) {
+	const anatomy = WolfAnatomy
+	const com = comp.centerOfMass
+	let frontWeight = anatomy.frontWeightRatio
+	let hindWeight = anatomy.hindWeightRatio
+	const speedFactor = Math.min(comp.speed / 4.0, 1.0)
+	frontWeight -= speedFactor * 0.1
+	hindWeight += speedFactor * 0.1
+	if (comp.behavior === EnhancedWolfBehavior.Stalking) {
+		frontWeight -= 0.1
+		hindWeight += 0.1
+	} else if (comp.behavior === EnhancedWolfBehavior.Defending) {
+		frontWeight += 0.1
+		hindWeight -= 0.1
+	}
+	comp.weightDistribution[0] = frontWeight * 0.5
+	comp.weightDistribution[1] = frontWeight * 0.5
+	comp.weightDistribution[2] = hindWeight * 0.5
+	comp.weightDistribution[3] = hindWeight * 0.5
+	if (comp.turnRate > 0.1) {
+		const turnFactor = comp.turnRate * 0.1
+		comp.weightDistribution[1] += turnFactor
+		comp.weightDistribution[3] += turnFactor
+		comp.weightDistribution[0] -= turnFactor
+		comp.weightDistribution[2] -= turnFactor
+	} else if (comp.turnRate < -0.1) {
+		const turnFactor = -comp.turnRate * 0.1
+		comp.weightDistribution[0] += turnFactor
+		comp.weightDistribution[2] += turnFactor
+		comp.weightDistribution[1] -= turnFactor
+		comp.weightDistribution[3] -= turnFactor
+	}
+}
+
+function updateMomentum(comp, deltaTime) {
+	const mass = 50
+	comp.momentum.x = mass * comp.velocityWorld.x
+	comp.momentum.y = mass * comp.velocityWorld.y
+	comp.momentum.z = 0
+	comp.angularMomentum = mass * comp.turnRate * 0.5
+	comp.balancePoint.x = comp.centerOfMass.x + comp.momentum.x * 0.01
+	comp.balancePoint.y = comp.centerOfMass.y
+}
+
+function updateSpineDynamics(comp, deltaTime) {
+	const maxBend = WolfAnatomy.spineMaxBend
+	let targetCurve = 0
+	targetCurve += comp.turnRate * 0.3
+	if (comp.behavior === EnhancedWolfBehavior.Stalking) {
+		targetCurve += Math.sin(comp.time * 0.5) * 0.1
+	} else if (comp.behavior === EnhancedWolfBehavior.Playing) {
+		targetCurve += Math.sin(comp.time * 3) * 0.2
+	}
+	targetCurve = Math.max(-maxBend, Math.min(maxBend, targetCurve))
+	comp.spineCurve += (targetCurve - comp.spineCurve) * deltaTime * 5
+}
+
+function updateMuscleTension(comp, deltaTime) {
+	const baseTension = comp.behaviorIntensity * 0.5
+	const speedTension = Math.min(comp.speed / 4.0, 1.0) * 0.3
+	const alertTension = comp.alertness * 0.2
+	const totalTension = baseTension + speedTension + alertTension
+	comp.muscleTension.neck += (totalTension - comp.muscleTension.neck) * deltaTime * 3
+	comp.muscleTension.shoulders += (totalTension - comp.muscleTension.shoulders) * deltaTime * 3
+	comp.muscleTension.back += (totalTension * 0.8 - comp.muscleTension.back) * deltaTime * 3
+	comp.muscleTension.hips += (totalTension * 1.2 - comp.muscleTension.hips) * deltaTime * 3
+	for (let i = 0; i < 4; i++) {
+		const legLoad = comp.weightDistribution[i]
+		const targetTension = totalTension * legLoad
+		comp.muscleTension.legs[i] += (targetTension - comp.muscleTension.legs[i]) * deltaTime * 4
+	}
+}
+
+function updateMetabolism(comp, deltaTime) {
+	const targetBreathingRate = 0.5 + comp.speed * 0.3 + comp.behaviorIntensity * 0.5
+	comp.breathingRate += (targetBreathingRate - comp.breathingRate) * deltaTime * 2
+	const targetHeartRate = 1.0 + comp.speed * 0.8 + comp.behaviorIntensity * 0.7
+	comp.heartRate += (targetHeartRate - comp.heartRate) * deltaTime * 1.5
+	const fatigueRate = comp.speed * 0.1 + comp.behaviorIntensity * 0.05
+	const recoveryRate = comp.behavior === EnhancedWolfBehavior.Resting ? 0.2 : 0.05
+	comp.fatigueLevel = Math.max(0, Math.min(1, comp.fatigueLevel + (fatigueRate - recoveryRate) * deltaTime))
+	const heatGeneration = comp.speed * 0.2 + comp.behaviorIntensity * 0.1
+	const heatLoss = 0.3
+	comp.temperature = Math.max(0, Math.min(1, comp.temperature + (heatGeneration - heatLoss) * deltaTime))
+}
+
+function updatePackDynamics(comp, deltaTime, environmentData) {
+	if (environmentData.packData) {
+		updatePackFormationLocal(comp, environmentData.packData)
+		updatePackCoordinationLocal(comp, environmentData.packData)
+		updateSocialBehavior(comp, environmentData.packData, deltaTime)
+	}
+}
+
+function updatePackFormationLocal(comp, packData) {
+	const formation = packData.formation || 'loose'
+	const myIndex = packData.myIndex || 0
+	const packSize = packData.size || 1
+	switch (formation) {
+		case 'line':
+			comp.packPosition.x = (myIndex - packSize / 2) * 2
+			comp.packPosition.y = 0
+			break
+		case 'circle': {
+			const angle = (myIndex / packSize) * Math.PI * 2
+			comp.packPosition.x = Math.cos(angle) * 3
+			comp.packPosition.y = Math.sin(angle) * 3
+			break
+		}
+		case 'tight':
+			comp.packPosition.x = (Math.random() - 0.5) * 2
+			comp.packPosition.y = (Math.random() - 0.5) * 2
+			break
+		default:
+			comp.packPosition.x = (Math.random() - 0.5) * 5
+			comp.packPosition.y = (Math.random() - 0.5) * 5
+	}
+}
+
+function updatePackCoordinationLocal(comp, packData) {
+	if (packData.leader && comp.packRank < 0.8) {
+		const leader = packData.leader
+		const syncStrength = (1 - comp.packRank) * 0.3
+		if (leader.gait !== comp.gait) { comp.gait = leader.gait }
+		const phaseOffset = comp.packRank * Math.PI * 0.5
+		comp.packSyncPhase = leader.phase?.[0] + phaseOffset
+	}
+}
+
+function updateSocialBehavior(comp, packData, deltaTime) {
+	if (comp.packRank > 0.7) { comp.markingUrge += deltaTime * 0.1 } else { comp.markingUrge += deltaTime * 0.02 }
+	if (comp.markingUrge > 1.0 && comp.speed < 0.1) {
+		comp.behavior = EnhancedWolfBehavior.Marking
+		comp.markingUrge = 0
+		comp.lastMarkingTime = comp.time
+	}
+	if (packData.nearbyWolves) {
+		for (let other of packData.nearbyWolves) {
+			const distance = Math.sqrt((other.position.x - comp.targetPos.x)**2 + (other.position.y - comp.targetPos.y)**2)
+			if (distance < 2.0 && Math.random() < 0.01) {
+				comp.behavior = EnhancedWolfBehavior.Socializing
+				comp.socialInteractionTarget = other.id
+			}
+		}
+	}
+}
+
+function updateEnvironmentalEffects(comp, deltaTime, environmentData) {
+	updateWindEffects(comp, environmentData.wind || {})
+	updateSurfaceEffects(comp, environmentData.surface || {})
+	updateWeatherEffects(comp, environmentData.weather || {})
+	updateScentTracking(comp, environmentData.scents || [])
+}
+
+function updateWindEffects(comp, windData) {
+	comp.windDirection.x = windData.x || 0
+	comp.windDirection.y = windData.y || 0
+	comp.windStrength = windData.strength || 0
+	comp.furState.windRuffle = comp.windStrength * 0.5
+	comp.furState.movement.x = comp.windDirection.x * comp.windStrength
+	comp.furState.movement.y = comp.windDirection.y * comp.windStrength
+	comp.balancePoint.x += comp.windDirection.x * comp.windStrength * 0.1
+}
+
+function updateSurfaceEffects(comp, surfaceData) {
+	comp.surfaceType = surfaceData.type || 'grass'
+	comp.surfaceFriction = surfaceData.friction || 1.0
+	comp.surfaceSlope = surfaceData.slope || 0
+	switch (comp.surfaceType) {
+		case 'ice':
+			comp.strideLength *= 0.8
+			comp.groundClearance *= 0.5
+			break
+		case 'mud':
+			comp.strideFrequency *= 0.9
+			comp.groundClearance *= 1.2
+			break
+		case 'rock':
+			comp.groundClearance *= 1.3
+			break
+	}
+	if (comp.surfaceSlope > 0.1) {
+		comp.root.pitch = -comp.surfaceSlope * 0.5
+		comp.headPitch += comp.surfaceSlope * 0.3
+	} else if (comp.surfaceSlope < -0.1) {
+		comp.root.pitch = -comp.surfaceSlope * 0.3
+		comp.headPitch += comp.surfaceSlope * 0.2
+	}
+}
+
+function updateWeatherEffects(comp, weatherData) {
+	const rain = weatherData.rain || 0
+	const snow = weatherData.snow || 0
+	const temperature = weatherData.temperature || 0.5
+	comp.furState.wetness = rain
+	if (temperature < 0.3) {
+		comp.behaviorIntensity *= 1.1
+		comp.furState.raised += 0.2
+	} else if (temperature > 0.7) {
+		comp.breathingRate *= 1.3
+		comp.behaviorIntensity *= 0.9
+	}
+	if (snow > 0.3) {
+		comp.groundClearance *= 1.5
+		comp.strideLength *= 0.9
+	}
+}
+
+function updateScentTracking(comp, scents) {
+	if (!scents.length) return
+	let strongestScent = null
+	let maxStrength = 0
+	for (let scent of scents) {
+		if (scent.strength > maxStrength) { maxStrength = scent.strength; strongestScent = scent }
+	}
+	if (strongestScent && maxStrength > 0.3) {
+		comp.scentStrength = maxStrength
+		const dx = strongestScent.position.x - comp.targetPos.x
+		const dy = strongestScent.position.y - comp.targetPos.y
+		const angle = Math.atan2(dy, dx)
+		comp.headYaw += (angle - comp.headYaw) * 0.1
+		comp.headPitch = -0.1
+		if (strongestScent.type === 'prey') {
+			comp.behavior = EnhancedWolfBehavior.Hunting
+		} else if (strongestScent.type === 'territory') {
+			comp.behavior = EnhancedWolfBehavior.Investigating
+		}
+	}
+}
+
+function updateProceduralVariations(comp, deltaTime) {
+	const traits = comp.personalityTraits
+	const seed = comp.individualSeed
+	if (traits.confidence > 0.7) {
+		comp.root.height *= 1.05
+		comp.headPitch += 0.05
+	} else if (traits.confidence < 0.3) {
+		comp.root.height *= 0.95
+		comp.headPitch -= 0.05
+	}
+	if (traits.playfulness > 0.7 && comp.behavior === EnhancedWolfBehavior.Resting) {
+		if (Math.sin(comp.time + seed) > 0.8) { comp.behavior = EnhancedWolfBehavior.Playing }
+	}
+	if (traits.curiosity > 0.7) {
+		comp.headYaw += Math.sin(comp.time * 2 + seed) * 0.1
+	}
+	if (traits.aggression > 0.7 && comp.behaviorIntensity > 0.6) {
+		comp.furState.raised = Math.max(comp.furState.raised, traits.aggression * 0.5)
+	}
+}
+
+function updateAdvancedSecondaryMotion(comp, deltaTime) {
+	updateAdvancedTailPhysics(comp, deltaTime)
+	updateAdvancedEarDynamics(comp, deltaTime)
+	updateAdvancedBreathing(comp, deltaTime)
+	updateAdvancedFurDynamics(comp, deltaTime)
+}
+
+function updateAdvancedTailPhysics(comp, deltaTime) {
+	const segments = comp.tailSegments
+	const windEffect = comp.windStrength * 0.2
+	const emotionalEffect = comp.behaviorIntensity * 0.3
+	let baseTailAngle = 0
+	switch (comp.behavior) {
+		case EnhancedWolfBehavior.Defending: baseTailAngle = 0.5; break
+		case EnhancedWolfBehavior.Resting: baseTailAngle = -0.3; break
+		case EnhancedWolfBehavior.Stalking: baseTailAngle = -0.1; break
+		case EnhancedWolfBehavior.Playing: baseTailAngle = 0.3 + Math.sin(comp.time * 3) * 0.2; break
+		default: baseTailAngle = emotionalEffect * 0.2
+	}
+	comp.tailAngle = baseTailAngle + windEffect * Math.sin(comp.time * 2)
+}
+
+function updateAdvancedEarDynamics(comp, deltaTime) {
+	const alertness = comp.alertness
+	const behavior = comp.behavior
+	const windEffect = comp.windStrength * 0.1
+	let baseEarRotation = alertness * 0.3
+	if (behavior === EnhancedWolfBehavior.Defending) baseEarRotation = 0.5
+	else if (behavior === EnhancedWolfBehavior.Resting) baseEarRotation = -0.2
+	else if (behavior === EnhancedWolfBehavior.Stalking) baseEarRotation = 0.4
+	const earTwitch = Math.sin(comp.time * 8 + comp.individualSeed) * 0.05
+	comp.earLeftYaw = baseEarRotation + earTwitch + windEffect
+	comp.earRightYaw = baseEarRotation - earTwitch + windEffect
+}
+
+function updateAdvancedBreathing(comp, deltaTime) {
+	const breathPhase = (comp.time * comp.breathingRate) % 1
+	const breathDepth = 0.02 + comp.fatigueLevel * 0.03 + comp.temperature * 0.02
+	let breathValue = 0
+	if (breathPhase < 0.4) {
+		breathValue = Math.sin(breathPhase * Math.PI / 0.4) * breathDepth
+	} else if (breathPhase < 0.6) {
+		breathValue = breathDepth
+	} else {
+		breathValue = breathDepth * (1 - Math.sin((breathPhase - 0.6) * Math.PI / 0.4))
+	}
+	comp.breathing = breathValue
+	if (comp.temperature > 0.7 || comp.fatigueLevel > 0.8) {
+		comp.jawOpen = Math.max(comp.jawOpen, breathValue * 2)
+	}
+}
+
+function updateAdvancedFurDynamics(comp, deltaTime) {
+	const movement = comp.speed
+	const wind = comp.windStrength
+	const emotional = comp.behaviorIntensity
+	comp.furState.movement.x = -comp.velocityWorld.x * 0.1
+	comp.furState.movement.y = -comp.velocityWorld.y * 0.1
+	comp.furState.movement.x += comp.windDirection.x * wind * 0.3
+	comp.furState.movement.y += comp.windDirection.y * wind * 0.3
+	if (comp.behavior === EnhancedWolfBehavior.Defending || comp.behavior === EnhancedWolfBehavior.Attacking) {
+		comp.furState.raised = Math.max(comp.furState.raised, emotional * 0.8)
+	} else {
+		comp.furState.raised *= 0.95
+	}
+	if (comp.furState.wetness > 0.3) {
+		comp.furState.movement.x *= 0.5
+		comp.furState.movement.y *= 0.5
+	}
+}
+
+export function getWolfBehaviorName(behavior) {
+	const names = {
+		[EnhancedWolfBehavior.Resting]: 'Resting',
+		[EnhancedWolfBehavior.Patrolling]: 'Patrolling',
+		[EnhancedWolfBehavior.Hunting]: 'Hunting',
+		[EnhancedWolfBehavior.Stalking]: 'Stalking',
+		[EnhancedWolfBehavior.Chasing]: 'Chasing',
+		[EnhancedWolfBehavior.Attacking]: 'Attacking',
+		[EnhancedWolfBehavior.Defending]: 'Defending',
+		[EnhancedWolfBehavior.Socializing]: 'Socializing',
+		[EnhancedWolfBehavior.Marking]: 'Territory Marking',
+		[EnhancedWolfBehavior.Howling]: 'Howling',
+		[EnhancedWolfBehavior.Investigating]: 'Investigating',
+		[EnhancedWolfBehavior.Fleeing]: 'Fleeing',
+		[EnhancedWolfBehavior.Playing]: 'Playing',
+		[EnhancedWolfBehavior.Grooming]: 'Grooming'
+	}
+	return names[behavior] || 'Unknown'
+}
+
+export function createRealisticWolfPersonality(seed = Math.random()) {
+	const confidence = 0.3 + seed * 0.4
+	const playfulness = Math.max(0, Math.min(1, 0.7 - confidence * 0.3 + (seed * 0.4 - 0.2)))
+	const aggression = Math.max(0, Math.min(1, confidence * 0.6 + (seed * 0.6 - 0.3)))
+	const curiosity = 0.4 + seed * 0.4
+	return { confidence, playfulness, aggression, curiosity }
+}
+
