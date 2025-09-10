@@ -8,7 +8,7 @@ import { setGlobalSeed } from './src/utils/rng.js'
 import GameRenderer from './src/utils/game-renderer.js'
 import CameraEffects from './src/utils/camera-effects.js'
 import { WolfCharacter } from './src/gameentity/wolf-character.js'
-import { EnhancedWolfAISystem } from './src/ai/wolf-ai-enhanced.js'
+import { EnhancedWolfAISystem } from './src/ai/wolf-ai.js'
 import AnimatedPlayer from './src/animation/player-animator.js'
 
 // New modular imports
@@ -20,7 +20,7 @@ import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
 import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
 import { CombatFeedback } from './src/ui/combat-feedback.js'
 import { InputManager } from './src/input/input-manager.js'
-import { EnhancedMobileControls } from './src/input/enhanced-mobile-controls.js'
+import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
 /**
  * Main Game Application Class

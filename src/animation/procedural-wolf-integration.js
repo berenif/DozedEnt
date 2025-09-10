@@ -9,7 +9,7 @@ import {
     WolfAnatomy,
     getWolfBehaviorName,
     createRealisticWolfPersonality
-} from './enhanced-wolf-procedural.js'
+} from './wolf-procedural.js'
 
 import RealisticWolfPhysics, { WolfPhysicsConstants } from './realistic-wolf-physics.js'
 import EnhancedWolfBody from './enhanced-wolf-body.js'

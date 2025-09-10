@@ -2,7 +2,7 @@
 // Implements biomechanically accurate physics simulation for wolves
 // Integrates with WASM animation data and enhanced procedural system
 
-import { WolfAnatomy } from './enhanced-wolf-procedural.js'
+import { WolfAnatomy } from './wolf-procedural.js'
 
 // Physical constants based on real wolf biomechanics
 export const WolfPhysicsConstants = Object.freeze({
