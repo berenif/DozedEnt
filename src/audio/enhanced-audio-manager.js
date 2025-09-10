@@ -783,6 +783,129 @@ export class EnhancedAudioManager {
   }
   
   /**
+   * Generate procedural metallic sound (for blocks/parries)
+   */
+  generateMetallicSound() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 0.15;
+    const buffer = this.audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.exp(-t * 20);
+      // Metallic harmonics
+      const fundamental = 800;
+      const harmonic1 = Math.sin(2 * Math.PI * fundamental * t) * 0.5;
+      const harmonic2 = Math.sin(2 * Math.PI * fundamental * 2.7 * t) * 0.3;
+      const harmonic3 = Math.sin(2 * Math.PI * fundamental * 5.4 * t) * 0.2;
+      const noise = (Math.random() - 0.5) * 0.1 * Math.exp(-t * 50);
+      data[i] = (harmonic1 + harmonic2 + harmonic3 + noise) * envelope * 0.4;
+    }
+    
+    return buffer;
+  }
+  
+  /**
+   * Generate procedural footstep sound
+   */
+  generateFootstepSound() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 0.1;
+    const buffer = this.audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.exp(-t * 30);
+      // Low frequency thud
+      const thud = Math.sin(2 * Math.PI * 60 * t) * Math.exp(-t * 50);
+      // High frequency crunch
+      const crunch = (Math.random() - 0.5) * Math.exp(-t * 100);
+      data[i] = (thud * 0.7 + crunch * 0.3) * envelope * 0.3;
+    }
+    
+    return buffer;
+  }
+  
+  /**
+   * Generate procedural growl sound
+   */
+  generateGrowlSound() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 1.0;
+    const buffer = this.audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.sin(Math.PI * t / duration) * 0.8;
+      // Low rumbling frequency with modulation
+      const baseFreq = 80 + Math.sin(t * 8) * 20;
+      const rumble = Math.sin(2 * Math.PI * baseFreq * t);
+      // Add some roughness
+      const roughness = Math.sin(2 * Math.PI * baseFreq * 3 * t) * 0.3;
+      const noise = (Math.random() - 0.5) * 0.1;
+      data[i] = (rumble + roughness + noise) * envelope * 0.25;
+    }
+    
+    return buffer;
+  }
+  
+  /**
+   * Generate procedural forest ambient sound
+   */
+  generateForestAmbient() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 3.0;
+    const buffer = this.audioContext.createBuffer(2, sampleRate * duration, sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+      const data = buffer.getChannelData(channel);
+      
+      for (let i = 0; i < data.length; i++) {
+        const t = i / sampleRate;
+        
+        // Wind simulation
+        const windFreq = 0.5 + Math.sin(t * 0.1) * 0.2;
+        const wind = Math.sin(2 * Math.PI * windFreq * t) * 0.05;
+        
+        // Bird chirps (random occasional)
+        let chirp = 0;
+        if (Math.random() < 0.001) {
+          const chirpFreq = 2000 + Math.random() * 1000;
+          chirp = Math.sin(2 * Math.PI * chirpFreq * t) * Math.exp(-((t % 0.1) * 20)) * 0.1;
+        }
+        
+        // Rustling leaves (filtered noise)
+        const rustle = (Math.random() - 0.5) * 0.02 * (1 + Math.sin(t * 2) * 0.5);
+        
+        // Combine all elements
+        data[i] = wind + chirp + rustle;
+      }
+    }
+    
+    return buffer;
+  }
+  
+  /**
+   * Generate a simple fallback tone
+   */
+  generateFallbackTone(frequency = 440, duration = 0.5) {
+    const sampleRate = this.audioContext.sampleRate;
+    const buffer = this.audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < data.length; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.exp(-t * 3);
+      data[i] = Math.sin(2 * Math.PI * frequency * t) * envelope * 0.2;
+    }
+    
+    return buffer;
+  }
+  
+  /**
    * Get emotional pitch modulation
    */
   getEmotionalPitch(emotion) {
