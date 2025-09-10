@@ -336,10 +336,11 @@ export class WasmManager {
   getPlayerPosition() {
     if (!this.isLoaded) return { x: 0, y: 0 };
     
-    return {
-      x: typeof this.exports.get_x === 'function' ? this.exports.get_x() : 0,
-      y: typeof this.exports.get_y === 'function' ? this.exports.get_y() : 0
-    };
+    const rawX = typeof this.exports.get_x === 'function' ? this.exports.get_x() : 0.5;
+    const rawY = typeof this.exports.get_y === 'function' ? this.exports.get_y() : 0.5;
+    const x = Number.isFinite(rawX) ? Math.max(0, Math.min(1, rawX)) : 0.5;
+    const y = Number.isFinite(rawY) ? Math.max(0, Math.min(1, rawY)) : 0.5;
+    return { x, y };
   }
 
   /**
@@ -348,7 +349,8 @@ export class WasmManager {
    */
   getX() {
     if (!this.isLoaded || typeof this.exports.get_x !== 'function') return 0.5;
-    return this.exports.get_x();
+    const v = this.exports.get_x();
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5;
   }
 
   /**
@@ -357,7 +359,8 @@ export class WasmManager {
    */
   getY() {
     if (!this.isLoaded || typeof this.exports.get_y !== 'function') return 0.5;
-    return this.exports.get_y();
+    const v = this.exports.get_y();
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5;
   }
 
   /**

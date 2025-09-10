@@ -206,8 +206,11 @@ export class AnimatedPlayer {
         // Assuming 800x600 canvas for now. Convert WASM's 0-1 range to world coordinates.
         // The game-renderer.js is responsible for this scaling when passing player position to render.
         // For now, we'll directly set x and y, and let the renderer handle scaling.
-        this.x = globalThis.wasmExports?.get_x?.() // WASM provides normalized coordinates
-        this.y = globalThis.wasmExports?.get_y?.() // WASM provides normalized coordinates
+        // WASM provides normalized coordinates; guard against NaN/Infinity
+        const rx = globalThis.wasmExports?.get_x?.()
+        const ry = globalThis.wasmExports?.get_y?.()
+        this.x = (typeof rx === 'number' && Number.isFinite(rx)) ? rx : 0.5
+        this.y = (typeof ry === 'number' && Number.isFinite(ry)) ? ry : 0.5
 
         this.isGrounded = (globalThis.wasmExports?.get_is_grounded?.() === 1);
         this.jumpCount = globalThis.wasmExports?.get_jump_count?.();
@@ -610,7 +613,7 @@ export class AnimatedPlayer {
         const camX = camera?.x || 0
         const camY = camera?.y || 0
         if (globalThis.gameRenderer && typeof globalThis.gameRenderer.wasmToWorld === 'function') {
-            const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0, this.y || 0)
+            const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0.5, this.y || 0.5)
             screenX = pos.x - camX
             screenY = pos.y - camY
         } else {
