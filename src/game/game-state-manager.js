@@ -380,10 +380,12 @@ export class GameStateManager {
   updateMovement(x, y) {
     if (!this.wasmManager) return;
 
-    // Send movement to WASM
-    if (typeof this.wasmManager.setPlayerInput === 'function') {
-      this.wasmManager.setPlayerInput(x, y, 0, 0, 0, 0, 0, 0);
-    }
+    // Store movement input for the next WASM update cycle
+    this.playerState.direction = { x, y };
+    
+    // The movement will be processed in the next WASM update cycle
+    // via the InputManager's sendInputToWasm method
+    console.log('Movement input updated:', { x, y });
   }
 
   /**
