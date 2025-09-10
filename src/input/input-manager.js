@@ -508,9 +508,9 @@ export class InputManager {
      * Update gamepad input
      */
     updateGamepadInput() {
-        // Enhanced gamepad input is handled by GamepadManager
+        // Enhanced gamepad input is handled by GamepadManager's internal polling
+        // No need to manually update as it has its own requestAnimationFrame loop
         if (this.gamepadManager) {
-            this.gamepadManager.update();
             return;
         }
         
