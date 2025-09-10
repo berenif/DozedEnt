@@ -612,14 +612,29 @@ class GameApplication {
    * @private
    */
   spawnPlayer() {
-    if (!this.animatedPlayer) return;
+    if (!this.animatedPlayer) {
+      console.error('Cannot spawn player - animatedPlayer is null');
+      return;
+    }
 
-    const posX = this.WORLD_WIDTH / 2;
-    const posY = this.WORLD_HEIGHT / 2;
-    
-    this.animatedPlayer.x = posX;
-    this.animatedPlayer.y = posY;
-    console.log(`Player spawned at position: (${posX.toFixed(3)}, ${posY.toFixed(3)})`);
+    // Get initial position from WASM if available
+    if (this.wasmManager && this.wasmManager.isLoaded) {
+      const wasmPos = this.wasmManager.getPlayerPosition();
+      const posX = wasmPos.x * this.WORLD_WIDTH;
+      const posY = wasmPos.y * this.WORLD_HEIGHT;
+      
+      this.animatedPlayer.x = posX;
+      this.animatedPlayer.y = posY;
+      console.log(`Player spawned at WASM position: (${posX.toFixed(0)}, ${posY.toFixed(0)}) from normalized (${wasmPos.x.toFixed(3)}, ${wasmPos.y.toFixed(3)})`);
+    } else {
+      // Fallback to center of world
+      const posX = this.WORLD_WIDTH / 2;
+      const posY = this.WORLD_HEIGHT / 2;
+      
+      this.animatedPlayer.x = posX;
+      this.animatedPlayer.y = posY;
+      console.log(`Player spawned at center: (${posX.toFixed(0)}, ${posY.toFixed(0)})`);
+    }
   }
 
   /**
@@ -699,6 +714,21 @@ class GameApplication {
       // Update game state
       this.gameStateManager.update(deltaTime, inputState);
 
+      // Sync player position from WASM to animated player
+      if (this.animatedPlayer && this.gameStateManager.playerState) {
+        const oldX = this.animatedPlayer.x;
+        const oldY = this.animatedPlayer.y;
+        this.animatedPlayer.x = this.gameStateManager.playerState.position.x;
+        this.animatedPlayer.y = this.gameStateManager.playerState.position.y;
+        
+        // Log significant movement
+        const dx = this.animatedPlayer.x - oldX;
+        const dy = this.animatedPlayer.y - oldY;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+          console.log(`Player moved: (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) -> (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})`);
+        }
+      }
+
       // Update wolf AI
       if (this.wolfAISystem && this.animatedPlayer) {
         this.wolfAISystem.update(deltaTime, this.animatedPlayer, this.wolfCharacters);
@@ -741,12 +771,19 @@ class GameApplication {
       const ctx = this.gameRenderer.ctx;
       ctx.clearRect(0, 0, this.VIRTUAL_WIDTH, this.VIRTUAL_HEIGHT);
 
-      // Get camera state
+      // Update camera to follow player
+      if (this.animatedPlayer) {
+        // Update game renderer's player position for camera tracking
+        this.gameRenderer.player.x = this.animatedPlayer.x;
+        this.gameRenderer.player.y = this.animatedPlayer.y;
+        
+        // Apply camera effects to follow player
+        this.cameraEffects.followTarget(this.animatedPlayer.x, this.animatedPlayer.y);
+      }
+
+      // Apply camera shake if needed
       const cameraState = this.gameStateManager.cameraState;
-      
-      // Apply camera effects
       this.cameraEffects.shake(cameraState.shakeStrength);
-      this.cameraEffects.followTarget(cameraState.targetPosition.x, cameraState.targetPosition.y);
 
       // Render world
       this.gameRenderer.render();
