@@ -4,8 +4,9 @@
  */
 
 export class EnhancedMobileControls {
-  constructor(gameStateManager) {
+  constructor(gameStateManager, inputManager = null) {
     this.gameStateManager = gameStateManager;
+    this.inputManager = inputManager;
     this.touchPoints = new Map();
     this.gestureState = {
       swipeThreshold: 50,
@@ -660,6 +661,13 @@ export class EnhancedMobileControls {
    * Update movement input
    */
   updateMovementInput(x, y) {
+    // Update InputManager's input state (this is what gets sent to WASM)
+    if (this.inputManager && this.inputManager.inputState) {
+      this.inputManager.inputState.direction.x = x;
+      this.inputManager.inputState.direction.y = y;
+    }
+    
+    // Also update GameStateManager for consistency
     if (this.gameStateManager && this.gameStateManager.updateMovement) {
       this.gameStateManager.updateMovement(x, y);
     }
@@ -669,6 +677,28 @@ export class EnhancedMobileControls {
    * Trigger game action
    */
   triggerGameAction(action, pressed) {
+    // Update InputManager's input state for actions
+    if (this.inputManager && this.inputManager.inputState) {
+      switch (action) {
+        case 'lightAttack':
+          this.inputManager.inputState.lightAttack = pressed;
+          break;
+        case 'heavyAttack':
+          this.inputManager.inputState.heavyAttack = pressed;
+          break;
+        case 'special':
+          this.inputManager.inputState.special = pressed;
+          break;
+        case 'block':
+          this.inputManager.inputState.block = pressed;
+          break;
+        case 'roll':
+          this.inputManager.inputState.roll = pressed;
+          break;
+      }
+    }
+    
+    // Also call GameStateManager methods for consistency
     if (!this.gameStateManager) return;
     
     switch (action) {

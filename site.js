@@ -191,7 +191,7 @@ class GameApplication {
 
       // Initialize enhanced mobile controls
       console.log('🔧 Initializing enhanced mobile controls...');
-      this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
+      this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager, this.inputManager);
       console.log('✅ Enhanced mobile controls initialized');
 
       // Setup event listeners
