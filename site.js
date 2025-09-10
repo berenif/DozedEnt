@@ -289,7 +289,7 @@ class GameApplication {
     const overlayStartBtn = document.getElementById('overlay-start');
     if (overlayStartBtn) {
       overlayStartBtn.addEventListener('click', () => {
-        this.handleStartButtonClick();
+        this.handleOrientationOverlayStart();
       });
     }
 
@@ -333,6 +333,40 @@ class GameApplication {
 
     // Audio manager is initialized via setupEventListeners() call
     // No event listeners needed as AudioManager handles initialization internally
+
+    // Handle orientation changes on mobile
+    window.addEventListener('orientationchange', () => {
+      this.handleOrientationChange();
+    });
+
+    // Also listen for resize events as a fallback
+    window.addEventListener('resize', () => {
+      // Only handle resize for mobile devices
+      if (this.detectMobileDevice()) {
+        this.handleOrientationChange();
+      }
+    });
+  }
+
+  /**
+   * Handle device orientation change
+   * @private
+   */
+  handleOrientationChange() {
+    if (!this.detectMobileDevice()) return;
+
+    const orientationOverlay = document.getElementById('orientation-overlay');
+    if (!orientationOverlay) return;
+
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    if (isPortrait && this.gameStateManager?.isGameRunning) {
+      console.log('📱 Device rotated to portrait - showing rotation prompt');
+      orientationOverlay.style.display = 'flex';
+    } else if (!isPortrait) {
+      console.log('📱 Device rotated to landscape - hiding overlay');
+      orientationOverlay.style.display = 'none';
+    }
   }
 
   /**
@@ -414,12 +448,71 @@ class GameApplication {
 
     console.log('✅ Game is initialized, proceeding with startup...');
 
+    // Check if we're on desktop or mobile
+    const isDesktop = !this.detectMobileDevice();
+    console.log(`📱 Device type: ${isDesktop ? 'Desktop' : 'Mobile'}`);
+
     // Hide loading screen
     console.log('🔧 Hiding loading screen...');
     this.hideLoadingScreen();
     
-    // Start the actual game
-    console.log('🎮 Starting game...');
+    // On desktop, start the game directly
+    // On mobile, the orientation overlay will handle the game start
+    if (isDesktop) {
+      console.log('🖥️ Desktop detected - starting game directly');
+      this.startGame();
+    } else {
+      console.log('📱 Mobile detected - checking orientation');
+      this.checkOrientationAndStart();
+    }
+  }
+
+  /**
+   * Detect if running on mobile device
+   * @returns {boolean} True if mobile device
+   * @private
+   */
+  detectMobileDevice() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    return isMobile;
+  }
+
+  /**
+   * Check orientation and start game on mobile
+   * @private
+   */
+  checkOrientationAndStart() {
+    const orientationOverlay = document.getElementById('orientation-overlay');
+    if (!orientationOverlay) {
+      console.log('⚠️ Orientation overlay not found - starting game directly');
+      this.startGame();
+      return;
+    }
+
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    if (isPortrait) {
+      console.log('📱 Portrait orientation detected - showing rotation prompt');
+      orientationOverlay.style.display = 'flex';
+    } else {
+      console.log('📱 Landscape orientation detected - starting game');
+      orientationOverlay.style.display = 'none';
+      this.startGame();
+    }
+  }
+
+  /**
+   * Handle orientation overlay start button click
+   * @private
+   */
+  handleOrientationOverlayStart() {
+    console.log('📱 Orientation overlay start button clicked');
+    const orientationOverlay = document.getElementById('orientation-overlay');
+    if (orientationOverlay) {
+      orientationOverlay.style.display = 'none';
+    }
     this.startGame();
   }
 
