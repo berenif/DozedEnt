@@ -378,11 +378,11 @@ export class GameStateManager {
    * @param {number} y - Movement direction Y (-1 to 1)
    */
   updateMovement(x, y) {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager || !this.wasmManager.exports) return;
 
-    // Send movement to WASM
-    if (typeof this.wasmManager.setPlayerInput === 'function') {
-      this.wasmManager.setPlayerInput(x, y, 0, 0, 0, 0, 0, 0);
+    // Send movement to WASM via the correct API
+    if (typeof this.wasmManager.exports.set_player_input === 'function') {
+      this.wasmManager.exports.set_player_input(x, y, 0, 0, 0, 0, 0, 0);
     }
   }
 
