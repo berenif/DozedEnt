@@ -19,6 +19,8 @@ import { GameStateManager } from './src/game/game-state-manager.js'
 import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
 import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
 import { CombatFeedback } from './src/ui/combat-feedback.js'
+import { InputManager } from './src/input/input-manager.js'
+import { EnhancedMobileControls } from './src/input/enhanced-mobile-controls.js'
 
 /**
  * Main Game Application Class
@@ -44,6 +46,8 @@ class GameApplication {
     this.roomManager = new RoomManager();
     this.audioManager = new AudioManager();
     this.gameStateManager = new GameStateManager();
+    this.inputManager = null;
+    this.enhancedMobileControls = null;
     this.uiEventHandlers = null;
     this.roguelikeHUD = null;
     this.combatFeedback = null;
@@ -179,6 +183,16 @@ class GameApplication {
       console.log('🔧 Initializing game state manager...');
       this.gameStateManager.initialize(this.wasmManager);
       console.log('✅ Game state manager initialized');
+
+      // Initialize input manager
+      console.log('🔧 Initializing input manager...');
+      this.inputManager = new InputManager(this.wasmManager);
+      console.log('✅ Input manager initialized');
+
+      // Initialize enhanced mobile controls
+      console.log('🔧 Initializing enhanced mobile controls...');
+      this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
+      console.log('✅ Enhanced mobile controls initialized');
 
       // Setup event listeners
       console.log('🔧 Setting up event listeners...');
@@ -679,8 +693,8 @@ class GameApplication {
     this.lastFrameTime = currentTime;
 
     try {
-      // Get input state from UI handlers (with null check)
-      const inputState = this.uiEventHandlers?.getInputState() || {};
+      // Get input state from input manager (with null check)
+      const inputState = this.inputManager?.getInputState() || {};
 
       // Update game state
       this.gameStateManager.update(deltaTime, inputState);
@@ -1265,6 +1279,14 @@ class GameApplication {
    */
   destroy() {
     this.stopGameLoop();
+    
+    if (this.inputManager) {
+      this.inputManager.destroy();
+    }
+    
+    if (this.enhancedMobileControls) {
+      this.enhancedMobileControls.destroy();
+    }
     
     if (this.uiEventHandlers) {
       this.uiEventHandlers.destroy();

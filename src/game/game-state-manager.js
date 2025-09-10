@@ -373,6 +373,76 @@ export class GameStateManager {
   }
 
   /**
+   * Update player movement input
+   * @param {number} x - Movement direction X (-1 to 1)
+   * @param {number} y - Movement direction Y (-1 to 1)
+   */
+  updateMovement(x, y) {
+    if (!this.wasmManager) return;
+
+    // Send movement to WASM
+    if (typeof this.wasmManager.setPlayerInput === 'function') {
+      this.wasmManager.setPlayerInput(x, y, 0, 0, 0, 0, 0, 0);
+    }
+  }
+
+  /**
+   * Handle special action (long press)
+   * @returns {boolean} Success status
+   */
+  specialAction() {
+    if (!this.wasmManager) return false;
+    
+    // For now, treat as special attack
+    return this.specialAttack();
+  }
+
+  /**
+   * Handle quick dodge (double tap)
+   * @returns {boolean} Success status
+   */
+  quickDodge() {
+    if (!this.wasmManager) return false;
+    
+    // For now, treat as roll
+    return this.roll();
+  }
+
+  /**
+   * Handle jump (swipe up)
+   * @returns {boolean} Success status
+   */
+  jump() {
+    if (!this.wasmManager) return false;
+    
+    // For now, treat as special attack
+    return this.specialAttack();
+  }
+
+  /**
+   * Handle ground slam (swipe down)
+   * @returns {boolean} Success status
+   */
+  groundSlam() {
+    if (!this.wasmManager) return false;
+    
+    // For now, treat as heavy attack
+    return this.heavyAttack();
+  }
+
+  /**
+   * Handle dash (swipe left/right)
+   * @param {number} direction - Dash direction (-1 for left, 1 for right)
+   * @returns {boolean} Success status
+   */
+  dash(direction) {
+    if (!this.wasmManager) return false;
+    
+    // For now, treat as roll
+    return this.roll();
+  }
+
+  /**
    * Handle choice selection
    * @param {number} choiceId - Choice ID to commit
    */
