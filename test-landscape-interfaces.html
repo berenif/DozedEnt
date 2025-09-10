@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landscape Mode Interface Test - DozedEnt</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <!-- Game Stylesheets -->
+    <link rel="stylesheet" href="src/css/base.css">
+    <link rel="stylesheet" href="src/css/game-viewport.css">
+    <link rel="stylesheet" href="src/css/mobile.css">
+    <link rel="stylesheet" href="src/css/responsive.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        .test-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .test-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+        
+        .test-info h2 {
+            margin: 0 0 10px 0;
+            color: #4a90e2;
+        }
+        
+        .test-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .orientation-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+        
+        .orientation-indicator .current-orientation {
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        
+        .mock-game-area {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .mock-game-area::before {
+            content: "🎮 Game Area";
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+        
+        .interface-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            font-size: 12px;
+        }
+        
+        .interface-info .current-interface {
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        
+        /* Hide desktop elements for mobile testing */
+        @media (max-width: 768px) {
+            .test-info,
+            .orientation-indicator,
+            .interface-info {
+                display: none;
+            }
+        }
+        
+        /* Show mobile controls */
+        .mobile-controls {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        /* Hide orientation overlay for testing */
+        #orientation-overlay {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <!-- Test Information -->
+        <div class="test-info">
+            <h2>🎮 Landscape Interface Test</h2>
+            <p><strong>Instructions:</strong></p>
+            <p>1. Rotate your device to landscape mode</p>
+            <p>2. Tap the 🔄 button to switch interfaces</p>
+            <p>3. Test controls in each interface mode</p>
+            <p><strong>Interfaces:</strong></p>
+            <p>• Default: Original layout</p>
+            <p>• Compact: Side-by-side with stats</p>
+            <p>• Minimal: Overlay controls</p>
+        </div>
+        
+        <!-- Orientation Indicator -->
+        <div class="orientation-indicator">
+            <div>Orientation: <span class="current-orientation" id="orientation-text">Portrait</span></div>
+            <div>Size: <span id="screen-size">Unknown</span></div>
+        </div>
+        
+        <!-- Mock Game Area -->
+        <div class="mock-game-area"></div>
+        
+        <!-- Interface Information -->
+        <div class="interface-info">
+            <div>Current Interface: <span class="current-interface" id="interface-text">Default</span></div>
+            <div>Tap 🔄 to switch</div>
+        </div>
+    </div>
+
+    <!-- Interface Switcher -->
+    <button id="interface-switcher" class="interface-switcher" title="Switch Interface">🔄</button>
+
+    <!-- Mobile Controls -->
+    <div class="mobile-controls" id="mobile-controls">
+        <!-- Joystick -->
+        <div id="joystick">
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Center Spacer for Interface 1 -->
+        <div class="center-spacer">
+            <div class="quick-stats">
+                <div class="stat">
+                    <div class="stat-value" id="health-stat">100</div>
+                    <div>Health</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="score-stat">0</div>
+                    <div>Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="level-stat">1</div>
+                    <div>Level</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced Action Buttons (5-Button Combat System) -->
+        <div id="actions">
+            <button id="light-attack-btn" class="action-btn attack-btn" data-action="lightAttack">
+                <div class="btn-icon">⚡</div>
+                <div class="btn-label">Light</div>
+                <div class="btn-key">J</div>
+            </button>
+            <button id="heavy-attack-btn" class="action-btn attack-btn" data-action="heavyAttack">
+                <div class="btn-icon">💥</div>
+                <div class="btn-label">Heavy</div>
+                <div class="btn-key">K</div>
+            </button>
+            <button id="block-btn" class="action-btn block-btn" data-action="block">
+                <div class="btn-icon">🛡️</div>
+                <div class="btn-label">Block</div>
+                <div class="btn-key">Shift</div>
+            </button>
+            <button id="roll-btn" class="action-btn roll-btn" data-action="roll">
+                <div class="btn-icon">🌀</div>
+                <div class="btn-label">Roll</div>
+                <div class="btn-key">Space</div>
+            </button>
+            <button id="special-btn" class="action-btn special-btn" data-action="special">
+                <div class="btn-icon">⭐</div>
+                <div class="btn-label">Special</div>
+                <div class="btn-key">L</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Load the interface switcher script -->
+    <script>
+        // Mock game controls for testing
+        const mockGameControls = {
+            gameState: {
+                health: 100,
+                score: 0,
+                level: 1
+            }
+        };
+
+        // Interface Switcher for Mobile Controls
+        class InterfaceSwitcher {
+            constructor() {
+                this.currentInterface = 'default';
+                this.mobileControls = null;
+                this.init();
+            }
+
+            init() {
+                this.mobileControls = document.getElementById('mobile-controls');
+                this.switcherButton = document.getElementById('interface-switcher');
+                
+                if (!this.mobileControls || !this.switcherButton) {
+                    console.warn('Interface switcher elements not found');
+                    return;
+                }
+
+                this.setupEventListeners();
+                this.loadSavedInterface();
+                this.updateInterface();
+                this.updateOrientationInfo();
+            }
+
+            setupEventListeners() {
+                this.switcherButton.addEventListener('click', () => {
+                    this.switchInterface();
+                });
+
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        this.updateInterface();
+                        this.updateOrientationInfo();
+                    }, 100);
+                });
+
+                window.addEventListener('resize', () => {
+                    this.updateInterface();
+                    this.updateOrientationInfo();
+                });
+            }
+
+            switchInterface() {
+                const interfaces = ['default', 'compact', 'minimal'];
+                const currentIndex = interfaces.indexOf(this.currentInterface);
+                const nextIndex = (currentIndex + 1) % interfaces.length;
+                
+                this.currentInterface = interfaces[nextIndex];
+                this.updateInterface();
+                this.saveInterface();
+                
+                this.switcherButton.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    this.switcherButton.style.transform = 'scale(1)';
+                }, 200);
+            }
+
+            updateInterface() {
+                if (!this.mobileControls) return;
+
+                this.mobileControls.classList.remove('interface-compact', 'interface-minimal');
+                
+                if (this.currentInterface !== 'default') {
+                    this.mobileControls.classList.add(`interface-${this.currentInterface}`);
+                }
+
+                const icons = {
+                    'default': '🔄',
+                    'compact': '📱',
+                    'minimal': '🎯'
+                };
+                this.switcherButton.textContent = icons[this.currentInterface];
+
+                const centerSpacer = this.mobileControls.querySelector('.center-spacer');
+                if (centerSpacer) {
+                    centerSpacer.style.display = this.currentInterface === 'compact' ? 'flex' : 'none';
+                }
+
+                // Update interface text
+                const interfaceText = document.getElementById('interface-text');
+                if (interfaceText) {
+                    interfaceText.textContent = this.currentInterface.charAt(0).toUpperCase() + this.currentInterface.slice(1);
+                }
+
+                if (this.currentInterface === 'compact') {
+                    this.updateQuickStats();
+                }
+            }
+
+            updateQuickStats() {
+                const healthStat = document.getElementById('health-stat');
+                const scoreStat = document.getElementById('score-stat');
+                const levelStat = document.getElementById('level-stat');
+
+                if (healthStat) {
+                    healthStat.textContent = mockGameControls.gameState.health;
+                }
+                if (scoreStat) {
+                    scoreStat.textContent = mockGameControls.gameState.score;
+                }
+                if (levelStat) {
+                    levelStat.textContent = mockGameControls.gameState.level;
+                }
+            }
+
+            updateOrientationInfo() {
+                const orientationText = document.getElementById('orientation-text');
+                const screenSize = document.getElementById('screen-size');
+                
+                if (orientationText) {
+                    orientationText.textContent = window.innerHeight > window.innerWidth ? 'Portrait' : 'Landscape';
+                }
+                
+                if (screenSize) {
+                    screenSize.textContent = `${window.innerWidth}x${window.innerHeight}`;
+                }
+            }
+
+            saveInterface() {
+                try {
+                    localStorage.setItem('mobileInterface', this.currentInterface);
+                } catch (e) {
+                    console.warn('Could not save interface preference:', e);
+                }
+            }
+
+            loadSavedInterface() {
+                try {
+                    const saved = localStorage.getItem('mobileInterface');
+                    if (saved && ['default', 'compact', 'minimal'].includes(saved)) {
+                        this.currentInterface = saved;
+                    }
+                } catch (e) {
+                    console.warn('Could not load interface preference:', e);
+                }
+            }
+        }
+
+        // Initialize interface switcher
+        const interfaceSwitcher = new InterfaceSwitcher();
+
+        // Simulate some game activity for stats
+        setInterval(() => {
+            if (Math.random() < 0.1) {
+                mockGameControls.gameState.score += Math.floor(Math.random() * 10) + 1;
+                if (interfaceSwitcher.currentInterface === 'compact') {
+                    interfaceSwitcher.updateQuickStats();
+                }
+            }
+        }, 2000);
+
+        console.log('Landscape Interface Test initialized successfully!');
+    </script>
+</body>
+</html>
