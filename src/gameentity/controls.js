@@ -1210,8 +1210,155 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Interface Switcher for Mobile Controls
+class InterfaceSwitcher {
+    constructor() {
+        this.currentInterface = 'default'; // 'default', 'compact', 'minimal'
+        this.mobileControls = null;
+        this.init();
+    }
+
+    init() {
+        this.mobileControls = document.getElementById('mobile-controls');
+        this.switcherButton = document.getElementById('interface-switcher');
+        
+        if (!this.mobileControls || !this.switcherButton) {
+            console.warn('Interface switcher elements not found');
+            return;
+        }
+
+        this.setupEventListeners();
+        this.loadSavedInterface();
+        this.updateInterface();
+    }
+
+    setupEventListeners() {
+        this.switcherButton.addEventListener('click', () => {
+            this.switchInterface();
+        });
+
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                this.updateInterface();
+            }, 100);
+        });
+
+        // Listen for resize events
+        window.addEventListener('resize', () => {
+            this.updateInterface();
+        });
+    }
+
+    switchInterface() {
+        const interfaces = ['default', 'compact', 'minimal'];
+        const currentIndex = interfaces.indexOf(this.currentInterface);
+        const nextIndex = (currentIndex + 1) % interfaces.length;
+        
+        this.currentInterface = interfaces[nextIndex];
+        this.updateInterface();
+        this.saveInterface();
+        
+        // Provide visual feedback
+        this.switcherButton.style.transform = 'scale(1.2)';
+        setTimeout(() => {
+            this.switcherButton.style.transform = 'scale(1)';
+        }, 200);
+    }
+
+    updateInterface() {
+        if (!this.mobileControls) return;
+
+        // Remove all interface classes
+        this.mobileControls.classList.remove('interface-compact', 'interface-minimal');
+        
+        // Add current interface class
+        if (this.currentInterface !== 'default') {
+            this.mobileControls.classList.add(`interface-${this.currentInterface}`);
+        }
+
+        // Update switcher button icon
+        const icons = {
+            'default': '🔄',
+            'compact': '📱',
+            'minimal': '🎯'
+        };
+        this.switcherButton.textContent = icons[this.currentInterface];
+
+        // Update quick stats visibility
+        const centerSpacer = this.mobileControls.querySelector('.center-spacer');
+        if (centerSpacer) {
+            centerSpacer.style.display = this.currentInterface === 'compact' ? 'flex' : 'none';
+        }
+
+        // Update stats in compact interface
+        if (this.currentInterface === 'compact') {
+            this.updateQuickStats();
+        }
+    }
+
+    updateQuickStats() {
+        const healthStat = document.getElementById('health-stat');
+        const scoreStat = document.getElementById('score-stat');
+        const levelStat = document.getElementById('level-stat');
+
+        if (healthStat && gameControls) {
+            healthStat.textContent = gameControls.gameState.health;
+        }
+        if (scoreStat && gameControls) {
+            scoreStat.textContent = gameControls.gameState.score;
+        }
+        if (levelStat && gameControls) {
+            levelStat.textContent = gameControls.gameState.level;
+        }
+    }
+
+    saveInterface() {
+        try {
+            localStorage.setItem('mobileInterface', this.currentInterface);
+        } catch (e) {
+            console.warn('Could not save interface preference:', e);
+        }
+    }
+
+    loadSavedInterface() {
+        try {
+            const saved = localStorage.getItem('mobileInterface');
+            if (saved && ['default', 'compact', 'minimal'].includes(saved)) {
+                this.currentInterface = saved;
+            }
+        } catch (e) {
+            console.warn('Could not load interface preference:', e);
+        }
+    }
+
+    // Public method to get current interface
+    getCurrentInterface() {
+        return this.currentInterface;
+    }
+
+    // Public method to set interface programmatically
+    setInterface(interfaceName) {
+        if (['default', 'compact', 'minimal'].includes(interfaceName)) {
+            this.currentInterface = interfaceName;
+            this.updateInterface();
+            this.saveInterface();
+        }
+    }
+}
+
 // Initialize the game controls
 const gameControls = new MobileGameControls();
+
+// Initialize interface switcher
+const interfaceSwitcher = new InterfaceSwitcher();
+
+// Update quick stats periodically for compact interface
+setInterval(() => {
+    if (interfaceSwitcher.getCurrentInterface() === 'compact') {
+        interfaceSwitcher.updateQuickStats();
+    }
+}, 1000);
 
 // Prevent zooming on double tap
 let lastTouchEnd = 0;
@@ -1225,3 +1372,4 @@ document.addEventListener('touchend', (e) => {
 
 // Log initialization
 console.log('Mobile Game Controls initialized successfully!');
+console.log('Interface Switcher initialized successfully!');
