@@ -1688,8 +1688,10 @@ export class GameRenderer {
         this.ctx.save()
 
         // Get player state from WASM
-        const wasmX = typeof window.wasmExports.get_x === 'function' ? window.wasmExports.get_x() : 0.5;
-        const wasmY = typeof window.wasmExports.get_y === 'function' ? window.wasmExports.get_y() : 0.5;
+        const _rx = typeof window.wasmExports.get_x === 'function' ? window.wasmExports.get_x() : 0.5;
+        const _ry = typeof window.wasmExports.get_y === 'function' ? window.wasmExports.get_y() : 0.5;
+        const wasmX = Number.isFinite(_rx) ? Math.max(0, Math.min(1, _rx)) : 0.5;
+        const wasmY = Number.isFinite(_ry) ? Math.max(0, Math.min(1, _ry)) : 0.5;
         const velX = typeof window.wasmExports.get_vel_x === 'function' ? window.wasmExports.get_vel_x() : 0;
         const velY = typeof window.wasmExports.get_vel_y === 'function' ? window.wasmExports.get_vel_y() : 0;
         const isGrounded = typeof window.wasmExports.get_is_grounded === 'function' ? window.wasmExports.get_is_grounded() : 1;
@@ -2756,6 +2758,10 @@ export class GameRenderer {
     // WASM coordinate mapping functions
     // Convert WASM coordinates (0-1 range) to world coordinates
     wasmToWorld(wasmX, wasmY) {
+        // Normalize and clamp inputs to avoid propagating NaN/Infinity
+        const nx = Number.isFinite(wasmX) ? Math.max(0, Math.min(1, wasmX)) : 0.5
+        const ny = Number.isFinite(wasmY) ? Math.max(0, Math.min(1, wasmY)) : 0.5
+
         // Map WASM (0-1) to center third of world
         // This keeps the playable area in the middle of the larger world
         const playableWidth = this.world.width / 3
@@ -2764,8 +2770,8 @@ export class GameRenderer {
         const offsetY = this.world.height / 3
         
         return {
-            x: offsetX + wasmX * playableWidth,
-            y: offsetY + wasmY * playableHeight
+            x: offsetX + nx * playableWidth,
+            y: offsetY + ny * playableHeight
         }
     }
     
