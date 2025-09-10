@@ -137,22 +137,36 @@ export class GameStateManager {
     const currentTime = performance.now();
     
     try {
-      // Validate input state before passing to WASM
+      // Send input to WASM (InputManager handles this separately for combat buttons)
+      // but we need to handle movement here
       const safeInputState = {
         direction: {
           x: Number.isFinite(inputState?.direction?.x) ? inputState.direction.x : 0,
           y: Number.isFinite(inputState?.direction?.y) ? inputState.direction.y : 0
         },
-        isRolling: Boolean(inputState?.isRolling)
+        roll: Boolean(inputState?.roll),
+        lightAttack: Boolean(inputState?.lightAttack),
+        heavyAttack: Boolean(inputState?.heavyAttack),
+        block: Boolean(inputState?.block),
+        special: Boolean(inputState?.special)
       };
       
-      // Update WASM with deterministic inputs
-      this.wasmManager.update(
-        safeInputState.direction.x,
-        safeInputState.direction.y,
-        safeInputState.isRolling,
-        deltaTime
-      );
+      // Send all input to WASM before update
+      if (this.wasmManager.exports?.set_player_input) {
+        this.wasmManager.exports.set_player_input(
+          safeInputState.direction.x,
+          safeInputState.direction.y,
+          safeInputState.roll ? 1 : 0,
+          0, // jump (unused)
+          safeInputState.lightAttack ? 1 : 0,
+          safeInputState.heavyAttack ? 1 : 0,
+          safeInputState.block ? 1 : 0,
+          safeInputState.special ? 1 : 0
+        );
+      }
+      
+      // Now update WASM with just deltaTime
+      this.wasmManager.exports?.update?.(deltaTime);
 
       // Read updated state from WASM
       this.updatePlayerState();
@@ -182,9 +196,15 @@ export class GameStateManager {
   updatePlayerState() {
     if (!this.wasmManager) return;
 
-    // Get position from WASM
-    const position = this.wasmManager.getPlayerPosition();
-    this.playerState.position = position;
+    // Get normalized position from WASM (0-1 range)
+    const normalizedPosition = this.wasmManager.getPlayerPosition();
+    
+    // Convert to world coordinates for rendering
+    // World dimensions: 3840x2160
+    this.playerState.position = {
+      x: normalizedPosition.x * 3840,
+      y: normalizedPosition.y * 2160
+    };
 
     // Get stamina from WASM
     this.playerState.stamina = this.wasmManager.getStamina();

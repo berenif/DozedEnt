@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Player Movement</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        #status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            min-width: 300px;
+        }
+        .status-line {
+            margin: 5px 0;
+        }
+        .good { color: #4f4; }
+        .bad { color: #f44; }
+        .warn { color: #ff4; }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #357abd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Player Movement Test</h1>
+    <div id="status">
+        <h3>System Status</h3>
+        <div id="status-content">Initializing...</div>
+    </div>
+    
+    <div>
+        <h3>Test Controls</h3>
+        <button onclick="testMovement()">Test Movement</button>
+        <button onclick="testPosition()">Check Position</button>
+        <button onclick="testCamera()">Test Camera</button>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <script type="module">
+        window.checkStatus = async function() {
+            const status = document.getElementById('status-content');
+            let html = '';
+            
+            // Check if game app exists
+            if (window.gameApp) {
+                html += '<div class="status-line good">✅ Game App Loaded</div>';
+                
+                // Check WASM
+                if (window.gameApp.wasmManager?.isLoaded) {
+                    html += '<div class="status-line good">✅ WASM Loaded</div>';
+                    
+                    // Get player position
+                    const pos = window.gameApp.wasmManager.getPlayerPosition();
+                    const worldPos = {
+                        x: pos.x * 3840,
+                        y: pos.y * 2160
+                    };
+                    html += `<div class="status-line">Player Pos (WASM): ${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}</div>`;
+                    html += `<div class="status-line">Player Pos (World): ${worldPos.x.toFixed(0)}, ${worldPos.y.toFixed(0)}</div>`;
+                    
+                    // Check stamina
+                    const stamina = window.gameApp.wasmManager.getStamina();
+                    html += `<div class="status-line">Stamina: ${(stamina * 100).toFixed(0)}%</div>`;
+                } else {
+                    html += '<div class="status-line bad">❌ WASM Not Loaded</div>';
+                }
+                
+                // Check game state
+                if (window.gameApp.gameStateManager) {
+                    const isRunning = window.gameApp.gameStateManager.isGameRunning;
+                    html += `<div class="status-line ${isRunning ? 'good' : 'warn'}">Game Running: ${isRunning}</div>`;
+                    
+                    // Check player state
+                    const playerState = window.gameApp.gameStateManager.playerState;
+                    if (playerState) {
+                        html += `<div class="status-line">Player State Pos: ${playerState.position.x.toFixed(0)}, ${playerState.position.y.toFixed(0)}</div>`;
+                    }
+                }
+                
+                // Check animated player
+                if (window.gameApp.animatedPlayer) {
+                    html += `<div class="status-line good">✅ Animated Player Created</div>`;
+                    html += `<div class="status-line">Animated Player Pos: ${window.gameApp.animatedPlayer.x.toFixed(0)}, ${window.gameApp.animatedPlayer.y.toFixed(0)}</div>`;
+                } else {
+                    html += '<div class="status-line bad">❌ No Animated Player</div>';
+                }
+                
+                // Check renderer
+                if (window.gameApp.gameRenderer) {
+                    html += '<div class="status-line good">✅ Game Renderer Ready</div>';
+                    const camera = window.gameApp.gameRenderer.camera;
+                    html += `<div class="status-line">Camera Pos: ${camera.x.toFixed(0)}, ${camera.y.toFixed(0)}</div>`;
+                } else {
+                    html += '<div class="status-line bad">❌ No Game Renderer</div>';
+                }
+                
+                // Check input manager
+                if (window.gameApp.inputManager) {
+                    html += '<div class="status-line good">✅ Input Manager Ready</div>';
+                    const inputState = window.gameApp.inputManager.getInputState();
+                    html += `<div class="status-line">Input Dir: ${inputState.direction.x.toFixed(2)}, ${inputState.direction.y.toFixed(2)}</div>`;
+                } else {
+                    html += '<div class="status-line bad">❌ No Input Manager</div>';
+                }
+                
+            } else {
+                html += '<div class="status-line bad">❌ Game App Not Found</div>';
+            }
+            
+            status.innerHTML = html;
+        };
+        
+        window.testMovement = function() {
+            if (!window.gameApp?.wasmManager?.exports) {
+                alert('WASM not loaded!');
+                return;
+            }
+            
+            console.log('Testing movement...');
+            
+            // Simulate movement input
+            const exports = window.gameApp.wasmManager.exports;
+            
+            // Move right for 1 second
+            exports.set_player_input(1, 0, 0, 0, 0, 0, 0, 0);
+            exports.update(0.016);
+            
+            setTimeout(() => {
+                // Stop movement
+                exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
+                exports.update(0.016);
+                
+                // Check new position
+                const newPos = window.gameApp.wasmManager.getPlayerPosition();
+                console.log('New position:', newPos);
+                alert(`Player moved to: ${newPos.x.toFixed(3)}, ${newPos.y.toFixed(3)}`);
+                
+                checkStatus();
+            }, 100);
+        };
+        
+        window.testPosition = function() {
+            if (!window.gameApp) {
+                alert('Game not loaded!');
+                return;
+            }
+            
+            const wasmPos = window.gameApp.wasmManager?.getPlayerPosition() || {x: 0, y: 0};
+            const statePos = window.gameApp.gameStateManager?.playerState?.position || {x: 0, y: 0};
+            const animPos = window.gameApp.animatedPlayer ? 
+                {x: window.gameApp.animatedPlayer.x, y: window.gameApp.animatedPlayer.y} : 
+                {x: 0, y: 0};
+            
+            console.log('Position Check:');
+            console.log('- WASM (normalized):', wasmPos);
+            console.log('- State (world):', statePos);
+            console.log('- Animated Player:', animPos);
+            
+            alert(`Positions:\nWASM: ${wasmPos.x.toFixed(3)}, ${wasmPos.y.toFixed(3)}\nState: ${statePos.x.toFixed(0)}, ${statePos.y.toFixed(0)}\nAnimated: ${animPos.x.toFixed(0)}, ${animPos.y.toFixed(0)}`);
+        };
+        
+        window.testCamera = function() {
+            if (!window.gameApp?.gameRenderer) {
+                alert('Renderer not loaded!');
+                return;
+            }
+            
+            const camera = window.gameApp.gameRenderer.camera;
+            const player = window.gameApp.gameRenderer.player;
+            
+            console.log('Camera:', camera);
+            console.log('Renderer Player:', player);
+            
+            alert(`Camera: ${camera.x.toFixed(0)}, ${camera.y.toFixed(0)}\nTarget: ${camera.targetX.toFixed(0)}, ${camera.targetY.toFixed(0)}\nRenderer Player: ${player.x.toFixed(0)}, ${player.y.toFixed(0)}`);
+        };
+        
+        window.startGame = function() {
+            if (!window.gameApp) {
+                alert('Game app not loaded!');
+                return;
+            }
+            
+            // Hide loading screen and start game
+            document.body.classList.add('game-started');
+            window.gameApp.startGame();
+            
+            setTimeout(() => {
+                checkStatus();
+                alert('Game started! Use WASD to move.');
+            }, 100);
+        };
+        
+        // Check status every second
+        setInterval(checkStatus, 1000);
+        
+        // Initial check
+        setTimeout(checkStatus, 100);
+    </script>
+    
+    <!-- Load the game -->
+    <script type="module" src="site.js"></script>
+</body>
+</html>

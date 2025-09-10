@@ -580,7 +580,8 @@ export class InputManager {
     startInputLoop() {
         const updateInput = () => {
             this.updateGamepadInput();
-            this.sendInputToWasm();
+            // Input is now sent to WASM via GameStateManager.update()
+            // this.sendInputToWasm(); // Disabled to prevent duplicate input
             requestAnimationFrame(updateInput);
         };
         
