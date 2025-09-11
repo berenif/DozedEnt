@@ -362,37 +362,46 @@
         // Import the advanced procedural animation system
         let RealisticProceduralAnimator, ProceduralAnimator, CharacterAnimator;
         
-        try {
-            const animationModule = await import('./src/animation/realistic-procedural-animator.js');
-            RealisticProceduralAnimator = animationModule.RealisticProceduralAnimator || animationModule.default;
-            
-            const systemModule = await import('./src/animation/animation-system.js');
-            ProceduralAnimator = systemModule.ProceduralAnimator;
-            CharacterAnimator = systemModule.CharacterAnimator;
-        } catch (error) {
-            console.warn('Could not load advanced animation modules:', error);
-            // Provide simple fallback classes
-            RealisticProceduralAnimator = class {
-                constructor() {}
-                update() { return { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }; }
-                config = { renderSkeleton: false, renderIKTargets: false, renderSecondaryMotion: false };
-            };
-            ProceduralAnimator = class {
-                createBreathingAnimation() { return { modulateForState() {}, update() { return { scaleX: 1, scaleY: 1, offsetY: 0 }; } }; }
-                createMomentumSystem() { return { update() { return { leanAngle: 0, stretchFactor: 0, bounceFactor: 0 }; }, addImpulse() {} }; }
-                createSquashStretch() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1 }; } }; }
-                createAnticipation() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1, offsetX: 0 }; }, active: false, phase: 'idle' }; }
-                createWobble() { return { impulse() {}, update() { return { scaleX: 1, scaleY: 1, rotation: 0 }; }, displacement: 0, velocity: 0 }; }
-                createSecondaryMotion() { return { initialize() {}, update() { return []; } }; }
-                createTrailEffect() { return { clear() {}, update() { return []; } }; }
-            };
+        // Initialize animation modules asynchronously
+        async function initializeAnimationModules() {
+            try {
+                const animationModule = await import('./src/animation/realistic-procedural-animator.js');
+                RealisticProceduralAnimator = animationModule.RealisticProceduralAnimator || animationModule.default;
+                
+                const systemModule = await import('./src/animation/animation-system.js');
+                ProceduralAnimator = systemModule.ProceduralAnimator;
+                CharacterAnimator = systemModule.CharacterAnimator;
+            } catch (error) {
+                console.warn('Could not load advanced animation modules:', error);
+                // Provide simple fallback classes
+                RealisticProceduralAnimator = class {
+                    constructor() {}
+                    update() { return { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }; }
+                    config = { renderSkeleton: false, renderIKTargets: false, renderSecondaryMotion: false };
+                };
+                ProceduralAnimator = class {
+                    createBreathingAnimation() { return { modulateForState() {}, update() { return { scaleX: 1, scaleY: 1, offsetY: 0 }; } }; }
+                    createMomentumSystem() { return { update() { return { leanAngle: 0, stretchFactor: 0, bounceFactor: 0 }; }, addImpulse() {} }; }
+                    createSquashStretch() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1 }; } }; }
+                    createAnticipation() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1, offsetX: 0 }; }, active: false, phase: 'idle' }; }
+                    createWobble() { return { impulse() {}, update() { return { scaleX: 1, scaleY: 1, rotation: 0 }; }, displacement: 0, velocity: 0 }; }
+                    createSecondaryMotion() { return { initialize() {}, update() { return []; } }; }
+                    createTrailEffect() { return { clear() {}, update() { return []; } }; }
+                };
+            }
         }
 
         // WASM-First Combat Systems Demo - Complete Implementation
         class WASMCombatSystemsDemo {
             constructor() {
                 this.canvas = document.getElementById('gameCanvas');
+                if (!this.canvas) {
+                    throw new Error('Canvas element with id "gameCanvas" not found');
+                }
                 this.ctx = this.canvas.getContext('2d');
+                if (!this.ctx) {
+                    throw new Error('Failed to get 2D rendering context from canvas');
+                }
                 
                 // Initialize WASM-First Systems Architecture
                 this.initializeWASMSystems();
@@ -1459,8 +1468,10 @@
                         this.realisticAnimator.config.renderSecondaryMotion = this.debugMode;
                         
                         // Update debug UI
-                        document.getElementById('debugMode').textContent = this.debugMode ? 'ON' : 'OFF';
-                        document.getElementById('proceduralDebug').style.display = this.debugMode ? 'block' : 'none';
+                        const debugModeElement = document.getElementById('debugMode');
+                        if (debugModeElement) debugModeElement.textContent = this.debugMode ? 'ON' : 'OFF';
+                        const debugPanelElement = document.getElementById('proceduralDebug');
+                        if (debugPanelElement) debugPanelElement.style.display = this.debugMode ? 'block' : 'none';
                         
                         console.log('Debug mode:', this.debugMode ? 'ON' : 'OFF');
                     }
@@ -1485,6 +1496,10 @@
 
             createActionButtons() {
                 const actionsContainer = document.getElementById('actions');
+                if (!actionsContainer) {
+                    console.warn('Actions container not found, skipping mobile button creation');
+                    return;
+                }
                 const buttons = [
                     { id: 'light-attack', emoji: '👊', action: 'lightAttack', color: '#4CAF50', label: 'Light Attack' },
                     { id: 'heavy-attack', emoji: '💥', action: 'heavyAttack', color: '#FF5722', label: 'Heavy Attack' },
@@ -2048,31 +2063,35 @@
             updateUI() {
                 const character = this.character;
                 
-                // Update main stats panel
-                document.getElementById('characterType').textContent = character.name;
-                document.getElementById('playerPos').textContent = 
-                    `X: ${Math.round(character.x)}, Y: ${Math.round(character.y)}`;
-                document.getElementById('playerState').textContent = character.combatState;
-                document.getElementById('playerHealth').textContent = Math.round(character.health);
-                document.getElementById('maxHealth').textContent = Math.round(character.maxHealth);
-                document.getElementById('playerStamina').textContent = Math.round(character.stamina);
-                document.getElementById('maxStamina').textContent = Math.round(character.maxStamina);
-                document.getElementById('playerPoise').textContent = Math.round(character.poise);
-                document.getElementById('maxPoise').textContent = Math.round(character.maxPoise);
-                document.getElementById('flowMomentum').textContent = Math.round(character.flowMomentum);
+                // Update main stats panel (with null checks)
+                const updateElement = (id, value) => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = value;
+                };
+                
+                updateElement('characterType', character.name);
+                updateElement('playerPos', `X: ${Math.round(character.x)}, Y: ${Math.round(character.y)}`);
+                updateElement('playerState', character.combatState);
+                updateElement('playerHealth', Math.round(character.health));
+                updateElement('maxHealth', Math.round(character.maxHealth));
+                updateElement('playerStamina', Math.round(character.stamina));
+                updateElement('maxStamina', Math.round(character.maxStamina));
+                updateElement('playerPoise', Math.round(character.poise));
+                updateElement('maxPoise', Math.round(character.maxPoise));
+                updateElement('flowMomentum', Math.round(character.flowMomentum));
                 
                 // Update systems panel
-                document.getElementById('combatState').textContent = character.combatState;
-                document.getElementById('inputBuffer').textContent = this.getInputBufferStatus();
-                document.getElementById('parryWindow').textContent = `${Math.round(this.defenseSystem.parryWindow)}ms`;
-                document.getElementById('iFrames').textContent = `${Math.round(this.dodgeSystem.iframeRemaining)}ms`;
-                document.getElementById('weatherState').textContent = this.worldState.weather.type;
-                document.getElementById('physicsState').textContent = 'Active';
-                document.getElementById('chemistryState').textContent = this.getChemistryStatus();
+                updateElement('combatState', character.combatState);
+                updateElement('inputBuffer', this.getInputBufferStatus());
+                updateElement('parryWindow', `${Math.round(this.defenseSystem.parryWindow)}ms`);
+                updateElement('iFrames', `${Math.round(this.dodgeSystem.iframeRemaining)}ms`);
+                updateElement('weatherState', this.worldState.weather.type);
+                updateElement('physicsState', 'Active');
+                updateElement('chemistryState', this.getChemistryStatus());
                 
                 // Update animation state
-                document.getElementById('currentAnimation').textContent = character.combatState.toLowerCase();
-                document.getElementById('currentFrame').textContent = Math.floor(character.stateTimer * 60); // Approximate frame
+                updateElement('currentAnimation', character.combatState.toLowerCase());
+                updateElement('currentFrame', Math.floor(character.stateTimer * 60)); // Approximate frame
                 
                 // Update debug panel if active
                 if (this.debugMode) {
@@ -3283,7 +3302,8 @@
                     this.fps = this.fpsCounter;
                     this.fpsCounter = 0;
                     this.lastFpsUpdate = currentTime;
-                    document.getElementById('fps').textContent = this.fps;
+                    const fpsElement = document.getElementById('fps');
+                    if (fpsElement) fpsElement.textContent = this.fps;
                 }
 
                 this.update(deltaTime);
@@ -3294,7 +3314,10 @@
         }
 
         // Start the WASM Combat Systems demo when page loads
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
+            // Initialize animation modules first
+            await initializeAnimationModules();
+            
             const demo = new WASMCombatSystemsDemo();
             
             // Setup character selection
