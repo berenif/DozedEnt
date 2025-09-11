@@ -23,18 +23,17 @@ export class WasmManager {
    */
   async initialize() {
     try {
-      // Try local bundle first, then CDN fallback
+      // Load the local WASM helper module
       let wasmHelperModule;
       try {
-        wasmHelperModule = await import('../../dist/trystero-wasm.min.js');
+        // Use absolute path from the document base
+        const baseUrl = new URL(document.baseURI);
+        const wasmModulePath = new URL('./dist/trystero-wasm.min.js', baseUrl).href;
+        wasmHelperModule = await import(wasmModulePath);
       } catch (error) {
-        console.warn('Local WASM bundle not found, trying CDN fallback:', error.message);
-        try {
-          wasmHelperModule = await import('https://esm.run/trystero/wasm');
-        } catch (cdnError) {
-          console.warn('CDN WASM bundle also failed:', cdnError.message);
-          throw new Error('Both local and CDN WASM bundles failed to load');
-        }
+        console.warn('Failed to load WASM helper module:', error.message);
+        // Provide a fallback that doesn't require external CDN
+        throw new Error('WASM helper module failed to load. Please ensure dist/trystero-wasm.min.js exists');
       }
 
       const { loadWasm } = wasmHelperModule;
