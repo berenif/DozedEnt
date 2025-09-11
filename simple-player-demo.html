@@ -556,6 +556,9 @@
                 this.currentCharacterType = 'warden';
                 this.character = this.createCharacter(this.currentCharacterType);
                 
+                // Assign character as player for compatibility with existing code
+                this.player = this.character;
+                
                 console.log('✓ Character System initialized');
             }
             
@@ -586,8 +589,15 @@
                     
                     // Combat state
                     combatState: 'IDLE',
+                    state: 'idle', // Player state for animation and movement
                     previousState: 'IDLE',
                     stateTimer: 0,
+                    
+                    // Cooldowns
+                    attackCooldown: 0,
+                    rollCooldown: 0,
+                    blockCooldown: 0,
+                    specialCooldown: 0,
                     
                     // Flow system
                     flowMomentum: 0,
@@ -3287,6 +3297,9 @@
                     // Preserve position
                     this.character.x = oldPosition.x;
                     this.character.y = oldPosition.y;
+                    
+                    // Update player reference for compatibility
+                    this.player = this.character;
                     
                     console.log(`✓ Switched to ${this.character.name}`);
                 }
