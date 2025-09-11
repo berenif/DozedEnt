@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Player Movement Demo</title>
+    <title>Enhanced Player Demo with Joystick & Animations</title>
     <style>
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background-color: #2c3e50;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             color: white;
+            height: 100vh;
+            overflow: hidden;
         }
 
         h1 {
             color: #ecf0f1;
-            margin-bottom: 20px;
+            margin: 10px 0;
+            font-size: 1.5em;
         }
 
         #gameContainer {
@@ -27,6 +30,7 @@
             background-color: #34495e;
             padding: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         #gameCanvas {
@@ -36,67 +40,344 @@
             display: block;
         }
 
-        .controls {
-            margin-top: 20px;
-            text-align: center;
+        /* Mobile Controls Styles */
+        .mobile-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(to top, rgba(44, 62, 80, 0.95), transparent);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 20px;
+            z-index: 100;
         }
 
-        .controls p {
+        /* Joystick Styles */
+        #joystick {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(52, 73, 94, 0.8), rgba(52, 73, 94, 0.4));
+            border: 3px solid rgba(236, 240, 241, 0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #joystick-base.active {
+            border-color: rgba(46, 204, 113, 0.8);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+        }
+
+        #joystick-knob {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ecf0f1, #bdc3c7);
+            border: 2px solid #95a5a6;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: background 0.1s ease;
+        }
+
+        .direction-indicator {
+            position: absolute;
+            color: rgba(236, 240, 241, 0.4);
+            font-size: 10px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            user-select: none;
+        }
+
+        /* Action Buttons */
+        #actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(236, 240, 241, 0.3);
+            background: radial-gradient(circle, var(--btn-color, #3498db), rgba(0, 0, 0, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            user-select: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(var(--btn-color, #3498db), 0.4);
+        }
+
+        .action-btn.pressed {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn.on-cooldown {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .cooldown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(transparent 0deg, var(--btn-color) 0deg);
+            opacity: 0.7;
+        }
+
+        .press-feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* Desktop Controls */
+        .desktop-controls {
+            margin-top: 20px;
+            text-align: center;
+            display: block;
+        }
+
+        .desktop-controls p {
             margin: 5px 0;
             color: #bdc3c7;
         }
 
+        /* Stats Panel */
         .stats {
-            margin-top: 15px;
-            background-color: #34495e;
-            padding: 10px;
-            border-radius: 5px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(52, 73, 94, 0.9);
+            padding: 15px;
+            border-radius: 10px;
             min-width: 200px;
+            z-index: 50;
         }
 
         .stats div {
             margin: 5px 0;
             color: #ecf0f1;
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.2em; margin: 5px 0; }
+            .desktop-controls { display: none; }
+            .stats { 
+                position: fixed; 
+                top: 10px; 
+                right: 10px; 
+                font-size: 0.9em;
+                padding: 10px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-controls { display: none; }
+        }
+
+        .landscape .mobile-controls {
+            height: 160px;
+        }
+
+        .small-screen .action-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+        }
+
+        .small-screen #joystick {
+            width: 100px;
+            height: 100px;
+        }
+
+        .small-screen #joystick-knob {
+            width: 35px;
+            height: 35px;
+        }
+
+        /* Gesture Indicators */
+        .swipe-indicator, .long-press-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 200;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Animation State Indicator */
+        .animation-state {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            background: rgba(52, 73, 94, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 50;
+        }
     </style>
 </head>
 <body>
-    <h1>Simple Player Movement Demo</h1>
+    <h1>Enhanced Player Demo with Joystick & Animations</h1>
     
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
     
-    <div class="controls">
-        <p><strong>Controls:</strong></p>
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <!-- Virtual Joystick -->
+        <div id="joystick">
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div id="actions">
+            <!-- Actions will be dynamically created -->
+        </div>
+    </div>
+    
+    <!-- Desktop Controls -->
+    <div class="desktop-controls">
+        <p><strong>Desktop Controls:</strong></p>
         <p>WASD or Arrow Keys to move</p>
-        <p>Player speed can be adjusted with mouse wheel</p>
+        <p>J/1 - Light Attack, K/2 - Heavy Attack</p>
+        <p>Shift/3 - Block, Ctrl/4 - Roll, L/5 - Special</p>
+        <p>Mouse wheel - Adjust speed</p>
     </div>
 
+    <!-- Stats Panel -->
     <div class="stats">
         <div>Position: <span id="playerPos">X: 0, Y: 0</span></div>
         <div>Speed: <span id="playerSpeed">5</span></div>
+        <div>State: <span id="playerState">idle</span></div>
+        <div>Health: <span id="playerHealth">100</span></div>
+        <div>Stamina: <span id="playerStamina">100</span></div>
         <div>FPS: <span id="fps">0</span></div>
     </div>
 
+    <!-- Animation State Indicator -->
+    <div class="animation-state">
+        <div>Animation: <span id="currentAnimation">idle</span></div>
+        <div>Frame: <span id="currentFrame">0</span></div>
+    </div>
+
+    <!-- Gesture Indicators (for mobile) -->
+    <div class="swipe-indicator hidden">
+        <div class="swipe-arrow"></div>
+        <div class="swipe-text">Swipe detected</div>
+    </div>
+    
+    <div class="long-press-indicator hidden">
+        <div class="long-press-circle"></div>
+        <div class="long-press-text">Hold to activate</div>
+    </div>
+
     <script>
-        class SimplePlayerDemo {
+        // Enhanced Player Demo with Joystick Controls and Animations
+        class EnhancedPlayerDemo {
             constructor() {
                 this.canvas = document.getElementById('gameCanvas');
                 this.ctx = this.canvas.getContext('2d');
                 
-                // Player properties
+                // Enhanced Player properties with animation states
                 this.player = {
                     x: this.canvas.width / 2,
                     y: this.canvas.height / 2,
-                    width: 30,
-                    height: 30,
-                    speed: 5,
-                    color: '#e74c3c'
+                    vx: 0,
+                    vy: 0,
+                    width: 40,
+                    height: 40,
+                    speed: 250, // pixels per second
+                    color: '#00ff88',
+                    
+                    // Animation system
+                    state: 'idle',
+                    previousState: 'idle',
+                    stateTimer: 0,
+                    animationTimer: 0,
+                    facing: 1, // 1 for right, -1 for left
+                    
+                    // Combat stats
+                    health: 100,
+                    maxHealth: 100,
+                    stamina: 100,
+                    maxStamina: 100,
+                    
+                    // Action cooldowns
+                    attackCooldown: 0,
+                    rollCooldown: 0,
+                    blockCooldown: 0,
+                    specialCooldown: 0,
+                    
+                    // State flags
+                    isBlocking: false,
+                    isInvulnerable: false,
+                    invulnerabilityTimer: 0
                 };
 
                 // Input handling
                 this.keys = {};
+                this.joystickInput = { x: 0, y: 0 };
+                this.actionInputs = {
+                    lightAttack: false,
+                    heavyAttack: false,
+                    block: false,
+                    roll: false,
+                    special: false
+                };
+
+                // Mobile controls
+                this.mobileControls = null;
+                this.setupMobileControls();
                 this.setupEventListeners();
 
                 // Game loop
@@ -105,18 +386,259 @@
                 this.fpsCounter = 0;
                 this.lastFpsUpdate = 0;
 
+                // Animation frames for different states
+                this.animations = {
+                    idle: { frames: 4, duration: 200 },
+                    running: { frames: 6, duration: 100 },
+                    attacking: { frames: 4, duration: 100 },
+                    blocking: { frames: 1, duration: 100 },
+                    rolling: { frames: 4, duration: 100 },
+                    hurt: { frames: 2, duration: 150 }
+                };
+
+                // Trail effect
+                this.trail = [];
+                
+                // Particle effects
+                this.particles = [];
+
                 this.gameLoop();
+            }
+
+            setupMobileControls() {
+                // Create mobile controls system
+                this.mobileControls = {
+                    joystickActive: false,
+                    joystickStartPos: { x: 0, y: 0 },
+                    joystickCenter: { x: 0, y: 0 },
+                    joystickRadius: 60,
+                    deadZone: 0.15,
+                    buttonStates: new Map()
+                };
+
+                this.createActionButtons();
+                this.setupJoystickCenter();
+                this.setupMobileTouchHandlers();
+            }
+
+            createActionButtons() {
+                const actionsContainer = document.getElementById('actions');
+                const buttons = [
+                    { id: 'light-attack', emoji: '👊', action: 'lightAttack', color: '#4CAF50', label: 'Light Attack' },
+                    { id: 'heavy-attack', emoji: '💥', action: 'heavyAttack', color: '#FF5722', label: 'Heavy Attack' },
+                    { id: 'special', emoji: '⚡', action: 'special', color: '#9C27B0', label: 'Special' },
+                    { id: 'block', emoji: '🛡️', action: 'block', color: '#2196F3', label: 'Block' },
+                    { id: 'roll', emoji: '🌀', action: 'roll', color: '#FF9800', label: 'Roll' }
+                ];
+
+                buttons.forEach(buttonConfig => {
+                    const button = document.createElement('div');
+                    button.className = 'action-btn';
+                    button.id = buttonConfig.id;
+                    button.dataset.action = buttonConfig.action;
+                    button.style.setProperty('--btn-color', buttonConfig.color);
+                    button.setAttribute('aria-label', buttonConfig.label);
+                    
+                    button.innerHTML = `
+                        <span class="btn-emoji">${buttonConfig.emoji}</span>
+                        <div class="cooldown-overlay"></div>
+                        <div class="press-feedback"></div>
+                    `;
+                    
+                    actionsContainer.appendChild(button);
+                    
+                    this.mobileControls.buttonStates.set(buttonConfig.action, {
+                        element: button,
+                        pressed: false,
+                        cooldown: 0
+                    });
+                });
+            }
+
+            setupJoystickCenter() {
+                const joystickBase = document.getElementById('joystick-base');
+                if (joystickBase) {
+                    const rect = joystickBase.getBoundingClientRect();
+                    this.mobileControls.joystickCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                    this.mobileControls.joystickRadius = rect.width / 2 - 20;
+                }
+            }
+
+            setupMobileTouchHandlers() {
+                // Joystick handlers
+                const joystickBase = document.getElementById('joystick-base');
+                if (joystickBase) {
+                    joystickBase.addEventListener('touchstart', this.handleJoystickStart.bind(this));
+                    joystickBase.addEventListener('touchmove', this.handleJoystickMove.bind(this));
+                    joystickBase.addEventListener('touchend', this.handleJoystickEnd.bind(this));
+                }
+
+                // Action button handlers
+                document.querySelectorAll('.action-btn').forEach(button => {
+                    button.addEventListener('touchstart', this.handleButtonStart.bind(this));
+                    button.addEventListener('touchend', this.handleButtonEnd.bind(this));
+                });
+
+                // Prevent default touch behaviors
+                document.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('.mobile-controls')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (e.target.closest('.mobile-controls')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
+
+            handleJoystickStart(event) {
+                event.preventDefault();
+                const touch = event.touches[0];
+                
+                this.mobileControls.joystickActive = true;
+                this.mobileControls.joystickStartPos = { x: touch.clientX, y: touch.clientY };
+                
+                const base = document.getElementById('joystick-base');
+                if (base) base.classList.add('active');
+                
+                this.vibrate(10);
+            }
+
+            handleJoystickMove(event) {
+                if (!this.mobileControls.joystickActive) return;
+                
+                event.preventDefault();
+                const touch = event.touches[0];
+                const center = this.mobileControls.joystickCenter;
+                
+                const deltaX = touch.clientX - center.x;
+                const deltaY = touch.clientY - center.y;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                const maxDistance = this.mobileControls.joystickRadius;
+                let constrainedX = deltaX;
+                let constrainedY = deltaY;
+                
+                if (distance > maxDistance) {
+                    const ratio = maxDistance / distance;
+                    constrainedX = deltaX * ratio;
+                    constrainedY = deltaY * ratio;
+                }
+                
+                // Update knob position
+                const knob = document.getElementById('joystick-knob');
+                if (knob) {
+                    knob.style.transform = `translate(calc(-50% + ${constrainedX}px), calc(-50% + ${constrainedY}px))`;
+                }
+                
+                // Calculate normalized input
+                const normalizedX = constrainedX / maxDistance;
+                const normalizedY = constrainedY / maxDistance;
+                
+                const inputMagnitude = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+                
+                if (inputMagnitude > this.mobileControls.deadZone) {
+                    const adjustedMagnitude = (inputMagnitude - this.mobileControls.deadZone) / (1 - this.mobileControls.deadZone);
+                    const ratio = adjustedMagnitude / inputMagnitude;
+                    this.joystickInput.x = normalizedX * ratio;
+                    this.joystickInput.y = normalizedY * ratio;
+                } else {
+                    this.joystickInput.x = 0;
+                    this.joystickInput.y = 0;
+                }
+            }
+
+            handleJoystickEnd(event) {
+                event.preventDefault();
+                
+                this.mobileControls.joystickActive = false;
+                this.joystickInput.x = 0;
+                this.joystickInput.y = 0;
+                
+                const knob = document.getElementById('joystick-knob');
+                if (knob) {
+                    knob.style.transform = 'translate(-50%, -50%)';
+                }
+                
+                const base = document.getElementById('joystick-base');
+                if (base) base.classList.remove('active');
+            }
+
+            handleButtonStart(event) {
+                event.preventDefault();
+                const button = event.currentTarget;
+                const action = button.dataset.action;
+                
+                if (!action) return;
+                
+                const buttonState = this.mobileControls.buttonStates.get(action);
+                if (!buttonState || buttonState.cooldown > 0) return;
+                
+                button.classList.add('pressed');
+                buttonState.pressed = true;
+                this.actionInputs[action] = true;
+                
+                this.vibrateForAction(action);
+            }
+
+            handleButtonEnd(event) {
+                event.preventDefault();
+                const button = event.currentTarget;
+                const action = button.dataset.action;
+                
+                if (!action) return;
+                
+                const buttonState = this.mobileControls.buttonStates.get(action);
+                if (!buttonState) return;
+                
+                button.classList.remove('pressed');
+                buttonState.pressed = false;
+                
+                // For non-hold actions, immediately reset
+                if (action !== 'block') {
+                    this.actionInputs[action] = false;
+                }
+            }
+
+            vibrate(duration = 50) {
+                if ('vibrate' in navigator) {
+                    try {
+                        navigator.vibrate(duration);
+                    } catch (error) {
+                        console.warn('Vibration failed:', error);
+                    }
+                }
+            }
+
+            vibrateForAction(action) {
+                const patterns = {
+                    lightAttack: 30,
+                    heavyAttack: [50, 20, 50],
+                    special: [100, 50, 100, 50, 100],
+                    block: 20,
+                    roll: [40, 20, 40]
+                };
+                
+                const pattern = patterns[action] || 50;
+                this.vibrate(pattern);
             }
 
             setupEventListeners() {
                 // Keyboard events
                 document.addEventListener('keydown', (e) => {
                     this.keys[e.code] = true;
+                    this.keys[e.key.toLowerCase()] = true;
                     e.preventDefault();
                 });
 
                 document.addEventListener('keyup', (e) => {
                     this.keys[e.code] = false;
+                    this.keys[e.key.toLowerCase()] = false;
                     e.preventDefault();
                 });
 
@@ -124,44 +646,454 @@
                 this.canvas.addEventListener('wheel', (e) => {
                     e.preventDefault();
                     if (e.deltaY < 0) {
-                        this.player.speed = Math.min(this.player.speed + 1, 20);
+                        this.player.speed = Math.min(this.player.speed + 25, 500);
                     } else {
-                        this.player.speed = Math.max(this.player.speed - 1, 1);
+                        this.player.speed = Math.max(this.player.speed - 25, 50);
                     }
-                    document.getElementById('playerSpeed').textContent = this.player.speed;
+                    document.getElementById('playerSpeed').textContent = Math.round(this.player.speed);
+                });
+
+                // Window resize handler
+                window.addEventListener('resize', () => {
+                    this.setupJoystickCenter();
+                });
+
+                // Orientation change handler
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => this.setupJoystickCenter(), 100);
                 });
             }
 
+            createInputFromKeys() {
+                return {
+                    // Movement
+                    left: this.keys.a || this.keys.arrowleft,
+                    right: this.keys.d || this.keys.arrowright,
+                    up: this.keys.w || this.keys.arrowup,
+                    down: this.keys.s || this.keys.arrowdown,
+                    
+                    // Combat actions
+                    lightAttack: this.keys.j || this.keys['1'],
+                    heavyAttack: this.keys.k || this.keys['2'],
+                    block: this.keys.shift || this.keys['3'],
+                    roll: this.keys.control || this.keys['4'],
+                    special: this.keys.l || this.keys['5']
+                };
+            }
+
             update(deltaTime) {
-                // Handle input
-                let dx = 0;
-                let dy = 0;
-
-                // WASD and Arrow key movement
-                if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
-                if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
-                if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
-                if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
-
-                // Normalize diagonal movement
-                if (dx !== 0 && dy !== 0) {
-                    dx *= 0.707; // sqrt(2)/2
-                    dy *= 0.707;
+                const dt = deltaTime / 1000; // Convert to seconds
+                
+                // Update cooldowns
+                this.updateCooldowns(dt);
+                
+                // Update player state timers
+                this.player.stateTimer += dt;
+                this.player.animationTimer += dt;
+                
+                // Update invulnerability
+                if (this.player.isInvulnerable) {
+                    this.player.invulnerabilityTimer -= dt;
+                    if (this.player.invulnerabilityTimer <= 0) {
+                        this.player.isInvulnerable = false;
+                    }
                 }
+                
+                // Get input from keyboard and mobile
+                const keyboardInput = this.createInputFromKeys();
+                const input = {
+                    left: keyboardInput.left,
+                    right: keyboardInput.right,
+                    up: keyboardInput.up,
+                    down: keyboardInput.down,
+                    lightAttack: keyboardInput.lightAttack || this.actionInputs.lightAttack,
+                    heavyAttack: keyboardInput.heavyAttack || this.actionInputs.heavyAttack,
+                    block: keyboardInput.block || this.actionInputs.block,
+                    roll: keyboardInput.roll || this.actionInputs.roll,
+                    special: keyboardInput.special || this.actionInputs.special
+                };
+                
+                // Handle state transitions
+                this.handleStateTransitions(input);
+                
+                // Update movement
+                this.updateMovement(dt, input);
+                
+                // Update animations
+                this.updateAnimations(dt);
+                
+                // Update particles
+                this.updateParticles(dt);
+                
+                // Update UI
+                this.updateUI();
+                
+                // Reset single-frame action inputs
+                this.actionInputs.lightAttack = false;
+                this.actionInputs.heavyAttack = false;
+                this.actionInputs.roll = false;
+                this.actionInputs.special = false;
+            }
 
-                // Update player position
-                this.player.x += dx * this.player.speed;
-                this.player.y += dy * this.player.speed;
+            updateCooldowns(dt) {
+                this.player.attackCooldown = Math.max(0, this.player.attackCooldown - dt);
+                this.player.rollCooldown = Math.max(0, this.player.rollCooldown - dt);
+                this.player.blockCooldown = Math.max(0, this.player.blockCooldown - dt);
+                this.player.specialCooldown = Math.max(0, this.player.specialCooldown - dt);
+                
+                // Update mobile button cooldowns
+                this.mobileControls.buttonStates.forEach((state, action) => {
+                    if (state.cooldown > 0) {
+                        state.cooldown = Math.max(0, state.cooldown - dt);
+                        
+                        if (state.cooldown === 0) {
+                            state.element.classList.remove('on-cooldown');
+                        }
+                    }
+                });
+            }
 
+            handleStateTransitions(input) {
+                const prevState = this.player.state;
+                
+                // State transition logic
+                switch (this.player.state) {
+                    case 'idle':
+                        if (input.lightAttack && this.canAttack()) {
+                            this.setState('attacking');
+                            this.startAttack('light');
+                        } else if (input.heavyAttack && this.canAttack()) {
+                            this.setState('attacking');
+                            this.startAttack('heavy');
+                        } else if (input.roll && this.canRoll()) {
+                            this.setState('rolling');
+                            this.startRoll();
+                        } else if (input.block && this.canBlock()) {
+                            this.setState('blocking');
+                            this.startBlock();
+                        } else if (input.special && this.canSpecial()) {
+                            this.setState('special');
+                            this.startSpecial();
+                        } else if (this.isMoving(input)) {
+                            this.setState('running');
+                        }
+                        break;
+                        
+                    case 'running':
+                        if (input.lightAttack && this.canAttack()) {
+                            this.setState('attacking');
+                            this.startAttack('light');
+                        } else if (input.heavyAttack && this.canAttack()) {
+                            this.setState('attacking');
+                            this.startAttack('heavy');
+                        } else if (input.roll && this.canRoll()) {
+                            this.setState('rolling');
+                            this.startRoll();
+                        } else if (input.block && this.canBlock()) {
+                            this.setState('blocking');
+                            this.startBlock();
+                        } else if (input.special && this.canSpecial()) {
+                            this.setState('special');
+                            this.startSpecial();
+                        } else if (!this.isMoving(input)) {
+                            this.setState('idle');
+                        }
+                        break;
+                        
+                    case 'attacking':
+                        if (this.player.stateTimer > 0.4) {
+                            this.setState('idle');
+                        }
+                        break;
+                        
+                    case 'blocking':
+                        if (!input.block) {
+                            this.setState('idle');
+                            this.stopBlock();
+                        }
+                        break;
+                        
+                    case 'rolling':
+                        if (this.player.stateTimer > 0.4) {
+                            this.setState('idle');
+                        }
+                        break;
+                        
+                    case 'special':
+                        if (this.player.stateTimer > 0.6) {
+                            this.setState('idle');
+                        }
+                        break;
+                        
+                    case 'hurt':
+                        if (this.player.stateTimer > 0.3) {
+                            this.setState('idle');
+                        }
+                        break;
+                }
+            }
+
+            updateMovement(dt, input) {
+                // Calculate movement input
+                let inputX = 0;
+                let inputY = 0;
+                
+                // Keyboard input
+                if (input.left) inputX -= 1;
+                if (input.right) inputX += 1;
+                if (input.up) inputY -= 1;
+                if (input.down) inputY += 1;
+                
+                // Mobile joystick input
+                if (Math.abs(this.joystickInput.x) > 0.1 || Math.abs(this.joystickInput.y) > 0.1) {
+                    inputX = this.joystickInput.x;
+                    inputY = this.joystickInput.y;
+                }
+                
+                // Normalize diagonal movement
+                const inputMagnitude = Math.sqrt(inputX * inputX + inputY * inputY);
+                if (inputMagnitude > 1) {
+                    inputX /= inputMagnitude;
+                    inputY /= inputMagnitude;
+                }
+                
+                // Update facing direction
+                if (inputX > 0.1) this.player.facing = 1;
+                else if (inputX < -0.1) this.player.facing = -1;
+                
+                // Apply movement based on state
+                let moveSpeed = this.player.speed;
+                
+                if (this.player.state === 'blocking') {
+                    moveSpeed *= 0.3; // Slow movement while blocking
+                } else if (this.player.state === 'rolling') {
+                    moveSpeed *= 2.0; // Fast movement while rolling
+                } else if (this.player.state === 'attacking') {
+                    moveSpeed *= 0.1; // Very slow movement while attacking
+                }
+                
+                // Update velocity
+                this.player.vx = inputX * moveSpeed;
+                this.player.vy = inputY * moveSpeed;
+                
+                // Update position
+                this.player.x += this.player.vx * dt;
+                this.player.y += this.player.vy * dt;
+                
                 // Keep player within bounds
                 this.player.x = Math.max(this.player.width / 2, 
                     Math.min(this.canvas.width - this.player.width / 2, this.player.x));
                 this.player.y = Math.max(this.player.height / 2, 
                     Math.min(this.canvas.height - this.player.height / 2, this.player.y));
+            }
 
-                // Update UI
+            updateAnimations(dt) {
+                // Update animation timer based on current state
+                const anim = this.animations[this.player.state];
+                if (anim) {
+                    if (this.player.animationTimer >= anim.duration / 1000) {
+                        this.player.animationTimer = 0;
+                    }
+                }
+            }
+
+            updateParticles(dt) {
+                // Update and remove expired particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.life -= dt;
+                    particle.x += particle.vx * dt;
+                    particle.y += particle.vy * dt;
+                    particle.alpha = particle.life / particle.maxLife;
+                    
+                    if (particle.life <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateUI() {
                 document.getElementById('playerPos').textContent = 
                     `X: ${Math.round(this.player.x)}, Y: ${Math.round(this.player.y)}`;
+                document.getElementById('playerState').textContent = this.player.state;
+                document.getElementById('playerHealth').textContent = Math.round(this.player.health);
+                document.getElementById('playerStamina').textContent = Math.round(this.player.stamina);
+                document.getElementById('currentAnimation').textContent = this.player.state;
+                document.getElementById('currentFrame').textContent = 
+                    Math.floor(this.player.animationTimer / (this.animations[this.player.state]?.duration / 1000 || 1));
+            }
+
+            // State management methods
+            setState(newState) {
+                if (this.player.state === newState) return;
+                
+                this.player.previousState = this.player.state;
+                this.player.state = newState;
+                this.player.stateTimer = 0;
+                this.player.animationTimer = 0;
+            }
+
+            isMoving(input) {
+                return input.left || input.right || input.up || input.down || 
+                       Math.abs(this.joystickInput.x) > 0.1 || Math.abs(this.joystickInput.y) > 0.1;
+            }
+
+            canAttack() {
+                return this.player.attackCooldown <= 0 && 
+                       this.player.stamina >= 15 &&
+                       this.player.state !== 'rolling' &&
+                       this.player.state !== 'hurt';
+            }
+
+            canRoll() {
+                return this.player.rollCooldown <= 0 && 
+                       this.player.stamina >= 25 &&
+                       this.player.state !== 'attacking' &&
+                       this.player.state !== 'hurt';
+            }
+
+            canBlock() {
+                return this.player.stamina > 0 &&
+                       this.player.state !== 'rolling' &&
+                       this.player.state !== 'attacking' &&
+                       this.player.state !== 'hurt';
+            }
+
+            canSpecial() {
+                return this.player.specialCooldown <= 0 && 
+                       this.player.stamina >= 50 &&
+                       this.player.state !== 'rolling' &&
+                       this.player.state !== 'hurt';
+            }
+
+            // Action methods
+            startAttack(type) {
+                this.player.attackCooldown = type === 'heavy' ? 0.8 : 0.5;
+                this.player.stamina -= type === 'heavy' ? 24 : 15;
+                
+                // Set cooldown on mobile button
+                const action = type === 'heavy' ? 'heavyAttack' : 'lightAttack';
+                const buttonState = this.mobileControls.buttonStates.get(action);
+                if (buttonState) {
+                    buttonState.cooldown = this.player.attackCooldown;
+                    buttonState.element.classList.add('on-cooldown');
+                }
+                
+                // Create attack particle effect
+                this.createAttackEffect(type);
+            }
+
+            startRoll() {
+                this.player.rollCooldown = 1.0;
+                this.player.stamina -= 25;
+                this.player.isInvulnerable = true;
+                this.player.invulnerabilityTimer = 0.4;
+                
+                // Set cooldown on mobile button
+                const buttonState = this.mobileControls.buttonStates.get('roll');
+                if (buttonState) {
+                    buttonState.cooldown = this.player.rollCooldown;
+                    buttonState.element.classList.add('on-cooldown');
+                }
+                
+                // Create roll particle effect
+                this.createRollEffect();
+            }
+
+            startBlock() {
+                this.player.isBlocking = true;
+                
+                // Create block particle effect
+                this.createBlockEffect();
+            }
+
+            stopBlock() {
+                this.player.isBlocking = false;
+                this.actionInputs.block = false;
+            }
+
+            startSpecial() {
+                this.player.specialCooldown = 3.0;
+                this.player.stamina -= 50;
+                
+                // Set cooldown on mobile button
+                const buttonState = this.mobileControls.buttonStates.get('special');
+                if (buttonState) {
+                    buttonState.cooldown = this.player.specialCooldown;
+                    buttonState.element.classList.add('on-cooldown');
+                }
+                
+                // Create special effect
+                this.createSpecialEffect();
+            }
+
+            // Particle effect methods
+            createAttackEffect(type) {
+                const color = type === 'heavy' ? '#ff4444' : '#ffaa44';
+                const count = type === 'heavy' ? 15 : 8;
+                
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: this.player.x + this.player.facing * 30,
+                        y: this.player.y + (Math.random() - 0.5) * 20,
+                        vx: this.player.facing * (100 + Math.random() * 100),
+                        vy: (Math.random() - 0.5) * 100,
+                        life: 0.3,
+                        maxLife: 0.3,
+                        alpha: 1,
+                        color: color,
+                        size: Math.random() * 4 + 2
+                    });
+                }
+            }
+
+            createRollEffect() {
+                for (let i = 0; i < 12; i++) {
+                    this.particles.push({
+                        x: this.player.x,
+                        y: this.player.y,
+                        vx: (Math.random() - 0.5) * 200,
+                        vy: (Math.random() - 0.5) * 200,
+                        life: 0.5,
+                        maxLife: 0.5,
+                        alpha: 1,
+                        color: '#ffff44',
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+
+            createBlockEffect() {
+                for (let i = 0; i < 6; i++) {
+                    this.particles.push({
+                        x: this.player.x + this.player.facing * 25,
+                        y: this.player.y + (Math.random() - 0.5) * 30,
+                        vx: this.player.facing * (50 + Math.random() * 50),
+                        vy: (Math.random() - 0.5) * 50,
+                        life: 0.2,
+                        maxLife: 0.2,
+                        alpha: 1,
+                        color: '#4444ff',
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+
+            createSpecialEffect() {
+                for (let i = 0; i < 20; i++) {
+                    const angle = (i / 20) * Math.PI * 2;
+                    this.particles.push({
+                        x: this.player.x,
+                        y: this.player.y,
+                        vx: Math.cos(angle) * 150,
+                        vy: Math.sin(angle) * 150,
+                        life: 0.8,
+                        maxLife: 0.8,
+                        alpha: 1,
+                        color: '#ff44ff',
+                        size: Math.random() * 5 + 3
+                    });
+                }
             }
 
             render() {
@@ -172,8 +1104,11 @@
                 // Draw grid pattern
                 this.drawGrid();
 
-                // Draw player
-                this.drawPlayer();
+                // Draw particles (behind player)
+                this.drawParticles();
+
+                // Draw player with animation
+                this.drawAnimatedPlayer();
 
                 // Draw movement trail effect
                 this.drawTrail();
@@ -185,7 +1120,6 @@
                 
                 const gridSize = 50;
                 
-                // Vertical lines
                 for (let x = 0; x <= this.canvas.width; x += gridSize) {
                     this.ctx.beginPath();
                     this.ctx.moveTo(x, 0);
@@ -193,7 +1127,6 @@
                     this.ctx.stroke();
                 }
 
-                // Horizontal lines
                 for (let y = 0; y <= this.canvas.height; y += gridSize) {
                     this.ctx.beginPath();
                     this.ctx.moveTo(0, y);
@@ -202,54 +1135,151 @@
                 }
             }
 
-            drawPlayer() {
-                // Player body (rectangle with rounded corners)
-                this.ctx.fillStyle = this.player.color;
+            drawAnimatedPlayer() {
+                this.ctx.save();
+                
+                // Apply invulnerability flashing
+                if (this.player.isInvulnerable) {
+                    this.ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.3;
+                }
+                
+                // Determine color based on state
+                let playerColor = this.player.color;
+                if (this.player.state === 'blocking') {
+                    playerColor = '#4444ff';
+                } else if (this.player.state === 'attacking') {
+                    playerColor = '#ff4444';
+                } else if (this.player.state === 'rolling') {
+                    playerColor = '#ffff44';
+                } else if (this.player.state === 'hurt') {
+                    playerColor = '#ff0000';
+                }
+                
+                // Draw player body
+                this.ctx.fillStyle = playerColor;
                 this.ctx.beginPath();
+                
+                // Add slight animation based on state
+                let scaleX = 1;
+                let scaleY = 1;
+                let offsetY = 0;
+                
+                if (this.player.state === 'running') {
+                    const bobAmount = Math.sin(this.player.animationTimer * 10) * 2;
+                    offsetY = bobAmount;
+                }
+                
+                if (this.player.state === 'attacking') {
+                    scaleX = 1.2;
+                    scaleY = 0.9;
+                }
+                
+                if (this.player.state === 'blocking') {
+                    scaleY = 0.8;
+                    offsetY = 3;
+                }
+                
+                if (this.player.state === 'rolling') {
+                    const rollPhase = this.player.stateTimer / 0.4;
+                    scaleX = 1 + Math.sin(rollPhase * Math.PI * 2) * 0.3;
+                    scaleY = 1 - Math.sin(rollPhase * Math.PI * 2) * 0.3;
+                }
+                
+                this.ctx.scale(this.player.facing, 1);
                 this.ctx.roundRect(
-                    this.player.x - this.player.width / 2,
-                    this.player.y - this.player.height / 2,
-                    this.player.width,
-                    this.player.height,
-                    5
+                    (this.player.x * this.player.facing) - (this.player.width * scaleX) / 2,
+                    this.player.y - (this.player.height * scaleY) / 2 + offsetY,
+                    this.player.width * scaleX,
+                    this.player.height * scaleY,
+                    8
                 );
                 this.ctx.fill();
 
                 // Player border
-                this.ctx.strokeStyle = '#c0392b';
+                this.ctx.strokeStyle = '#2c3e50';
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
-                // Direction indicator (small dot showing movement direction)
-                if (this.keys['KeyW'] || this.keys['KeyS'] || 
-                    this.keys['KeyA'] || this.keys['KeyD'] ||
-                    this.keys['ArrowUp'] || this.keys['ArrowDown'] ||
-                    this.keys['ArrowLeft'] || this.keys['ArrowRight']) {
-                    
-                    this.ctx.fillStyle = '#f39c12';
+                // Draw facing indicator
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    (this.player.x * this.player.facing) + (this.player.facing * 10),
+                    this.player.y - 5,
+                    3, 0, Math.PI * 2
+                );
+                this.ctx.fill();
+                
+                this.ctx.restore();
+                
+                // Draw health bar
+                this.drawHealthBar();
+                
+                // Draw stamina bar
+                this.drawStaminaBar();
+            }
+
+            drawHealthBar() {
+                const barWidth = 50;
+                const barHeight = 6;
+                const barY = this.player.y - this.player.height / 2 - 15;
+                
+                // Background
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.fillRect(this.player.x - barWidth / 2, barY, barWidth, barHeight);
+                
+                // Health
+                const healthPercent = this.player.health / this.player.maxHealth;
+                this.ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : 
+                                   healthPercent > 0.25 ? '#ffff00' : '#ff0000';
+                this.ctx.fillRect(this.player.x - barWidth / 2, barY, barWidth * healthPercent, barHeight);
+            }
+
+            drawStaminaBar() {
+                const barWidth = 50;
+                const barHeight = 4;
+                const barY = this.player.y - this.player.height / 2 - 8;
+                
+                // Background
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.fillRect(this.player.x - barWidth / 2, barY, barWidth, barHeight);
+                
+                // Stamina
+                const staminaPercent = this.player.stamina / this.player.maxStamina;
+                this.ctx.fillStyle = '#00aaff';
+                this.ctx.fillRect(this.player.x - barWidth / 2, barY, barWidth * staminaPercent, barHeight);
+            }
+
+            drawParticles() {
+                this.particles.forEach(particle => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = particle.alpha;
+                    this.ctx.fillStyle = particle.color;
                     this.ctx.beginPath();
-                    this.ctx.arc(this.player.x, this.player.y, 3, 0, Math.PI * 2);
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                     this.ctx.fill();
-                }
+                    this.ctx.restore();
+                });
             }
 
             drawTrail() {
-                // Simple trail effect - could be enhanced with a proper trail system
                 if (!this.trail) this.trail = [];
                 
-                // Add current position to trail
-                this.trail.push({ x: this.player.x, y: this.player.y });
+                // Add current position to trail if moving
+                if (Math.abs(this.player.vx) > 10 || Math.abs(this.player.vy) > 10) {
+                    this.trail.push({ x: this.player.x, y: this.player.y });
+                }
                 
                 // Keep trail length manageable
-                if (this.trail.length > 20) {
+                if (this.trail.length > 15) {
                     this.trail.shift();
                 }
 
                 // Draw trail
                 for (let i = 0; i < this.trail.length - 1; i++) {
-                    const alpha = i / this.trail.length * 0.3;
-                    this.ctx.strokeStyle = `rgba(231, 76, 60, ${alpha})`;
-                    this.ctx.lineWidth = 2;
+                    const alpha = (i / this.trail.length) * 0.2;
+                    this.ctx.strokeStyle = `rgba(0, 255, 136, ${alpha})`;
+                    this.ctx.lineWidth = 3;
                     this.ctx.beginPath();
                     this.ctx.moveTo(this.trail[i].x, this.trail[i].y);
                     this.ctx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
@@ -277,9 +1307,9 @@
             }
         }
 
-        // Start the demo when page loads
+        // Start the enhanced demo when page loads
         window.addEventListener('load', () => {
-            new SimplePlayerDemo();
+            new EnhancedPlayerDemo();
         });
     </script>
 </body>
