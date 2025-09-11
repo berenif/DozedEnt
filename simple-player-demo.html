@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Player Movement Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #2c3e50;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        h1 {
+            color: #ecf0f1;
+            margin-bottom: 20px;
+        }
+
+        #gameContainer {
+            border: 3px solid #34495e;
+            border-radius: 10px;
+            background-color: #34495e;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #gameCanvas {
+            background-color: #27ae60;
+            border: 2px solid #2ecc71;
+            border-radius: 5px;
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .controls p {
+            margin: 5px 0;
+            color: #bdc3c7;
+        }
+
+        .stats {
+            margin-top: 15px;
+            background-color: #34495e;
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 200px;
+        }
+
+        .stats div {
+            margin: 5px 0;
+            color: #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Player Movement Demo</h1>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <div class="controls">
+        <p><strong>Controls:</strong></p>
+        <p>WASD or Arrow Keys to move</p>
+        <p>Player speed can be adjusted with mouse wheel</p>
+    </div>
+
+    <div class="stats">
+        <div>Position: <span id="playerPos">X: 0, Y: 0</span></div>
+        <div>Speed: <span id="playerSpeed">5</span></div>
+        <div>FPS: <span id="fps">0</span></div>
+    </div>
+
+    <script>
+        class SimplePlayerDemo {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Player properties
+                this.player = {
+                    x: this.canvas.width / 2,
+                    y: this.canvas.height / 2,
+                    width: 30,
+                    height: 30,
+                    speed: 5,
+                    color: '#e74c3c'
+                };
+
+                // Input handling
+                this.keys = {};
+                this.setupEventListeners();
+
+                // Game loop
+                this.lastTime = 0;
+                this.fps = 0;
+                this.fpsCounter = 0;
+                this.lastFpsUpdate = 0;
+
+                this.gameLoop();
+            }
+
+            setupEventListeners() {
+                // Keyboard events
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    e.preventDefault();
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                    e.preventDefault();
+                });
+
+                // Mouse wheel for speed adjustment
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        this.player.speed = Math.min(this.player.speed + 1, 20);
+                    } else {
+                        this.player.speed = Math.max(this.player.speed - 1, 1);
+                    }
+                    document.getElementById('playerSpeed').textContent = this.player.speed;
+                });
+            }
+
+            update(deltaTime) {
+                // Handle input
+                let dx = 0;
+                let dy = 0;
+
+                // WASD and Arrow key movement
+                if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
+                if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
+                if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
+                if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
+
+                // Normalize diagonal movement
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.707; // sqrt(2)/2
+                    dy *= 0.707;
+                }
+
+                // Update player position
+                this.player.x += dx * this.player.speed;
+                this.player.y += dy * this.player.speed;
+
+                // Keep player within bounds
+                this.player.x = Math.max(this.player.width / 2, 
+                    Math.min(this.canvas.width - this.player.width / 2, this.player.x));
+                this.player.y = Math.max(this.player.height / 2, 
+                    Math.min(this.canvas.height - this.player.height / 2, this.player.y));
+
+                // Update UI
+                document.getElementById('playerPos').textContent = 
+                    `X: ${Math.round(this.player.x)}, Y: ${Math.round(this.player.y)}`;
+            }
+
+            render() {
+                // Clear canvas
+                this.ctx.fillStyle = '#27ae60';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw grid pattern
+                this.drawGrid();
+
+                // Draw player
+                this.drawPlayer();
+
+                // Draw movement trail effect
+                this.drawTrail();
+            }
+
+            drawGrid() {
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                this.ctx.lineWidth = 1;
+                
+                const gridSize = 50;
+                
+                // Vertical lines
+                for (let x = 0; x <= this.canvas.width; x += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let y = 0; y <= this.canvas.height; y += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawPlayer() {
+                // Player body (rectangle with rounded corners)
+                this.ctx.fillStyle = this.player.color;
+                this.ctx.beginPath();
+                this.ctx.roundRect(
+                    this.player.x - this.player.width / 2,
+                    this.player.y - this.player.height / 2,
+                    this.player.width,
+                    this.player.height,
+                    5
+                );
+                this.ctx.fill();
+
+                // Player border
+                this.ctx.strokeStyle = '#c0392b';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+
+                // Direction indicator (small dot showing movement direction)
+                if (this.keys['KeyW'] || this.keys['KeyS'] || 
+                    this.keys['KeyA'] || this.keys['KeyD'] ||
+                    this.keys['ArrowUp'] || this.keys['ArrowDown'] ||
+                    this.keys['ArrowLeft'] || this.keys['ArrowRight']) {
+                    
+                    this.ctx.fillStyle = '#f39c12';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.player.x, this.player.y, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
+            drawTrail() {
+                // Simple trail effect - could be enhanced with a proper trail system
+                if (!this.trail) this.trail = [];
+                
+                // Add current position to trail
+                this.trail.push({ x: this.player.x, y: this.player.y });
+                
+                // Keep trail length manageable
+                if (this.trail.length > 20) {
+                    this.trail.shift();
+                }
+
+                // Draw trail
+                for (let i = 0; i < this.trail.length - 1; i++) {
+                    const alpha = i / this.trail.length * 0.3;
+                    this.ctx.strokeStyle = `rgba(231, 76, 60, ${alpha})`;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.trail[i].x, this.trail[i].y);
+                    this.ctx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+                    this.ctx.stroke();
+                }
+            }
+
+            gameLoop(currentTime = 0) {
+                const deltaTime = currentTime - this.lastTime;
+                this.lastTime = currentTime;
+
+                // Update FPS
+                this.fpsCounter++;
+                if (currentTime - this.lastFpsUpdate >= 1000) {
+                    this.fps = this.fpsCounter;
+                    this.fpsCounter = 0;
+                    this.lastFpsUpdate = currentTime;
+                    document.getElementById('fps').textContent = this.fps;
+                }
+
+                this.update(deltaTime);
+                this.render();
+
+                requestAnimationFrame((time) => this.gameLoop(time));
+            }
+        }
+
+        // Start the demo when page loads
+        window.addEventListener('load', () => {
+            new SimplePlayerDemo();
+        });
+    </script>
+</body>
+</html>
