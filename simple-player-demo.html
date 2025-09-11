@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Player Demo with Joystick & Animations</title>
+    <title>Enhanced Player Demo with Advanced Procedural Animations</title>
     <style>
         body {
             margin: 0;
@@ -264,7 +264,7 @@
     </style>
 </head>
 <body>
-    <h1>Enhanced Player Demo with Joystick & Animations</h1>
+    <h1>Enhanced Player Demo with Advanced Procedural Animations</h1>
     
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -292,6 +292,7 @@
         <p>J/1 - Light Attack, K/2 - Heavy Attack</p>
         <p>Shift/3 - Block, Ctrl/4 - Roll, L/5 - Special</p>
         <p>Mouse wheel - Adjust speed</p>
+        <p><strong>F3 - Toggle Debug Mode (Skeletal Animation)</strong></p>
     </div>
 
     <!-- Stats Panel -->
@@ -308,6 +309,20 @@
     <div class="animation-state">
         <div>Animation: <span id="currentAnimation">idle</span></div>
         <div>Frame: <span id="currentFrame">0</span></div>
+        <div>Debug: <span id="debugMode">OFF</span></div>
+    </div>
+
+    <!-- Procedural Animation Debug Panel -->
+    <div class="procedural-debug" id="proceduralDebug" style="display: none; position: fixed; top: 20px; left: 20px; background: rgba(52, 73, 94, 0.95); padding: 15px; border-radius: 10px; font-size: 12px; z-index: 60; max-width: 300px;">
+        <h4 style="margin: 0 0 10px 0; color: #ecf0f1;">Procedural Animation Debug</h4>
+        <div>Breathing: <span id="breathingInfo">-</span></div>
+        <div>Momentum: <span id="momentumInfo">-</span></div>
+        <div>Squash/Stretch: <span id="squashStretchInfo">-</span></div>
+        <div>Anticipation: <span id="anticipationInfo">-</span></div>
+        <div>Wobble: <span id="wobbleInfo">-</span></div>
+        <div>Secondary Motion: <span id="secondaryMotionInfo">-</span></div>
+        <div>Skeleton Active: <span id="skeletonInfo">-</span></div>
+        <div>Transform: <span id="transformInfo">-</span></div>
     </div>
 
     <!-- Gesture Indicators (for mobile) -->
@@ -321,8 +336,37 @@
         <div class="long-press-text">Hold to activate</div>
     </div>
 
-    <script>
-        // Enhanced Player Demo with Joystick Controls and Animations
+    <script type="module">
+        // Import the advanced procedural animation system
+        let RealisticProceduralAnimator, ProceduralAnimator, CharacterAnimator;
+        
+        try {
+            const animationModule = await import('./src/animation/realistic-procedural-animator.js');
+            RealisticProceduralAnimator = animationModule.RealisticProceduralAnimator || animationModule.default;
+            
+            const systemModule = await import('./src/animation/animation-system.js');
+            ProceduralAnimator = systemModule.ProceduralAnimator;
+            CharacterAnimator = systemModule.CharacterAnimator;
+        } catch (error) {
+            console.warn('Could not load advanced animation modules:', error);
+            // Provide simple fallback classes
+            RealisticProceduralAnimator = class {
+                constructor() {}
+                update() { return { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }; }
+                config = { renderSkeleton: false, renderIKTargets: false, renderSecondaryMotion: false };
+            };
+            ProceduralAnimator = class {
+                createBreathingAnimation() { return { modulateForState() {}, update() { return { scaleX: 1, scaleY: 1, offsetY: 0 }; } }; }
+                createMomentumSystem() { return { update() { return { leanAngle: 0, stretchFactor: 0, bounceFactor: 0 }; }, addImpulse() {} }; }
+                createSquashStretch() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1 }; } }; }
+                createAnticipation() { return { trigger() {}, update() { return { scaleX: 1, scaleY: 1, offsetX: 0 }; }, active: false, phase: 'idle' }; }
+                createWobble() { return { impulse() {}, update() { return { scaleX: 1, scaleY: 1, rotation: 0 }; }, displacement: 0, velocity: 0 }; }
+                createSecondaryMotion() { return { initialize() {}, update() { return []; } }; }
+                createTrailEffect() { return { clear() {}, update() { return []; } }; }
+            };
+        }
+
+        // Enhanced Player Demo with Advanced Procedural Animations
         class EnhancedPlayerDemo {
             constructor() {
                 this.canvas = document.getElementById('gameCanvas');
@@ -363,6 +407,9 @@
                     isInvulnerable: false,
                     invulnerabilityTimer: 0
                 };
+                
+                // Initialize advanced procedural animation systems
+                this.initializeProceduralAnimators();
 
                 // Input handling
                 this.keys = {};
@@ -403,6 +450,87 @@
                 this.particles = [];
 
                 this.gameLoop();
+            }
+
+            initializeProceduralAnimators() {
+                // Initialize the Realistic Procedural Animator
+                this.realisticAnimator = new RealisticProceduralAnimator({
+                    ikEnabled: true,
+                    renderSkeleton: false, // Will be controlled by debug mode
+                    renderIKTargets: false,
+                    renderSecondaryMotion: false,
+                    enableOptimizations: true,
+                    armLength: 22,
+                    forearmLength: 18,
+                    thighLength: 20,
+                    shinLength: 18
+                });
+                
+                // Initialize the standard procedural animator for basic effects
+                this.proceduralAnimator = new ProceduralAnimator();
+                
+                // Create enhanced breathing animation
+                this.breathingAnimation = this.proceduralAnimator.createBreathingAnimation({
+                    baseScale: 1.0,
+                    intensity: 0.018,
+                    speed: 1.8,
+                    depthVariation: 0.4,
+                    asymmetry: 0.25,
+                    heartRateSync: true
+                });
+                
+                // Create momentum system for realistic movement
+                this.momentumSystem = this.proceduralAnimator.createMomentumSystem({
+                    maxMomentum: 12,
+                    momentumDecay: 0.88,
+                    momentumInfluence: 0.28,
+                    directionSmoothing: 0.75
+                });
+                
+                // Create squash and stretch for impacts
+                this.squashStretch = this.proceduralAnimator.createSquashStretch(0.35, 0.25);
+                
+                // Create anticipation system for attacks
+                this.anticipationSystem = this.proceduralAnimator.createAnticipation(0.35, 0.18);
+                
+                // Create wobble effect for impacts
+                this.wobbleEffect = this.proceduralAnimator.createWobble(12, 0.82, 0.12);
+                
+                // Create secondary motion for cloth/hair
+                this.secondaryMotion = this.proceduralAnimator.createSecondaryMotion({
+                    segments: 6,
+                    length: 18,
+                    damping: 0.85,
+                    stiffness: 0.28,
+                    gravity: 0.4,
+                    windStrength: 0.12
+                });
+                
+                // Initialize secondary motion
+                this.secondaryMotion.initialize(this.player.x, this.player.y - 10);
+                
+                // Create trail effect for fast movement
+                this.trailEffect = this.proceduralAnimator.createTrailEffect(8, 0.4);
+                
+                // Debug mode flag
+                this.debugMode = false;
+                
+                // Setup debug toggle (F3 key)
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'F3') {
+                        e.preventDefault();
+                        this.debugMode = !this.debugMode;
+                        this.realisticAnimator.config.renderSkeleton = this.debugMode;
+                        this.realisticAnimator.config.renderIKTargets = this.debugMode;
+                        this.realisticAnimator.config.renderSecondaryMotion = this.debugMode;
+                        
+                        // Update debug UI
+                        document.getElementById('debugMode').textContent = this.debugMode ? 'ON' : 'OFF';
+                        document.getElementById('proceduralDebug').style.display = this.debugMode ? 'block' : 'none';
+                        
+                        console.log('Debug mode:', this.debugMode ? 'ON' : 'OFF');
+                    }
+                });
             }
 
             setupMobileControls() {
@@ -719,6 +847,9 @@
                 // Update movement
                 this.updateMovement(dt, input);
                 
+                // Update procedural animations
+                this.updateProceduralAnimations(dt);
+                
                 // Update animations
                 this.updateAnimations(dt);
                 
@@ -733,6 +864,74 @@
                 this.actionInputs.heavyAttack = false;
                 this.actionInputs.roll = false;
                 this.actionInputs.special = false;
+            }
+            
+            updateProceduralAnimations(dt) {
+                // Create WASM-like data for the realistic animator
+                const wasmData = {
+                    position: { 
+                        x: this.player.x / this.canvas.width, 
+                        y: this.player.y / this.canvas.height 
+                    },
+                    velocity: { x: this.player.vx, y: this.player.vy },
+                    isGrounded: true,
+                    stamina: this.player.stamina / this.player.maxStamina,
+                    health: this.player.health / this.player.maxHealth,
+                    animState: this.getNumericAnimState(),
+                    
+                    // Enhanced animation data
+                    spineCurve: this.getSpineCurve(),
+                    shoulderRotation: this.getShoulderRotation(),
+                    headBobX: this.getHeadBobX(),
+                    headBobY: this.getHeadBobY(),
+                    armSwingLeft: this.getArmSwing('left'),
+                    armSwingRight: this.getArmSwing('right'),
+                    legLiftLeft: this.getLegLift('left'),
+                    legLiftRight: this.getLegLift('right'),
+                    torsoTwist: this.getTorsoTwist(),
+                    breathingIntensity: this.getBreathingIntensity(),
+                    fatigueFactory: this.getFatigueFactor(),
+                    momentumX: this.player.vx * 0.01,
+                    momentumY: this.player.vy * 0.01,
+                    
+                    // Secondary motion
+                    clothSway: this.getClothSway(),
+                    hairBounce: this.getHairBounce(),
+                    equipmentJiggle: this.getEquipmentJiggle(),
+                    
+                    // Environmental
+                    windResponse: Math.sin(Date.now() * 0.001) * 0.5,
+                    groundAdapt: 0,
+                    temperatureShiver: 0
+                };
+                
+                // Update realistic procedural animator
+                this.realisticTransform = this.realisticAnimator.update(dt, wasmData);
+                
+                // Update breathing animation with state modulation
+                this.breathingAnimation.modulateForState(this.player.state);
+                this.breathingResult = this.breathingAnimation.update(dt);
+                
+                // Update momentum system
+                this.momentumResult = this.momentumSystem.update(dt, this.player.vx, this.player.vy, true);
+                
+                // Update squash and stretch
+                this.squashStretchResult = this.squashStretch.update(dt);
+                
+                // Update anticipation
+                this.anticipationResult = this.anticipationSystem.update(dt);
+                
+                // Update wobble
+                this.wobbleResult = this.wobbleEffect.update(dt);
+                
+                // Update secondary motion
+                this.secondaryMotionResult = this.secondaryMotion.update(dt, this.player.x, this.player.y - 10, 0);
+                
+                // Update trail effect
+                this.trailResult = this.trailEffect.update(dt, { x: this.player.x, y: this.player.y });
+                
+                // Combine all procedural transforms
+                this.combinedTransform = this.combineProceduralTransforms();
             }
 
             updateCooldowns(dt) {
@@ -921,6 +1120,62 @@
                 document.getElementById('currentAnimation').textContent = this.player.state;
                 document.getElementById('currentFrame').textContent = 
                     Math.floor(this.player.animationTimer / (this.animations[this.player.state]?.duration / 1000 || 1));
+                
+                // Update debug panel if active
+                if (this.debugMode) {
+                    this.updateDebugPanel();
+                }
+            }
+            
+            updateDebugPanel() {
+                // Update breathing info
+                if (this.breathingResult) {
+                    document.getElementById('breathingInfo').textContent = 
+                        `Scale: ${this.breathingResult.scaleX.toFixed(3)}, Phase: ${this.breathingResult.phase?.toFixed(2) || 0}`;
+                }
+                
+                // Update momentum info
+                if (this.momentumResult) {
+                    document.getElementById('momentumInfo').textContent = 
+                        `Lean: ${(this.momentumResult.leanAngle * 180 / Math.PI).toFixed(1)}°, Stretch: ${this.momentumResult.stretchFactor.toFixed(3)}`;
+                }
+                
+                // Update squash/stretch info
+                if (this.squashStretchResult) {
+                    document.getElementById('squashStretchInfo').textContent = 
+                        `X: ${this.squashStretchResult.scaleX.toFixed(3)}, Y: ${this.squashStretchResult.scaleY.toFixed(3)}`;
+                }
+                
+                // Update anticipation info
+                if (this.anticipationResult) {
+                    document.getElementById('anticipationInfo').textContent = 
+                        `Active: ${this.anticipationSystem.active}, Phase: ${this.anticipationSystem.phase}`;
+                }
+                
+                // Update wobble info
+                if (this.wobbleResult) {
+                    document.getElementById('wobbleInfo').textContent = 
+                        `Displacement: ${this.wobbleEffect.displacement.toFixed(3)}, Velocity: ${this.wobbleEffect.velocity.toFixed(3)}`;
+                }
+                
+                // Update secondary motion info
+                if (this.secondaryMotionResult) {
+                    document.getElementById('secondaryMotionInfo').textContent = 
+                        `Segments: ${this.secondaryMotionResult.length}`;
+                }
+                
+                // Update skeleton info
+                if (this.realisticTransform?.skeleton) {
+                    document.getElementById('skeletonInfo').textContent = 'Yes';
+                } else {
+                    document.getElementById('skeletonInfo').textContent = 'No';
+                }
+                
+                // Update transform info
+                if (this.combinedTransform) {
+                    document.getElementById('transformInfo').textContent = 
+                        `S: ${this.combinedTransform.scaleX.toFixed(2)}, R: ${(this.combinedTransform.rotation * 180 / Math.PI).toFixed(1)}°`;
+                }
             }
 
             // State management methods
@@ -966,6 +1221,185 @@
                        this.player.state !== 'hurt';
             }
 
+            // Helper methods for procedural animation data generation
+            getNumericAnimState() {
+                switch(this.player.state) {
+                    case 'idle': return 0;
+                    case 'running': return 1;
+                    case 'attacking': return 2;
+                    case 'blocking': return 3;
+                    case 'rolling': return 4;
+                    case 'hurt': return 5;
+                    case 'dead': return 6;
+                    default: return 0;
+                }
+            }
+            
+            getSpineCurve() {
+                const speed = Math.hypot(this.player.vx, this.player.vy);
+                const leanFactor = Math.min(speed / 200, 1.0);
+                return leanFactor * (this.player.vx > 0 ? 0.1 : -0.1);
+            }
+            
+            getShoulderRotation() {
+                const time = Date.now() * 0.001;
+                if (this.player.state === 'running') {
+                    return Math.sin(time * 4) * 0.3;
+                } else if (this.player.state === 'attacking') {
+                    return this.player.facing * 0.5;
+                }
+                return 0;
+            }
+            
+            getHeadBobX() {
+                if (this.player.state === 'running') {
+                    return Math.sin(Date.now() * 0.008) * 2;
+                }
+                return 0;
+            }
+            
+            getHeadBobY() {
+                if (this.player.state === 'running') {
+                    return Math.abs(Math.sin(Date.now() * 0.016)) * 3;
+                } else if (this.player.state === 'attacking') {
+                    return -2; // Slight head forward during attack
+                }
+                return 0;
+            }
+            
+            getArmSwing(side) {
+                const time = Date.now() * 0.001;
+                const isLeft = side === 'left';
+                
+                if (this.player.state === 'running') {
+                    const phase = isLeft ? 0 : Math.PI;
+                    return Math.sin(time * 8 + phase) * 1.2;
+                } else if (this.player.state === 'attacking') {
+                    const attackPhase = this.player.stateTimer / 0.4;
+                    return isLeft ? -attackPhase * 0.5 : attackPhase * 1.5;
+                }
+                return 0;
+            }
+            
+            getLegLift(side) {
+                const time = Date.now() * 0.001;
+                const isLeft = side === 'left';
+                
+                if (this.player.state === 'running') {
+                    const phase = isLeft ? Math.PI : 0;
+                    return Math.max(0, Math.sin(time * 8 + phase)) * 0.8;
+                }
+                return 0;
+            }
+            
+            getTorsoTwist() {
+                if (this.player.state === 'attacking') {
+                    const attackPhase = this.player.stateTimer / 0.4;
+                    return this.player.facing * attackPhase * 0.3;
+                } else if (this.player.state === 'rolling') {
+                    return Math.sin(this.player.stateTimer * 10) * 0.5;
+                }
+                return 0;
+            }
+            
+            getBreathingIntensity() {
+                switch(this.player.state) {
+                    case 'running': return 2.5;
+                    case 'attacking': return 1.8;
+                    case 'blocking': return 1.3;
+                    case 'hurt': return 0.5;
+                    case 'dead': return 0.0;
+                    default: return 1.0;
+                }
+            }
+            
+            getFatigueFactor() {
+                return Math.max(0, (100 - this.player.stamina) / 100);
+            }
+            
+            getClothSway() {
+                const speed = Math.hypot(this.player.vx, this.player.vy);
+                return (speed / 250) * this.player.facing;
+            }
+            
+            getHairBounce() {
+                if (this.player.state === 'running') {
+                    return Math.abs(Math.sin(Date.now() * 0.016)) * 0.8;
+                } else if (this.player.state === 'rolling') {
+                    return 1.5;
+                }
+                return 0.2;
+            }
+            
+            getEquipmentJiggle() {
+                const speed = Math.hypot(this.player.vx, this.player.vy);
+                return speed / 300;
+            }
+            
+            combineProceduralTransforms() {
+                // Combine all procedural animation transforms
+                let scaleX = 1.0;
+                let scaleY = 1.0;
+                let rotation = 0.0;
+                let offsetX = 0.0;
+                let offsetY = 0.0;
+                
+                // Apply breathing
+                if (this.breathingResult) {
+                    scaleX *= this.breathingResult.scaleX;
+                    scaleY *= this.breathingResult.scaleY;
+                    offsetY += this.breathingResult.offsetY;
+                }
+                
+                // Apply momentum effects
+                if (this.momentumResult) {
+                    rotation += this.momentumResult.leanAngle;
+                    scaleY *= (1 + this.momentumResult.stretchFactor);
+                    offsetY += this.momentumResult.bounceFactor * Math.sin(Date.now() * 0.01);
+                }
+                
+                // Apply squash and stretch
+                if (this.squashStretchResult) {
+                    scaleX *= this.squashStretchResult.scaleX;
+                    scaleY *= this.squashStretchResult.scaleY;
+                }
+                
+                // Apply anticipation
+                if (this.anticipationResult && (this.player.state === 'attacking' || this.player.state === 'special')) {
+                    scaleX *= this.anticipationResult.scaleX;
+                    scaleY *= this.anticipationResult.scaleY;
+                    offsetX += this.anticipationResult.offsetX;
+                }
+                
+                // Apply wobble
+                if (this.wobbleResult) {
+                    scaleX *= this.wobbleResult.scaleX;
+                    scaleY *= this.wobbleResult.scaleY;
+                    rotation += this.wobbleResult.rotation;
+                }
+                
+                // Apply realistic animator transforms
+                if (this.realisticTransform) {
+                    scaleX *= this.realisticTransform.scaleX;
+                    scaleY *= this.realisticTransform.scaleY;
+                    rotation += this.realisticTransform.rotation;
+                    offsetX += this.realisticTransform.offsetX;
+                    offsetY += this.realisticTransform.offsetY;
+                }
+                
+                return {
+                    scaleX,
+                    scaleY,
+                    rotation,
+                    offsetX,
+                    offsetY,
+                    skeleton: this.realisticTransform?.skeleton,
+                    secondaryMotion: this.secondaryMotionResult,
+                    trails: this.trailResult,
+                    debug: this.realisticTransform?.debug
+                };
+            }
+
             // Action methods
             startAttack(type) {
                 this.player.attackCooldown = type === 'heavy' ? 0.8 : 0.5;
@@ -977,6 +1411,15 @@
                 if (buttonState) {
                     buttonState.cooldown = this.player.attackCooldown;
                     buttonState.element.classList.add('on-cooldown');
+                }
+                
+                // Trigger procedural animation effects
+                this.anticipationSystem.trigger();
+                if (type === 'heavy') {
+                    this.squashStretch.trigger();
+                    this.wobbleEffect.impulse(8);
+                } else {
+                    this.wobbleEffect.impulse(5);
                 }
                 
                 // Create attack particle effect
@@ -995,6 +1438,14 @@
                     buttonState.cooldown = this.player.rollCooldown;
                     buttonState.element.classList.add('on-cooldown');
                 }
+                
+                // Trigger procedural animation effects
+                this.squashStretch.trigger();
+                this.wobbleEffect.impulse(12);
+                this.trailEffect.clear(); // Clear trail for new roll trail
+                
+                // Add momentum impulse for roll
+                this.momentumSystem.addImpulse(this.player.facing * 15, 0);
                 
                 // Create roll particle effect
                 this.createRollEffect();
@@ -1022,6 +1473,14 @@
                     buttonState.cooldown = this.player.specialCooldown;
                     buttonState.element.classList.add('on-cooldown');
                 }
+                
+                // Trigger dramatic procedural animation effects for special
+                this.anticipationSystem.trigger();
+                this.squashStretch.trigger();
+                this.wobbleEffect.impulse(20);
+                
+                // Add momentum burst
+                this.momentumSystem.addImpulse(this.player.facing * 25, -10);
                 
                 // Create special effect
                 this.createSpecialEffect();
@@ -1143,6 +1602,14 @@
                     this.ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.3;
                 }
                 
+                // Apply combined procedural transforms
+                const transform = this.combinedTransform || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                
+                // Position and transform
+                this.ctx.translate(this.player.x + transform.offsetX, this.player.y + transform.offsetY);
+                this.ctx.rotate(transform.rotation);
+                this.ctx.scale(this.player.facing * transform.scaleX, transform.scaleY);
+                
                 // Determine color based on state
                 let playerColor = this.player.color;
                 if (this.player.state === 'blocking') {
@@ -1155,42 +1622,14 @@
                     playerColor = '#ff0000';
                 }
                 
-                // Draw player body
+                // Draw player body with procedural transforms applied
                 this.ctx.fillStyle = playerColor;
                 this.ctx.beginPath();
-                
-                // Add slight animation based on state
-                let scaleX = 1;
-                let scaleY = 1;
-                let offsetY = 0;
-                
-                if (this.player.state === 'running') {
-                    const bobAmount = Math.sin(this.player.animationTimer * 10) * 2;
-                    offsetY = bobAmount;
-                }
-                
-                if (this.player.state === 'attacking') {
-                    scaleX = 1.2;
-                    scaleY = 0.9;
-                }
-                
-                if (this.player.state === 'blocking') {
-                    scaleY = 0.8;
-                    offsetY = 3;
-                }
-                
-                if (this.player.state === 'rolling') {
-                    const rollPhase = this.player.stateTimer / 0.4;
-                    scaleX = 1 + Math.sin(rollPhase * Math.PI * 2) * 0.3;
-                    scaleY = 1 - Math.sin(rollPhase * Math.PI * 2) * 0.3;
-                }
-                
-                this.ctx.scale(this.player.facing, 1);
                 this.ctx.roundRect(
-                    (this.player.x * this.player.facing) - (this.player.width * scaleX) / 2,
-                    this.player.y - (this.player.height * scaleY) / 2 + offsetY,
-                    this.player.width * scaleX,
-                    this.player.height * scaleY,
+                    -this.player.width / 2,
+                    -this.player.height / 2,
+                    this.player.width,
+                    this.player.height,
                     8
                 );
                 this.ctx.fill();
@@ -1203,14 +1642,21 @@
                 // Draw facing indicator
                 this.ctx.fillStyle = '#ffffff';
                 this.ctx.beginPath();
-                this.ctx.arc(
-                    (this.player.x * this.player.facing) + (this.player.facing * 10),
-                    this.player.y - 5,
-                    3, 0, Math.PI * 2
-                );
+                this.ctx.arc(10, -5, 3, 0, Math.PI * 2);
                 this.ctx.fill();
                 
                 this.ctx.restore();
+                
+                // Draw secondary motion effects
+                this.drawSecondaryMotion();
+                
+                // Draw trail effects
+                this.drawTrailEffects();
+                
+                // Draw skeletal overlay if in debug mode
+                if (this.debugMode && transform.skeleton) {
+                    this.drawSkeletalOverlay(transform.skeleton);
+                }
                 
                 // Draw health bar
                 this.drawHealthBar();
@@ -1260,6 +1706,125 @@
                     this.ctx.fill();
                     this.ctx.restore();
                 });
+            }
+
+            drawSecondaryMotion() {
+                if (!this.secondaryMotionResult || !this.debugMode) return;
+                
+                this.ctx.save();
+                this.ctx.strokeStyle = '#8B4513';
+                this.ctx.lineWidth = 2;
+                this.ctx.globalAlpha = 0.8;
+                
+                // Draw hair/cloth physics chain
+                this.ctx.beginPath();
+                this.secondaryMotionResult.forEach((segment, index) => {
+                    if (index === 0) {
+                        this.ctx.moveTo(segment.x, segment.y);
+                    } else {
+                        this.ctx.lineTo(segment.x, segment.y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw segment points
+                this.ctx.fillStyle = '#654321';
+                this.secondaryMotionResult.forEach(segment => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(segment.x, segment.y, 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                
+                this.ctx.restore();
+            }
+            
+            drawTrailEffects() {
+                if (!this.trailResult) return;
+                
+                this.ctx.save();
+                this.trailResult.forEach((trail, index) => {
+                    this.ctx.globalAlpha = trail.alpha;
+                    this.ctx.fillStyle = this.player.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(trail.x, trail.y, 8 * trail.scale, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                this.ctx.restore();
+            }
+            
+            drawSkeletalOverlay(skeleton) {
+                if (!skeleton) return;
+                
+                this.ctx.save();
+                this.ctx.strokeStyle = '#00ff88';
+                this.ctx.fillStyle = '#ffff44';
+                this.ctx.lineWidth = 1;
+                this.ctx.globalAlpha = 0.6;
+                
+                // Transform to player space
+                this.ctx.translate(this.player.x, this.player.y);
+                this.ctx.scale(this.player.facing, 1);
+                
+                // Draw bones
+                this.drawBone(skeleton.torso, skeleton.head);
+                this.drawBone(skeleton.torso, skeleton.pelvis);
+                
+                // Draw arms
+                if (skeleton.leftArm) {
+                    this.drawBone(skeleton.leftArm.shoulder, skeleton.leftArm.elbow);
+                    this.drawBone(skeleton.leftArm.elbow, skeleton.leftArm.hand);
+                }
+                if (skeleton.rightArm) {
+                    this.drawBone(skeleton.rightArm.shoulder, skeleton.rightArm.elbow);
+                    this.drawBone(skeleton.rightArm.elbow, skeleton.rightArm.hand);
+                }
+                
+                // Draw legs
+                if (skeleton.leftLeg) {
+                    this.drawBone(skeleton.leftLeg.hip, skeleton.leftLeg.knee);
+                    this.drawBone(skeleton.leftLeg.knee, skeleton.leftLeg.foot);
+                }
+                if (skeleton.rightLeg) {
+                    this.drawBone(skeleton.rightLeg.hip, skeleton.rightLeg.knee);
+                    this.drawBone(skeleton.rightLeg.knee, skeleton.rightLeg.foot);
+                }
+                
+                // Draw joints
+                const joints = [
+                    skeleton.head, skeleton.torso, skeleton.pelvis
+                ];
+                
+                if (skeleton.leftArm) {
+                    joints.push(skeleton.leftArm.shoulder, skeleton.leftArm.elbow, skeleton.leftArm.hand);
+                }
+                if (skeleton.rightArm) {
+                    joints.push(skeleton.rightArm.shoulder, skeleton.rightArm.elbow, skeleton.rightArm.hand);
+                }
+                if (skeleton.leftLeg) {
+                    joints.push(skeleton.leftLeg.hip, skeleton.leftLeg.knee, skeleton.leftLeg.foot);
+                }
+                if (skeleton.rightLeg) {
+                    joints.push(skeleton.rightLeg.hip, skeleton.rightLeg.knee, skeleton.rightLeg.foot);
+                }
+                
+                joints.forEach(joint => {
+                    if (joint && joint.x !== undefined && joint.y !== undefined) {
+                        this.ctx.beginPath();
+                        this.ctx.arc(joint.x, joint.y, 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+                
+                this.ctx.restore();
+            }
+            
+            drawBone(start, end) {
+                if (!start || !end || start.x === undefined || end.x === undefined) return;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(start.x, start.y);
+                this.ctx.lineTo(end.x, end.y);
+                this.ctx.stroke();
             }
 
             drawTrail() {
