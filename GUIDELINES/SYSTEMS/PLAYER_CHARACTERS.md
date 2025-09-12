@@ -795,7 +795,7 @@ void test_kensei_finisher_stance() {
 - [AGENTS.md](../AGENTS.md) - WASM-first architecture principles
 - [CORE_WORLD_SIMULATION.md](CORE_WORLD_SIMULATION.md) - Physics and world systems
 - [PLAYER_ANIMATIONS.md](../ANIMATION/PLAYER_ANIMATIONS.md) - Character animation integration
-- [TESTING.md](../TESTING.md) - Testing frameworks and validation
+- [TESTING.md](../BUILD/TESTING.md) - Testing frameworks and validation
 
 ---
 

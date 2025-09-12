@@ -29,7 +29,7 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
 
     // Move right for 1 second without rolling; stamina should regen or hold (no block/roll)
     step(1, 0, 0, 1/60)
-    for (let i = 0; i < 59; i++) step(1, 0, 0, 1/60)
+    for (let i = 0; i < 59; i++) {step(1, 0, 0, 1/60)}
     const afterMoveX = api.get_x()
     const afterMoveY = api.get_y()
     const afterMoveSt = api.get_stamina()
@@ -53,7 +53,7 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
 
     // Leave block and let stamina regen a bit
     api.set_blocking(0, 0, 1)
-    for (let i = 0; i < 60; i++) step(0, 0, 0, 1/60)
+    for (let i = 0; i < 60; i++) {step(0, 0, 0, 1/60)}
     const regenSt = api.get_stamina()
 
     // Choices: after enough attacks, phase should become Choose and commit should work
@@ -87,10 +87,10 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
   expect(result.afterMoveY).toBe(result.startY)
 
   // Roll drains stamina if accepted
-  if (result.rollAccepted) expect(result.afterRollSt).toBeLessThan(result.afterMoveSt)
+  if (result.rollAccepted) {expect(result.afterRollSt).toBeLessThan(result.afterMoveSt)}
 
   // Attack drains stamina if accepted
-  if (result.atkAccepted) expect(result.afterAtkSt).toBeLessThan(result.afterRollSt)
+  if (result.atkAccepted) {expect(result.afterAtkSt).toBeLessThan(result.afterRollSt)}
 
   // Block engaged and perfect parry refills stamina to 1 and returns 2
   expect(result.blockOn).toBe(1)
@@ -140,7 +140,7 @@ test('Game WASM: player anim/state timers and overlay exports exist and behave',
     }
 
     // Let a few frames pass idle
-    for (let i = 0; i < 5; i++) api.update(1/60)
+    for (let i = 0; i < 5; i++) {api.update(1/60)}
 
     const s0 = api.get_player_anim_state()
     const t0 = api.get_player_state_timer()
@@ -149,7 +149,7 @@ test('Game WASM: player anim/state timers and overlay exports exist and behave',
     // Start a roll if possible and step during roll window
     const acceptedRoll = api.on_roll_start()
     api.set_player_input(1, 0, 1, 0, 0, 0)
-    for (let i = 0; i < 4; i++) api.update(1/60)
+    for (let i = 0; i < 4; i++) {api.update(1/60)}
     const rolling = api.get_is_rolling()
     const invuln = api.get_is_invulnerable()
     const speedCap = api.get_speed()

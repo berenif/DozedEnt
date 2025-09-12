@@ -1,120 +1,14 @@
 // Test setup file for Mocha
 import { expect } from 'chai';
 import sinon from 'sinon';
+import { setupBrowserMocks } from './setup-browser-mocks.js';
 
 // Global test utilities
 global.expect = expect;
 global.sinon = sinon;
 
-// Mock Web APIs that might not be available in test environment
-global.performance = global.performance || {
-  now: () => Date.now()
-};
-
-// Mock window object
-global.window = global.window || {
-  innerWidth: 1280,
-  innerHeight: 720,
-  devicePixelRatio: 1
-};
-
-global.requestAnimationFrame = global.requestAnimationFrame || (callback => {
-  setTimeout(callback, 16);
-});
-
-global.cancelAnimationFrame = global.cancelAnimationFrame || (id => {
-  clearTimeout(id);
-});
-
-// Mock WebAssembly if not available
-if (!global.WebAssembly) {
-  global.WebAssembly = {
-    instantiate: () => Promise.reject(new Error('WebAssembly not supported')),
-    instantiateStreaming: () => Promise.reject(new Error('WebAssembly not supported'))
-  };
-}
-
-// Mock AudioContext if not available
-if (!global.AudioContext && !global.webkitAudioContext) {
-  global.AudioContext = class MockAudioContext {
-    constructor() {
-      this.state = 'running';
-      this.sampleRate = 44100;
-      this.currentTime = 0;
-    }
-    
-    createGain() {
-      return {
-        connect: () => {},
-        disconnect: () => {},
-        gain: { value: 1.0 }
-      };
-    }
-    
-    createBufferSource() {
-      return {
-        connect: () => {},
-        disconnect: () => {},
-        start: () => {},
-        stop: () => {},
-        buffer: null,
-        loop: false,
-        playbackRate: { value: 1.0 }
-      };
-    }
-    
-    createBuffer() {
-      return {
-        length: 44100,
-        sampleRate: 44100,
-        numberOfChannels: 2,
-        getChannelData: () => new Float32Array(44100)
-      };
-    }
-    
-    suspend() {
-      return Promise.resolve();
-    }
-    
-    resume() {
-      return Promise.resolve();
-    }
-    
-    close() {
-      return Promise.resolve();
-    }
-  };
-  
-  global.webkitAudioContext = global.AudioContext;
-}
-
-// Mock fetch if not available
-if (!global.fetch) {
-  global.fetch = () => Promise.reject(new Error('Fetch not supported'));
-}
-
-// Mock crypto if not available
-if (!global.crypto) {
-  global.crypto = {
-    getRandomValues: (array) => {
-      for (let i = 0; i < array.length; i++) {
-        array[i] = Math.floor(Math.random() * 256);
-      }
-      return array;
-    },
-    subtle: {
-      generateKey: () => Promise.reject(new Error('Crypto not supported')),
-      importKey: () => Promise.reject(new Error('Crypto not supported')),
-      exportKey: () => Promise.reject(new Error('Crypto not supported')),
-      encrypt: () => Promise.reject(new Error('Crypto not supported')),
-      decrypt: () => Promise.reject(new Error('Crypto not supported')),
-      sign: () => Promise.reject(new Error('Crypto not supported')),
-      verify: () => Promise.reject(new Error('Crypto not supported')),
-      deriveBits: () => Promise.reject(new Error('Crypto not supported')),
-      deriveKey: () => Promise.reject(new Error('Crypto not supported'))
-    }
-  };
-}
+// Setup comprehensive browser API mocks
+setupBrowserMocks();
 
 // Test helpers
 global.createMockContext = () => ({

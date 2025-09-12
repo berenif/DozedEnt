@@ -290,7 +290,7 @@ describe('Crypto Utils', () => {
     });
 
     it('should encrypt and decrypt round-trip', async function() {
-      if (!realKey) this.skip();
+      if (!realKey) {this.skip();}
       
       const originalData = 'This is a secret message!';
       
@@ -301,7 +301,7 @@ describe('Crypto Utils', () => {
     });
 
     it('should handle unicode in round-trip', async function() {
-      if (!realKey) this.skip();
+      if (!realKey) {this.skip();}
       
       const originalData = 'Unicode test: 你好世界 🌍 emoji test';
       
@@ -312,7 +312,7 @@ describe('Crypto Utils', () => {
     });
 
     it('should produce different ciphertext for same plaintext', async function() {
-      if (!realKey) this.skip();
+      if (!realKey) {this.skip();}
       
       const data = 'same message';
       
@@ -329,7 +329,7 @@ describe('Crypto Utils', () => {
     });
 
     it('should generate consistent SHA-1 hashes', async function() {
-      if (!global.crypto || !global.crypto.subtle) this.skip();
+      if (!global.crypto || !global.crypto.subtle) {this.skip();}
       
       const input = 'consistent test string';
       const hash1 = await sha1(input);

@@ -23,6 +23,7 @@ This document defines the core gameplay mechanics for our WASM-first multiplayer
 - **Deterministic**: Identical inputs produce identical combat outcomes across all clients
 - **Performance Optimized**: Native-speed combat processing with minimal JS overhead
 - **JavaScript as Interface**: JS only captures inputs and renders gameplay results
+- **Externalized Balance**: Tunables are defined in `data/balance/*.json` and compiled into `src/wasm/generated/balance_data.h` consumed by WASM headers.
 
 ## Architecture Principles
 

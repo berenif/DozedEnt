@@ -105,158 +105,6 @@ export class DamageNumber {
     }
 }
 
-export class ComboCounter {
-    constructor() {
-        this.count = 0
-        this.maxCombo = 0
-        this.displayCount = 0
-        this.timer = 0
-        this.maxTime = 2.0 // Seconds before combo resets
-        this.scale = 1.0
-        this.rotation = 0
-        this.shakeIntensity = 0
-        this.multiplier = 1.0
-        
-        // Visual properties
-        this.x = 100
-        this.y = 100
-        this.baseSize = 48
-        
-        // Combo milestones
-        this.milestones = [5, 10, 20, 30, 50, 100]
-        this.currentMilestone = 0
-    }
-
-    add(hits = 1) {
-        this.count += hits
-        this.timer = this.maxTime
-        
-        // Update max combo
-        if (this.count > this.maxCombo) {
-            this.maxCombo = this.count
-        }
-        
-        // Trigger animation
-        this.scale = 1.3
-        this.rotation = (Math.random() - 0.5) * 0.2
-        this.shakeIntensity = Math.min(this.count * 2, 20)
-        
-        // Check milestones
-        for (let i = this.milestones.length - 1; i >= 0; i--) {
-            if (this.count >= this.milestones[i] && this.currentMilestone < i) {
-                this.currentMilestone = i
-                this.onMilestone(this.milestones[i])
-                break
-            }
-        }
-        
-        // Update multiplier
-        this.multiplier = 1 + Math.floor(this.count / 10) * 0.5
-    }
-
-    reset() {
-        if (this.count > 0) {
-            this.onComboEnd(this.count)
-        }
-        this.count = 0
-        this.displayCount = 0
-        this.currentMilestone = -1
-        this.multiplier = 1.0
-    }
-
-    update(deltaTime) {
-        // Update timer
-        if (this.timer > 0) {
-            this.timer -= deltaTime
-            if (this.timer <= 0) {
-                this.reset()
-            }
-        }
-        
-        // Animate display count
-        if (this.displayCount < this.count) {
-            this.displayCount += (this.count - this.displayCount) * 0.3
-        }
-        
-        // Animate scale
-        this.scale += (1.0 - this.scale) * 0.2
-        
-        // Animate rotation
-        this.rotation *= 0.9
-        
-        // Animate shake
-        this.shakeIntensity *= 0.9
-    }
-
-    render(ctx) {
-        if (this.count === 0) {return}
-        
-        const shakeX = (Math.random() - 0.5) * this.shakeIntensity
-        const shakeY = (Math.random() - 0.5) * this.shakeIntensity
-        
-        ctx.save()
-        ctx.translate(this.x + shakeX, this.y + shakeY)
-        ctx.rotate(this.rotation)
-        ctx.scale(this.scale, this.scale)
-        
-        // Determine color based on combo level
-        let color = '#ffffff'
-        if (this.count >= 50) {color = '#ff6b6b'}
-        else if (this.count >= 30) {color = '#f59e0b'}
-        else if (this.count >= 20) {color = '#fbbf24'}
-        else if (this.count >= 10) {color = '#4ade80'}
-        else if (this.count >= 5) {color = '#60a5fa'}
-        
-        // Draw combo text
-        ctx.font = `bold ${this.baseSize}px Arial`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        
-        // Outline
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)'
-        ctx.lineWidth = 4
-        ctx.strokeText(Math.floor(this.displayCount), 0, 0)
-        
-        // Fill
-        ctx.fillStyle = color
-        ctx.fillText(Math.floor(this.displayCount), 0, 0)
-        
-        // Draw "COMBO" text
-        ctx.font = `bold ${this.baseSize * 0.4}px Arial`
-        ctx.strokeText('COMBO', 0, this.baseSize * 0.6)
-        ctx.fillText('COMBO', 0, this.baseSize * 0.6)
-        
-        // Draw multiplier if > 1
-        if (this.multiplier > 1) {
-            ctx.font = `bold ${this.baseSize * 0.3}px Arial`
-            ctx.fillStyle = '#fbbf24'
-            ctx.fillText(`x${this.multiplier.toFixed(1)}`, 0, this.baseSize * 1.0)
-        }
-        
-        // Draw timer bar
-        const barWidth = 60
-        const barHeight = 4
-        const barY = this.baseSize * 1.3
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-        ctx.fillRect(-barWidth/2, barY, barWidth, barHeight)
-        
-        ctx.fillStyle = color
-        ctx.fillRect(-barWidth/2, barY, barWidth * (this.timer / this.maxTime), barHeight)
-        
-        ctx.restore()
-    }
-
-    onMilestone(milestone) {
-        // Override this to trigger special effects
-        // Milestone reached: ${milestone}
-    }
-
-    onComboEnd(finalCount) {
-        // Override this to trigger end effects
-        // Combo ended at ${finalCount} hits
-    }
-}
 
 export class StatusIndicator {
     constructor(type, duration = 0) {
@@ -513,7 +361,6 @@ export class HealthBar {
 export class UIFeedbackSystem {
     constructor() {
         this.damageNumbers = []
-        this.comboCounter = new ComboCounter()
         this.statusIndicators = []
         this.healthBar = new HealthBar()
         this.notifications = []
@@ -533,8 +380,6 @@ export class UIFeedbackSystem {
         // Update damage numbers
         this.damageNumbers = this.damageNumbers.filter(dn => dn.update(deltaTime))
         
-        // Update combo counter
-        this.comboCounter.update(deltaTime)
         
         // Update status indicators
         this.statusIndicators = this.statusIndicators.filter(si => si.update(deltaTime))
@@ -561,8 +406,6 @@ export class UIFeedbackSystem {
         // Render health bar
         this.healthBar.render(ctx)
         
-        // Render combo counter
-        this.comboCounter.render(ctx)
         
         // Render status indicators
         this.statusIndicators.forEach((indicator, index) => {
@@ -614,13 +457,6 @@ export class UIFeedbackSystem {
         this.damageNumbers.push(new DamageNumber(x, y, amount, options))
     }
 
-    addComboHit() {
-        this.comboCounter.add()
-    }
-
-    resetCombo() {
-        this.comboCounter.reset()
-    }
 
     addStatus(type, duration) {
         // Remove existing status of same type

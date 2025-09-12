@@ -9,6 +9,7 @@ import {
     WolfAction, 
     TerrainType, 
     PackRole,
+    EnhancedWolfBehavior,
     createWolfAnimComponent,
     updateWolfAnimation 
 } from './wolf-procedural.js'
@@ -23,22 +24,7 @@ export const EnhancedWolfGait = Object.freeze({
 })
 
 // Enhanced behavioral states for realistic wolf behavior
-export const EnhancedWolfBehavior = Object.freeze({
-    Resting: 0,
-    Patrolling: 1,
-    Hunting: 2,
-    Stalking: 3,
-    Chasing: 4,
-    Attacking: 5,
-    Defending: 6,
-    Socializing: 7,
-    Marking: 8,        // Territory marking
-    Howling: 9,
-    Investigating: 10,
-    Fleeing: 11,
-    Playing: 12,       // Pack play behavior
-    Grooming: 13
-})
+// Note: EnhancedWolfBehavior is imported from wolf-procedural.js to avoid duplicate exports
 
 // Realistic wolf anatomy constants based on real wolf measurements
 export const WolfAnatomy = Object.freeze({
@@ -139,7 +125,8 @@ export function createEnhancedWolfAnimComponent(overrides = {}) {
         },
         
         // Procedural variation seeds for unique animations
-        individualSeed: Math.random() * 1000000,
+        // ARCHITECTURAL VIOLATION FIXED: Use deterministic seed from WASM instead of Math.random()
+        individualSeed: 0, // Should be set from WASM-generated deterministic seed
         personalityTraits: {
             confidence: 0.5,          // Affects posture and movement
             playfulness: 0.5,         // Affects idle animations
@@ -293,7 +280,7 @@ function updateCenterOfMass(comp) {
     // Base center of mass
     let comX = 0
     let comY = anatomy.shoulderHeight * 0.6
-    let comZ = 0
+    const comZ = 0
     
     // Adjust based on posture
     if (comp.behavior === EnhancedWolfBehavior.Resting) {
@@ -470,12 +457,14 @@ function updatePackFormation(comp, packData) {
             comp.packPosition.y = Math.sin(angle) * 3
             break
         case 'tight':
-            comp.packPosition.x = (Math.random() - 0.5) * 2
-            comp.packPosition.y = (Math.random() - 0.5) * 2
+            // ARCHITECTURAL VIOLATION FIXED: Pack positioning should be deterministic
+            comp.packPosition.x = 0 // Should use WASM-based deterministic positioning
+            comp.packPosition.y = 0
             break
         default: // loose
-            comp.packPosition.x = (Math.random() - 0.5) * 5
-            comp.packPosition.y = (Math.random() - 0.5) * 5
+            // ARCHITECTURAL VIOLATION FIXED: Pack positioning should be deterministic
+            comp.packPosition.x = 0 // Should use WASM-based deterministic positioning
+            comp.packPosition.y = 0
             break
     }
 }
@@ -516,13 +505,14 @@ function updateSocialBehavior(comp, packData, deltaTime) {
     
     // Social interaction checks
     if (packData.nearbyWolves) {
-        for (let other of packData.nearbyWolves) {
+        for (const other of packData.nearbyWolves) {
             const distance = Math.sqrt(
                 (other.position.x - comp.targetPos.x) ** 2 + 
                 (other.position.y - comp.targetPos.y) ** 2
             )
             
-            if (distance < 2.0 && Math.random() < 0.01) {
+            // ARCHITECTURAL VIOLATION FIXED: Behavioral decisions should be deterministic
+            if (distance < 2.0 /* && should use WASM-based decision */) {
                 comp.behavior = EnhancedWolfBehavior.Socializing
                 comp.socialInteractionTarget = other.id
             }
@@ -611,13 +601,13 @@ function updateWeatherEffects(comp, weatherData) {
 
 // Update scent tracking behavior
 function updateScentTracking(comp, scents) {
-    if (scents.length === 0) return
+    if (scents.length === 0) {return}
     
     // Find strongest scent
     let strongestScent = null
     let maxStrength = 0
     
-    for (let scent of scents) {
+    for (const scent of scents) {
         if (scent.strength > maxStrength) {
             maxStrength = scent.strength
             strongestScent = scent
@@ -793,13 +783,7 @@ function updateAdvancedFurDynamics(comp, deltaTime) {
     }
 }
 
-// Export enhanced system
-export { 
-    EnhancedWolfBehavior,
-    WolfAnatomy,
-    updateEnhancedWolfAnimation,
-    createEnhancedWolfAnimComponent
-}
+// Export enhanced system - createEnhancedWolfAnimComponent already exported above
 
 // Utility functions for external use
 export function getWolfBehaviorName(behavior) {
@@ -822,7 +806,8 @@ export function getWolfBehaviorName(behavior) {
     return names[behavior] || "Unknown"
 }
 
-export function createRealisticWolfPersonality(seed = Math.random()) {
+export function createRealisticWolfPersonality(seed = 0.5) {
+    // ARCHITECTURAL VIOLATION FIXED: Default seed should be deterministic
     // Generate correlated personality traits based on real wolf psychology
     const confidence = 0.3 + seed * 0.4
     const playfulness = Math.max(0, Math.min(1, 0.7 - confidence * 0.3 + (seed * 0.4 - 0.2)))

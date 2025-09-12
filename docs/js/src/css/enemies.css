@@ -1,0 +1,59 @@
+/* Enemy Elements */
+.enemy {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #ff4444;
+    background: linear-gradient(135deg, #8b4513, #a0522d);
+    z-index: 15;
+}
+
+.enemy.wolf {
+    background: linear-gradient(135deg, #6b5d54, #4a4038);
+}
+
+.enemy.seek {
+    border-color: #ff6600;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.enemy.circle {
+    border-color: #ffaa00;
+    animation: circle-move 2s linear infinite;
+}
+
+.enemy.harass {
+    border-color: #ff0000;
+    animation: harass-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes circle-move {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes harass-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Role Tags */
+.role-tag {
+    position: absolute;
+    left: 50%;
+    top: -14px;
+    transform: translateX(-50%);
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1px 3px;
+    border-radius: 3px;
+    font: 10px/1.1 system-ui, sans-serif;
+    pointer-events: none;
+}

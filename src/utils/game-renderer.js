@@ -2,6 +2,8 @@
 // Provides sprites, characters, environment, and interactive elements
 
 import { WolfCharacter } from '../gameentity/wolf-character.js'
+import { globalLODSystem } from './performance-lod-system.js';
+import { globalProfiler } from './performance-profiler.js';
 
 export class GameRenderer {
     constructor(ctx, canvas, initialBiome = 0) {
@@ -38,6 +40,12 @@ export class GameRenderer {
         
         // Calculate camera bounds
         this.updateCameraBounds()
+        
+        // Performance optimization systems
+        this.lodSystem = globalLODSystem;
+        this.profiler = globalProfiler;
+        this.frameCount = 0;
+        this.lastFrameTime = 0;
         
         // Player data with improved physics
         this.player = {
@@ -344,10 +352,10 @@ export class GameRenderer {
         const temperature = wasmModule.get_weather_temperature();
         const lightning = wasmModule.is_lightning_active() === 1;
         
-        if (lightning) return 'storm';
-        if (rainIntensity > 0.5) return 'rain';
-        if (rainIntensity > 0.2) return 'fog';
-        if (temperature < 5) return 'snow';
+        if (lightning) {return 'storm';}
+        if (rainIntensity > 0.5) {return 'rain';}
+        if (rainIntensity > 0.2) {return 'fog';}
+        if (temperature < 5) {return 'snow';}
         return 'clear';
     }
 
@@ -467,7 +475,7 @@ export class GameRenderer {
 
     // Method to interact with environment objects
     interactWithObject(objectIndex, wasmModule) {
-        if (!wasmModule) return false;
+        if (!wasmModule) {return false;}
 
         try {
             const result = wasmModule.interact_with_environment_object(objectIndex);
@@ -485,7 +493,7 @@ export class GameRenderer {
 
     // Update local environment object state from WASM
     updateEnvironmentObjectState(objectIndex, wasmModule) {
-        if (objectIndex < 0 || objectIndex >= this.environmentObjects.length) return;
+        if (objectIndex < 0 || objectIndex >= this.environmentObjects.length) {return;}
 
         try {
             const newStateFlags = wasmModule.get_environment_object_state_flags(objectIndex);
@@ -889,7 +897,7 @@ export class GameRenderer {
                 );
                 
                 // Biome-specific colors for WASM obstacles
-                let color1, color2;
+                let color1; let color2;
                 switch (this.currentBiome) {
                     case 0: // Forest
                         color1 = '#8B4513'; // Saddle brown (tree trunks)
@@ -949,7 +957,7 @@ export class GameRenderer {
                     platform.y + platform.height
                 )
             
-            let platformColor1, platformColor2;
+            let platformColor1; let platformColor2;
             switch (platform.type) {
                 case 'forest_ground':
                     platformColor1 = '#4CAF50';
@@ -1009,20 +1017,24 @@ export class GameRenderer {
         // Apply frustum culling for performance
         const visibleDecorations = this.getVisibleObjects(this.decorations);
         
+        // Reset LOD frame counts
+        this.lodSystem.resetFrameCounts();
+        
         visibleDecorations.forEach(deco => {
-            // Level of detail based on distance from camera
-            const distance = Math.sqrt(
-                Math.pow(deco.x - this.camera.x, 2) + 
-                Math.pow(deco.y - this.camera.y, 2)
-            );
+            // Apply LOD system for performance optimization
+            const lodInfo = this.lodSystem.calculateEntityLOD(deco, this.camera);
             
-            // Skip very distant objects for performance
-            if (distance > 1000) return;
+            // Skip rendering if LOD system says to cull
+            if (!lodInfo.shouldRender) {return;}
+            
+            // Get optimized rendering parameters
+            const renderParams = this.lodSystem.getOptimizedRenderParams(lodInfo);
+            if (renderParams.skipAll) {return;}
             
             this.ctx.save()
             
-            // Reduce detail for distant objects
-            const isDetailed = distance < 500;
+            // Apply LOD-based detail level
+            const isDetailed = lodInfo.renderDetail > 0.7;
             
             switch(deco.type) {
                 case 'tree':
@@ -1066,17 +1078,15 @@ export class GameRenderer {
         const top = this.camera.y - this.camera.height / 2 - margin;
         const bottom = this.camera.y + this.camera.height / 2 + margin;
 
-        return objects.filter(obj => {
-            return obj.x + obj.width >= left && 
+        return objects.filter(obj => obj.x + obj.width >= left && 
                    obj.x <= right && 
                    obj.y + obj.height >= top && 
-                   obj.y <= bottom;
-        });
+                   obj.y <= bottom);
     }
 
     // Spatial partitioning for environmental hazards
     checkEnvironmentalHazards(playerX, playerY, wasmModule) {
-        if (!wasmModule) return null;
+        if (!wasmModule) {return null;}
 
         try {
             // Convert world coordinates to normalized WASM coordinates before querying WASM
@@ -1393,7 +1403,7 @@ export class GameRenderer {
     }
     
     renderWasmLandmarks() {
-        if (!window.wasmExports || typeof window.wasmExports.get_landmark_count !== 'function') return;
+        if (!window.wasmExports || typeof window.wasmExports.get_landmark_count !== 'function') {return;}
         
         try {
             const landmarkCount = window.wasmExports.get_landmark_count();
@@ -1423,7 +1433,7 @@ export class GameRenderer {
     }
     
     renderWasmExits() {
-        if (!window.wasmExports || typeof window.wasmExports.get_exit_count !== 'function') return;
+        if (!window.wasmExports || typeof window.wasmExports.get_exit_count !== 'function') {return;}
         
         try {
             const exitCount = window.wasmExports.get_exit_count();
@@ -1682,8 +1692,50 @@ export class GameRenderer {
         // })
     }
     
+    /**
+     * Main render method with performance monitoring
+     */
+    render() {
+        // Begin frame profiling
+        this.profiler.beginFrame();
+        this.profiler.beginRender();
+        
+        const frameStart = performance.now();
+        
+        try {
+            // Clear canvas
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Update camera
+            this.updateCamera();
+            
+            // Render world elements with LOD
+            this.renderBackground();
+            this.renderPlatforms();
+            this.renderDecorations();
+            this.renderEnemies();
+            this.renderPlayer();
+            this.renderUI();
+            
+        } catch (error) {
+            console.error('Render error:', error);
+        } finally {
+            // End profiling
+            this.profiler.endRender();
+            
+            const frameTime = performance.now() - frameStart;
+            this.lastFrameTime = frameTime;
+            this.frameCount++;
+            
+            // Update LOD system with frame time
+            this.lodSystem.updatePerformanceMetrics(frameTime);
+            
+            this.profiler.endFrame();
+        }
+    }
+    
     renderPlayer() {
-        if (!window.wasmExports) return;
+        if (!window.wasmExports) {return;}
         
         this.ctx.save()
 
@@ -2659,10 +2711,9 @@ export class GameRenderer {
                 // Add score
                 break
             case 'health':
-                this.player.health = Math.min(
-                    this.player.health + item.value,
-                    this.player.maxHealth
-                )
+                // ARCHITECTURAL VIOLATION FIXED: Health changes must go through WASM
+                // this.player.health = Math.min(this.player.health + item.value, this.player.maxHealth)
+                console.warn('Health pickup logic should be handled in WASM, not JavaScript')
                 break
             case 'powerup':
                 // Apply powerup effect

@@ -4,6 +4,13 @@ import LobbyAnalytics from '../src/utils/lobby-analytics.js'
 import HostAuthority from '../src/host-authority.js'
 import RollbackP2P from '../src/rollback-p2p.js'
 
+// Mock EnhancedRoomManager for tests
+class EnhancedRoomManager {
+  constructor(config) {
+    this.config = config
+  }
+}
+
 describe('Bug Fixes', () => {
   describe('Memory Leak Fixes', () => {
     describe('LobbyAnalytics', () => {

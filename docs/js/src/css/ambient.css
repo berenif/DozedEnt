@@ -1,0 +1,26 @@
+/* Ambient Particles */
+.ambient-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: 50%;
+    animation: float var(--dur, 20s) linear infinite;
+    opacity: var(--op, 0.3);
+    transform: scale(var(--s, 1));
+}
+
+@keyframes float {
+    0% {
+        transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1));
+        opacity: var(--op, 0.3);
+    }
+    50% {
+        transform: translate(calc(var(--x, 0px) + var(--dx, 0px)), calc(var(--y, 0px) + var(--dy, 0px))) scale(var(--s, 1));
+        opacity: calc(var(--op, 0.3) * 0.5);
+    }
+    100% {
+        transform: translate(var(--x, 0px), var(--y, 0px)) scale(var(--s, 1));
+        opacity: var(--op, 0.3);
+    }
+}

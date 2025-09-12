@@ -50,7 +50,7 @@ const createMockInputManager = () => {
     }
 
     initialize() {
-      if (this.isInitialized) return;
+      if (this.isInitialized) {return;}
       
       this.setupKeyboardListeners();
       this.setupMouseListeners();
@@ -61,7 +61,7 @@ const createMockInputManager = () => {
     }
 
     setupKeyboardListeners() {
-      if (!this.config.enableKeyboard) return;
+      if (!this.config.enableKeyboard) {return;}
       
       const keyDownHandler = (event) => this.handleKeyDown(event);
       const keyUpHandler = (event) => this.handleKeyUp(event);
@@ -76,7 +76,7 @@ const createMockInputManager = () => {
     }
 
     setupMouseListeners() {
-      if (!this.config.enableMouse) return;
+      if (!this.config.enableMouse) {return;}
       
       const mouseDownHandler = (event) => this.handleMouseDown(event);
       const mouseUpHandler = (event) => this.handleMouseUp(event);
@@ -94,7 +94,7 @@ const createMockInputManager = () => {
     }
 
     setupTouchListeners() {
-      if (!this.config.enableTouch) return;
+      if (!this.config.enableTouch) {return;}
       
       const touchStartHandler = (event) => this.handleTouchStart(event);
       const touchEndHandler = (event) => this.handleTouchEnd(event);
@@ -112,7 +112,7 @@ const createMockInputManager = () => {
     }
 
     setupGamepadListeners() {
-      if (!this.config.enableGamepad) return;
+      if (!this.config.enableGamepad) {return;}
       
       const gamepadConnectedHandler = (event) => this.handleGamepadConnected(event);
       const gamepadDisconnectedHandler = (event) => this.handleGamepadDisconnected(event);
@@ -270,7 +270,7 @@ const createMockInputManager = () => {
     }
 
     updateGamepad() {
-      if (!this.inputState.gamepad.connected) return;
+      if (!this.inputState.gamepad.connected) {return;}
       
       const gamepads = navigator.getGamepads();
       const gamepad = gamepads[this.inputState.gamepad.index];

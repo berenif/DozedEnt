@@ -130,7 +130,7 @@ describe('Dependency Management', () => {
       try {
         npmVersion = execSync('npm --version', { encoding: 'utf8' }).trim();
       } catch (error) {
-        npmVersion = null; // eslint-disable-line no-unused-expressions
+        npmVersion = null;  
       }
       expect(npmVersion).to.not.be.null;
       expect(npmVersion).to.match(/^\d+\.\d+\.\d+/);

@@ -18,6 +18,8 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [ ] Snapshots remain compact/flat; no perf regressions in frame time
 - [ ] Build succeeds and `docs/game.wasm` updated
 - [ ] Docs updated (`AGENTS.md` and this checklist entry)
+- [ ] Balance JSON changes reflected in `src/wasm/generated/balance_data.h`
+- [ ] Golden tests re-run after balance tuning
 
 ### Explore
 - [ ] Room geometry/hazards resolved in WASM, deterministic per seed

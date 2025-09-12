@@ -694,7 +694,7 @@ describe('UI Performance and Memory Management', () => {
       };
 
       profileOperation('createElement', () => {
-        for (let i = 0; i < 10; i++) mockDocument.createElement('div');
+        for (let i = 0; i < 10; i++) {mockDocument.createElement('div');}
       });
 
       profileOperation('appendChild', () => {
@@ -705,7 +705,7 @@ describe('UI Performance and Memory Management', () => {
       });
 
       profileOperation('querySelector', () => {
-        for (let i = 0; i < 10; i++) mockDocument.querySelector('.test');
+        for (let i = 0; i < 10; i++) {mockDocument.querySelector('.test');}
       });
 
       // Verify all operations completed

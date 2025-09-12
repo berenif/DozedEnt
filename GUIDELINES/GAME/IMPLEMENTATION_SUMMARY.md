@@ -208,7 +208,7 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 1. **All game logic in WASM** - No gameplay code in JavaScript
 2. **Deterministic RNG** - xorshift64* with seed
 3. **Tag-based systems** - Flexible synergies and exclusions
-4. **Data-driven design** - Constants defined in headers
+4. **Data-driven design** - Constants defined in data files and generated headers
 5. **Export-only API** - No complex data structures passed
 6. **Phase-based architecture** - Clear state transitions
 7. **Currency balance** - Risk/reward throughout
@@ -216,7 +216,7 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 
 ## Future Improvements
 
-- [ ] Externalize balance constants to data files
+- [x] Externalize balance constants to data files
 - [ ] Add more choice variety (current: 18 choices)
 - [ ] Implement save/load system
 - [ ] Add achievement tracking

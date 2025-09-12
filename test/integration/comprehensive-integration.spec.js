@@ -370,7 +370,7 @@ describe('Comprehensive Integration Tests', () => {
       const originalUpdateInput = gameStateManager.updateInput;
       gameStateManager.updateInput = () => {
         processedInputs++;
-        if (originalUpdateInput) originalUpdateInput.call(gameStateManager);
+        if (originalUpdateInput) {originalUpdateInput.call(gameStateManager);}
       };
 
       // Simulate rapid input
@@ -641,7 +641,7 @@ describe('Comprehensive Integration Tests', () => {
       let removeListenerCalled = false;
 
       window.removeEventListener = () => {
-        removeListenerCalled = true; // eslint-disable-line no-unused-expressions
+        removeListenerCalled = true;  
       };
 
       effects.destroy();

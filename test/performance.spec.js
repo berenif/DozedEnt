@@ -67,10 +67,10 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
         const isRolling = Math.floor(t) % 3 === 0 ? 1 : 0
         
         // Random actions
-        if (Math.random() < 0.1) api.on_attack()
-        if (Math.random() < 0.05) api.on_roll_start()
-        if (Math.random() < 0.05) api.set_blocking(1, dirX, dirY)
-        if (Math.random() < 0.05) api.set_blocking(0, 0, 0)
+        if (Math.random() < 0.1) {api.on_attack()}
+        if (Math.random() < 0.05) {api.on_roll_start()}
+        if (Math.random() < 0.05) {api.set_blocking(1, dirX, dirY)}
+        if (Math.random() < 0.05) {api.set_blocking(0, 0, 0)}
         
         // Update simulation
         api.update(dirX, dirY, isRolling, frameDuration / 1000)

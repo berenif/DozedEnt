@@ -13,7 +13,7 @@ test.describe('Golden Gameplay Tests', () => {
 
     // Record initial state
     const initialState = await page.evaluate(() => {
-      if (!window.wasmExports) return null
+      if (!window.wasmExports) {return null}
       return {
         x: window.wasmExports.get_x(),
         y: window.wasmExports.get_y(),
@@ -47,7 +47,7 @@ test.describe('Golden Gameplay Tests', () => {
       await page.waitForTimeout(input.time - (inputScript.indexOf(input) > 0 ? inputScript[inputScript.indexOf(input) - 1].time : 0))
       
       await page.evaluate((input) => {
-        if (!window.wasmExports) return
+        if (!window.wasmExports) {return}
         
         switch (input.action) {
           case 'move':
@@ -78,7 +78,7 @@ test.describe('Golden Gameplay Tests', () => {
 
     // Record final state
     const finalState = await page.evaluate(() => {
-      if (!window.wasmExports) return null
+      if (!window.wasmExports) {return null}
       return {
         x: window.wasmExports.get_x(),
         y: window.wasmExports.get_y(),
@@ -108,7 +108,7 @@ test.describe('Golden Gameplay Tests', () => {
       await page.waitForTimeout(input.time - (inputScript.indexOf(input) > 0 ? inputScript[inputScript.indexOf(input) - 1].time : 0))
       
       await page.evaluate((input) => {
-        if (!window.wasmExports) return
+        if (!window.wasmExports) {return}
         
         switch (input.action) {
           case 'move':
@@ -138,7 +138,7 @@ test.describe('Golden Gameplay Tests', () => {
 
     // Verify determinism
     const verifyState = await page.evaluate(() => {
-      if (!window.wasmExports) return null
+      if (!window.wasmExports) {return null}
       return {
         x: window.wasmExports.get_x(),
         y: window.wasmExports.get_y(),
@@ -165,7 +165,7 @@ test.describe('Golden Gameplay Tests', () => {
       for (let i = 0; i < count; i++) {
         // Kill 3 wolves to trigger choice phase
         await page.evaluate(() => {
-          if (!window.wasmExports) return
+          if (!window.wasmExports) {return}
           // Simulate killing wolves (this would normally happen through gameplay)
           window.g_wolf_kills_since_choice = 3
           if (window.wasmExports.get_phase() === 0 || window.wasmExports.get_phase() === 1) {
@@ -181,7 +181,7 @@ test.describe('Golden Gameplay Tests', () => {
         if (phase === 2) { // Choose phase
           // Get choice rarities
           const rarities = await page.evaluate(() => {
-            if (!window.wasmExports) return []
+            if (!window.wasmExports) {return []}
             const count = window.wasmExports.get_choice_count()
             const rarities = []
             for (let i = 0; i < count; i++) {
@@ -208,7 +208,7 @@ test.describe('Golden Gameplay Tests', () => {
 
     // After many choices, pity timer should guarantee at least one high-rarity choice
     const finalRarities = await page.evaluate(() => {
-      if (!window.wasmExports) return []
+      if (!window.wasmExports) {return []}
       window.g_wolf_kills_since_choice = 3
       window.wasmExports.generate_choices && window.wasmExports.generate_choices()
       
@@ -244,7 +244,7 @@ test.describe('Golden Gameplay Tests', () => {
     // Simulate gameplay to trigger phase transitions
     for (let i = 0; i < 20; i++) {
       await page.evaluate(() => {
-        if (!window.wasmExports) return
+        if (!window.wasmExports) {return}
         
         // Simulate time passing
         window.wasmExports.update && window.wasmExports.update(0, 0, 0, 0.1)

@@ -1,0 +1,105 @@
+/* Wall Elements */
+.wall {
+    position: absolute;
+    background: linear-gradient(45deg, #2c2c2c, #1a1a1a);
+    border: 2px solid #444;
+}
+
+/* Game Boundary */
+.game-boundary {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(1px);
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.game-boundary.active {
+    opacity: 1;
+}
+
+/* Markers */
+.marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.marker.landmark {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.8), transparent);
+    border-color: #ffd700;
+}
+
+.marker.exit {
+    background: radial-gradient(circle, rgba(0, 255, 255, 0.8), transparent);
+    border-color: #00ffff;
+}
+
+/* Spawn Point Marker */
+.marker.spawn-point {
+    background: radial-gradient(circle, rgba(255, 255, 0, 0.6), rgba(255, 255, 0, 0.2), transparent);
+    border-color: #ffff00;
+    border-width: 3px;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+    animation: spawn-pulse 2s ease-in-out infinite;
+}
+
+/* Grid Lines for Game Area */
+.game-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.1;
+}
+
+.game-grid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.game-grid::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(0deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+
+/* Spawn Point Pulse Animation */
+@keyframes spawn-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}

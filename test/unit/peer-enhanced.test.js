@@ -229,7 +229,7 @@ const createMockPeer = () => {
     }
 
     destroy() {
-      if (this.destroyed) return;
+      if (this.destroyed) {return;}
       
       this.destroyed = true;
       this.connected = false;
@@ -291,8 +291,8 @@ describe('Peer', function() {
   });
 
   afterEach(function() {
-    if (peer1 && !peer1.destroyed) peer1.destroy();
-    if (peer2 && !peer2.destroyed) peer2.destroy();
+    if (peer1 && !peer1.destroyed) {peer1.destroy();}
+    if (peer2 && !peer2.destroyed) {peer2.destroy();}
     sinon.restore();
   });
 
@@ -677,7 +677,7 @@ describe('Peer', function() {
       let messagesReceived = 0;
       
       const checkComplete = () => {
-        if (++messagesReceived === 2) done();
+        if (++messagesReceived === 2) {done();}
       };
       
       peer1.on('data', (data) => {

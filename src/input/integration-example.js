@@ -106,7 +106,7 @@ export class GameInputIntegration {
      */
     updateOrientationOverlay() {
         const orientationOverlay = document.getElementById('orientation-overlay');
-        if (!orientationOverlay) return;
+        if (!orientationOverlay) {return;}
         
         const isMobile = this.inputManager.isMobile;
         const isPortrait = window.innerHeight > window.innerWidth;
@@ -133,44 +133,17 @@ export class GameInputIntegration {
         // The input manager automatically updates through its internal loop
         // This method can be used for any additional input processing
         
-        // Example: Check for combo inputs
-        this.checkComboInputs();
         
         // Example: Update input-based UI elements
         this.updateInputUI();
     }
     
-    /**
-     * Check for combo inputs
-     */
-    checkComboInputs() {
-        if (!this.inputManager) return;
-        
-        const inputState = this.inputManager.getInputState();
-        
-        // Example: Special combo - Light Attack + Heavy Attack
-        if (inputState.lightAttack && inputState.heavyAttack) {
-            console.log('Combo detected: Light + Heavy Attack');
-            // Trigger special combo in WASM
-            if (this.wasmManager && this.wasmManager.exports.trigger_combo) {
-                this.wasmManager.exports.trigger_combo(1); // Combo ID 1
-            }
-        }
-        
-        // Example: Block + Roll combo
-        if (inputState.block && inputState.roll) {
-            console.log('Combo detected: Block + Roll (Counter)');
-            if (this.wasmManager && this.wasmManager.exports.trigger_combo) {
-                this.wasmManager.exports.trigger_combo(2); // Combo ID 2
-            }
-        }
-    }
     
     /**
      * Update input-based UI elements
      */
     updateInputUI() {
-        if (!this.inputManager) return;
+        if (!this.inputManager) {return;}
         
         const inputState = this.inputManager.getInputState();
         

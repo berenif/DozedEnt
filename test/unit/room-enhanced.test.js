@@ -85,7 +85,7 @@ const createMockRoom = () => {
     }
 
     async simulatePeerJoin(peerId) {
-      if (this.peers.has(peerId)) return;
+      if (this.peers.has(peerId)) {return;}
       
       const peer = {
         id: peerId,
@@ -108,7 +108,7 @@ const createMockRoom = () => {
 
     async simulatePeerLeave(peerId) {
       const peer = this.peers.get(peerId);
-      if (!peer) return;
+      if (!peer) {return;}
       
       this.peers.delete(peerId);
       this.stats.peersConnected--;
@@ -153,7 +153,7 @@ const createMockRoom = () => {
     }
 
     async initializeHostAuthority() {
-      if (!this.config.hostAuthority) return;
+      if (!this.config.hostAuthority) {return;}
       
       // Initialize host-specific state
       this.authorityState.stateVersion = 0;
@@ -180,7 +180,7 @@ const createMockRoom = () => {
     }
 
     processGameTick() {
-      if (!this.isHost || !this.gameState) return;
+      if (!this.isHost || !this.gameState) {return;}
       
       // Process pending inputs
       const inputs = Array.from(this.authorityState.pendingInputs.values());
@@ -259,7 +259,7 @@ const createMockRoom = () => {
     }
 
     handleGameInput(fromPeerId, inputData) {
-      if (!this.config.hostAuthority) return;
+      if (!this.config.hostAuthority) {return;}
       
       // Store input for next game tick
       this.authorityState.pendingInputs.set(fromPeerId, {
@@ -345,7 +345,7 @@ const createMockRoom = () => {
     }
 
     startHeartbeat() {
-      if (this.heartbeatInterval) return;
+      if (this.heartbeatInterval) {return;}
       
       this.heartbeatInterval = setInterval(() => {
         const heartbeatData = {
@@ -414,7 +414,7 @@ const createMockRoom = () => {
     }
 
     leave() {
-      if (!this.connected) return;
+      if (!this.connected) {return;}
       
       this.connected = false;
       
@@ -436,7 +436,7 @@ const createMockRoom = () => {
     }
 
     destroy() {
-      if (this.destroyed) return;
+      if (this.destroyed) {return;}
       
       this.leave();
       this.destroyed = true;
@@ -487,9 +487,9 @@ describe('Room', function() {
   });
 
   afterEach(function() {
-    if (room1 && !room1.destroyed) room1.destroy();
-    if (room2 && !room2.destroyed) room2.destroy();
-    if (room3 && !room3.destroyed) room3.destroy();
+    if (room1 && !room1.destroyed) {room1.destroy();}
+    if (room2 && !room2.destroyed) {room2.destroy();}
+    if (room3 && !room3.destroyed) {room3.destroy();}
   });
 
   describe('Room Creation and Joining', function() {
@@ -691,7 +691,7 @@ describe('Room', function() {
       expect(sendSpy.calledWith('peer-2', 'gameEvent', messageData)).to.be.true;
     });
 
-    it('should exclude peers from broadcast', function() {
+    it('should exclude peers from broadcast', async function() {
       await room1.simulatePeerJoin('peer-3');
       const sendSpy = sinon.spy(room1, 'send');
       

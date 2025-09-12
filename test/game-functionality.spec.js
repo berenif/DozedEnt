@@ -38,13 +38,13 @@ test('check game functionality', async ({ page }) => {
   // Check if game is rendering (canvas should have content)
   const canvasHasContent = await page.evaluate(() => {
     const canvas = document.getElementById('gameCanvas');
-    if (!canvas) return false;
+    if (!canvas) {return false;}
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     // Check if there's any non-transparent pixel
     for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return true;
+      if (data[i] > 0) {return true;}
     }
     return false;
   });

@@ -590,6 +590,7 @@ describe('Enhanced Wolf Body System Tests', () => {
 
         it('should handle physics without anatomy data', () => {
             const physics = new WolfBodyPhysics()
+            const wolf = mockWolf()
 
             expect(() => {
                 physics.initializeWolfPhysics(wolf, {})
@@ -598,6 +599,7 @@ describe('Enhanced Wolf Body System Tests', () => {
 
         it('should handle fur system without body system', () => {
             const furSystem = new AdvancedFurSystem()
+            const wolf = mockWolf()
 
             expect(() => {
                 furSystem.initializeFur(wolf, null)

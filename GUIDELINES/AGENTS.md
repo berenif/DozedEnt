@@ -53,10 +53,13 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 
 ### Build, Deploy, and Testing
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.
+- [Balance Data Guide](./UTILS/BALANCE_DATA.md) — Externalized constants, JSON schema, generator, workflow.
 - [Deploy to GitHub Pages](./UTILS/DEPLOY_GITHUB_PAGES.md) — CI/CD workflow, setup, custom domains, troubleshooting.
 - [Test Coverage Improvements](./UTILS/TEST_COVERAGE_IMPROVEMENTS.md) — Testing stack, coverage status, recommendations, and next steps.
 
 ## WASM API Reference
+
+> Note: The table below summarizes common APIs. For the canonical, single-source API surface, see [BUILD/API.md](./BUILD/API.md). When snippets show concepts (e.g., `get_character_checksum`) they are pseudocode for illustration. Always consult the C++ headers and generated exports.
 
 ### 📦 Current API Surface (60+ Functions)
 #### ⚙️ Core Simulation Functions
@@ -212,43 +215,31 @@ function restartGame() {
 ## Build Process
 
 ### 🛠️ Prerequisites
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (vendored in `emsdk/`)
 - C++17 compatible compiler
-- Node.js 16+ (for build tools)
+- Node.js 20+ (for build tools)
 
 ### 📦 Build Commands
 
+Use the provided scripts, which set environment variables and output to the project root as `game.wasm` (and `game-host.wasm` when requested):
+
 #### Windows (PowerShell)
 ```powershell
-# Initialize Emscripten environment
-. .\emsdk\emsdk_env.ps1
-
-# Build optimized WASM module
-em++ wasm\game.cpp \
-    -O3 \
-    -s STANDALONE_WASM=1 \
-    -s WASM_BIGINT=1 \
-    -s EXPORT_ALL=0 \
-    -s ALLOW_MEMORY_GROWTH=1 \
-    -o docs\game.wasm
+npm run wasm:build        # prod build → ./game.wasm
+npm run wasm:build:dev    # dev build with assertions
+npm run wasm:build:host   # host-authoritative module → ./game-host.wasm
+npm run wasm:build:all    # build both modules
 ```
 
 #### Linux/macOS (Bash)
 ```bash
-# Initialize Emscripten environment
-source ./emsdk/emsdk_env.sh
-
-# Build optimized WASM module
-em++ wasm/game.cpp \
-    -O3 \
-    -s STANDALONE_WASM=1 \
-    -s WASM_BIGINT=1 \
-    -s EXPORT_ALL=0 \
-    -s ALLOW_MEMORY_GROWTH=1 \
-    -o docs/game.wasm
+npm run wasm:build        # prod build → ./game.wasm
+npm run wasm:build:dev    # dev build with assertions
+npm run wasm:build:host   # host-authoritative module → ./game-host.wasm
+npm run wasm:build:all    # build both modules
 ```
 
-#### Build Flags Explained
+#### Build Flags (used by scripts)
 - `-O3`: Maximum optimization level
 - `-s STANDALONE_WASM=1`: Generate standalone WASM without JS glue
 - `-s WASM_BIGINT=1`: Enable BigInt support for 64-bit integers
@@ -346,7 +337,7 @@ function renderChoice(choice) {
 ### Required Checks
 - [ ] **All game logic in WASM** - No gameplay code in JavaScript
 - [ ] **Deterministic execution** - Same seed + inputs = same result
-- [ ] **Build successful** - `docs/game.wasm` updated and tested
+- [ ] **Build successful** - `game.wasm` updated and tested
 - [ ] **No regressions** - Core systems still functional:
   - [ ] Movement (`update` function)
   - [ ] Stamina system
@@ -429,16 +420,17 @@ fetch('game.wasm')
 
 ### 🚀 Testing Commands
 ```bash
-# Run all tests
+# Run end-to-end Playwright tests
 npm test
 
-# Run specific test suites
+# Unit tests (mocha)
 npm run test:unit
-npm run test:integration
-npm run test:performance
 
-# Generate coverage report
+# Coverage for unit tests
 npm run test:coverage
+
+# CI check: unit + coverage thresholds
+npm run test:all
 ```
 
 ### 📋 Testing Checklist

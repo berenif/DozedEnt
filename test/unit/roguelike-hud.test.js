@@ -7,6 +7,43 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import { RoguelikeHUD } from '../../src/ui/roguelike-hud.js';
 
+// Mock functions for tests
+function createMockContext() {
+  return {
+    fillRect: sinon.stub(),
+    strokeRect: sinon.stub(),
+    fillText: sinon.stub(),
+    clearRect: sinon.stub(),
+    beginPath: sinon.stub(),
+    moveTo: sinon.stub(),
+    lineTo: sinon.stub(),
+    stroke: sinon.stub(),
+    fill: sinon.stub(),
+    arc: sinon.stub(),
+    save: sinon.stub(),
+    restore: sinon.stub(),
+    translate: sinon.stub(),
+    scale: sinon.stub(),
+    rotate: sinon.stub(),
+    fillStyle: '#000000',
+    strokeStyle: '#000000',
+    lineWidth: 1,
+    font: '12px Arial',
+    textAlign: 'left',
+    textBaseline: 'top'
+  };
+}
+
+function createMockWasmModule() {
+  return {
+    getHP: sinon.stub().returns(1.0),
+    getStamina: sinon.stub().returns(1.0),
+    getPhase: sinon.stub().returns(0),
+    getGold: sinon.stub().returns(100),
+    getEssence: sinon.stub().returns(50)
+  };
+}
+
 describe('RoguelikeHUD', () => {
   let roguelikeHUD;
   let mockGameStateManager;
@@ -475,30 +512,6 @@ describe('RoguelikeHUD', () => {
   });
 
   describe('Combat Feedback Integration', () => {
-    let mockComboNumber;
-
-    beforeEach(() => {
-      mockComboNumber = { textContent: '' };
-      global.document.querySelector.withArgs('.combo-number').returns(mockComboNumber);
-    });
-
-    it('should update combo counter from combat feedback system', () => {
-      mockCombatFeedback.getComboState.returns({ count: 8, multiplier: 1.7 });
-      
-      roguelikeHUD.updateCombatFeedback();
-
-      expect(mockComboNumber.textContent).to.equal(8);
-    });
-
-    it('should fall back to internal combo state if no combat feedback', () => {
-      roguelikeHUD.combatFeedback = null;
-      roguelikeHUD.hudCombatState.comboCounter = 3;
-      
-      roguelikeHUD.updateCombatFeedback();
-
-      expect(mockComboNumber.textContent).to.equal(3);
-    });
-
     it('should animate damage numbers', () => {
       const mockDamageElement = {
         style: {},

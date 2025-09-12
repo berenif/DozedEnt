@@ -704,6 +704,18 @@ export class WolfAnimationSystem {
     
     // Enhanced rendering with all animation effects
     renderAnimatedWolf(ctx, wolf, camera) {
+        // Performance optimization: Check if wolf should be rendered
+        const distance = Math.sqrt(
+            (wolf.position.x - camera.x) ** 2 + 
+            (wolf.position.y - camera.y) ** 2
+        );
+        
+        // LOD-based rendering optimization
+        if (distance > 1500) {return;} // Don't render very distant wolves
+        
+        const isDetailed = distance < 500;
+        const isReduced = distance < 1000;
+        
         ctx.save()
         
         // Calculate screen position
@@ -736,26 +748,58 @@ export class WolfAnimationSystem {
             ctx.translate(-wolf.facing * wolf.flinchOffset, -wolf.flinchOffset * 0.5)
         }
         
-        // Draw shadow with animation
-        this.drawAnimatedShadow(ctx, wolf)
+        // Draw shadow with animation (skip for distant wolves)
+        if (isReduced) {
+            this.drawAnimatedShadow(ctx, wolf)
+        }
         
-        // Draw animated body parts
-        this.drawAnimatedTail(ctx, wolf)
-        this.drawAnimatedLegs(ctx, wolf, 'hind')
-        this.drawAnimatedBody(ctx, wolf)
-        this.drawAnimatedLegs(ctx, wolf, 'front')
-        this.drawAnimatedNeck(ctx, wolf)
-        this.drawAnimatedHead(ctx, wolf)
+        // Draw animated body parts with LOD
+        if (isDetailed) {
+            // Full detail rendering
+            this.drawAnimatedTail(ctx, wolf)
+            this.drawAnimatedLegs(ctx, wolf, 'hind')
+            this.drawAnimatedBody(ctx, wolf)
+            this.drawAnimatedLegs(ctx, wolf, 'front')
+            this.drawAnimatedNeck(ctx, wolf)
+            this.drawAnimatedHead(ctx, wolf)
+        } else if (isReduced) {
+            // Reduced detail rendering - skip some parts
+            this.drawAnimatedBody(ctx, wolf)
+            this.drawAnimatedHead(ctx, wolf)
+        } else {
+            // Minimal detail - just basic shape
+            this.drawSimplifiedWolf(ctx, wolf)
+        }
         
-        // Draw particle effects
-        if (wolf.particleSystem) {
+        // Draw particle effects only for nearby wolves
+        if (isDetailed && wolf.particleSystem) {
             wolf.particleSystem.render(ctx, camera)
         }
         
-        // Draw UI elements
-        this.drawWolfUI(ctx, wolf)
+        // Draw UI elements only for close wolves
+        if (isReduced) {
+            this.drawWolfUI(ctx, wolf)
+        }
         
         ctx.restore()
+    }
+    
+    /**
+     * Draw simplified wolf for distant LOD
+     * @param {CanvasRenderingContext2D} ctx - Canvas context
+     * @param {Object} wolf - Wolf object
+     */
+    drawSimplifiedWolf(ctx, wolf) {
+        // Draw simple wolf shape for distant rendering
+        ctx.fillStyle = wolf.color || '#8B4513'
+        ctx.beginPath()
+        ctx.ellipse(0, 0, wolf.size * 20, wolf.size * 12, 0, 0, Math.PI * 2)
+        ctx.fill()
+        
+        // Simple head
+        ctx.beginPath()
+        ctx.ellipse(wolf.facing * wolf.size * 15, -wolf.size * 8, wolf.size * 8, wolf.size * 6, 0, 0, Math.PI * 2)
+        ctx.fill()
     }
     
     drawAnimatedShadow(ctx, wolf) {

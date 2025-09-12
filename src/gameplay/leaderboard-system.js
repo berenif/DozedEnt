@@ -118,6 +118,15 @@ export class LeaderboardSystem {
       mastery: 0
     };
     
+    // Cloud sync properties
+    this.cloudSyncEnabled = false;
+    this.leaderboardApiUrl = 'https://api.dozedent.com/leaderboards';
+    this.syncInterval = 5 * 60 * 1000; // 5 minutes
+    this.syncIntervalId = null;
+    this.authToken = null;
+    this.clientId = this.generateClientId();
+    this.currentSessionId = this.generateSessionId();
+    
     this.init();
   }
   
@@ -255,7 +264,7 @@ export class LeaderboardSystem {
    */
   updatePersonalBest(category, value) {
     const categoryInfo = this.categories[category];
-    if (!categoryInfo) return false;
+    if (!categoryInfo) {return false;}
     
     const current = this.personalBests.get(category);
     const isImprovement = !current || 
@@ -288,7 +297,7 @@ export class LeaderboardSystem {
     const best = this.getPersonalBest(category);
     const categoryInfo = this.categories[category];
     
-    if (!categoryInfo || best.value === 0) return 'N/A';
+    if (!categoryInfo || best.value === 0) {return 'N/A';}
     
     return this.formatValue(best.value, categoryInfo.format);
   }
@@ -322,9 +331,9 @@ export class LeaderboardSystem {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else if (minutes > 0) {
       return `${minutes}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0').substring(0, 1)}`;
-    } else {
+    } 
       return `${secs}.${ms.toString().padStart(3, '0')}s`;
-    }
+    
   }
   
   /**
@@ -390,6 +399,134 @@ export class LeaderboardSystem {
     });
     
     this.saveGlobalLeaderboards();
+    
+    // Also attempt cloud sync if enabled
+    if (this.cloudSyncEnabled) {
+      this.syncToCloud(gameResult);
+    }
+  }
+  
+  /**
+   * Enhanced cloud sync capabilities
+   */
+  async syncToCloud(gameResult) {
+    try {
+      if (!navigator.onLine) {
+        this.queueForLaterSync(gameResult);
+        return;
+      }
+      
+      const playerName = this.getPlayerName() || 'Anonymous';
+      const submission = {
+        playerName,
+        playerId: this.getPlayerId(),
+        timestamp: Date.now(),
+        gameResult,
+        clientId: this.getClientId(),
+        gameVersion: this.getGameVersion(),
+        sessionId: this.getCurrentSessionId()
+      };
+      
+      // Submit to cloud leaderboards
+      await this.submitToCloudLeaderboards(submission);
+      
+    } catch (error) {
+      console.warn('Cloud sync failed, queuing for later:', error);
+      this.queueForLaterSync(gameResult);
+    }
+  }
+  
+  /**
+   * Submit to cloud leaderboards
+   */
+  async submitToCloudLeaderboards(submission) {
+    const endpoint = this.getLeaderboardEndpoint();
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getAuthToken()}`,
+        'X-Client-Version': this.getGameVersion()
+      },
+      body: JSON.stringify(submission)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Cloud sync failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    // Update local cache with server rankings
+    if (result.rankings) {
+      this.updateLocalRankingsCache(result.rankings);
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Queue for later sync when offline
+   */
+  queueForLaterSync(gameResult) {
+    try {
+      const queue = JSON.parse(localStorage.getItem('leaderboardSyncQueue') || '[]');
+      queue.push({
+        gameResult,
+        timestamp: Date.now(),
+        attempts: 0,
+        playerId: this.getPlayerId()
+      });
+      
+      // Keep only last 100 entries
+      if (queue.length > 100) {
+        queue.splice(0, queue.length - 100);
+      }
+      
+      localStorage.setItem('leaderboardSyncQueue', JSON.stringify(queue));
+    } catch (error) {
+      console.warn('Failed to queue sync:', error);
+    }
+  }
+  
+  /**
+   * Process queued sync operations
+   */
+  async processQueuedSync() {
+    if (!navigator.onLine || !this.cloudSyncEnabled) {return;}
+    
+    try {
+      const queue = JSON.parse(localStorage.getItem('leaderboardSyncQueue') || '[]');
+      if (queue.length === 0) {return;}
+      
+      const processed = [];
+      const batchSize = 5; // Process in batches to avoid overwhelming server
+      
+      for (let i = 0; i < Math.min(queue.length, batchSize); i++) {
+        const item = queue[i];
+        
+        try {
+          await this.syncToCloud(item.gameResult);
+          processed.push(item);
+        } catch (error) {
+          item.attempts = (item.attempts || 0) + 1;
+          
+          // Remove items that have failed too many times (> 3 attempts)
+          if (item.attempts > 3) {
+            processed.push(item);
+            console.warn('Dropping sync item after 3 failed attempts:', error);
+          }
+        }
+      }
+      
+      // Remove processed items
+      const remainingQueue = queue.filter(item => !processed.includes(item));
+      localStorage.setItem('leaderboardSyncQueue', JSON.stringify(remainingQueue));
+      
+    } catch (error) {
+      console.warn('Failed to process sync queue:', error);
+    }
   }
   
   /**
@@ -431,9 +568,7 @@ export class LeaderboardSystem {
     board.push(entry);
     
     // Sort board
-    board.sort((a, b) => {
-      return categoryInfo.sortOrder === 'desc' ? b.value - a.value : a.value - b.value;
-    });
+    board.sort((a, b) => categoryInfo.sortOrder === 'desc' ? b.value - a.value : a.value - b.value);
     
     // Keep top 100
     if (board.length > 100) {
@@ -568,10 +703,10 @@ export class LeaderboardSystem {
   calculateConsistency() {
     // Based on variance in recent scores
     const recentScores = this.getRecentScores(10);
-    if (recentScores.length < 2) return 0;
+    if (recentScores.length < 2) {return 0;}
     
     const mean = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
-    const variance = recentScores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / recentScores.length;
+    const variance = recentScores.reduce((sum, score) => sum + (score - mean)**2, 0) / recentScores.length;
     const standardDeviation = Math.sqrt(variance);
     
     // Convert to 0-1 scale (lower deviation = higher consistency)
@@ -586,7 +721,7 @@ export class LeaderboardSystem {
     const phasePerformance = gameResult.phasePerformance || {};
     const phases = Object.keys(phasePerformance);
     
-    if (phases.length === 0) return 0.5;
+    if (phases.length === 0) {return 0.5;}
     
     const performanceValues = phases.map(phase => phasePerformance[phase] || 0);
     const minPerformance = Math.min(...performanceValues);
@@ -831,5 +966,181 @@ export class LeaderboardSystem {
     
     localStorage.removeItem('personalBests');
     localStorage.removeItem('globalLeaderboards');
+  }
+  
+  // ============================================================================
+  // Cloud Sync Helper Methods
+  // ============================================================================
+  
+  /**
+   * Generate unique client ID
+   */
+  generateClientId() {
+    let clientId = localStorage.getItem('clientId');
+    if (!clientId) {
+      clientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('clientId', clientId);
+    }
+    return clientId;
+  }
+  
+  /**
+   * Generate session ID
+   */
+  generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  /**
+   * Get client ID
+   */
+  getClientId() {
+    return this.clientId;
+  }
+  
+  /**
+   * Get current session ID
+   */
+  getCurrentSessionId() {
+    return this.currentSessionId;
+  }
+  
+  /**
+   * Get game version
+   */
+  getGameVersion() {
+    return '1.0.0'; // Should be dynamically determined
+  }
+  
+  /**
+   * Get auth token for cloud sync
+   */
+  getAuthToken() {
+    return this.authToken || localStorage.getItem('authToken') || 'anonymous';
+  }
+  
+  /**
+   * Set auth token
+   */
+  setAuthToken(token) {
+    this.authToken = token;
+    localStorage.setItem('authToken', token);
+  }
+  
+  /**
+   * Get leaderboard endpoint URL
+   */
+  getLeaderboardEndpoint() {
+    return this.leaderboardApiUrl;
+  }
+  
+  /**
+   * Update local rankings cache
+   */
+  updateLocalRankingsCache(rankings) {
+    try {
+      localStorage.setItem('leaderboardRankingsCache', JSON.stringify({
+        rankings,
+        timestamp: Date.now(),
+        ttl: 30 * 60 * 1000 // 30 minutes
+      }));
+    } catch (error) {
+      console.warn('Failed to update rankings cache:', error);
+    }
+  }
+  
+  /**
+   * Get cached rankings
+   */
+  getCachedRankings() {
+    try {
+      const cached = localStorage.getItem('leaderboardRankingsCache');
+      if (!cached) {return null;}
+      
+      const data = JSON.parse(cached);
+      const now = Date.now();
+      
+      // Check if cache is still valid
+      if (now - data.timestamp > data.ttl) {
+        localStorage.removeItem('leaderboardRankingsCache');
+        return null;
+      }
+      
+      return data.rankings;
+    } catch (error) {
+      console.warn('Failed to get cached rankings:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Enable cloud sync
+   */
+  enableCloudSync(apiUrl, authToken) {
+    this.cloudSyncEnabled = true;
+    if (apiUrl) {this.leaderboardApiUrl = apiUrl;}
+    if (authToken) {this.setAuthToken(authToken);}
+    
+    // Start periodic sync processing
+    this.startPeriodicSync();
+  }
+  
+  /**
+   * Disable cloud sync
+   */
+  disableCloudSync() {
+    this.cloudSyncEnabled = false;
+    this.stopPeriodicSync();
+  }
+  
+  /**
+   * Start periodic sync processing
+   */
+  startPeriodicSync() {
+    if (this.syncIntervalId) {
+      clearInterval(this.syncIntervalId);
+    }
+    
+    this.syncIntervalId = setInterval(() => {
+      this.processQueuedSync();
+    }, this.syncInterval);
+    
+    // Also process on network reconnection
+    window.addEventListener('online', () => {
+      setTimeout(() => this.processQueuedSync(), 1000);
+    });
+  }
+  
+  /**
+   * Stop periodic sync processing
+   */
+  stopPeriodicSync() {
+    if (this.syncIntervalId) {
+      clearInterval(this.syncIntervalId);
+      this.syncIntervalId = null;
+    }
+  }
+  
+  /**
+   * Get sync queue status
+   */
+  getSyncQueueStatus() {
+    try {
+      const queue = JSON.parse(localStorage.getItem('leaderboardSyncQueue') || '[]');
+      return {
+        queueLength: queue.length,
+        cloudSyncEnabled: this.cloudSyncEnabled,
+        isOnline: navigator.onLine,
+        lastSyncAttempt: localStorage.getItem('lastSyncAttempt'),
+        nextSyncIn: this.syncIntervalId ? this.syncInterval : null
+      };
+    } catch (error) {
+      return {
+        queueLength: 0,
+        cloudSyncEnabled: this.cloudSyncEnabled,
+        isOnline: navigator.onLine,
+        error: error.message
+      };
+    }
   }
 }

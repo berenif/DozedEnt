@@ -11,6 +11,9 @@ export class GameStateManager {
     this.gameStartTime = 0;
     this.lastUpdateTime = 0;
     
+    // Persistence system
+    this.persistenceManager = null;
+    
     // Player state
     this.playerState = {
       position: { x: 0, y: 0 },
@@ -73,14 +76,34 @@ export class GameStateManager {
       this.playerState.stamina = 1.0;
     }
     
+    // Initialize persistence manager
+    this.initializePersistenceManager();
+    
     this.emit('stateInitialized', this.getStateSnapshot());
+  }
+  
+  /**
+   * Initialize persistence manager
+   */
+  initializePersistenceManager() {
+    try {
+      // Dynamic import to avoid circular dependencies
+      import('../gameplay/persistence-manager.js').then(({ PersistenceManager }) => {
+        this.persistenceManager = new PersistenceManager(this, this.wasmManager);
+        console.log('Persistence manager initialized');
+      }).catch(error => {
+        console.warn('Failed to initialize persistence manager:', error);
+      });
+    } catch (error) {
+      console.warn('Failed to load persistence manager:', error);
+    }
   }
 
   /**
    * Start the game
    */
   startGame() {
-    if (this.isGameRunning) return;
+    if (this.isGameRunning) {return;}
 
     this.isGameRunning = true;
     this.isPaused = false;
@@ -97,7 +120,7 @@ export class GameStateManager {
    * Pause the game
    */
   pauseGame() {
-    if (!this.isGameRunning || this.isPaused) return;
+    if (!this.isGameRunning || this.isPaused) {return;}
 
     this.isPaused = true;
     this.emit('gamePaused');
@@ -107,7 +130,7 @@ export class GameStateManager {
    * Resume the game
    */
   resumeGame() {
-    if (!this.isGameRunning || !this.isPaused) return;
+    if (!this.isGameRunning || !this.isPaused) {return;}
 
     this.isPaused = false;
     this.lastUpdateTime = performance.now();
@@ -118,7 +141,7 @@ export class GameStateManager {
    * Stop the game
    */
   stopGame() {
-    if (!this.isGameRunning) return;
+    if (!this.isGameRunning) {return;}
 
     this.isGameRunning = false;
     this.isPaused = false;
@@ -132,7 +155,7 @@ export class GameStateManager {
    * @param {Object} inputState - Current input state
    */
   update(deltaTime, inputState) {
-    if (!this.isGameRunning || this.isPaused || !this.wasmManager) return;
+    if (!this.isGameRunning || this.isPaused || !this.wasmManager) {return;}
 
     const currentTime = performance.now();
     
@@ -168,10 +191,8 @@ export class GameStateManager {
       // Now update WASM with just deltaTime
       this.wasmManager.exports?.update?.(deltaTime);
 
-      // Read updated state from WASM
-      this.updatePlayerState();
-      this.updatePhaseState();
-      this.updateCameraState();
+      // Read updated state from WASM using batched calls
+      this.updateStateFromWasm();
 
       this.lastUpdateTime = currentTime;
       
@@ -190,11 +211,41 @@ export class GameStateManager {
   }
 
   /**
+   * PERFORMANCE OPTIMIZATION: Update all state from WASM in one batch
+   * Reduces WASM/JS boundary calls from multiple individual calls to one batch
+   */
+  updateStateFromWasm() {
+    if (!this.wasmManager || !this.wasmManager.isLoaded) {return;}
+
+    // Get all state in one batched call
+    const playerState = this.wasmManager.getPlayerState();
+    
+    // Update player state
+    this.playerState.x = playerState.x;
+    this.playerState.y = playerState.y;
+    this.playerState.stamina = playerState.stamina;
+    this.playerState.health = playerState.health;
+    this.playerState.gold = playerState.gold;
+    this.playerState.essence = playerState.essence;
+    this.playerState.velX = playerState.velX;
+    this.playerState.velY = playerState.velY;
+    this.playerState.isRolling = Boolean(playerState.isRolling);
+    this.playerState.isBlocking = Boolean(playerState.isBlocking);
+    this.playerState.animState = playerState.animState;
+    
+    // Update game phase
+    this.currentPhase = playerState.phase;
+    
+    // Update camera to follow player
+    this.updateCameraState();
+  }
+
+  /**
    * Update player state from WASM
    * @private
    */
   updatePlayerState() {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager) {return;}
 
     // Get normalized position from WASM (0-1 range)
     const normalizedPosition = this.wasmManager.getPlayerPosition();
@@ -223,7 +274,7 @@ export class GameStateManager {
    * @private
    */
   updatePhaseState() {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager) {return;}
 
     const phase = this.wasmManager.getPhase();
     if (phase !== this.phaseState.currentPhase) {
@@ -307,7 +358,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   lightAttack() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
 
     const success = this.wasmManager.lightAttack();
     if (success) {
@@ -323,7 +374,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   heavyAttack() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
 
     const success = this.wasmManager.heavyAttack();
     if (success) {
@@ -339,7 +390,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   specialAttack() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
 
     const success = this.wasmManager.specialAttack();
     if (success) {
@@ -363,7 +414,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   roll() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
 
     const success = this.wasmManager.startRoll();
     if (success) {
@@ -382,7 +433,7 @@ export class GameStateManager {
    * @param {number} faceY - Facing direction Y
    */
   setBlocking(isBlocking, faceX, faceY) {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager) {return;}
 
     const success = this.wasmManager.setBlocking(isBlocking, faceX, faceY);
     if (success) {
@@ -398,7 +449,7 @@ export class GameStateManager {
    * @param {number} y - Movement direction Y (-1 to 1)
    */
   updateMovement(x, y) {
-    if (!this.wasmManager || !this.wasmManager.exports) return;
+    if (!this.wasmManager || !this.wasmManager.exports) {return;}
 
     // Send movement to WASM via the correct API
     if (typeof this.wasmManager.exports.set_player_input === 'function') {
@@ -411,7 +462,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   specialAction() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
     
     // For now, treat as special attack
     return this.specialAttack();
@@ -422,7 +473,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   quickDodge() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
     
     // For now, treat as roll
     return this.roll();
@@ -433,7 +484,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   jump() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
     
     // For now, treat as special attack
     return this.specialAttack();
@@ -444,7 +495,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   groundSlam() {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
     
     // For now, treat as heavy attack
     return this.heavyAttack();
@@ -456,7 +507,7 @@ export class GameStateManager {
    * @returns {boolean} Success status
    */
   dash(direction) {
-    if (!this.wasmManager) return false;
+    if (!this.wasmManager) {return false;}
     
     // For now, treat as roll
     return this.roll();
@@ -467,7 +518,7 @@ export class GameStateManager {
    * @param {number} choiceId - Choice ID to commit
    */
   commitChoice(choiceId) {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager) {return;}
 
     this.wasmManager.commitChoice(choiceId);
     this.phaseState.selectedChoice = choiceId;
@@ -632,5 +683,71 @@ export class GameStateManager {
     this.wasmManager = null;
 
     console.log('GameStateManager cleaned up');
+  }
+  
+  // ============================================================================
+  // Persistence System Integration
+  // ============================================================================
+  
+  /**
+   * Show persistence UI
+   */
+  showPersistenceUI(tab = 'saves') {
+    if (this.persistenceManager) {
+      this.persistenceManager.showPersistenceUI(tab);
+    } else {
+      console.warn('Persistence manager not initialized');
+    }
+  }
+  
+  /**
+   * Perform quick save
+   */
+  quickSave() {
+    if (this.persistenceManager) {
+      return this.persistenceManager.performQuickSave();
+    } 
+      console.warn('Persistence manager not initialized');
+      return Promise.resolve(false);
+    
+  }
+  
+  /**
+   * Get persistence status
+   */
+  getPersistenceStatus() {
+    if (this.persistenceManager) {
+      return this.persistenceManager.getStatus();
+    } 
+      return {
+        autoSaveEnabled: false,
+        sessionActive: false,
+        error: 'Persistence manager not initialized'
+      };
+    
+  }
+  
+  /**
+   * Export all persistence data
+   */
+  async exportPersistenceData() {
+    if (this.persistenceManager) {
+      return await this.persistenceManager.exportAllData();
+    } 
+      console.warn('Persistence manager not initialized');
+      return null;
+    
+  }
+  
+  /**
+   * Import persistence data
+   */
+  async importPersistenceData(data) {
+    if (this.persistenceManager) {
+      return await this.persistenceManager.importAllData(data);
+    } 
+      console.warn('Persistence manager not initialized');
+      return false;
+    
   }
 }

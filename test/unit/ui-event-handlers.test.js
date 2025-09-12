@@ -643,7 +643,7 @@ describe('UIEventHandlers', () => {
         const connectHandler = mockWindow.addEventListener
           .getCalls()
           .find(call => call.args[0] === 'gamepadconnected')?.args[1];
-        if (connectHandler) connectHandler(gamepadEvent);
+        if (connectHandler) {connectHandler(gamepadEvent);}
       }).to.not.throw();
     });
 
@@ -657,7 +657,7 @@ describe('UIEventHandlers', () => {
         const disconnectHandler = mockWindow.addEventListener
           .getCalls()
           .find(call => call.args[0] === 'gamepaddisconnected')?.args[1];
-        if (disconnectHandler) disconnectHandler(gamepadEvent);
+        if (disconnectHandler) {disconnectHandler(gamepadEvent);}
       }).to.not.throw();
     });
   });

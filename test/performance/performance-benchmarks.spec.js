@@ -299,7 +299,7 @@ describe('Performance Benchmarks', () => {
     });
 
     it('should efficiently manage particle systems', () => {
-      if (!performance.memory) return;
+      if (!performance.memory) {return;}
 
       const initialMemory = performance.memory.usedJSHeapSize;
       const particleCount = 10000;
@@ -362,7 +362,7 @@ describe('Performance Benchmarks', () => {
           volume: Math.random(),
           category: 'sfx'
         });
-        if (source) sources.push(source);
+        if (source) {sources.push(source);}
       }
 
       const endTime = performance.now();
@@ -384,7 +384,7 @@ describe('Performance Benchmarks', () => {
           loop: true,
           category: 'ambient'
         });
-        if (source) sources.push(source);
+        if (source) {sources.push(source);}
       }
 
       const startTime = performance.now();

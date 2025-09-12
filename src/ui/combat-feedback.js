@@ -7,11 +7,6 @@ export class CombatFeedback {
   constructor() {
     this.feedbackElements = [];
     this.screenEffects = [];
-    this.comboState = {
-      count: 0,
-      lastHitTime: 0,
-      multiplier: 1.0
-    };
     
     // Initialize feedback overlay
     this.initializeFeedbackOverlay();
@@ -41,14 +36,6 @@ export class CombatFeedback {
       <!-- Hit indicators container -->
       <div class="hit-indicators-container"></div>
       
-      <!-- Combo feedback -->
-      <div class="combo-feedback-container">
-        <div class="combo-display" id="combo-display">
-          <div class="combo-count">0</div>
-          <div class="combo-text">COMBO</div>
-          <div class="combo-multiplier">×1.0</div>
-        </div>
-      </div>
     `;
     
     document.body.appendChild(overlay);
@@ -68,7 +55,7 @@ export class CombatFeedback {
     const screenY = (worldY * window.innerHeight) + (Math.random() - 0.5) * 20;
     
     const container = document.querySelector('.damage-numbers-container');
-    if (!container) return;
+    if (!container) {return;}
     
     const damageEl = document.createElement('div');
     damageEl.className = `damage-number ${type}`;
@@ -138,7 +125,7 @@ export class CombatFeedback {
     const screenY = worldY * window.innerHeight;
     
     const container = document.querySelector('.hit-indicators-container');
-    if (!container) return;
+    if (!container) {return;}
     
     const indicator = document.createElement('div');
     indicator.className = `hit-indicator ${type}`;
@@ -169,112 +156,8 @@ export class CombatFeedback {
     }, 500);
   }
 
-  /**
-   * Update combo state
-   * @param {boolean} hit - Whether the attack hit
-   * @param {boolean} isCritical - Whether it was a critical hit
-   */
-  updateCombo(hit, isCritical = false) {
-    const now = performance.now();
-    const comboTimeout = 3000; // 3 seconds to maintain combo
-    
-    if (hit) {
-      // Check if combo should continue
-      if (now - this.comboState.lastHitTime < comboTimeout) {
-        this.comboState.count++;
-      } else {
-        this.comboState.count = 1; // Reset combo
-      }
-      
-      this.comboState.lastHitTime = now;
-      
-      // Calculate multiplier
-      this.comboState.multiplier = 1.0 + (this.comboState.count - 1) * 0.1;
-      if (isCritical) {
-        this.comboState.multiplier *= 1.5;
-      }
-      
-      // Update combo display
-      this.updateComboDisplay();
-      
-      // Show combo milestone effects
-      if (this.comboState.count % 5 === 0 && this.comboState.count > 0) {
-        this.showComboMilestone(this.comboState.count);
-      }
-    } else {
-      // Miss - reset combo after timeout
-      setTimeout(() => {
-        if (now - this.comboState.lastHitTime >= comboTimeout) {
-          this.comboState.count = 0;
-          this.comboState.multiplier = 1.0;
-          this.updateComboDisplay();
-        }
-      }, comboTimeout);
-    }
-  }
 
-  /**
-   * Update combo display
-   */
-  updateComboDisplay() {
-    const comboDisplay = document.getElementById('combo-display');
-    if (!comboDisplay) return;
-    
-    const countEl = comboDisplay.querySelector('.combo-count');
-    const multiplierEl = comboDisplay.querySelector('.combo-multiplier');
-    
-    if (countEl) {
-      countEl.textContent = this.comboState.count;
-    }
-    
-    if (multiplierEl) {
-      multiplierEl.textContent = `×${this.comboState.multiplier.toFixed(1)}`;
-    }
-    
-    // Add visual effects for high combos
-    comboDisplay.classList.remove('combo-low', 'combo-medium', 'combo-high', 'combo-extreme');
-    
-    if (this.comboState.count >= 20) {
-      comboDisplay.classList.add('combo-extreme');
-    } else if (this.comboState.count >= 10) {
-      comboDisplay.classList.add('combo-high');
-    } else if (this.comboState.count >= 5) {
-      comboDisplay.classList.add('combo-medium');
-    } else if (this.comboState.count > 0) {
-      comboDisplay.classList.add('combo-low');
-    }
-    
-    // Show/hide combo display
-    comboDisplay.style.opacity = this.comboState.count > 0 ? '1' : '0.3';
-  }
 
-  /**
-   * Show combo milestone effect
-   * @param {number} comboCount - Current combo count
-   */
-  showComboMilestone(comboCount) {
-    const container = document.querySelector('.screen-effects-container');
-    if (!container) return;
-    
-    const milestone = document.createElement('div');
-    milestone.className = 'combo-milestone';
-    milestone.innerHTML = `
-      <div class="milestone-text">${comboCount} HIT COMBO!</div>
-      <div class="milestone-subtitle">EXCELLENT!</div>
-    `;
-    
-    container.appendChild(milestone);
-    
-    // Animate and remove
-    setTimeout(() => {
-      milestone.classList.add('fade-out');
-      setTimeout(() => {
-        if (milestone.parentNode) {
-          milestone.remove();
-        }
-      }, 500);
-    }, 2000);
-  }
 
   /**
    * Show screen effect
@@ -283,7 +166,7 @@ export class CombatFeedback {
    */
   showScreenEffect(type, intensity = 0.5) {
     const container = document.querySelector('.screen-effects-container');
-    if (!container) return;
+    if (!container) {return;}
     
     const effect = document.createElement('div');
     effect.className = `screen-effect ${type}`;
@@ -315,7 +198,7 @@ export class CombatFeedback {
         feedback.element.style.top = `${currentY}px`;
         
         // Update opacity
-        const opacity = 1 - Math.pow(progress, 2); // Quadratic fade
+        const opacity = 1 - progress**2; // Quadratic fade
         feedback.element.style.opacity = opacity;
         
         // Update scale for critical hits
@@ -333,19 +216,16 @@ export class CombatFeedback {
   onAttackHit(worldX, worldY, damage, isCritical = false) {
     this.showDamageNumber(worldX, worldY, damage, isCritical ? 'critical' : 'damage');
     this.showHitIndicator(worldX, worldY, isCritical ? 'critical' : 'hit');
-    this.updateCombo(true, isCritical);
     this.showScreenEffect(isCritical ? 'critical' : 'hit', isCritical ? 0.8 : 0.4);
   }
 
   onAttackMiss(worldX, worldY) {
     this.showHitIndicator(worldX, worldY, 'miss');
-    this.updateCombo(false);
   }
 
   onAttackBlocked(worldX, worldY, damage) {
     this.showDamageNumber(worldX, worldY, damage, 'block');
     this.showHitIndicator(worldX, worldY, 'block');
-    this.updateCombo(false);
   }
 
   onAttackParried(worldX, worldY) {
@@ -364,22 +244,7 @@ export class CombatFeedback {
     this.showScreenEffect('damage', 0.6);
   }
 
-  /**
-   * Get current combo state
-   */
-  getComboState() {
-    return { ...this.comboState };
-  }
 
-  /**
-   * Reset combo
-   */
-  resetCombo() {
-    this.comboState.count = 0;
-    this.comboState.multiplier = 1.0;
-    this.comboState.lastHitTime = 0;
-    this.updateComboDisplay();
-  }
 
   /**
    * Cleanup and destroy
@@ -408,10 +273,5 @@ export class CombatFeedback {
     // Clear arrays and reset state
     this.feedbackElements = [];
     this.screenEffects = [];
-    this.comboState = {
-      count: 0,
-      lastHitTime: 0,
-      multiplier: 1.0
-    };
   }
 }
