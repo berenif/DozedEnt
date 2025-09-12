@@ -478,7 +478,7 @@
                         this.wasmEngine.gameTime += dt;
                         this.wasmEngine.deltaTime = dt;
                         this.wasmEngine.frameNumber++;
-                        this.wasmEngine.checksum = this.calculateChecksum();
+                        this.wasmEngine.checksum = this.wasmEngine.calculateChecksum();
                     },
                     
                     calculateChecksum: () => {
