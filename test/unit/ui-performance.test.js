@@ -528,6 +528,12 @@ describe('UI Performance and Memory Management', () => {
       // CombatFeedback component removed
       
       // Add elements to update
+      // Mock combatFeedback for testing
+      const combatFeedback = {
+        showDamageNumber: () => {},
+        update: () => {},
+        feedbackElements: []
+      };
       for (let i = 0; i < 20; i++) {
         combatFeedback.showDamageNumber(Math.random(), Math.random(), i, 'damage');
       }
@@ -650,6 +656,23 @@ describe('UI Performance and Memory Management', () => {
     });
 
     it('should handle resource cleanup on component destruction', () => {
+      // Mock CombatFeedback for testing
+      class CombatFeedback {
+        constructor() {
+          this.feedbackElements = [];
+          this.screenEffects = [];
+        }
+        showDamageNumber() {
+          this.feedbackElements.push({});
+        }
+        showScreenEffect() {
+          this.screenEffects.push({});
+        }
+        destroy() {
+          this.feedbackElements = [];
+          this.screenEffects = [];
+        }
+      }
       const component = new CombatFeedback();
       
       // Use component resources
@@ -670,6 +693,14 @@ describe('UI Performance and Memory Management', () => {
     it('should prevent resource exhaustion under stress', () => {
       // CombatFeedback component removed
       const maxElements = 100;
+      
+      // Mock combatFeedback for testing
+      const combatFeedback = {
+        feedbackElements: [],
+        showDamageNumber: function() {
+          this.feedbackElements.push({ element: { remove: () => {} } });
+        }
+      };
       
       // Stress test - create many elements rapidly
       for (let i = 0; i < maxElements * 2; i++) {

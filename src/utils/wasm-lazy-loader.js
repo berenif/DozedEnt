@@ -94,7 +94,8 @@ export class WasmLazyLoader {
    * @private
    */
   async performLazyLoad(moduleName, options) {
-    const strategy = options.strategy || this.loadingStrategies.ON_DEMAND;
+    // Strategy is defined but not used in the current implementation
+    // const strategy = options.strategy || this.loadingStrategies.ON_DEMAND;
     let lastError = null;
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
@@ -226,7 +227,9 @@ export class WasmLazyLoader {
     while (true) {
       const { done, value } = await reader.read();
       
-      if (done) break;
+      if (done) {
+        break;
+      }
       
       chunks.push(value);
       receivedBytes += value.length;
@@ -282,7 +285,7 @@ export class WasmLazyLoader {
    * Decompress module if needed (placeholder for actual compression)
    * @private
    */
-  async decompressIfNeeded(arrayBuffer, path) {
+  decompressIfNeeded(arrayBuffer) {
     // For now, just return as-is
     // In production, could implement brotli/gzip decompression
     return arrayBuffer;
@@ -292,7 +295,9 @@ export class WasmLazyLoader {
    * Preload critical WASM modules in background
    */
   async preloadCriticalModules(moduleNames = ['game', 'game-host']) {
-    if (!this.config.preloadCritical) return;
+    if (!this.config.preloadCritical) {
+      return;
+    }
 
     console.log('🚀 Preloading critical WASM modules...');
     
@@ -445,7 +450,7 @@ export class WasmLazyLoader {
         env: {
           ...baseImports.env,
           // Host-specific functions
-          js_broadcast_state: (ptr, len) => {
+          js_broadcast_state: () => {
             console.log('WASM broadcast state called (no-op in lazy loader)');
           }
         }
