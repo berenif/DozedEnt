@@ -174,22 +174,17 @@ export class GameStateManager {
         special: Boolean(inputState?.special)
       };
       
-      // Send all input to WASM before update
-      if (this.wasmManager.exports?.set_player_input) {
-        this.wasmManager.exports.set_player_input(
-          safeInputState.direction.x,
-          safeInputState.direction.y,
-          safeInputState.roll ? 1 : 0,
-          0, // jump (unused)
-          safeInputState.lightAttack ? 1 : 0,
-          safeInputState.heavyAttack ? 1 : 0,
-          safeInputState.block ? 1 : 0,
-          safeInputState.special ? 1 : 0
-        );
-      }
-      
-      // Now update WASM with just deltaTime
-      this.wasmManager.exports?.update?.(deltaTime);
+      // Use WasmManager's update method which handles input setting and WASM update properly
+      this.wasmManager.update(
+        safeInputState.direction.x,
+        safeInputState.direction.y,
+        safeInputState.roll,
+        deltaTime,
+        safeInputState.lightAttack,
+        safeInputState.heavyAttack,
+        safeInputState.block,
+        safeInputState.special
+      );
 
       // Read updated state from WASM using batched calls
       this.updateStateFromWasm();

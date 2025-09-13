@@ -1,0 +1,551 @@
+/**
+ * Threat Awareness UI Styles
+ * Visual indicators for incoming threats, directional damage, and attack telegraphs
+ */
+
+/* Main Threat Overlay */
+.threat-awareness-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 8000;
+  overflow: hidden;
+}
+
+/* Threat Canvas */
+.threat-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Directional Indicators Container */
+.directional-indicators {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.directional-indicator {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  animation: threatPulse 1s infinite ease-in-out;
+  transform: translate(-50%, -50%);
+}
+
+.directional-indicator.blockable {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+.directional-indicator.parryable {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.directional-indicator.unblockable {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.directional-indicator.environmental {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.directional-indicator.critical {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+  animation: criticalThreatPulse 0.5s infinite ease-in-out;
+}
+
+@keyframes threatPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes criticalThreatPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+}
+
+/* Telegraph Warnings Container */
+.telegraph-warnings {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.telegraph-warning {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  animation: telegraphPulse 0.8s infinite ease-in-out;
+  transform: translate(-50%, -50%);
+}
+
+.telegraph-warning.blockable {
+  border-color: #60a5fa;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.3) 0%, rgba(96, 165, 250, 0.1) 70%, transparent 100%);
+  color: #60a5fa;
+}
+
+.telegraph-warning.parryable {
+  border-color: #fbbf24;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.1) 70%, transparent 100%);
+  color: #fbbf24;
+}
+
+.telegraph-warning.unblockable {
+  border-color: #ef4444;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 70%, transparent 100%);
+  color: #ef4444;
+}
+
+.telegraph-warning.environmental {
+  border-color: #8b5cf6;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 70%, transparent 100%);
+  color: #8b5cf6;
+}
+
+@keyframes telegraphPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.6;
+  }
+}
+
+/* Threat Legend */
+.threat-legend {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #444;
+  border-radius: 8px;
+  padding: 12px 16px;
+  backdrop-filter: blur(4px);
+  z-index: 8001;
+  pointer-events: auto;
+  transition: opacity 0.3s ease;
+}
+
+.threat-legend:hover {
+  opacity: 1;
+}
+
+.legend-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ccc;
+  font-size: 12px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Damage Indicators */
+.damage-indicator {
+  position: absolute;
+  font-weight: bold;
+  font-size: 18px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: damageFloat 1.5s ease-out forwards;
+  transform: translate(-50%, -50%);
+}
+
+.damage-indicator.critical {
+  font-size: 24px;
+  animation: criticalDamageFloat 2s ease-out forwards;
+}
+
+.damage-indicator.environmental {
+  color: #8b5cf6;
+}
+
+.damage-indicator.normal {
+  color: #ff6b6b;
+}
+
+@keyframes damageFloat {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-60px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes criticalDamageFloat {
+  0% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-80px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Screen Edge Indicators */
+.edge-indicator {
+  position: fixed;
+  width: 8px;
+  height: 40px;
+  background: linear-gradient(90deg, transparent 0%, currentColor 50%, transparent 100%);
+  opacity: 0.8;
+  animation: edgeFlash 1s infinite ease-in-out;
+}
+
+.edge-indicator.top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(90deg);
+}
+
+.edge-indicator.bottom {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(90deg);
+}
+
+.edge-indicator.left {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.edge-indicator.right {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes edgeFlash {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Colorblind Support */
+.colorblind-protanopia .directional-indicator.blockable,
+.colorblind-protanopia .telegraph-warning.blockable {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.colorblind-protanopia .directional-indicator.blockable {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.colorblind-deuteranopia .directional-indicator.blockable,
+.colorblind-deuteranopia .telegraph-warning.blockable {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.colorblind-deuteranopia .directional-indicator.blockable {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.colorblind-tritanopia .directional-indicator.parryable,
+.colorblind-tritanopia .telegraph-warning.parryable {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.colorblind-tritanopia .directional-indicator.parryable {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .directional-indicator,
+  .telegraph-warning,
+  .damage-indicator {
+    animation: none !important;
+  }
+  
+  .directional-indicator.critical {
+    animation: none !important;
+    box-shadow: 0 0 10px currentColor;
+  }
+  
+  .edge-indicator {
+    animation: none !important;
+    opacity: 0.8;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .threat-legend {
+    background: black;
+    border: 3px solid white;
+    color: white;
+  }
+  
+  .directional-indicator,
+  .telegraph-warning {
+    border-width: 3px;
+  }
+  
+  .directional-indicator.blockable {
+    border-color: #00ffff;
+    color: #00ffff;
+  }
+  
+  .directional-indicator.parryable {
+    border-color: #ffff00;
+    color: #ffff00;
+  }
+  
+  .directional-indicator.unblockable {
+    border-color: #ff0000;
+    color: #ff0000;
+  }
+  
+  .directional-indicator.environmental {
+    border-color: #ff00ff;
+    color: #ff00ff;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .directional-indicator {
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
+    border-width: 3px;
+  }
+  
+  .telegraph-warning {
+    width: 60px;
+    height: 60px;
+    font-size: 18px;
+    border-width: 3px;
+  }
+  
+  .threat-legend {
+    top: 10px;
+    left: 10px;
+    padding: 8px 12px;
+  }
+  
+  .legend-title {
+    font-size: 12px;
+  }
+  
+  .legend-item {
+    font-size: 10px;
+  }
+  
+  .legend-color {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .damage-indicator {
+    font-size: 16px;
+  }
+  
+  .damage-indicator.critical {
+    font-size: 20px;
+  }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .directional-indicator {
+    width: 55px;
+    height: 55px;
+    font-size: 18px;
+  }
+  
+  .telegraph-warning {
+    width: 70px;
+    height: 70px;
+    font-size: 20px;
+  }
+}
+
+/* Performance Optimizations */
+.threat-awareness-overlay * {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Hide on print */
+@media print {
+  .threat-awareness-overlay {
+    display: none !important;
+  }
+}
+
+/* Focus indicators for accessibility */
+.threat-legend:focus-within {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Screen reader support */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Threat intensity variations */
+.threat-intensity-low {
+  opacity: 0.6;
+  animation-duration: 2s;
+}
+
+.threat-intensity-medium {
+  opacity: 0.8;
+  animation-duration: 1.5s;
+}
+
+.threat-intensity-high {
+  opacity: 1;
+  animation-duration: 1s;
+}
+
+.threat-intensity-critical {
+  opacity: 1;
+  animation-duration: 0.5s;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Directional arrow indicators */
+.directional-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.directional-arrow.up {
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid currentColor;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.directional-arrow.down {
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid currentColor;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.directional-arrow.left {
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 12px solid currentColor;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.directional-arrow.right {
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid currentColor;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}

@@ -66,11 +66,11 @@ export class WasmManager {
           const wasmModulePath = new URL(modulePath, baseUrl).href;
           console.log(`Attempting to load WASM helper from: ${wasmModulePath}`);
           wasmHelperModule = await import(wasmModulePath);
-          console.log(`✅ Successfully loaded WASM helper from: ${wasmModulePath}`);
+          console.log(`Successfully loaded WASM helper from: ${wasmModulePath}`);
           break;
         } catch (error) {
           if (modulePath.includes('trystero-wasm.min.js')) {
-            console.log(`ℹ️ Minified WASM helper not available (${error.message}), trying fallback...`);
+            console.log(`Minified WASM helper not available (${error.message}), trying fallback...`);
           } else {
             console.warn(`Failed to load WASM helper from ${modulePath}:`, error.message);
           }
@@ -86,11 +86,11 @@ export class WasmManager {
       
       // Use lazy loader for optimized WASM loading
       try {
-        console.log('🚀 Attempting to load WASM module with lazy loader...');
+        console.log('Attempting to load WASM module with lazy loader...');
         const wasmInstance = await globalWasmLoader.loadModule('game', {
           imports: {},
           onProgress: (progress) => {
-            console.log(`📦 WASM loading progress: ${(progress.progress * 100).toFixed(1)}%`);
+            console.log(`WASM loading progress: ${(progress.progress * 100).toFixed(1)}%`);
           }
         });
         
@@ -711,7 +711,9 @@ export class WasmManager {
    * @returns {number} Attack result (1 for success, 0 for failure)
    */
   onAttack() {
-    if (!this.isLoaded || typeof this.exports.on_attack !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.on_attack !== 'function') {
+      return 0;
+    }
     return this.exports.on_attack();
   }
 
@@ -720,7 +722,9 @@ export class WasmManager {
    * @returns {boolean} Success status
    */
   lightAttack() {
-    if (!this.isLoaded) {\n      return false;\n    }
+    if (!this.isLoaded) {
+      return false;
+    }
     
     try {
       // Set light attack input and trigger update
@@ -743,7 +747,9 @@ export class WasmManager {
    * @returns {boolean} Success status
    */
   heavyAttack() {
-    if (!this.isLoaded) {\n      return false;\n    }
+    if (!this.isLoaded) {
+      return false;
+    }
     
     try {
       // Set heavy attack input and trigger update
@@ -766,7 +772,9 @@ export class WasmManager {
    * @returns {boolean} Success status
    */
   specialAttack() {
-    if (!this.isLoaded) {\n      return false;\n    }
+    if (!this.isLoaded) {
+      return false;
+    }
     
     try {
       // Set special attack input and trigger update
@@ -797,7 +805,9 @@ export class WasmManager {
    * @returns {number} Roll result (1 for success, 0 for failure)
    */
   onRollStart() {
-    if (!this.isLoaded || typeof this.exports.on_roll_start !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.on_roll_start !== 'function') {
+      return 0;
+    }
     return this.exports.on_roll_start();
   }
 
@@ -817,7 +827,9 @@ export class WasmManager {
    * @returns {boolean} Block state
    */
   setBlocking(isBlocking, faceX, faceY) {
-    if (!this.isLoaded) {\n      return false;\n    }
+    if (!this.isLoaded) {
+      return false;
+    }
     
     try {
       // Use the new set_player_input API for blocking
@@ -849,7 +861,9 @@ export class WasmManager {
    * @returns {boolean} Is currently blocking
    */
   isBlocking() {
-    if (!this.isLoaded || typeof this.exports.get_block_state !== 'function') {\n      return false;\n    }
+    if (!this.isLoaded || typeof this.exports.get_block_state !== 'function') {
+      return false;
+    }
     return this.exports.get_block_state() === 1;
   }
 
@@ -862,7 +876,9 @@ export class WasmManager {
    * @returns {number} Attack result (-1: ignore, 0: hit, 1: block, 2: perfect parry)
    */
   handleIncomingAttack(ax, ay, dirX, dirY) {
-    if (!this.isLoaded || typeof this.exports.handle_incoming_attack !== 'function') {\n      return -1;\n    }
+    if (!this.isLoaded || typeof this.exports.handle_incoming_attack !== 'function') {
+      return -1;
+    }
     return this.exports.handle_incoming_attack(ax, ay, dirX, dirY);
   }
 
@@ -871,7 +887,9 @@ export class WasmManager {
    * @returns {number} Current game phase
    */
   getPhase() {
-    if (!this.isLoaded || typeof this.exports.get_phase !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_phase !== 'function') {
+      return 0;
+    }
     return this.exports.get_phase();
   }
 
@@ -880,7 +898,9 @@ export class WasmManager {
    * @returns {number} Current room count
    */
   getRoomCount() {
-    if (!this.isLoaded || typeof this.exports.get_room_count !== 'function') {\n      return 1;\n    }
+    if (!this.isLoaded || typeof this.exports.get_room_count !== 'function') {
+      return 1;
+    }
     return this.exports.get_room_count();
   }
 
@@ -891,7 +911,9 @@ export class WasmManager {
    * @returns {number} Number of choices
    */
   getChoiceCount() {
-    if (!this.isLoaded || typeof this.exports.get_choice_count !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_choice_count !== 'function') {
+      return 0;
+    }
     return this.exports.get_choice_count();
   }
 
@@ -901,7 +923,9 @@ export class WasmManager {
    * @returns {number} Choice ID
    */
   getChoiceId(index) {
-    if (!this.isLoaded || typeof this.exports.get_choice_id !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_choice_id !== 'function') {
+      return 0;
+    }
     return this.exports.get_choice_id(index);
   }
 
@@ -911,7 +935,9 @@ export class WasmManager {
    * @returns {number} Choice type
    */
   getChoiceType(index) {
-    if (!this.isLoaded || typeof this.exports.get_choice_type !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_choice_type !== 'function') {
+      return 0;
+    }
     return this.exports.get_choice_type(index);
   }
 
@@ -921,7 +947,9 @@ export class WasmManager {
    * @returns {number} Choice rarity
    */
   getChoiceRarity(index) {
-    if (!this.isLoaded || typeof this.exports.get_choice_rarity !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_choice_rarity !== 'function') {
+      return 0;
+    }
     return this.exports.get_choice_rarity(index);
   }
 
@@ -1706,7 +1734,7 @@ export class WasmManager {
     const failedAttempts = loadAttempts.filter(a => !a.success).length;
     
     notification.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 8px;">⚠️ WASM Loading Failed</div>
+      <div style="font-weight: bold; margin-bottom: 8px;">WASM Loading Failed</div>
       <div>Failed to load game engine (${failedAttempts}/${totalAttempts} attempts)</div>
       <div style="margin-top: 8px; font-size: 11px; opacity: 0.9;">
         Running in limited fallback mode.<br>
@@ -1758,7 +1786,7 @@ export class WasmManager {
     `;
     
     notification.innerHTML = `
-      <div style="font-size: 24px; margin-bottom: 16px;">💥</div>
+      <div style="font-size: 24px; margin-bottom: 16px;">ERROR</div>
       <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px;">Game Engine Failed to Initialize</div>
       <div style="margin-bottom: 16px; line-height: 1.4;">
         The WebAssembly game engine could not be loaded.<br>

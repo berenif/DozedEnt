@@ -18,6 +18,7 @@ import { AudioManager } from './src/audio/audio-manager.js'
 import { GameStateManager } from './src/game/game-state-manager.js'
 import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
 import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
+import { EnhancedUIManager } from './src/ui/enhanced-ui-manager.js'
 import { InputManager } from './src/input/input-manager.js'
 import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
@@ -49,6 +50,7 @@ class GameApplication {
     this.enhancedMobileControls = null;
     this.uiEventHandlers = null;
     this.roguelikeHUD = null;
+    this.enhancedUIManager = null;
     this.combatFeedback = null;
 
     // Game systems
@@ -173,6 +175,11 @@ class GameApplication {
       console.log('🔧 Initializing Roguelike HUD...');
       this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
       console.log('✅ Roguelike HUD initialized');
+
+      // Initialize Enhanced UI Manager
+      console.log('🔧 Initializing Enhanced UI Manager...');
+      this.enhancedUIManager = new EnhancedUIManager(this.wasmManager);
+      console.log('✅ Enhanced UI Manager initialized');
 
       // Initialize game state with WASM
       console.log('🔧 Initializing game state manager...');
@@ -299,6 +306,14 @@ class GameApplication {
     if (overlayStartBtn) {
       overlayStartBtn.addEventListener('click', () => {
         this.handleOrientationOverlayStart();
+      });
+    }
+
+    // Enhanced UI toggle button
+    const enhancedUIToggle = document.getElementById('enhanced-ui-toggle');
+    if (enhancedUIToggle) {
+      enhancedUIToggle.addEventListener('click', () => {
+        this.toggleEnhancedUI();
       });
     }
 
@@ -555,6 +570,34 @@ class GameApplication {
       orientationOverlay.style.display = 'none';
     }
     this.startGame();
+  }
+
+  /**
+   * Toggle between enhanced and legacy UI modes
+   */
+  toggleEnhancedUI() {
+    console.log('⚡ Enhanced UI toggle clicked');
+    
+    if (this.enhancedUIManager) {
+      this.enhancedUIManager.toggleUIMode();
+      
+      // Update toggle button appearance
+      const toggleButton = document.getElementById('enhanced-ui-toggle');
+      if (toggleButton) {
+        const isEnhanced = this.enhancedUIManager.uiMode === 'enhanced';
+        toggleButton.classList.toggle('active', isEnhanced);
+        toggleButton.title = isEnhanced ? 'Switch to Legacy UI' : 'Switch to Enhanced UI';
+        
+        // Show notification
+        if (this.enhancedUIManager.showNotification) {
+          this.enhancedUIManager.showNotification(
+            `Switched to ${isEnhanced ? 'Enhanced' : 'Legacy'} UI`,
+            'success',
+            2000
+          );
+        }
+      }
+    }
   }
 
   /**

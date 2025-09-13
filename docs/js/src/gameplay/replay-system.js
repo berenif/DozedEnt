@@ -568,9 +568,9 @@ export class ReplaySystem {
       this.gameStateManager.processReplayInput(input.data);
     }
     
-    // Update game state
-    if (this.wasmManager.exports?.update) {
-      this.wasmManager.exports.update(
+    // Update game state using WasmManager's update method
+    if (this.wasmManager) {
+      this.wasmManager.update(
         input.data.moveX || 0,
         input.data.moveY || 0,
         input.data.isRolling || false,

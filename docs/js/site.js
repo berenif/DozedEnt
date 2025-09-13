@@ -21,6 +21,9 @@ import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
 import { InputManager } from './src/input/input-manager.js'
 import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
+// Enhanced UI Systems
+import { EnhancedUIIntegration } from './src/ui/enhanced-ui-integration.js'
+
 /**
  * Main Game Application Class
  * Centralizes all game systems and manages their lifecycle
@@ -50,6 +53,9 @@ class GameApplication {
     this.uiEventHandlers = null;
     this.roguelikeHUD = null;
     this.combatFeedback = null;
+    
+    // Enhanced UI Integration
+    this.enhancedUI = null;
 
     // Game systems
     this.gameRenderer = null;
@@ -188,6 +194,17 @@ class GameApplication {
       console.log('🔧 Initializing enhanced mobile controls...');
       this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
       console.log('✅ Enhanced mobile controls initialized');
+
+      // Initialize enhanced UI systems after WASM is ready
+      if (wasmSuccess) {
+        console.log('🔧 Initializing Enhanced UI Systems...');
+        this.enhancedUI = new EnhancedUIIntegration(
+          this.wasmManager,
+          this.gameCanvas,
+          this.audioManager
+        );
+        console.log('✅ Enhanced UI Systems initialized');
+      }
 
       // Setup event listeners
       console.log('🔧 Setting up event listeners...');
@@ -1334,6 +1351,10 @@ class GameApplication {
     
     if (this.audioManager) {
       this.audioManager.destroy();
+    }
+    
+    if (this.enhancedUI) {
+      this.enhancedUI.destroy();
     }
     
     this.gameStateManager.reset();

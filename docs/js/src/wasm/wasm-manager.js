@@ -376,8 +376,12 @@ export class WasmManager {
    * @param {number} dirY - Y direction (-1 to 1)
    * @param {boolean} isRolling - Is player rolling
    * @param {number} deltaTime - Delta time in seconds
+   * @param {boolean} lightAttack - Light attack button
+   * @param {boolean} heavyAttack - Heavy attack button
+   * @param {boolean} block - Block button
+   * @param {boolean} special - Special attack button
    */
-  update(dirX, dirY, isRolling, deltaTime) {
+  update(dirX, dirY, isRolling, deltaTime, lightAttack = false, heavyAttack = false, block = false, special = false) {
     if (!this.isLoaded || typeof this.exports.update !== 'function') {return;}
     
     const updateStart = performance.now();
@@ -408,10 +412,10 @@ export class WasmManager {
           safeDirY, 
           safeIsRolling, 
           0, // isJumping
-          0, // lightAttack (handled separately)
-          0, // heavyAttack (handled separately) 
-          0, // isBlocking (handled separately)
-          0  // special (handled separately)
+          lightAttack ? 1 : 0,
+          heavyAttack ? 1 : 0,
+          block ? 1 : 0,
+          special ? 1 : 0
         );
       }
       
