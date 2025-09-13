@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Multiplayer System Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+            50% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .demo-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        
+        .control-section {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 5px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.danger {
+            border-color: #ff0000;
+            color: #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+        }
+        
+        .btn.danger:hover {
+            background: rgba(255, 0, 0, 0.2);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        
+        .btn.primary {
+            background: rgba(0, 255, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        .status-panel {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 4px;
+        }
+        
+        .status-label {
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+        
+        .status-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .log-panel {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid rgba(0, 255, 0, 0.5);
+            padding-left: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .log-entry.error {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+        
+        .log-entry.success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        
+        .log-entry.info {
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+        
+        .timestamp {
+            opacity: 0.5;
+            margin-right: 10px;
+        }
+        
+        .feature-list {
+            max-width: 1200px;
+            width: 100%;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .feature-list h3 {
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .feature-list ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .feature-list li {
+            padding: 5px;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .feature-list li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #00ff00;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            border-top-color: #00ff00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        
+        label {
+            display: block;
+            font-size: 11px;
+            margin-top: 10px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <h1>🎮 ENHANCED MULTIPLAYER SYSTEM</h1>
+        <div class="subtitle">Advanced Room Management • Smart Matchmaking • Real-time Chat • Analytics Dashboard</div>
+    </div>
+    
+    <div class="feature-list">
+        <h3>Implemented Features</h3>
+        <ul>
+            <li>Advanced Room Management (Public/Private/Ranked)</li>
+            <li>Smart Skill-based Matchmaking</li>
+            <li>Real-time Chat with Emoji Support</li>
+            <li>Comprehensive Room Settings</li>
+            <li>Team Support & Player Roles</li>
+            <li>Password Protection</li>
+            <li>Spectator Mode</li>
+            <li>Host Migration</li>
+            <li>Analytics Dashboard</li>
+            <li>Modern Responsive UI</li>
+            <li>Rate Limiting & Moderation</li>
+            <li>Language Detection</li>
+        </ul>
+    </div>
+    
+    <div class="status-panel">
+        <h3>System Status</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-label">Active Rooms</div>
+                <div class="status-value" id="active-rooms">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Players Online</div>
+                <div class="status-value" id="players-online">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">In Queue</div>
+                <div class="status-value" id="in-queue">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Messages Sent</div>
+                <div class="status-value" id="messages-sent">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Matches Found</div>
+                <div class="status-value" id="matches-found">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Avg Wait Time</div>
+                <div class="status-value" id="avg-wait">0s</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-controls">
+        <div class="control-section">
+            <h3>🏠 Room Management</h3>
+            <label>Room Name</label>
+            <input type="text" id="room-name" placeholder="Epic Battle Room" value="Demo Room">
+            <label>Max Players</label>
+            <select id="max-players">
+                <option value="2">2 Players</option>
+                <option value="4" selected>4 Players</option>
+                <option value="8">8 Players</option>
+            </select>
+            <label>Game Mode</label>
+            <select id="game-mode">
+                <option value="default">Default</option>
+                <option value="deathmatch">Deathmatch</option>
+                <option value="team">Team Battle</option>
+                <option value="ctf">Capture the Flag</option>
+            </select>
+            <button class="btn primary" onclick="createRoom()">Create Room</button>
+            <button class="btn" onclick="joinRandomRoom()">Join Random Room</button>
+            <button class="btn" onclick="quickPlay()">Quick Play</button>
+            <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>🎯 Matchmaking</h3>
+            <label>Game Mode</label>
+            <select id="mm-mode">
+                <option value="ranked">Ranked</option>
+                <option value="competitive">Competitive</option>
+                <option value="tournament">Tournament</option>
+            </select>
+            <label>Region</label>
+            <select id="mm-region">
+                <option value="auto">Auto</option>
+                <option value="na">North America</option>
+                <option value="eu">Europe</option>
+                <option value="asia">Asia</option>
+            </select>
+            <button class="btn primary" onclick="startMatchmaking()">Find Match</button>
+            <button class="btn" onclick="cancelMatchmaking()">Cancel Search</button>
+            <button class="btn" onclick="simulateMatchmaking()">Simulate Match</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>💬 Chat System</h3>
+            <label>Message</label>
+            <input type="text" id="chat-message" placeholder="Hello everyone! 👋">
+            <button class="btn" onclick="sendMessage()">Send Message</button>
+            <button class="btn" onclick="sendEmoji()">Send Random Emoji</button>
+            <button class="btn" onclick="sendSystemMessage()">System Message</button>
+            <button class="btn" onclick="clearChat()">Clear Chat</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>👥 Player Simulation</h3>
+            <label>Number of Bots</label>
+            <input type="number" id="bot-count" min="1" max="10" value="3">
+            <button class="btn" onclick="addBots()">Add Bot Players</button>
+            <button class="btn" onclick="simulateActivity()">Simulate Activity</button>
+            <button class="btn" onclick="removeAllBots()">Remove All Bots</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>📊 Analytics</h3>
+            <button class="btn" onclick="showAnalytics()">View Analytics</button>
+            <button class="btn" onclick="generateReport()">Generate Report</button>
+            <button class="btn" onclick="exportData()">Export Data</button>
+            <button class="btn danger" onclick="resetAnalytics()">Reset Stats</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>🎮 Lobby UI</h3>
+            <button class="btn primary" onclick="openLobby()">Open Lobby</button>
+            <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
+            <button class="btn" onclick="testAnimations()">Test Animations</button>
+            <button class="btn danger" onclick="closeLobby()">Close Lobby</button>
+        </div>
+    </div>
+    
+    <div class="log-panel">
+        <h3>📝 Event Log</h3>
+        <div id="event-log"></div>
+    </div>
+    
+    <!-- Lobby container -->
+    <div id="enhanced-lobby"></div>
+    
+    <script type="module">
+        import EnhancedRoomManager from '../src/netcode/enhanced-room-manager.js'
+        import { MatchmakingSystem } from '../src/netcode/matchmaking-system.js'
+        import { ChatSystem } from '../src/netcode/chat-system.js'
+        import EnhancedLobbyUI from '../src/netcode/enhanced-lobby-ui.js'
+        
+        // Initialize systems
+        const roomManager = new EnhancedRoomManager('demo-game')
+        const matchmaking = new MatchmakingSystem()
+        const chatSystem = new ChatSystem()
+        const lobbyUI = new EnhancedLobbyUI('enhanced-lobby', 'demo-game')
+        
+        // Store in window for demo functions
+        window.roomManager = roomManager
+        window.matchmaking = matchmaking
+        window.chatSystem = chatSystem
+        window.lobbyUI = lobbyUI
+        
+        // Bot players for simulation
+        let botPlayers = []
+        let simulationInterval = null
+        
+        // Statistics
+        let stats = {
+            messagesCount: 0,
+            matchesFound: 0
+        }
+        
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('event-log')
+            const entry = document.createElement('div')
+            entry.className = `log-entry ${type}`
+            const time = new Date().toLocaleTimeString()
+            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`
+            log.insertBefore(entry, log.firstChild)
+            
+            // Keep only last 50 entries
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild)
+            }
+        }
+        
+        // Room Management Functions
+        window.createRoom = async function() {
+            try {
+                const room = await roomManager.createRoom({
+                    name: document.getElementById('room-name').value,
+                    maxPlayers: parseInt(document.getElementById('max-players').value),
+                    gameMode: document.getElementById('game-mode').value,
+                    type: 'public'
+                })
+                
+                await roomManager.joinRoom(room.id, {
+                    playerName: 'Demo Player'
+                })
+                
+                addLog(`Created and joined room: ${room.name} (${room.code})`, 'success')
+                updateStatus()
+            } catch (error) {
+                addLog(`Failed to create room: ${error.message}`, 'error')
+            }
+        }
+        
+        window.joinRandomRoom = async function() {
+            try {
+                const rooms = roomManager.getRoomList()
+                if (rooms.length === 0) {
+                    addLog('No rooms available', 'error')
+                    return
+                }
+                
+                const room = rooms[Math.floor(Math.random() * rooms.length)]
+                await roomManager.joinRoom(room.id, {
+                    playerName: `Player${Math.floor(Math.random() * 1000)}`
+                })
+                
+                addLog(`Joined room: ${room.name}`, 'success')
+                updateStatus()
+            } catch (error) {
+                addLog(`Failed to join room: ${error.message}`, 'error')
+            }
+        }
+        
+        window.quickPlay = async function() {
+            try {
+                const room = await roomManager.quickPlay({
+                    playerName: `Player${Math.floor(Math.random() * 1000)}`
+                })
+                
+                addLog(`Quick play joined: ${room.name}`, 'success')
+                updateStatus()
+            } catch (error) {
+                addLog(`Quick play failed: ${error.message}`, 'error')
+            }
+        }
+        
+        window.leaveRoom = async function() {
+            try {
+                await roomManager.leaveRoom()
+                addLog('Left current room', 'info')
+                updateStatus()
+            } catch (error) {
+                addLog(`Failed to leave room: ${error.message}`, 'error')
+            }
+        }
+        
+        // Matchmaking Functions
+        window.startMatchmaking = async function() {
+            try {
+                addLog('Starting matchmaking...', 'info')
+                
+                const match = await matchmaking.addToQueue(
+                    {
+                        id: `player_${Date.now()}`,
+                        name: 'Demo Player'
+                    },
+                    {
+                        gameMode: document.getElementById('mm-mode').value,
+                        region: document.getElementById('mm-region').value
+                    }
+                )
+                
+                stats.matchesFound++
+                addLog(`Match found! ${match.players.length} players, avg rating: ${match.averageRating}`, 'success')
+                updateStatus()
+            } catch (error) {
+                addLog(`Matchmaking failed: ${error.message}`, 'error')
+            }
+        }
+        
+        window.cancelMatchmaking = function() {
+            matchmaking.removeFromQueue('demo_player')
+            addLog('Matchmaking cancelled', 'info')
+        }
+        
+        window.simulateMatchmaking = async function() {
+            // Add multiple players to queue
+            const players = []
+            for (let i = 0; i < 4; i++) {
+                players.push({
+                    id: `bot_${i}`,
+                    name: `Bot ${i}`,
+                    rating: 900 + Math.random() * 200
+                })
+            }
+            
+            // Add all to queue
+            for (const player of players) {
+                matchmaking.addToQueue(player, {
+                    gameMode: 'ranked',
+                    region: 'auto'
+                })
+            }
+            
+            addLog('Simulated matchmaking with 4 players', 'success')
+            stats.matchesFound++
+            updateStatus()
+        }
+        
+        // Chat Functions
+        window.sendMessage = function() {
+            try {
+                const message = document.getElementById('chat-message').value
+                if (!message) return
+                
+                chatSystem.sendMessage('lobby', 'demo_player', message, {
+                    userName: 'Demo Player'
+                })
+                
+                stats.messagesCount++
+                addLog(`Chat: ${message}`, 'info')
+                document.getElementById('chat-message').value = ''
+                updateStatus()
+            } catch (error) {
+                addLog(`Chat error: ${error.message}`, 'error')
+            }
+        }
+        
+        window.sendEmoji = function() {
+            const emojis = ['😀', '😎', '🎮', '🏆', '🔥', '💯', '⚡', '🎯']
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)]
+            
+            chatSystem.sendMessage('lobby', 'demo_player', emoji, {
+                userName: 'Demo Player'
+            })
+            
+            stats.messagesCount++
+            addLog(`Sent emoji: ${emoji}`, 'info')
+            updateStatus()
+        }
+        
+        window.sendSystemMessage = function() {
+            chatSystem.sendSystemMessage('lobby', 'System maintenance in 5 minutes')
+            addLog('System message sent', 'info')
+        }
+        
+        window.clearChat = function() {
+            chatSystem.clearChat('lobby')
+            addLog('Chat cleared', 'info')
+        }
+        
+        // Bot Simulation
+        window.addBots = async function() {
+            const count = parseInt(document.getElementById('bot-count').value)
+            
+            for (let i = 0; i < count; i++) {
+                const bot = {
+                    id: `bot_${Date.now()}_${i}`,
+                    name: `Bot${Math.floor(Math.random() * 1000)}`,
+                    rating: 800 + Math.random() * 400
+                }
+                
+                botPlayers.push(bot)
+                
+                // Create or join room
+                if (Math.random() > 0.5) {
+                    const room = await roomManager.createRoom({
+                        name: `${bot.name}'s Room`,
+                        maxPlayers: 4,
+                        type: 'public'
+                    })
+                    
+                    await roomManager.joinRoom(room.id, {
+                        playerId: bot.id,
+                        playerName: bot.name,
+                        rating: bot.rating
+                    })
+                } else {
+                    await roomManager.quickPlay({
+                        playerId: bot.id,
+                        playerName: bot.name,
+                        rating: bot.rating
+                    })
+                }
+            }
+            
+            addLog(`Added ${count} bot players`, 'success')
+            updateStatus()
+        }
+        
+        window.simulateActivity = function() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval)
+                simulationInterval = null
+                addLog('Stopped activity simulation', 'info')
+                return
+            }
+            
+            simulationInterval = setInterval(() => {
+                // Random bot actions
+                if (botPlayers.length > 0) {
+                    const bot = botPlayers[Math.floor(Math.random() * botPlayers.length)]
+                    const actions = ['chat', 'join', 'leave', 'matchmaking']
+                    const action = actions[Math.floor(Math.random() * actions.length)]
+                    
+                    switch (action) {
+                        case 'chat':
+                            const messages = ['GG!', 'Ready!', 'Let\'s go!', 'Nice!', '👍']
+                            const msg = messages[Math.floor(Math.random() * messages.length)]
+                            chatSystem.sendMessage('lobby', bot.id, msg, {
+                                userName: bot.name
+                            })
+                            stats.messagesCount++
+                            break
+                            
+                        case 'join':
+                            roomManager.quickPlay({
+                                playerId: bot.id,
+                                playerName: bot.name
+                            })
+                            break
+                            
+                        case 'matchmaking':
+                            matchmaking.addToQueue(bot, {
+                                gameMode: 'ranked',
+                                region: 'auto'
+                            })
+                            break
+                    }
+                }
+                
+                updateStatus()
+            }, 2000)
+            
+            addLog('Started activity simulation', 'success')
+        }
+        
+        window.removeAllBots = function() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval)
+                simulationInterval = null
+            }
+            
+            botPlayers = []
+            addLog('Removed all bots', 'info')
+            updateStatus()
+        }
+        
+        // Analytics Functions
+        window.showAnalytics = function() {
+            const analytics = roomManager.getAnalytics()
+            const report = analytics.getDetailedReport()
+            
+            addLog('=== Analytics Report ===', 'success')
+            addLog(`Total Events: ${report.summary.totalEvents}`)
+            addLog(`Unique Users: ${report.summary.uniqueUsers}`)
+            addLog(`Sessions: ${report.summary.sessions}`)
+            addLog(`Rooms Created: ${report.roomMetrics.roomsCreated}`)
+            addLog(`Avg Players/Room: ${report.roomMetrics.avgPlayersPerRoom.toFixed(1)}`)
+            
+            if (report.insights.length > 0) {
+                addLog('Insights: ' + report.insights[0], 'info')
+            }
+        }
+        
+        window.generateReport = function() {
+            const analytics = roomManager.getAnalytics()
+            const report = analytics.generateReport()
+            
+            addLog('Generated comprehensive report', 'success')
+            console.log('Full Report:', report)
+        }
+        
+        window.exportData = function() {
+            const analytics = roomManager.getAnalytics()
+            const data = analytics.exportData('json')
+            
+            // Create download link
+            const blob = new Blob([data], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'multiplayer-analytics.json'
+            a.click()
+            
+            addLog('Exported analytics data', 'success')
+        }
+        
+        window.resetAnalytics = function() {
+            const analytics = roomManager.getAnalytics()
+            analytics.reset()
+            stats = { messagesCount: 0, matchesFound: 0 }
+            addLog('Analytics reset', 'info')
+            updateStatus()
+        }
+        
+        // Lobby UI Functions
+        window.openLobby = function() {
+            lobbyUI.show()
+            addLog('Opened enhanced lobby UI', 'success')
+        }
+        
+        window.closeLobby = function() {
+            lobbyUI.hide()
+            addLog('Closed lobby UI', 'info')
+        }
+        
+        window.toggleTheme = function() {
+            // Theme toggle would be implemented in the UI
+            addLog('Theme toggled', 'info')
+        }
+        
+        window.testAnimations = function() {
+            // Trigger various UI animations
+            addLog('Testing animations...', 'info')
+        }
+        
+        // Update status display
+        function updateStatus() {
+            const summary = roomManager.getAnalyticsSummary()
+            const mmStats = matchmaking.getStatistics()
+            
+            document.getElementById('active-rooms').textContent = summary.activeRooms
+            document.getElementById('players-online').textContent = summary.totalPlayers
+            document.getElementById('in-queue').textContent = mmStats.currentQueueSize
+            document.getElementById('messages-sent').textContent = stats.messagesCount
+            document.getElementById('matches-found').textContent = stats.matchesFound
+            document.getElementById('avg-wait').textContent = Math.round(mmStats.averageWaitTime / 1000) + 's'
+        }
+        
+        // Set up event listeners
+        roomManager.on('onRoomCreated', (room) => {
+            addLog(`Room created: ${room.name}`, 'success')
+        })
+        
+        roomManager.on('onPlayerJoin', (player) => {
+            addLog(`${player.name} joined`, 'info')
+        })
+        
+        roomManager.on('onPlayerLeave', (player) => {
+            addLog(`${player.name} left`, 'info')
+        })
+        
+        chatSystem.on('onMessage', (message) => {
+            addLog(`${message.userName}: ${message.content}`, 'info')
+        })
+        
+        // Initial setup
+        addLog('Enhanced Multiplayer System initialized', 'success')
+        addLog('All features loaded and ready', 'success')
+        updateStatus()
+        
+        // Auto-refresh status
+        setInterval(updateStatus, 2000)
+    </script>
+</body>
+</html>
