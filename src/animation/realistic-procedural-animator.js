@@ -76,6 +76,9 @@ export class RealisticProceduralAnimator {
         this.frameCount = 0;
         this.lastUpdate = 0;
         this.cachedTransforms = new Map();
+
+        // Time accumulator for deterministic animations
+        this.elapsedTime = 0;
         
         // Environmental response
         this.environmentalResponses = new EnvironmentalResponseSystem();
@@ -84,6 +87,9 @@ export class RealisticProceduralAnimator {
     update(deltaTime, wasmData = {}) {
         this.frameCount++;
         const now = performance.now();
+
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000;
         
         // Performance throttling
         if (this.config.enableOptimizations && (now - this.lastUpdate) < (1000 / this.config.updateRate)) {
@@ -278,7 +284,7 @@ export class RealisticProceduralAnimator {
         targetY += wasmData.momentumY * 0.2;
         
         // Add some natural variation based on breathing
-        targetY += Math.sin(Date.now() * 0.001 * wasmData.breathingIntensity) * 0.5;
+        targetY += Math.sin(this.elapsedTime * 0.001 * wasmData.breathingIntensity) * 0.5;
         
         return { x: targetX, y: targetY };
     }

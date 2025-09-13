@@ -816,6 +816,9 @@ export class CharacterAnimator {
         
         this.targetBlendFactors = { ...this.blendFactors }
         this.blendSpeed = 0.2
+
+        // Time accumulator for deterministic animations
+        this.elapsedTime = 0
     }
 
     // Helper function to convert numeric WASM state to string for internal use
@@ -891,6 +894,9 @@ export class CharacterAnimator {
     }
 
     update(deltaTime, position, velocity = { x: 0, y: 0 }, isGrounded = true) {
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000
+
         // Update animation controller
         this.controller.update(deltaTime)
 
@@ -942,7 +948,7 @@ export class CharacterAnimator {
         // Apply momentum-based adjustments
         transform.rotation += momentumData.leanAngle
         transform.scaleY *= (1 + momentumData.stretchFactor)
-        transform.offsetY += momentumData.bounceFactor * Math.sin(Date.now() * 0.01)
+        transform.offsetY += momentumData.bounceFactor * Math.sin(this.elapsedTime * 0.01)
 
         // Apply squash/stretch
         transform.scaleX *= squashStretch.scaleX

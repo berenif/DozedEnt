@@ -57,6 +57,9 @@ export class EnhancedWolfBody {
             }
         }
 
+        // Time accumulator for deterministic animations
+        this.elapsedTime = 0
+
         // Body part definitions with detailed anatomy
         this.bodyParts = {
             head: {
@@ -275,6 +278,9 @@ export class EnhancedWolfBody {
 
     // Update body animation state
     update(deltaTime, wolf) {
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000
+
         this.updateBreathing(deltaTime, wolf)
         this.updateMuscleTension(deltaTime, wolf)
         this.updateFurDynamics(deltaTime, wolf)
@@ -286,7 +292,7 @@ export class EnhancedWolfBody {
         const breathRate = wolf.state === 'running' ? 0.008 : 0.003
         const breathAmplitude = wolf.state === 'running' ? 0.04 : 0.02
 
-        this.animationState.breathing = Math.sin(Date.now() * breathRate) * breathAmplitude
+        this.animationState.breathing = Math.sin(this.elapsedTime * breathRate) * breathAmplitude
     }
 
     // Update muscle tension based on activity
@@ -323,7 +329,7 @@ export class EnhancedWolfBody {
     updateFurDynamics(deltaTime, wolf) {
         // Fur flow based on movement and wind
         // Calculate movement speed for fur dynamics
-        const windEffect = { x: Math.sin(Date.now() * 0.001) * 0.1, y: 0 }
+        const windEffect = { x: Math.sin(this.elapsedTime * 0.001) * 0.1, y: 0 }
 
         this.animationState.furFlow.x = -wolf.velocity.x * 0.001 + windEffect.x
         this.animationState.furFlow.y = -wolf.velocity.y * 0.001 + windEffect.y
@@ -421,7 +427,7 @@ export class EnhancedWolfBody {
             this.renderFurStrands(ctx, -width/2, 0, width, length, i)
 
             // Update for next segment
-            const segmentAngle = Math.sin(Date.now() * 0.003 + i * 0.5) * 0.2
+            const segmentAngle = Math.sin(this.elapsedTime * 0.003 + i * 0.5) * 0.2
             currentX += Math.cos(segmentAngle) * length
             currentY += Math.sin(segmentAngle) * length
             currentAngle += segmentAngle

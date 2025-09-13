@@ -38,6 +38,9 @@ export class AnimatedPlayer {
         this.chargeTime = 0 // Will be WASM-driven or removed
         this.maxChargeTime = 1.5 // Will be WASM-driven or removed
 
+        // Time accumulator for deterministic animations
+        this.elapsedTime = 0
+
         // Deterministic animation/event parameters - these are mostly cues for animation
         this.params = {
             roll: {
@@ -161,6 +164,8 @@ export class AnimatedPlayer {
     }
     
     update(deltaTime, input = {}) {
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000
         // Update timers - WASM manages core game timers
         this._prevNormTime = this.getNormalizedTime()
         this.attackCooldown = Math.max(0, this.attackCooldown - deltaTime)
@@ -646,7 +651,7 @@ export class AnimatedPlayer {
         
         // Apply invulnerability flashing - this will be driven by WASM
         if (globalThis.wasmExports?.get_is_invulnerable?.() === 1) { // Assuming a WASM export for invulnerability
-            ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.3
+            ctx.globalAlpha = 0.5 + Math.sin(this.elapsedTime * 0.02) * 0.3
         }
         
         // Get current animation frame

@@ -28,6 +28,9 @@ export class EnhancedWolfIntegration {
             furStrandCount: 0,
             activeWolves: 0
         }
+
+        // Time accumulator for deterministic animations
+        this.elapsedTime = 0
     }
 
     // Initialize all systems
@@ -62,6 +65,7 @@ export class EnhancedWolfIntegration {
         const baseWolf = new EnhancedWolfCharacter(x, y, wolfOptions)
 
         // Generate body variation profile
+        this.variationSystem.elapsedTime = this.elapsedTime
         const variationProfile = this.variationSystem.generateBodyVariation(
             wolfOptions.type,
             wolfOptions.environment,
@@ -193,6 +197,10 @@ export class EnhancedWolfIntegration {
     // Update all enhanced wolves
     update(deltaTime, player) {
         if (!this.systemsInitialized) {return}
+
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000
+        this.variationSystem.elapsedTime = this.elapsedTime
 
         const startTime = performance.now()
         let activeWolves = 0
@@ -380,7 +388,7 @@ export class EnhancedWolfIntegration {
         ctx.save()
 
         const auraRadius = wolf.width * 0.8
-        const auraAlpha = 0.3 + Math.sin(Date.now() * 0.003) * 0.1
+        const auraAlpha = 0.3 + Math.sin(this.elapsedTime * 0.003) * 0.1
 
         // Outer glow
         const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, auraRadius)
@@ -735,7 +743,7 @@ export class EnhancedWolfIntegration {
 
         return {
             version: '1.0',
-            timestamp: Date.now(),
+            timestamp: this.elapsedTime,
             wolfStates,
             performanceMetrics: this.performanceMetrics
         }

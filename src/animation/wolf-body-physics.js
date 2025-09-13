@@ -105,6 +105,9 @@ export class WolfBodyPhysics {
 
         // Collision system
         this.collisionSystem = new WolfCollisionSystem()
+
+        // Time accumulator for deterministic physics
+        this.elapsedTime = 0
     }
 
     // Initialize physics for a wolf
@@ -119,7 +122,7 @@ export class WolfBodyPhysics {
             angularVelocity: 0,
             isGrounded: true,
             groundContactPoints: [],
-            lastUpdateTime: Date.now()
+            lastUpdateTime: this.elapsedTime
         }
 
         // Initialize body segments
@@ -286,6 +289,10 @@ export class WolfBodyPhysics {
     update(deltaTime, wolf, environment = {}) {
         const physicsState = this.physicsStates.get(wolf.id)
         if (!physicsState) {return}
+
+        // Accumulate elapsed time in milliseconds
+        this.elapsedTime += deltaTime * 1000
+        physicsState.lastUpdateTime = this.elapsedTime
 
         const dt = Math.min(deltaTime, 1/60) // Cap at 60fps for stability
 

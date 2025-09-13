@@ -105,6 +105,9 @@ export class WolfBodyVariations {
 
         // Individual variation seed (deterministic if available)
         this.seed = Number((globalThis.runSeedForVisuals ?? 1n) % 10000n)
+
+        // Time accumulator synced externally
+        this.elapsedTime = 0
     }
 
     // Generate complete body variation for a wolf
@@ -430,7 +433,7 @@ export class WolfBodyVariations {
             // Metadata
             archetype: variation.baseProfile.archetype,
             seed: this.seed,
-            generated: Date.now()
+            generated: this.elapsedTime
         }
 
         // Apply environmental modifiers
@@ -530,7 +533,7 @@ export class WolfBodyVariations {
         return {
             ...variation,
             exportFormat: 'WolfBodyVariations_v1.0',
-            exportedAt: Date.now()
+            exportedAt: this.elapsedTime
         }
     }
 
