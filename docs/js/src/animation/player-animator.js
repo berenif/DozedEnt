@@ -135,14 +135,14 @@ export class AnimatedPlayer {
     loadSpriteSheet() {
         // Try to load sprite sheet
         this.sprite = new Image()
-        this.sprite.src = './src/images/player-sprites.png'
+        this.sprite.src = './js/src/images/player-sprites.png'
 
         this.sprite.onload = () => {
             console.log('Player sprite sheet loaded successfully')
         }
 
         this.sprite.onerror = () => {
-            console.warn('Player sprite sheet not found at ./src/images/player-sprites.png, using fallback rendering')
+            console.warn('Player sprite sheet not found at ./js/src/images/player-sprites.png, using fallback rendering')
             console.log('To fix this: Run "node scripts/generate-sprite-sheet.js" or use create-sprite-sheet.html')
             this.sprite = null
         }
