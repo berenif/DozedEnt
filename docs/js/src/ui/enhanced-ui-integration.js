@@ -15,6 +15,8 @@ import { DeathFeedbackSystem } from './death-feedback-system.js';
 import { CombatUIOptimizer } from './combat-ui-optimizer.js';
 import { ThreatAwarenessUI } from './threat-awareness-ui.js';
 import { ChoiceSystemClarity } from './choice-system-clarity.js';
+import { globalWillChangeOptimizer } from '../utils/will-change-optimizer.js';
+import { globalFrameTimeOptimizer } from '../utils/frame-time-optimizer.js';
 import { ComprehensiveAccessibility } from './comprehensive-accessibility.js';
 
 export class EnhancedUIIntegration {
@@ -48,7 +50,15 @@ export class EnhancedUIIntegration {
             updateTime: 0,
             renderTime: 0,
             memoryUsage: 0,
-            systemsActive: 0
+            systemsActive: 0,
+            frameStartTime: 0
+        };
+        
+        // Frame time monitoring
+        this.frameTimeMonitor = {
+            enabled: true,
+            lastFrameTime: 0,
+            frameCount: 0
         };
         
         // Settings management
@@ -288,11 +298,18 @@ export class EnhancedUIIntegration {
      * Handle phase transitions
      */
     handlePhaseTransition(fromPhase, toPhase) {
-        console.log(`🔄 Phase transition: ${fromPhase} → ${toPhase}`);
+        // Validate phase values to prevent overflow issues
+        const validatedFromPhase = this.validatePhase(fromPhase);
+        const validatedToPhase = this.validatePhase(toPhase);
+        
+        console.log(`🔄 Phase transition: ${validatedFromPhase} → ${validatedToPhase}`);
+        
+        // Update current phase
+        this.currentPhase = validatedToPhase;
         
         // Announce phase change to accessibility
         if (this.systems.accessibility) {
-            const phaseName = this.getPhaseName(toPhase);
+            const phaseName = this.getPhaseName(validatedToPhase);
             this.systems.accessibility.announceToScreenReader(
                 `Entering ${phaseName} phase`, 
                 'polite'
@@ -389,6 +406,31 @@ export class EnhancedUIIntegration {
         setTimeout(() => {
             this.systems.deathFeedback.show(deathData);
         }, 1000);
+    }
+
+    /**
+     * Validate phase value to prevent overflow issues
+     */
+    validatePhase(phase) {
+        // Handle invalid or overflow values
+        if (typeof phase !== 'number' || isNaN(phase)) {
+            console.warn('⚠️ Invalid phase value:', phase, 'defaulting to 0');
+            return 0;
+        }
+        
+        // Handle negative values (like -1)
+        if (phase < 0) {
+            console.warn('⚠️ Negative phase value:', phase, 'defaulting to 0');
+            return 0;
+        }
+        
+        // Handle overflow values (like 255)
+        if (phase > 7) {
+            console.warn('⚠️ Phase overflow detected:', phase, 'clamping to 7');
+            return 7;
+        }
+        
+        return Math.floor(phase);
     }
 
     /**

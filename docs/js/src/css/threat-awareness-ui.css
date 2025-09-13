@@ -451,11 +451,19 @@
   }
 }
 
-/* Performance Optimizations */
-.threat-awareness-overlay * {
+/* Performance Optimizations - Selective will-change to avoid memory budget issues */
+.threat-awareness-overlay .directional-indicator,
+.threat-awareness-overlay .telegraph-warning,
+.threat-awareness-overlay .damage-indicator {
   will-change: transform, opacity;
   backface-visibility: hidden;
   perspective: 1000px;
+}
+
+/* Remove will-change from static elements to reduce memory consumption */
+.threat-awareness-overlay .threat-legend,
+.threat-awareness-overlay .legend-item {
+  backface-visibility: hidden;
 }
 
 /* Hide on print */

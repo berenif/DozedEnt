@@ -73,7 +73,7 @@ body {
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0, rgba(255, 255, 255, 0.08) 2px, transparent 2px, transparent 120px),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0, rgba(255, 255, 255, 0.08) 2px, transparent 2px, transparent 120px),
     linear-gradient(135deg, #001122 0%, #002244 50%, #001133 100%);
-  will-change: transform;
+  /* Only use will-change when actively transforming to reduce memory usage */
   transition: none; /* Disable transitions for smooth camera movement */
 }
 
@@ -246,7 +246,7 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
   transform: translate(-50%, -50%);
-  will-change: transform;
+  /* will-change applied dynamically via JavaScript when moving */
 }
 
 /* health bar container and fill */

@@ -27,6 +27,11 @@ import { uiCoordinator } from './src/ui/ui-coordinator.js'
 import { PhaseOverlayManager } from './src/ui/phase-overlay-manager.js'
 import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js'
 
+// Performance optimization systems
+import { globalFrameTimeOptimizer } from './src/utils/frame-time-optimizer.js'
+import { globalWillChangeOptimizer } from './src/utils/will-change-optimizer.js'
+import { globalPerformanceIntegration } from './src/utils/performance-integration.js'
+
 /**
  * Main Game Application Class
  * Centralizes all game systems and manages their lifecycle
@@ -740,7 +745,8 @@ class GameApplication {
    * @private
    */
   gameLoop() {
-    const currentTime = performance.now();
+    const frameStartTime = performance.now();
+    const currentTime = frameStartTime;
     const deltaTime = (currentTime - this.lastFrameTime) / 1000; // Convert to seconds
     this.lastFrameTime = currentTime;
     this.frameCount++;
@@ -833,6 +839,19 @@ class GameApplication {
         this.render();
       } catch (renderError) {
         console.error('Error rendering frame:', renderError);
+      }
+
+      // Optimize frame time performance
+      try {
+        const frameEndTime = performance.now();
+        const optimizationResult = globalFrameTimeOptimizer.optimizeFrame(this.frameStartTime || frameEndTime);
+        
+        // Log performance warnings
+        if (optimizationResult.frameTime > 50) {
+          console.warn(`⚠️ Frame time exceeded target: ${optimizationResult.frameTime.toFixed(2)}ms (target: 16.67ms)`);
+        }
+      } catch (optimizationError) {
+        console.error('Frame optimization error:', optimizationError);
       }
 
       // Continue loop

@@ -137,7 +137,7 @@ export class LeaderboardSystem {
     this.loadPersonalBests();
     this.loadGlobalLeaderboards();
     this.setupEventListeners();
-    this.calculatePerformanceMetrics();
+    this.initializePerformanceMetrics();
   }
   
   /**
@@ -697,6 +697,77 @@ export class LeaderboardSystem {
     });
   }
   
+  /**
+   * Initialize performance metrics
+   */
+  initializePerformanceMetrics() {
+    this.performanceMetrics = {
+      accuracy: 0,
+      efficiency: 0,
+      consistency: 0,
+      adaptability: 0,
+      mastery: 0
+    };
+    
+    console.log('📊 Performance metrics initialized');
+  }
+  
+  /**
+   * Calculate performance metrics (called from init)
+   */
+  calculatePerformanceMetrics() {
+    // Initialize with default values if no data exists
+    if (!this.performanceMetrics) {
+      this.initializePerformanceMetrics();
+      return;
+    }
+    
+    // Calculate metrics based on existing data
+    const recentResults = this.getRecentGameResults(20);
+    if (recentResults.length === 0) {
+      return;
+    }
+    
+    // Calculate average metrics from recent games
+    const totals = recentResults.reduce((acc, result) => {
+      acc.accuracy += result.accuracy || 0;
+      acc.efficiency += result.efficiency || 0;
+      acc.consistency += result.consistency || 0;
+      acc.adaptability += result.adaptability || 0;
+      acc.mastery += result.mastery || 0;
+      return acc;
+    }, { accuracy: 0, efficiency: 0, consistency: 0, adaptability: 0, mastery: 0 });
+    
+    const count = recentResults.length;
+    this.performanceMetrics = {
+      accuracy: totals.accuracy / count,
+      efficiency: totals.efficiency / count,
+      consistency: totals.consistency / count,
+      adaptability: totals.adaptability / count,
+      mastery: totals.mastery / count
+    };
+    
+    console.log('📊 Performance metrics calculated:', this.performanceMetrics);
+  }
+  
+  /**
+   * Get recent game results for analysis
+   */
+  getRecentGameResults(count = 20) {
+    // Return empty array if no storage manager
+    if (!this.storageManager) {
+      return [];
+    }
+    
+    try {
+      const results = this.storageManager.getItem('recentGameResults') || [];
+      return results.slice(-count);
+    } catch (error) {
+      console.warn('Error loading recent game results:', error);
+      return [];
+    }
+  }
+
   /**
    * Calculate consistency metric
    */
