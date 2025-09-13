@@ -207,6 +207,45 @@
     color: #4a90e2;
 }
 
+/* Main Menu */
+.main-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 500;
+}
+
+.main-menu h1 {
+    color: #fff;
+    margin-bottom: 40px;
+    font-size: 48px;
+    letter-spacing: 2px;
+}
+
+.menu-btn {
+    width: 220px;
+    padding: 14px 0;
+    margin: 10px 0;
+    background: #4a90e2;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.menu-btn:hover {
+    background: #357abd;
+}
+
 /* Hidden class for dynamic show/hide */
 .hidden {
     display: none !important;

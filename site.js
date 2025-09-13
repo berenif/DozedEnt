@@ -464,15 +464,47 @@ class GameApplication {
     // Hide loading screen
     console.log('🔧 Hiding loading screen...');
     this.hideLoadingScreen();
-    
-    // On desktop, start the game directly
-    // On mobile, the orientation overlay will handle the game start
-    if (isDesktop) {
-      console.log('🖥️ Desktop detected - starting game directly');
-      this.startGame();
+
+    // Show main menu for mode selection
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+      mainMenu.classList.remove('hidden');
+
+      const launch = () => {
+        if (isDesktop) {
+          console.log('🖥️ Desktop detected - starting game directly');
+          this.startGame();
+        } else {
+          console.log('📱 Mobile detected - checking orientation');
+          this.checkOrientationAndStart();
+        }
+      };
+
+      document.getElementById('menu-new-game')?.addEventListener('click', () => {
+        mainMenu.classList.add('hidden');
+        launch();
+      });
+
+      document.getElementById('menu-continue')?.addEventListener('click', () => {
+        mainMenu.classList.add('hidden');
+        launch();
+        this.gameStateManager?.showPersistenceUI('saves');
+      });
+
+      document.getElementById('menu-join-online')?.addEventListener('click', () => {
+        mainMenu.classList.add('hidden');
+        launch();
+        window.toggleLobby();
+      });
     } else {
-      console.log('📱 Mobile detected - checking orientation');
-      this.checkOrientationAndStart();
+      // Fallback: start game immediately
+      if (isDesktop) {
+        console.log('🖥️ Desktop detected - starting game directly');
+        this.startGame();
+      } else {
+        console.log('📱 Mobile detected - checking orientation');
+        this.checkOrientationAndStart();
+      }
     }
   }
 
