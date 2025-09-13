@@ -109,7 +109,7 @@ export class Animation {
     }
 
     getProgress() {
-        if (this.frames.length === 0) {return 0}
+        if (this.frames.length <= 1) {return 0}
         return this.currentFrame / (this.frames.length - 1)
     }
 
