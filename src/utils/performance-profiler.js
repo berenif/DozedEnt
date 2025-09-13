@@ -82,29 +82,43 @@ export class PerformanceProfiler {
    */
   initializePerformanceObservers() {
     if (this.hasPerformanceObserver) {
-      try {
-        // Monitor long tasks (>50ms)
-        const longTaskObserver = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.duration > 50) {
-              this.addAlert('LONG_TASK', `Long task detected: ${entry.duration.toFixed(1)}ms`, entry);
-            }
+      // Try to observe long tasks
+      this.tryObserveEntryType('longtask', (list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.duration > 50) {
+            this.addAlert('LONG_TASK', `Long task detected: ${entry.duration.toFixed(1)}ms`, entry);
           }
-        });
-        longTaskObserver.observe({ entryTypes: ['longtask'] });
+        }
+      });
 
-        // Monitor layout shifts
-        const layoutShiftObserver = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.value > 0.1) {
-              this.addAlert('LAYOUT_SHIFT', `Large layout shift: ${entry.value.toFixed(3)}`, entry);
-            }
+      // Try to observe layout shifts
+      this.tryObserveEntryType('layout-shift', (list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.value > 0.1) {
+            this.addAlert('LAYOUT_SHIFT', `Large layout shift: ${entry.value.toFixed(3)}`, entry);
           }
-        });
-        layoutShiftObserver.observe({ entryTypes: ['layout-shift'] });
+        }
+      });
+    }
+  }
 
-      } catch (error) {
-        console.warn('Performance observers not fully supported:', error);
+  /**
+   * Safely try to observe a specific entry type
+   * @param {string} entryType - Performance entry type to observe
+   * @param {Function} callback - Callback function for entries
+   * @private
+   */
+  tryObserveEntryType(entryType, callback) {
+    try {
+      const observer = new PerformanceObserver(callback);
+      observer.observe({ entryTypes: [entryType] });
+      console.log(`✅ Performance observer for '${entryType}' initialized`);
+    } catch (error) {
+      // Check if it's specifically an unsupported entry type error
+      if (error.message.includes('entryTypes') || error.message.includes('not supported')) {
+        console.log(`ℹ️ entryTypes ${entryType} not supported, skipping observer`);
+      } else {
+        console.warn(`⚠️ Failed to initialize performance observer for '${entryType}':`, error.message);
       }
     }
   }

@@ -4,6 +4,8 @@
  */
 
 import { setGlobalSeed as setVisualRngSeed } from '../utils/rng.js'
+import { globalWasmLoader } from '../utils/wasm-lazy-loader.js'
+import { globalMemoryOptimizer } from '../utils/memory-optimizer.js'
 
 export class WasmManager {
   constructor() {
@@ -31,11 +33,16 @@ export class WasmManager {
   }
 
   /**
-   * Initialize WASM module with comprehensive error handling
+   * Initialize WASM module with comprehensive error handling and lazy loading
    * @returns {Promise<boolean>} Success status
    */
   async initialize() {
     const initStartTime = performance.now();
+    
+    // Start memory monitoring
+    if (globalMemoryOptimizer && !globalMemoryOptimizer.isMonitoring) {
+      globalMemoryOptimizer.startMonitoring();
+    }
     
     try {
       // Load the local WASM helper module with multiple fallback strategies
@@ -66,7 +73,28 @@ export class WasmManager {
 
       const { loadWasm } = wasmHelperModule;
       
-      // Try multiple WASM file paths, resolved against the current document base URL
+      // Use lazy loader for optimized WASM loading
+      try {
+        console.log('🚀 Attempting to load WASM module with lazy loader...');
+        const wasmInstance = await globalWasmLoader.loadModule('game', {
+          imports: {},
+          onProgress: (progress) => {
+            console.log(`📦 WASM loading progress: ${(progress.progress * 100).toFixed(1)}%`);
+          }
+        });
+        
+        this.exports = wasmInstance.exports;
+        this.isLoaded = true;
+        
+        const initTime = performance.now() - initStartTime;
+        console.log(`✅ WASM module loaded successfully with lazy loader in ${initTime.toFixed(2)}ms`);
+        
+        return true;
+      } catch (lazyLoadError) {
+        console.warn('⚠️ Lazy loader failed, falling back to traditional loading:', lazyLoadError.message);
+      }
+
+      // Fallback to traditional loading
       const resolveUrl = (p) => {
         try {
           return new URL(p, document.baseURI).toString();
@@ -1912,9 +1940,6 @@ export class WasmManager {
       get_hp: () => 1.0,
       get_max_hp: () => 100,
       
-      // Room and phase management
-      get_room_count: () => 1,
-      
       // Rolling state
       get_is_rolling: () => 0,
       
@@ -1935,13 +1960,6 @@ export class WasmManager {
       // Enemy count
       get_enemy_count: () => 0,
       
-      // Risk phase
-      get_curse_count: () => 0,
-      get_curse_type: () => 0,
-      get_curse_intensity: () => 0,
-      get_risk_multiplier: () => 1.0,
-      get_elite_active: () => 0,
-      
       // Escalate phase
       get_escalation_level: () => 0,
       get_spawn_rate_modifier: () => 1.0,
@@ -1949,10 +1967,6 @@ export class WasmManager {
       get_miniboss_x: () => 0,
       get_miniboss_y: () => 0,
       damage_miniboss: () => {},
-      
-      // Cashout phase
-      get_gold: () => 0,
-      get_essence: () => 0,
       get_shop_item_count: () => 0,
       buy_shop_item: () => {},
       
@@ -1962,7 +1976,50 @@ export class WasmManager {
       get_hazard_x: () => 0,
       get_hazard_y: () => 0,
       get_hazard_radius: () => 0,
-      get_hazard_intensity: () => 0
+      get_hazard_intensity: () => 0,
+      
+      // Persistence system functions
+      auto_save_check: () => {
+        trackCall('auto_save_check');
+        console.log('Fallback: Auto-save check (no persistence available)');
+        return 0; // No save needed in fallback mode
+      },
+      
+      // Achievement system functions
+      get_achievement_count: () => {
+        trackCall('get_achievement_count');
+        return 0; // No achievements in fallback mode
+      },
+      get_achievement_id: (index) => {
+        trackCall('get_achievement_id');
+        return 0;
+      },
+      get_achievement_info_json: (id) => {
+        trackCall('get_achievement_info_json');
+        return JSON.stringify({
+          id: id,
+          name: 'Fallback Achievement',
+          description: 'Achievement system not available',
+          unlocked: false,
+          progress: 0,
+          target: 1
+        });
+      },
+      
+      // Statistics system functions
+      get_statistic_count: () => {
+        trackCall('get_statistic_count');
+        return 0; // No statistics in fallback mode
+      },
+      get_statistic_info: (index) => {
+        trackCall('get_statistic_info');
+        return JSON.stringify({
+          id: index,
+          name: 'Fallback Statistic',
+          value: 0,
+          description: 'Statistics system not available'
+        });
+      }
     };
   }
   

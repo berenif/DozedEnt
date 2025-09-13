@@ -29,7 +29,6 @@ export {
 // UI & Feedback Features
 export {
   DamageNumber,
-  ComboCounter,
   StatusIndicator,
   HealthBar,
   UIFeedbackSystem,

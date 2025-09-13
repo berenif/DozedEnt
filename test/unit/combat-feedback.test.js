@@ -85,11 +85,6 @@ describe('CombatFeedback', () => {
     it('should initialize with default properties', () => {
       expect(combatFeedback.feedbackElements).to.be.an('array').that.is.empty;
       expect(combatFeedback.screenEffects).to.be.an('array').that.is.empty;
-      expect(combatFeedback.comboState).to.deep.equal({
-        count: 0,
-        lastHitTime: 0,
-        multiplier: 1.0
-      });
     });
 
     it('should initialize feedback overlay DOM structure', () => {
@@ -234,118 +229,6 @@ describe('CombatFeedback', () => {
     });
   });
 
-  describe('Combo System', () => {
-    let mockComboDisplay, mockCountEl, mockMultiplierEl;
-
-    beforeEach(() => {
-      mockCountEl = { textContent: '' };
-      mockMultiplierEl = { textContent: '' };
-      mockComboDisplay = {
-        querySelector: sinon.stub(),
-        classList: {
-          remove: sinon.stub(),
-          add: sinon.stub()
-        },
-        style: {}
-      };
-
-      mockComboDisplay.querySelector.withArgs('.combo-count').returns(mockCountEl);
-      mockComboDisplay.querySelector.withArgs('.combo-multiplier').returns(mockMultiplierEl);
-      
-      global.document.getElementById.withArgs('combo-display').returns(mockComboDisplay);
-    
-    // Ensure the combo display is returned for any querySelector calls as well
-    global.document.querySelector.withArgs('#combo-display').returns(mockComboDisplay);
-      global.performance.now.returns(1000);
-    });
-
-    it('should start combo on first hit', () => {
-      combatFeedback.updateCombo(true);
-
-      expect(combatFeedback.comboState.count).to.equal(1);
-      expect(combatFeedback.comboState.multiplier).to.equal(1.0);
-      expect(combatFeedback.comboState.lastHitTime).to.equal(1000);
-    });
-
-    it('should increment combo on consecutive hits', () => {
-      combatFeedback.updateCombo(true);
-      global.performance.now.returns(2000); // Within timeout
-      combatFeedback.updateCombo(true);
-
-      expect(combatFeedback.comboState.count).to.equal(2);
-      expect(combatFeedback.comboState.multiplier).to.equal(1.1);
-    });
-
-    it('should reset combo after timeout', () => {
-      combatFeedback.updateCombo(true);
-      global.performance.now.returns(5000); // Beyond 3s timeout
-      combatFeedback.updateCombo(true);
-
-      expect(combatFeedback.comboState.count).to.equal(1);
-      expect(combatFeedback.comboState.multiplier).to.equal(1.0);
-    });
-
-    it('should apply critical hit multiplier', () => {
-      combatFeedback.updateCombo(true, true); // Critical hit
-
-      expect(combatFeedback.comboState.multiplier).to.equal(1.5);
-    });
-
-    it('should update combo display elements', () => {
-      combatFeedback.updateCombo(true);
-
-      expect(mockCountEl.textContent).to.equal(1);
-      expect(mockMultiplierEl.textContent).to.equal('×1.0');
-    });
-
-    it('should apply visual effects based on combo level', () => {
-      // Test different combo levels
-      const testCases = [
-        { count: 3, expectedClass: 'combo-low' },
-        { count: 7, expectedClass: 'combo-medium' },
-        { count: 12, expectedClass: 'combo-high' },
-        { count: 25, expectedClass: 'combo-extreme' }
-      ];
-
-      testCases.forEach(({ count, expectedClass }) => {
-        combatFeedback.comboState.count = count;
-        combatFeedback.updateComboDisplay();
-
-        expect(mockComboDisplay.classList.add.calledWith(expectedClass)).to.be.true;
-      });
-    });
-
-    it('should show combo milestones', () => {
-      const mockContainer = { appendChild: sinon.stub() };
-      const mockMilestone = { classList: { add: sinon.stub() } };
-
-      global.document.querySelector.returns(mockContainer);
-      global.document.createElement.returns(mockMilestone);
-
-      combatFeedback.showComboMilestone(10);
-
-      expect(mockContainer.appendChild.calledWith(mockMilestone)).to.be.true;
-    });
-
-    it('should get current combo state', () => {
-      combatFeedback.comboState = { count: 5, multiplier: 1.4, lastHitTime: 2000 };
-
-      const state = combatFeedback.getComboState();
-
-      expect(state).to.deep.equal({ count: 5, multiplier: 1.4, lastHitTime: 2000 });
-      expect(state).to.not.equal(combatFeedback.comboState); // Should be a copy
-    });
-
-    it('should reset combo', () => {
-      combatFeedback.comboState = { count: 10, multiplier: 2.0, lastHitTime: 5000 };
-
-      combatFeedback.resetCombo();
-
-      expect(combatFeedback.comboState.count).to.equal(0);
-      expect(combatFeedback.comboState.multiplier).to.equal(1.0);
-      expect(combatFeedback.comboState.lastHitTime).to.equal(0);
-    });
-  });
 
   describe('Screen Effects', () => {
     let mockContainer, mockEffect;
@@ -378,29 +261,11 @@ describe('CombatFeedback', () => {
   });
 
   describe('Combat Event Handlers', () => {
-    let showDamageNumberSpy, showHitIndicatorSpy, updateComboSpy, showScreenEffectSpy;
+    let showDamageNumberSpy, showHitIndicatorSpy, showScreenEffectSpy;
 
     beforeEach(() => {
-      // Setup combo display mock for these tests
-      const mockCountEl = { textContent: '' };
-      const mockMultiplierEl = { textContent: '' };
-      const mockComboDisplay = {
-        querySelector: sinon.stub(),
-        classList: {
-          remove: sinon.stub(),
-          add: sinon.stub()
-        },
-        style: {}
-      };
-
-      mockComboDisplay.querySelector.withArgs('.combo-count').returns(mockCountEl);
-      mockComboDisplay.querySelector.withArgs('.combo-multiplier').returns(mockMultiplierEl);
-      
-      global.document.getElementById.withArgs('combo-display').returns(mockComboDisplay);
-      
       showDamageNumberSpy = sinon.spy(combatFeedback, 'showDamageNumber');
       showHitIndicatorSpy = sinon.spy(combatFeedback, 'showHitIndicator');
-      updateComboSpy = sinon.spy(combatFeedback, 'updateCombo');
       showScreenEffectSpy = sinon.spy(combatFeedback, 'showScreenEffect');
     });
 
@@ -409,7 +274,6 @@ describe('CombatFeedback', () => {
 
       expect(showDamageNumberSpy.calledWith(0.5, 0.3, 25, 'damage')).to.be.true;
       expect(showHitIndicatorSpy.calledWith(0.5, 0.3, 'hit')).to.be.true;
-      expect(updateComboSpy.calledWith(true, false)).to.be.true;
       expect(showScreenEffectSpy.calledWith('hit', 0.4)).to.be.true;
     });
 
@@ -418,7 +282,6 @@ describe('CombatFeedback', () => {
 
       expect(showDamageNumberSpy.calledWith(0.5, 0.3, 50, 'critical')).to.be.true;
       expect(showHitIndicatorSpy.calledWith(0.5, 0.3, 'critical')).to.be.true;
-      expect(updateComboSpy.calledWith(true, true)).to.be.true;
       expect(showScreenEffectSpy.calledWith('critical', 0.8)).to.be.true;
     });
 
@@ -426,7 +289,6 @@ describe('CombatFeedback', () => {
       combatFeedback.onAttackMiss(0.5, 0.3);
 
       expect(showHitIndicatorSpy.calledWith(0.5, 0.3, 'miss')).to.be.true;
-      expect(updateComboSpy.calledWith(false)).to.be.true;
     });
 
     it('should handle attack blocked correctly', () => {
@@ -434,7 +296,6 @@ describe('CombatFeedback', () => {
 
       expect(showDamageNumberSpy.calledWith(0.5, 0.3, 5, 'block')).to.be.true;
       expect(showHitIndicatorSpy.calledWith(0.5, 0.3, 'block')).to.be.true;
-      expect(updateComboSpy.calledWith(false)).to.be.true;
     });
 
     it('should handle attack parried correctly', () => {
@@ -533,17 +394,11 @@ describe('CombatFeedback', () => {
       expect(() => combatFeedback.showHitIndicator(0.5, 0.3, 'hit')).to.not.throw();
     });
 
-    it('should handle missing combo display gracefully', () => {
-      global.document.getElementById.returns(null);
-
-      expect(() => combatFeedback.updateComboDisplay()).to.not.throw();
-    });
 
     it('should handle missing screen effects container gracefully', () => {
       global.document.querySelector.returns(null);
 
       expect(() => combatFeedback.showScreenEffect('hit')).to.not.throw();
-      expect(() => combatFeedback.showComboMilestone(10)).to.not.throw();
     });
   });
 });

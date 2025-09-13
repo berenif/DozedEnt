@@ -93,7 +93,12 @@ export class ErrorReporter {
         
         perfObserver.observe({ entryTypes: ['longtask'] });
       } catch (error) {
-        this.logger.warn('Performance observer not supported:', error);
+        // Check if it's specifically an unsupported entry type error
+        if (error.message.includes('entryTypes') || error.message.includes('not supported')) {
+          this.logger.info('entryTypes longtask not supported, skipping performance observer');
+        } else {
+          this.logger.warn('Performance observer initialization failed:', error.message);
+        }
       }
     }
     

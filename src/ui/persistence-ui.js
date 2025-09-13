@@ -696,9 +696,15 @@ export class PersistenceUI {
     const scoreSpan = this.container.querySelector('#achievementScore');
     
     try {
-      // Get achievement summary
-      const summaryJson = this.wasmManager.exports.get_achievements_summary_json();
-      const summary = JSON.parse(summaryJson);
+      // Get achievement summary (create from individual functions if get_achievements_summary_json doesn't exist)
+      let summary;
+      if (typeof this.wasmManager.exports.get_achievements_summary_json === 'function') {
+        const summaryJson = this.wasmManager.exports.get_achievements_summary_json();
+        summary = JSON.parse(summaryJson);
+      } else {
+        // Create summary from individual achievement functions
+        summary = this.createAchievementSummary();
+      }
       
       // Update header stats
       progressSpan.textContent = `${summary.unlockedAchievements} / ${summary.totalAchievements} Unlocked`;
@@ -706,6 +712,13 @@ export class PersistenceUI {
       
       // Clear and rebuild grid
       achievementsGrid.innerHTML = '';
+      
+      // Check if the achievement functions exist
+      if (typeof this.wasmManager.exports.get_achievement_count !== 'function') {
+        console.warn('Achievement functions not available in WASM module');
+        achievementsGrid.innerHTML = '<p class="warning">Achievement system not available</p>';
+        return;
+      }
       
       const achievementCount = this.wasmManager.exports.get_achievement_count();
       
@@ -725,6 +738,70 @@ export class PersistenceUI {
       console.error('Failed to update achievements display:', error);
       achievementsGrid.innerHTML = '<p class="error">Failed to load achievements</p>';
     }
+  }
+  
+  /**
+   * Create achievement summary from individual WASM functions
+   */
+  createAchievementSummary() {
+    let totalAchievements = 0;
+    let unlockedAchievements = 0;
+    let totalScore = 0;
+    
+    try {
+      // Get total achievements count
+      if (typeof this.wasmManager.exports.get_achievement_count === 'function') {
+        totalAchievements = this.wasmManager.exports.get_achievement_count();
+      }
+      
+      // Count unlocked achievements and calculate score
+      for (let i = 0; i < totalAchievements; i++) {
+        try {
+          const achievementId = this.wasmManager.exports.get_achievement_id(i);
+          if (typeof this.wasmManager.exports.is_achievement_unlocked === 'function' && 
+              this.wasmManager.exports.is_achievement_unlocked(achievementId)) {
+            unlockedAchievements++;
+          }
+        } catch (error) {
+          console.warn(`Error checking achievement ${i}:`, error);
+        }
+      }
+      
+      // Get total score if available
+      if (typeof this.wasmManager.exports.get_total_achievement_score === 'function') {
+        totalScore = this.wasmManager.exports.get_total_achievement_score();
+      }
+      
+    } catch (error) {
+      console.warn('Error creating achievement summary:', error);
+    }
+    
+    return {
+      totalAchievements,
+      unlockedAchievements,
+      totalScore
+    };
+  }
+  
+  /**
+   * Create fallback session statistics when WASM function is not available
+   */
+  createFallbackSessionStats() {
+    return {
+      duration: 0,
+      enemiesKilled: 0,
+      roomsCleared: 0,
+      damageDealt: 0,
+      damageTaken: 0,
+      goldEarned: 0,
+      experienceGained: 0,
+      achievementsUnlocked: 0,
+      accuracy: 0,
+      efficiency: 0,
+      perfectActions: 0,
+      totalActions: 0,
+      deathCount: 0
+    };
   }
   
   /**
@@ -942,8 +1019,14 @@ export class PersistenceUI {
     
     try {
       // Get statistics data from WASM
-      const sessionStats = this.wasmManager.exports.get_session_stats();
-      const sessionData = JSON.parse(sessionStats);
+      let sessionData;
+      if (typeof this.wasmManager.exports.get_session_stats === 'function') {
+        const sessionStats = this.wasmManager.exports.get_session_stats();
+        sessionData = JSON.parse(sessionStats);
+      } else {
+        // Create fallback session data
+        sessionData = this.createFallbackSessionStats();
+      }
       
       // Update session summary
       sessionSummary.innerHTML = `
@@ -975,6 +1058,13 @@ export class PersistenceUI {
       
       // Update statistics grid
       statisticsGrid.innerHTML = '';
+      
+      // Check if the statistics functions exist
+      if (typeof this.wasmManager.exports.get_statistic_count !== 'function') {
+        console.warn('Statistics functions not available in WASM module');
+        statisticsGrid.innerHTML = '<p class="warning">Statistics system not available</p>';
+        return;
+      }
       
       const statCount = this.wasmManager.exports.get_statistic_count();
       

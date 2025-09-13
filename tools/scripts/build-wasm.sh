@@ -45,7 +45,7 @@ rm -f *.wasm
 
 # Generate balance header from data files
 echo -e "${YELLOW}Generating balance data header...${NC}"
-node scripts/generate-balance.cjs || { echo -e "${RED}Balance generation failed${NC}"; exit 1; }
+node tools/scripts/generate-balance.cjs || { echo -e "${RED}Balance generation failed${NC}"; exit 1; }
 
 # Function to build game WASM
 build_game_wasm() {

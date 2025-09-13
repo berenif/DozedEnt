@@ -2,7 +2,19 @@ import globals from 'globals'
 import pluginJs from '@eslint/js'
 
 export default [
-  {languageOptions: {globals: {...globals.browser, process: true}}},
+  {
+    languageOptions: {globals: {...globals.browser, process: true}},
+    ignores: [
+      '**/*.d.ts',
+      'emsdk/**/*',
+      'node_modules/**/*',
+      'coverage/**/*',
+      'dist/**/*',
+      '**/*.min.js',
+      'docs/js/src/**/*',
+      'tools/scripts/validate-github-pages.js'
+    ]
+  },
   pluginJs.configs.recommended,
   {
     files: ['src/**/*.js'],

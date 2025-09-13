@@ -496,15 +496,20 @@ export class PersistenceManager {
     if (!this.autoSaveEnabled || !this.wasmManager?.exports) {return;}
     
     try {
-      const result = this.wasmManager.exports.auto_save_check();
-      if (result) {
-        this.lastAutoSave = Date.now();
-        console.log('Auto-save completed');
-        
-        // Dispatch auto-save event
-        window.dispatchEvent(new CustomEvent('autoSaveCompleted', {
-          detail: { timestamp: this.lastAutoSave }
-        }));
+      // Check if the auto_save_check function exists
+      if (typeof this.wasmManager.exports.auto_save_check === 'function') {
+        const result = this.wasmManager.exports.auto_save_check();
+        if (result) {
+          this.lastAutoSave = Date.now();
+          console.log('Auto-save completed');
+          
+          // Dispatch auto-save event
+          window.dispatchEvent(new CustomEvent('autoSaveCompleted', {
+            detail: { timestamp: this.lastAutoSave }
+          }));
+        }
+      } else {
+        console.warn('Auto-save function not available in WASM module');
       }
     } catch (error) {
       console.error('Auto-save failed:', error);

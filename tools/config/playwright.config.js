@@ -1,6 +1,8 @@
 import {devices} from '@playwright/test'
 
 export default {
+  testDir: '../../test',
+  testMatch: ['**/*.spec.js', '**/integration/*.js'],
   timeout: 53_333,
   use: {
     ignoreHTTPSErrors: true,

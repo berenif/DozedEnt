@@ -137,9 +137,23 @@ export class LeaderboardSystem {
     this.loadPersonalBests();
     this.loadGlobalLeaderboards();
     this.setupEventListeners();
-    this.calculatePerformanceMetrics();
+    this.initializePerformanceMetrics();
   }
   
+  /**
+   * Initialize performance metrics
+   */
+  initializePerformanceMetrics() {
+    // Initialize with default values
+    this.performanceMetrics = {
+      accuracy: 0,
+      efficiency: 0,
+      consistency: 0,
+      adaptability: 0,
+      mastery: 0
+    };
+  }
+
   /**
    * Setup event listeners for game events
    */
