@@ -455,7 +455,7 @@ void update(float dtSeconds) {
     g_input_y = g_roll_direction_y * 0.5f;
   }
   
-  const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier;
+  const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier * status_speed_modifier;
   const float acceleration = PLAYER_ACCEL * dtSeconds;
   const float friction = PLAYER_FRICTION * dtSeconds * friction_multiplier;
 
@@ -477,6 +477,67 @@ void update(float dtSeconds) {
   // Update stun state
   if (g_is_stunned && g_time_seconds >= g_stun_end_time) {
     g_is_stunned = 0;
+  }
+  
+  // Update hyperarmor state
+  if (g_has_hyperarmor && g_time_seconds >= g_hyperarmor_end_time) {
+    g_has_hyperarmor = 0;
+  }
+  
+  // Update counter window
+  if (g_can_counter && g_time_seconds >= g_counter_window_end) {
+    g_can_counter = 0;
+  }
+  
+  // Update combo window
+  if (g_combo_count > 0 && g_time_seconds >= g_combo_window_end) {
+    g_combo_count = 0;  // Reset combo if window expired
+  }
+  
+  // Update status effects
+  g_player_status_effects.update(dtSeconds, g_time_seconds);
+  
+  // Apply status effect modifiers to movement
+  float status_speed_modifier = g_player_status_effects.get_movement_modifier();
+  
+  // Check if stunned by status effects
+  if (g_player_status_effects.is_stunned()) {
+    g_input_x = 0.f;
+    g_input_y = 0.f;
+    g_input_is_rolling = 0;
+    g_input_light_attack = 0;
+    g_input_heavy_attack = 0;
+    g_input_is_blocking = 0;
+    g_input_special = 0;
+  }
+  
+  // Environmental detection (simplified - check boundaries)
+  const float WALL_DETECTION_DISTANCE = 0.05f;
+  const float LEDGE_DETECTION_DISTANCE = 0.1f;
+  
+  // Check for walls (arena boundaries)
+  g_near_wall = 0;
+  g_wall_distance = 999.0f;
+  
+  if (g_pos_x < WALL_DETECTION_DISTANCE || g_pos_x > (1.0f - WALL_DETECTION_DISTANCE)) {
+    g_near_wall = 1;
+    g_wall_distance = (g_pos_x < 0.5f) ? g_pos_x : (1.0f - g_pos_x);
+  }
+  if (g_pos_y < WALL_DETECTION_DISTANCE || g_pos_y > (1.0f - WALL_DETECTION_DISTANCE)) {
+    g_near_wall = 1;
+    float y_dist = (g_pos_y < 0.5f) ? g_pos_y : (1.0f - g_pos_y);
+    if (y_dist < g_wall_distance) g_wall_distance = y_dist;
+  }
+  
+  // Check for ledges (simplified - could be enhanced with terrain data)
+  g_near_ledge = 0;
+  g_ledge_distance = 999.0f;
+  // This would normally check terrain data for actual ledges
+  // For now, we'll consider extreme boundaries as potential ledges
+  if (g_pos_x < LEDGE_DETECTION_DISTANCE || g_pos_x > (1.0f - LEDGE_DETECTION_DISTANCE) ||
+      g_pos_y < LEDGE_DETECTION_DISTANCE || g_pos_y > (1.0f - LEDGE_DETECTION_DISTANCE)) {
+    g_near_ledge = 1;
+    g_ledge_distance = g_wall_distance;  // Use wall distance as approximation
   }
   
   // Cache rolling flag for combat checks - only true during i-frame period
@@ -1197,6 +1258,103 @@ unsigned int get_roll_state() { return (unsigned int)g_roll_state; }
 __attribute__((export_name("get_is_roll_sliding")))
 unsigned int get_is_roll_sliding() { return (g_roll_state == RollState::Sliding) ? 1u : 0u; }
 
+// Combo system exports
+__attribute__((export_name("get_combo_count")))
+int get_combo_count() { return g_combo_count; }
+
+__attribute__((export_name("get_combo_window_remaining")))
+float get_combo_window_remaining() { 
+  return (g_time_seconds < g_combo_window_end) ? (g_combo_window_end - g_time_seconds) : 0.0f;
+}
+
+// Counter system exports
+__attribute__((export_name("get_can_counter")))
+int get_can_counter() { return g_can_counter; }
+
+__attribute__((export_name("get_counter_window_remaining")))
+float get_counter_window_remaining() {
+  return (g_can_counter && g_time_seconds < g_counter_window_end) ? 
+         (g_counter_window_end - g_time_seconds) : 0.0f;
+}
+
+// Armor system exports
+__attribute__((export_name("get_has_hyperarmor")))
+int get_has_hyperarmor() { return g_has_hyperarmor; }
+
+__attribute__((export_name("get_armor_value")))
+float get_armor_value() { return g_armor_value; }
+
+__attribute__((export_name("set_armor_value")))
+void set_armor_value(float value) { g_armor_value = value; }
+
+// Environmental interaction exports
+__attribute__((export_name("get_near_wall")))
+int get_near_wall() { return g_near_wall; }
+
+__attribute__((export_name("get_wall_distance")))
+float get_wall_distance() { return g_wall_distance; }
+
+__attribute__((export_name("get_near_ledge")))
+int get_near_ledge() { return g_near_ledge; }
+
+__attribute__((export_name("get_ledge_distance")))
+float get_ledge_distance() { return g_ledge_distance; }
+
+// Status effect exports
+__attribute__((export_name("apply_burning")))
+int apply_burning(float duration, float intensity) {
+  StatusEffect effect = create_burning_effect(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_stun")))
+int apply_stun(float duration) {
+  StatusEffect effect = create_stun_effect(duration);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_slow")))
+int apply_slow(float duration, float intensity) {
+  StatusEffect effect = create_slow_effect(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_damage_boost")))
+int apply_damage_boost(float duration, float intensity) {
+  StatusEffect effect = create_damage_boost(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("get_status_effect_count")))
+int get_status_effect_count() {
+  return g_player_status_effects.get_active_effect_count();
+}
+
+__attribute__((export_name("has_status_effect")))
+int has_status_effect(int effect_type) {
+  return g_player_status_effects.has_effect((StatusEffectType)effect_type) ? 1 : 0;
+}
+
+__attribute__((export_name("remove_status_effect")))
+void remove_status_effect(int effect_type) {
+  g_player_status_effects.remove_effect((StatusEffectType)effect_type);
+}
+
+__attribute__((export_name("get_status_movement_modifier")))
+float get_status_movement_modifier() {
+  return g_player_status_effects.get_movement_modifier();
+}
+
+__attribute__((export_name("get_status_damage_modifier")))
+float get_status_damage_modifier() {
+  return g_player_status_effects.get_damage_modifier();
+}
+
+__attribute__((export_name("get_status_defense_modifier")))
+float get_status_defense_modifier() {
+  return g_player_status_effects.get_defense_modifier();
+}
+
 __attribute__((export_name("get_roll_time")))
 float get_roll_time() { 
   if (g_roll_state == RollState::Idle) return 0.f;
@@ -1257,16 +1415,27 @@ int on_parry() {
 // Light Attack (A1) - Fast, can combo
 __attribute__((export_name("on_light_attack")))
 int on_light_attack() {
-  // Apply weapon speed modifier to cooldown
-  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (reduced for combos)
+  float combo_modifier = (g_combo_count > 0 && g_time_seconds < g_combo_window_end) ? 0.7f : 1.0f;
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (reduced for combos)
+  float stamina_modifier = (g_combo_count > 0) ? 0.8f : 1.0f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system
+  if (g_time_seconds < g_combo_window_end && g_combo_count < MAX_COMBO_COUNT) {
+    g_combo_count++;
+  } else {
+    g_combo_count = 1;  // Start new combo chain
+  }
+  g_combo_window_end = g_time_seconds + COMBO_WINDOW_DURATION;
+  g_last_attack_type = AttackType::Light;
   
   // Start light attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1283,16 +1452,27 @@ int on_light_attack() {
 // Heavy Attack (A2) - Slower, more damage, can feint during windup
 __attribute__((export_name("on_heavy_attack")))
 int on_heavy_attack() {
-  // Apply weapon speed modifier to cooldown
-  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (can combo from light)
+  float combo_modifier = (g_combo_count > 0 && g_last_attack_type == AttackType::Light && g_time_seconds < g_combo_window_end) ? 0.8f : 1.0f;
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier (heavy costs more)
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * 1.5f * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (heavy costs more, reduced in combos)
+  float stamina_modifier = (g_combo_count > 0) ? 1.2f : 1.5f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system (heavy can chain from light)
+  if (g_time_seconds < g_combo_window_end && g_last_attack_type == AttackType::Light && g_combo_count < MAX_COMBO_COUNT) {
+    g_combo_count++;
+  } else {
+    g_combo_count = 1;  // Start new combo chain
+  }
+  g_combo_window_end = g_time_seconds + COMBO_WINDOW_DURATION;
+  g_last_attack_type = AttackType::Heavy;
   
   // Start heavy attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1302,6 +1482,12 @@ int on_heavy_attack() {
     normalize(g_attack_dir_x, g_attack_dir_y);
     g_attack_state = AttackState::Windup;
     g_attack_state_time = g_time_seconds;
+    
+    // Grant hyperarmor for Raider weapon during heavy attacks
+    if (weapon_has_tag(WEAPON_TAG_HYPERARMOR)) {
+      g_has_hyperarmor = 1;
+      g_hyperarmor_end_time = g_time_seconds + HEAVY_WINDUP_SEC + HEAVY_ACTIVE_SEC;
+    }
   }
   return 1;
 }
@@ -1309,16 +1495,28 @@ int on_heavy_attack() {
 // Special Attack - Hero move, unique per character
 __attribute__((export_name("on_special_attack")))
 int on_special_attack() {
-  // Apply weapon speed modifier to cooldown (special has longer base cooldown)
-  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * 2.0f) / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (special can finish combos)
+  float combo_modifier = (g_combo_count >= 3) ? 0.6f : 1.0f;  // Faster if used as combo finisher
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * 2.0f * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier (special costs more)
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * 2.0f * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (special costs more, reduced as combo finisher)
+  float stamina_modifier = (g_combo_count >= 3) ? 1.5f : 2.0f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system (special as combo finisher)
+  if (g_time_seconds < g_combo_window_end && g_combo_count > 0) {
+    g_combo_count++;  // Count the special as part of combo
+    // Reset combo after special (it's a finisher)
+    g_combo_window_end = g_time_seconds - 1.0f;  // End combo window
+  } else {
+    g_combo_count = 0;  // Special outside combo resets count
+  }
+  g_last_attack_type = AttackType::Special;
   
   // Start special attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1426,6 +1624,12 @@ int get_block_state() { return g_blocking ? 1 : 0; }
 //   2 => PERFECT PARRY
 __attribute__((export_name("handle_incoming_attack")))
 int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, float attackDirY) {
+  // Check hyperarmor first (cannot be interrupted)
+  if (g_has_hyperarmor && g_time_seconds < g_hyperarmor_end_time) {
+    // Take damage but don't interrupt the attack
+    return -1;
+  }
+  
   // i-frames while rolling
   if (g_is_rolling) return -1;
 
@@ -1444,8 +1648,10 @@ int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, f
     if (facingOk) {
       const float dt = g_time_seconds - g_block_start_time;
       if (dt >= 0.f && dt <= PARRY_WINDOW) {
-        // Perfect parry: fully restore player stamina and stun attacker
+        // Perfect parry: fully restore player stamina, stun attacker, and enable counter
         g_stamina = 1.0f;
+        g_can_counter = 1;
+        g_counter_window_end = g_time_seconds + COUNTER_WINDOW_DURATION;
         
         // Apply 300ms stun to the attacker (this would be handled by enemy system)
         // For now, we signal that a parry stun should be applied
