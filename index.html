@@ -3,271 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DozedEnt - P2P Survival Game</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <!-- Game Stylesheets -->
-    <link rel="stylesheet" href="src/css/base.css">
-    <link rel="stylesheet" href="src/css/game-viewport.css">
-    <link rel="stylesheet" href="src/css/loading.css">
-    <link rel="stylesheet" href="src/css/player.css">
-    <link rel="stylesheet" href="src/css/combat.css">
-    <link rel="stylesheet" href="src/css/enemies.css">
-    <link rel="stylesheet" href="src/css/ambient.css">
-    <link rel="stylesheet" href="src/css/world.css">
-    <link rel="stylesheet" href="src/css/ui.css">
-    <link rel="stylesheet" href="src/css/roguelike-hud.css">
-    <link rel="stylesheet" href="src/css/mobile.css">
-    <link rel="stylesheet" href="src/css/phases.css">
-    <link rel="stylesheet" href="src/css/responsive.css">
+    <title>Roguelite UI</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading DozedEnt...</div>
-        <div class="loading-text" style="font-size: 14px; margin-top: 10px;">Initializing WASM game engine</div>
-        <button id="start-game-btn" disabled style="margin-top: 20px; padding: 12px 24px; background: #666; color: #fff; border: none; border-radius: 25px; font-size: 16px; cursor: not-allowed; transition: background 0.2s ease;">Loading...</button>
-    </div>
-
-    <!-- Main Menu -->
-    <div id="main-menu" class="main-menu hidden">
-        <h1>DozedEnt</h1>
-        <button id="menu-new-game" class="menu-btn">New Game</button>
-        <button id="menu-continue" class="menu-btn">Continue</button>
-        <button id="menu-join-online" class="menu-btn">Join Online</button>
-    </div>
-
-    <!-- Main Game Viewport -->
-    <div id="viewport">
-        <!-- Game Canvas for Enhanced Rendering -->
-        <canvas id="gameCanvas" width="1280" height="720"></canvas>
-
-        <!-- Main Game Canvas -->
-        <div id="canvas"></div>
-
-        <!-- Game Boundary Overlay -->
-        <div class="game-boundary"></div>
-    </div>
-
-    <!-- UI Overlays -->
-    <div class="ui-overlay">
-        <!-- Connection Status -->
-        <div id="connectionStatus" class="status-connecting">Connecting...</div>
+    <!-- Game Container -->
+    <div id="game-container" class="game-container">
         
-        <!-- Player Count -->
-        <div id="playerCount">Players: 1</div>
-        
-        <!-- Debug HUD -->
-        <div id="debug-hud"></div>
-        
-        <!-- Controls Tip (Desktop) -->
-        <div id="controls-tip">
-            WASD to move • J/K for attacks • L for special
+        <!-- Main Game View -->
+        <div id="game-view" class="game-view">
+            <!-- Playfield (game canvas would go here) -->
+            <canvas id="game-canvas" class="game-canvas"></canvas>
+            
+            <!-- HUD Overlay -->
+            <div id="hud" class="hud">
+                
+                <!-- Top Left: Health/Shield/Status -->
+                <div class="hud-top-left">
+                    <div class="player-vitals">
+                        <div class="health-container">
+                            <div class="health-bar">
+                                <div class="health-fill" id="health-fill"></div>
+                                <div class="health-ripple" id="health-ripple"></div>
+                            </div>
+                            <span class="health-text" id="health-text">100/100</span>
+                        </div>
+                        <div class="shield-container">
+                            <div class="shield-bar">
+                                <div class="shield-fill" id="shield-fill"></div>
+                            </div>
+                            <span class="shield-text" id="shield-text">50/50</span>
+                        </div>
+                    </div>
+                    <div class="status-effects" id="status-effects">
+                        <!-- Status effect icons dynamically added here -->
+                    </div>
+                </div>
+                
+                <!-- Top Right: Minimap -->
+                <div class="hud-top-right">
+                    <div class="minimap-container" id="minimap-container">
+                        <canvas id="minimap" class="minimap"></canvas>
+                        <div class="objective-breadcrumb" id="objective-breadcrumb">
+                            <svg class="breadcrumb-line" viewBox="0 0 200 200">
+                                <path id="breadcrumb-path" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <div class="minimap-expanded" id="minimap-expanded">
+                            <canvas id="minimap-large" class="minimap-large"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Center: Ability Bar -->
+                <div class="hud-bottom-center">
+                    <div class="ability-bar">
+                        <!-- Basic Abilities -->
+                        <div class="ability-group basic-abilities">
+                            <div class="ability-slot" data-slot="1">
+                                <div class="ability-icon">Q</div>
+                                <svg class="cooldown-ring" viewBox="0 0 60 60">
+                                    <circle cx="30" cy="30" r="28" class="cooldown-track"/>
+                                    <circle cx="30" cy="30" r="28" class="cooldown-progress" id="cooldown-1"/>
+                                </svg>
+                                <span class="ability-keybind">Q</span>
+                            </div>
+                            <div class="ability-slot" data-slot="2">
+                                <div class="ability-icon">W</div>
+                                <svg class="cooldown-ring" viewBox="0 0 60 60">
+                                    <circle cx="30" cy="30" r="28" class="cooldown-track"/>
+                                    <circle cx="30" cy="30" r="28" class="cooldown-progress" id="cooldown-2"/>
+                                </svg>
+                                <span class="ability-keybind">W</span>
+                            </div>
+                            <div class="ability-slot" data-slot="3">
+                                <div class="ability-icon">E</div>
+                                <svg class="cooldown-ring" viewBox="0 0 60 60">
+                                    <circle cx="30" cy="30" r="28" class="cooldown-track"/>
+                                    <circle cx="30" cy="30" r="28" class="cooldown-progress" id="cooldown-3"/>
+                                </svg>
+                                <span class="ability-keybind">E</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Ultimate -->
+                        <div class="ultimate-container">
+                            <div class="ultimate-slot" data-slot="ultimate">
+                                <div class="ultimate-icon">R</div>
+                                <svg class="ultimate-charge" viewBox="0 0 80 80">
+                                    <circle cx="40" cy="40" r="38" class="charge-track"/>
+                                    <circle cx="40" cy="40" r="38" class="charge-progress" id="ultimate-charge"/>
+                                </svg>
+                                <span class="ability-keybind">R</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Consumables -->
+                        <div class="ability-group consumables">
+                            <div class="consumable-slot" data-slot="c1">
+                                <div class="consumable-icon">1</div>
+                                <span class="consumable-count">3</span>
+                                <span class="ability-keybind">1</span>
+                            </div>
+                            <div class="consumable-slot" data-slot="c2">
+                                <div class="consumable-icon">2</div>
+                                <span class="consumable-count">1</span>
+                                <span class="ability-keybind">2</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Damage Vignette -->
+            <div class="damage-vignette" id="damage-vignette"></div>
+            
+            <!-- Pickup Notifications -->
+            <div class="pickup-container" id="pickup-container"></div>
         </div>
-    </div>
-
-    <!-- Interface Switcher -->
-    <button id="interface-switcher" class="interface-switcher" title="Switch Interface">🔄</button>
-
-    <!-- Mobile Controls -->
-    <div class="mobile-controls" id="mobile-controls">
-        <!-- Joystick -->
-        <div id="joystick">
-            <div id="joystick-base">
-                <div id="joystick-knob"></div>
+        
+        <!-- Pause Menu Overlay -->
+        <div id="pause-menu" class="menu-overlay pause-menu hidden">
+            <div class="menu-backdrop"></div>
+            <div class="menu-content">
+                <div class="menu-tabs">
+                    <button class="menu-tab active" data-tab="inventory">Inventory</button>
+                    <button class="menu-tab" data-tab="character">Character</button>
+                    <button class="menu-tab" data-tab="map">Map</button>
+                    <button class="menu-tab" data-tab="settings">Settings</button>
+                </div>
+                <div class="menu-panels">
+                    <div class="menu-panel active" id="inventory-panel">
+                        <h2>Inventory</h2>
+                        <div class="inventory-grid">
+                            <!-- Inventory slots dynamically added -->
+                        </div>
+                    </div>
+                    <div class="menu-panel" id="character-panel">
+                        <h2>Character</h2>
+                        <div class="character-stats">
+                            <!-- Character stats dynamically added -->
+                        </div>
+                    </div>
+                    <div class="menu-panel" id="map-panel">
+                        <h2>Map</h2>
+                        <canvas id="full-map" class="full-map"></canvas>
+                    </div>
+                    <div class="menu-panel" id="settings-panel">
+                        <h2>Settings</h2>
+                        <div class="settings-content">
+                            <!-- Gameplay Settings -->
+                            <div class="settings-section">
+                                <h3>Gameplay</h3>
+                                <div class="setting-item">
+                                    <label for="screen-shake">Screen Shake</label>
+                                    <input type="checkbox" id="screen-shake" checked>
+                                </div>
+                            </div>
+                            
+                            <!-- Accessibility Settings -->
+                            <div class="settings-section">
+                                <h3>Accessibility</h3>
+                                <div class="setting-item">
+                                    <label for="text-scale">Text Scale</label>
+                                    <input type="range" id="text-scale" min="80" max="150" value="100">
+                                    <span class="setting-value">100%</span>
+                                </div>
+                                <div class="setting-item">
+                                    <label for="colorblind-mode">Colorblind Mode</label>
+                                    <select id="colorblind-mode">
+                                        <option value="none">None</option>
+                                        <option value="protanopia">Protanopia</option>
+                                        <option value="deuteranopia">Deuteranopia</option>
+                                        <option value="tritanopia">Tritanopia</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label for="reduce-motion">Reduce Motion</label>
+                                    <input type="checkbox" id="reduce-motion">
+                                </div>
+                            </div>
+                            
+                            <!-- Controls -->
+                            <div class="settings-section">
+                                <h3>Controls</h3>
+                                <button id="open-keybinds" class="btn-primary">Configure Keybinds</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="menu-close" id="close-pause">Resume Game (ESC)</button>
             </div>
         </div>
         
-        <!-- Center Spacer for Interface 1 -->
-        <div class="center-spacer">
-            <div class="quick-stats">
-                <div class="stat">
-                    <div class="stat-value" id="health-stat">100</div>
-                    <div>Health</div>
+        <!-- Keybind Configuration Overlay -->
+        <div id="keybind-menu" class="menu-overlay keybind-menu hidden">
+            <div class="menu-backdrop"></div>
+            <div class="menu-content keybind-content">
+                <h2>Configure Controls</h2>
+                <div class="keybind-list" id="keybind-list">
+                    <!-- Keybinds dynamically populated -->
                 </div>
-                <div class="stat">
-                    <div class="stat-value" id="score-stat">0</div>
-                    <div>Score</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="level-stat">1</div>
-                    <div>Level</div>
+                <div class="keybind-actions">
+                    <button id="reset-keybinds" class="btn-secondary">Reset to Defaults</button>
+                    <button id="close-keybinds" class="btn-primary">Done</button>
                 </div>
             </div>
         </div>
         
-        <!-- Enhanced Action Buttons (5-Button Combat System) -->
-        <div id="actions">
-            <button id="light-attack-btn" class="action-btn attack-btn" data-action="lightAttack">
-                <div class="btn-icon">⚡</div>
-                <div class="btn-label">Light</div>
-                <div class="btn-key">J</div>
-            </button>
-            <button id="heavy-attack-btn" class="action-btn attack-btn" data-action="heavyAttack">
-                <div class="btn-icon">💥</div>
-                <div class="btn-label">Heavy</div>
-                <div class="btn-key">K</div>
-            </button>
-            <button id="block-btn" class="action-btn block-btn" data-action="block">
-                <div class="btn-icon">🛡️</div>
-                <div class="btn-label">Block</div>
-                <div class="btn-key">Shift</div>
-            </button>
-            <button id="roll-btn" class="action-btn roll-btn" data-action="roll">
-                <div class="btn-icon">🌀</div>
-                <div class="btn-label">Roll</div>
-                <div class="btn-key">Space</div>
-            </button>
-            <button id="special-btn" class="action-btn special-btn" data-action="special">
-                <div class="btn-icon">⭐</div>
-                <div class="btn-label">Special</div>
-                <div class="btn-key">L</div>
-            </button>
+        <!-- Meta Progression Screen -->
+        <div id="meta-progression" class="menu-overlay meta-progression hidden">
+            <div class="menu-content meta-content">
+                <h1>Meta Progression</h1>
+                
+                <!-- Currency Display -->
+                <div class="currency-display">
+                    <div class="currency-item">
+                        <span class="currency-icon">💎</span>
+                        <span class="currency-amount" id="banked-currency">1250</span>
+                        <span class="currency-label">Banked</span>
+                    </div>
+                    <div class="currency-item spent">
+                        <span class="currency-icon">💰</span>
+                        <span class="currency-amount" id="spent-currency">750</span>
+                        <span class="currency-label">Spent</span>
+                    </div>
+                </div>
+                
+                <!-- Upgrade Tracks -->
+                <div class="upgrade-tracks">
+                    <div class="upgrade-track" data-track="power">
+                        <h2>Power</h2>
+                        <div class="track-progress">
+                            <div class="track-fill" style="width: 40%"></div>
+                        </div>
+                        <div class="track-nodes">
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                        </div>
+                        <button class="upgrade-btn" data-cost="250">Upgrade (250 💎)</button>
+                    </div>
+                    
+                    <div class="upgrade-track" data-track="defense">
+                        <h2>Defense</h2>
+                        <div class="track-progress">
+                            <div class="track-fill" style="width: 20%"></div>
+                        </div>
+                        <div class="track-nodes">
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                        </div>
+                        <button class="upgrade-btn" data-cost="200">Upgrade (200 💎)</button>
+                    </div>
+                    
+                    <div class="upgrade-track" data-track="utility">
+                        <h2>Utility</h2>
+                        <div class="track-progress">
+                            <div class="track-fill" style="width: 60%"></div>
+                        </div>
+                        <div class="track-nodes">
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node unlocked"></div>
+                            <div class="track-node"></div>
+                            <div class="track-node"></div>
+                        </div>
+                        <button class="upgrade-btn" data-cost="300">Upgrade (300 💎)</button>
+                    </div>
+                </div>
+                
+                <button id="start-run" class="btn-primary btn-large">Start New Run</button>
+            </div>
+        </div>
+        
+        <!-- Run Summary Screen -->
+        <div id="run-summary" class="menu-overlay run-summary hidden">
+            <div class="menu-content summary-content">
+                <h1>Run Complete</h1>
+                
+                <div class="death-info">
+                    <div class="death-cause">
+                        <span class="label">Cause of Death:</span>
+                        <span class="value" id="death-cause">Overwhelmed by Shadow Wraiths</span>
+                    </div>
+                </div>
+                
+                <div class="run-stats">
+                    <div class="stat-highlight">
+                        <span class="stat-value" id="top-stat-value">2,847</span>
+                        <span class="stat-label" id="top-stat-label">Damage Dealt</span>
+                    </div>
+                    
+                    <div class="standout-moment">
+                        <span class="moment-icon">⚡</span>
+                        <span class="moment-text" id="standout-moment">Critical chain: 5 enemies in 2.3 seconds!</span>
+                    </div>
+                </div>
+                
+                <div class="rewards">
+                    <h3>Rewards Earned</h3>
+                    <div class="reward-list">
+                        <div class="reward-item">
+                            <span class="reward-icon">💎</span>
+                            <span class="reward-amount">+150</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-actions">
+                    <button id="view-stats" class="btn-secondary">Detailed Stats</button>
+                    <button id="continue-meta" class="btn-primary">Continue</button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Orientation Overlay (Mobile) -->
-    <div id="orientation-overlay">
-        <h2>🎮 DozedEnt</h2>
-        <p>Please rotate your device to landscape mode for the best gaming experience.</p>
-        <button id="overlay-start">Start Game</button>
-    </div>
-
-    <!-- Phase Overlays -->
     
-    <!-- Choice Phase -->
-    <div id="choice-overlay" class="phase-overlay hidden">
-        <h2>🎯 Choose Your Path</h2>
-        <p>Select one of three options to continue your journey. Each choice will affect your character's abilities and the challenges ahead.</p>
-        <button id="choice-0" class="choice-button">Safe Choice</button>
-        <button id="choice-1" class="choice-button">Spicy Choice</button>
-        <button id="choice-2" class="choice-button">Weird Choice</button>
-    </div>
-
-    <!-- Risk Phase -->
-    <div id="risk-overlay" class="phase-overlay hidden">
-        <h2>🎲 Risk Phase</h2>
-        <p>Push your luck! The riskier you are, the greater the rewards, but also the greater the danger.</p>
-        
-        <div class="risk-stats">
-            <div class="risk-stat">
-                <h3>Risk Multiplier</h3>
-                <div id="risk-mult">1.0x</div>
-            </div>
-            <div class="risk-stat">
-                <h3>Active Curses</h3>
-                <ul id="curse-list"></ul>
-            </div>
-            <div class="risk-stat">
-                <h3>Timed Challenge</h3>
-                <div id="timed-challenge" class="hidden">
-                    <div>Progress: <span id="challenge-progress">0</span>/<span id="challenge-target">0</span></div>
-                    <div>Time: <span id="challenge-time">0.0</span>s</div>
-                </div>
-            </div>
-        </div>
-        
-        <button class="phase-button" onclick="gameApp.wasmManager?.escapeRisk?.()">Escape Risk</button>
-    </div>
-
-    <!-- Escalate Phase -->
-    <div id="escalate-overlay" class="phase-overlay hidden">
-        <h2>📈 Escalate Phase</h2>
-        <p>The difficulty is ramping up! Enemies are getting stronger, faster, and more numerous.</p>
-        
-        <div class="escalate-stats">
-            <div class="escalate-stat">
-                <h3>Escalation Level</h3>
-                <div id="escalation-lvl">0%</div>
-            </div>
-            <div class="escalate-stat">
-                <h3>Enemy Speed</h3>
-                <div id="enemy-speed">1.0x</div>
-            </div>
-            <div class="escalate-stat">
-                <h3>Enemy Damage</h3>
-                <div id="enemy-damage">1.0x</div>
-            </div>
-            <div class="escalate-stat">
-                <h3>Spawn Rate</h3>
-                <div id="spawn-rate">1.0x</div>
-            </div>
-        </div>
-        
-        <div id="miniboss-alert" class="hidden">
-            <h3>⚠️ Miniboss Alert!</h3>
-            <div class="miniboss-health">
-                <div class="miniboss-health-fill" style="width: 100%; height: 10px; background: #ff0000;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CashOut Phase -->
-    <div id="cashout-overlay" class="phase-overlay hidden">
-        <h2>💰 Shop Phase</h2>
-        <p>Spend your hard-earned currency on upgrades and healing.</p>
-        
-        <div class="currency-display">
-            <div class="currency">
-                <h3>🔶 Gold</h3>
-                <div id="gold-amount">0</div>
-            </div>
-            <div class="currency">
-                <h3>🔷 Essence</h3>
-                <div id="essence-amount">0</div>
-            </div>
-        </div>
-        
-        <div class="shop-items" id="shop-items">
-            <!-- Shop items will be populated dynamically -->
-        </div>
-        
-        <button class="phase-button" onclick="gameApp.wasmManager?.buyHeal?.()">Buy Full Heal (50🔶 + 5🔷)</button>
-        <button class="phase-button" onclick="gameApp.wasmManager?.rerollShopItems?.()">Reroll Shop (20🔶)</button>
-        <button class="phase-button" onclick="gameApp.wasmManager?.exitCashout?.()">Continue</button>
-    </div>
-
-    <!-- Game Over Overlay -->
-    <div id="gameOverOverlay" class="phase-overlay hidden">
-        <h2>💀 Game Over</h2>
-        <p>Your journey has ended. Will you try again?</p>
-        <button id="restart-button">Restart Run</button>
-        <button id="rematch-button">New Run</button>
-    </div>
-
-    <!-- Chat System (for multiplayer) -->
-    <div id="chat-container" class="chat-container hidden">
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-input-container">
-            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
-            <button id="chat-send-btn">Send</button>
-        </div>
-    </div>
-
-    <!-- Tab System -->
-    <div id="tab-container" class="tab-container hidden">
-        <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="lobby">Lobby</button>
-            <button class="tab-btn" data-tab="settings">Settings</button>
-            <button class="tab-btn" data-tab="stats">Stats</button>
-        </div>
-        <div class="tab-contents">
-            <div id="lobbyTab" class="tab-content">
-                <h3>Game Lobby</h3>
-                <p>Waiting for players...</p>
-            </div>
-            <div id="settingsTab" class="tab-content" style="display: none;">
-                <h3>Settings</h3>
-                <p>Game settings will appear here.</p>
-            </div>
-            <div id="statsTab" class="tab-content" style="display: none;">
-                <h3>Statistics</h3>
-                <p>Player statistics will appear here.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Load the main game script -->
-    <script type="module" src="site.js"></script>
+    <script src="game-ui.js"></script>
+    <script src="input-manager.js"></script>
+    <script src="accessibility.js"></script>
 </body>
 </html>
