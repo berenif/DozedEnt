@@ -243,7 +243,7 @@ export class MemoryOptimizer {
    */
   startMonitoring() {
     if (!performance.memory) {
-      console.warn('Memory monitoring not available in this environment');
+      console.debug('Memory monitoring not available in this environment (performance.memory API not supported)');
       return;
     }
     

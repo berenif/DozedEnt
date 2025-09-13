@@ -115,8 +115,10 @@ export class PerformanceProfiler {
       console.log(`✅ Performance observer for '${entryType}' initialized`);
     } catch (error) {
       // Check if it's specifically an unsupported entry type error
-      if (error.message.includes('entryTypes') || error.message.includes('not supported')) {
-        console.log(`ℹ️ entryTypes ${entryType} not supported, skipping observer`);
+      if (error.message.includes('entryTypes') || error.message.includes('not supported') || 
+          error.message.includes('not valid') || error.message.includes('ignored')) {
+        // Silently skip unsupported entry types to reduce console noise
+        console.debug(`Performance observer for '${entryType}' not supported in this browser`);
       } else {
         console.warn(`⚠️ Failed to initialize performance observer for '${entryType}':`, error.message);
       }

@@ -96,6 +96,54 @@ export class EnhancedAudioManager {
         sampleRate: 44100
       });
       
+      // Check if audio context is suspended due to autoplay policy
+      if (this.audioContext.state === 'suspended') {
+        console.log('🔇 Audio context suspended - waiting for user interaction');
+        // Set up event listeners to resume on user interaction
+        this.setupUserInteractionListeners();
+      } else {
+        await this.completeInitialization();
+      }
+      
+    } catch (error) {
+      console.error('❌ Audio initialization failed:', error);
+      this.createFallbackAudio();
+    }
+  }
+
+  /**
+   * Setup listeners for user interaction to resume audio context
+   * @private
+   */
+  setupUserInteractionListeners() {
+    const resumeAudio = async () => {
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        try {
+          await this.audioContext.resume();
+          console.log('🔊 Audio context resumed after user interaction');
+          await this.completeInitialization();
+          
+          // Remove event listeners after successful resume
+          document.removeEventListener('click', resumeAudio);
+          document.removeEventListener('keydown', resumeAudio);
+          document.removeEventListener('touchstart', resumeAudio);
+        } catch (error) {
+          console.warn('Failed to resume audio context:', error);
+        }
+      }
+    };
+
+    document.addEventListener('click', resumeAudio, { once: true });
+    document.addEventListener('keydown', resumeAudio, { once: true });
+    document.addEventListener('touchstart', resumeAudio, { once: true });
+  }
+
+  /**
+   * Complete audio system initialization
+   * @private
+   */
+  async completeInitialization() {
+    try {
       await this.setupAudioGraph();
       await this.setup3DAudio();
       await this.loadAudioAssets();
@@ -104,7 +152,7 @@ export class EnhancedAudioManager {
       
       console.log('✅ Enhanced Audio System initialized');
     } catch (error) {
-      console.error('❌ Audio initialization failed:', error);
+      console.error('❌ Audio setup failed:', error);
       this.createFallbackAudio();
     }
   }
