@@ -101,6 +101,86 @@ export class EnhancedRoomManager {
       this.initializeMatchmaking()
     }
   }
+
+  /**
+   * Initialize matchmaking system
+   */
+  initializeMatchmaking() {
+    // Set up matchmaking intervals and configurations
+    this.matchmakingInterval = setInterval(() => {
+      this.processMatchmakingQueue()
+    }, 5000) // Process queue every 5 seconds
+    
+    // Initialize matchmaking statistics
+    this.matchmakingStats = {
+      totalMatches: 0,
+      averageWaitTime: 0,
+      successRate: 0,
+      queueHistory: []
+    }
+  }
+
+  /**
+   * Process matchmaking queue
+   */
+  async processMatchmakingQueue() {
+    if (this.matchmakingQueue.length < 2) return
+    
+    // Group players by game mode and skill level
+    const groups = new Map()
+    
+    for (const request of this.matchmakingQueue) {
+      const key = `${request.gameMode}_${Math.floor(request.rating / 100)}`
+      if (!groups.has(key)) {
+        groups.set(key, [])
+      }
+      groups.get(key).push(request)
+    }
+    
+    // Try to create matches from groups
+    for (const [key, players] of groups) {
+      if (players.length >= 2) {
+        await this.createMatchFromQueue(players.slice(0, 4)) // Max 4 players per match
+      }
+    }
+  }
+
+  /**
+   * Create match from queued players
+   */
+  async createMatchFromQueue(players) {
+    try {
+      // Create a new ranked room
+      const room = await this.createRoom({
+        name: 'Ranked Match',
+        type: this.roomTypes.RANKED,
+        gameMode: players[0].gameMode,
+        maxPlayers: players.length,
+        autoStart: true
+      })
+      
+      // Add all players to the room
+      for (const player of players) {
+        await this.joinRoom(room.id, {
+          playerId: player.playerId,
+          playerName: player.playerName,
+          rating: player.rating
+        })
+        
+        // Remove from queue
+        this.removeFromMatchmaking(player.playerId)
+      }
+      
+      // Update matchmaking stats
+      this.matchmakingStats.totalMatches++
+      const avgWaitTime = players.reduce((sum, p) => sum + (Date.now() - p.startTime), 0) / players.length
+      this.matchmakingStats.averageWaitTime = avgWaitTime
+      
+      return room
+    } catch (error) {
+      console.error('Failed to create match from queue:', error)
+    }
+  }
   
   /**
    * Create a new room with advanced settings

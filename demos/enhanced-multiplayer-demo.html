@@ -415,32 +415,58 @@
     <div id="enhanced-lobby"></div>
     
     <script type="module">
-        import EnhancedRoomManager from '../src/netcode/enhanced-room-manager.js'
-        import { MatchmakingSystem } from '../src/netcode/matchmaking-system.js'
-        import { ChatSystem } from '../src/netcode/chat-system.js'
-        import EnhancedLobbyUI from '../src/netcode/enhanced-lobby-ui.js'
+        // Global variables for systems
+        let roomManager, matchmaking, chatSystem, lobbyUI
         
-        // Initialize systems
-        const roomManager = new EnhancedRoomManager('demo-game')
-        const matchmaking = new MatchmakingSystem()
-        const chatSystem = new ChatSystem()
-        const lobbyUI = new EnhancedLobbyUI('enhanced-lobby', 'demo-game')
-        
-        // Store in window for demo functions
-        window.roomManager = roomManager
-        window.matchmaking = matchmaking
-        window.chatSystem = chatSystem
-        window.lobbyUI = lobbyUI
-        
-        // Bot players for simulation
-        let botPlayers = []
-        let simulationInterval = null
-        
-        // Statistics
-        let stats = {
-            messagesCount: 0,
-            matchesFound: 0
+        try {
+            console.log('Loading modules...')
+            
+            const EnhancedRoomManagerModule = await import('../src/netcode/enhanced-room-manager.js')
+            const { MatchmakingSystem } = await import('../src/netcode/matchmaking-system.js')
+            const { ChatSystem } = await import('../src/netcode/chat-system.js')
+            const EnhancedLobbyUIModule = await import('../src/netcode/enhanced-lobby-ui.js')
+            
+            console.log('Modules loaded successfully')
+            
+            // Initialize systems
+            roomManager = new EnhancedRoomManagerModule.default('demo-game')
+            matchmaking = new MatchmakingSystem()
+            chatSystem = new ChatSystem()
+            lobbyUI = new EnhancedLobbyUIModule.default('enhanced-lobby', 'demo-game')
+            
+            console.log('Systems initialized successfully')
+            
+            // Store in window for demo functions
+            window.roomManager = roomManager
+            window.matchmaking = matchmaking
+            window.chatSystem = chatSystem
+            window.lobbyUI = lobbyUI
+            
+            // Initialize demo after modules are loaded
+            initializeDemo()
+            
+        } catch (error) {
+            console.error('Failed to load modules:', error)
+            // Create a simple addLog function if modules fail to load
+            if (typeof addLog === 'undefined') {
+                window.addLog = function(message, type = 'error') {
+                    console.log(`[${type.toUpperCase()}] ${message}`)
+                }
+            }
+            addLog(`Module loading failed: ${error.message}`, 'error')
         }
+        
+        // Initialize demo function
+        function initializeDemo() {
+            // Bot players for simulation
+            let botPlayers = []
+            let simulationInterval = null
+            
+            // Statistics
+            let stats = {
+                messagesCount: 0,
+                matchesFound: 0
+            }
         
         // Add log entry
         function addLog(message, type = 'info') {
@@ -812,13 +838,14 @@
             addLog(`${message.userName}: ${message.content}`, 'info')
         })
         
-        // Initial setup
-        addLog('Enhanced Multiplayer System initialized', 'success')
-        addLog('All features loaded and ready', 'success')
-        updateStatus()
-        
-        // Auto-refresh status
-        setInterval(updateStatus, 2000)
+            // Initial setup
+            addLog('Enhanced Multiplayer System initialized', 'success')
+            addLog('All features loaded and ready', 'success')
+            updateStatus()
+            
+            // Auto-refresh status
+            setInterval(updateStatus, 2000)
+        } // End of initializeDemo function
     </script>
 </body>
 </html>
