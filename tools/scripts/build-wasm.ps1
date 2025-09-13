@@ -11,24 +11,24 @@ Write-Host "WASM Build Script for DozedEnt Game" -ForegroundColor Cyan
 Write-Host "Build type: $BuildType" -ForegroundColor Yellow
 
 # Initialize Emscripten environment
-Write-Host "Setting up Emscripten environment..." -ForegroundColor Green
-try {
-    . .\emsdk\emsdk_env.ps1
-    Write-Host "Emscripten environment initialized" -ForegroundColor Green
-} catch {
-    Write-Host "Failed to initialize Emscripten environment" -ForegroundColor Red
-    Write-Host "Make sure emsdk is properly installed in the emsdk/ directory" -ForegroundColor Yellow
-    exit 1
-}
+# Write-Host "Setting up Emscripten environment..." -ForegroundColor Green
+# try {
+#     . .\emsdk\emsdk_env.ps1
+#     Write-Host "Emscripten environment initialized" -ForegroundColor Green
+# } catch {
+#     Write-Host "Failed to initialize Emscripten environment" -ForegroundColor Red
+#     Write-Host "Make sure emsdk is properly installed in the emsdk/ directory" -ForegroundColor Yellow
+#     exit 1
+# }
 
 # Verify em++ is available
-try {
-    $emVersion = em++ --version | Select-String "emcc"
-    Write-Host "Emscripten compiler available: $emVersion" -ForegroundColor Green
-} catch {
-    Write-Host "em++ compiler not found" -ForegroundColor Red
-    exit 1
-}
+# try {
+#     $emVersion = em++ --version | Select-String "emcc"
+#     Write-Host "Emscripten compiler available: $emVersion" -ForegroundColor Green
+# } catch {
+#     Write-Host "em++ compiler not found" -ForegroundColor Red
+#     exit 1
+# }
 
 # Clean previous builds
 Write-Host "Cleaning previous WASM builds..." -ForegroundColor Yellow
