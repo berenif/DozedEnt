@@ -8,7 +8,7 @@ import { createLogger } from './logger.js';
 
 export class GameErrorHandler {
   constructor() {
-    this.logger = createLogger('GameErrorHandler');
+    this.logger = createLogger({ prefix: 'GameErrorHandler' });
     
     // Error tracking and recovery state
     this.errorState = {
