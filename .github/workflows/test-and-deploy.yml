@@ -41,7 +41,7 @@ jobs:
         run: npm ci
         
       - name: Install PowerShell
-        uses: actions/setup-powershell@v2
+        uses: pwsh-actions/setup-pwsh@v1
         
       - name: Run linter
         run: npm run lint || true
@@ -83,7 +83,7 @@ jobs:
         run: npm ci
         
       - name: Install PowerShell
-        uses: actions/setup-powershell@v2
+        uses: pwsh-actions/setup-pwsh@v1
         
       - name: Build project and prepare docs
         run: bash ./deploy.sh
