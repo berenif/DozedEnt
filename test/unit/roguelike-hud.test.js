@@ -51,6 +51,8 @@ describe('RoguelikeHUD', () => {
   let mockCombatFeedback;
   let mockCanvas;
   let mockContext;
+  let controlsToggleMock;
+  let controlsPanelMock;
 
   beforeEach(() => {
     // Mock DOM environment
@@ -110,12 +112,21 @@ describe('RoguelikeHUD', () => {
     };
 
     global.document.createElement.returns(mockHUDElement);
+    controlsToggleMock = {
+      addEventListener: sinon.stub(),
+      removeEventListener: sinon.stub(),
+      contains: sinon.stub().returns(false)
+    };
+    controlsPanelMock = {
+      classList: { toggle: sinon.stub(), remove: sinon.stub() },
+      contains: sinon.stub().returns(false)
+    };
     global.document.getElementById.callsFake((id) => {
       const elementMocks = {
         'roguelike-hud': { remove: sinon.stub() },
         'minimap-canvas': mockCanvas,
-        'controls-toggle': { addEventListener: sinon.stub() },
-        'controls-panel': { classList: { toggle: sinon.stub(), remove: sinon.stub() } },
+        'controls-toggle': controlsToggleMock,
+        'controls-panel': controlsPanelMock,
         'status-effects-container': { innerHTML: '', appendChild: sinon.stub() },
         'combo-display': mockElement,
         'gold-value': { textContent: '' },
@@ -141,6 +152,7 @@ describe('RoguelikeHUD', () => {
     // Mock dependencies
     mockGameStateManager = {
       on: sinon.stub(),
+      off: sinon.stub(),
       getHP: sinon.stub().returns(1.0),
       getStamina: sinon.stub().returns(0.8)
     };
@@ -163,10 +175,10 @@ describe('RoguelikeHUD', () => {
   });
 
   afterEach(() => {
-    sinon.restore();
     if (roguelikeHUD) {
       roguelikeHUD.destroy();
     }
+    sinon.restore();
   });
 
   describe('Constructor', () => {
@@ -533,7 +545,7 @@ describe('RoguelikeHUD', () => {
     });
 
     it('should remove faded damage numbers', () => {
-      const mockDamageElement = { remove: sinon.stub() };
+      const mockDamageElement = { style: {}, remove: sinon.stub() };
       roguelikeHUD.hudCombatState.damageNumbers = [{
         element: mockDamageElement,
         x: 100,
@@ -745,6 +757,17 @@ describe('RoguelikeHUD', () => {
       roguelikeHUD.hudCombatState.damageNumbers = [{ element: null }];
 
       expect(() => roguelikeHUD.destroy()).to.not.throw();
+    });
+
+    it('should remove event listeners and subscriptions on destroy', () => {
+      roguelikeHUD.destroy();
+
+      expect(controlsToggleMock.removeEventListener.calledWith('click', roguelikeHUD.controlsToggleClickHandler)).to.be.true;
+      expect(global.document.removeEventListener.calledWith('click', roguelikeHUD.documentClickHandler)).to.be.true;
+      expect(mockGameStateManager.off.calledWith('phaseChanged', roguelikeHUD.phaseChangedHandler)).to.be.true;
+
+      // Prevent afterEach from destroying again
+      roguelikeHUD = null;
     });
   });
 

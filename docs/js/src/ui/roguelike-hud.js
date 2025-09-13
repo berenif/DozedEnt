@@ -221,22 +221,26 @@ export class RoguelikeHUD {
     // Controls toggle
     const controlsToggle = document.getElementById('controls-toggle');
     const controlsPanel = document.getElementById('controls-panel');
-    
-    controlsToggle.addEventListener('click', () => {
+
+    this.controlsToggle = controlsToggle;
+    this.controlsToggleClickHandler = () => {
       controlsPanel.classList.toggle('visible');
-    });
-    
+    };
+    controlsToggle.addEventListener('click', this.controlsToggleClickHandler);
+
     // Hide controls when clicking outside
-    document.addEventListener('click', (event) => {
+    this.documentClickHandler = (event) => {
       if (!controlsToggle.contains(event.target) && !controlsPanel.contains(event.target)) {
         controlsPanel.classList.remove('visible');
       }
-    });
-    
+    };
+    document.addEventListener('click', this.documentClickHandler);
+
     // Listen for game state changes
-    this.gameStateManager.on('phaseChanged', (phase) => {
+    this.phaseChangedHandler = (phase) => {
       this.updatePhaseDisplay(phase);
-    });
+    };
+    this.gameStateManager.on('phaseChanged', this.phaseChangedHandler);
   }
 
   /**
@@ -511,10 +515,21 @@ export class RoguelikeHUD {
     if (hud) {
       hud.remove();
     }
-    
+
+    // Remove event listeners
+    if (this.controlsToggle && this.controlsToggleClickHandler) {
+      this.controlsToggle.removeEventListener('click', this.controlsToggleClickHandler);
+    }
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler);
+    }
+    if (this.phaseChangedHandler && this.gameStateManager?.off) {
+      this.gameStateManager.off('phaseChanged', this.phaseChangedHandler);
+    }
+
     // Clear combat feedback
     this.hudCombatState.damageNumbers.forEach(damage => {
-      if (damage.element) {damage.element.remove();}
+      if (damage.element?.remove) {damage.element.remove();}
     });
     this.hudCombatState.damageNumbers = [];
   }
