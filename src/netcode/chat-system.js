@@ -616,7 +616,7 @@ export class ChatSystem {
    */
   hasExcessiveCaps(content) {
     const letters = content.replace(/[^a-zA-Z]/g, '')
-    if (letters.length < 10) return false
+    if (letters.length < 10) {return false}
     
     const capsCount = (content.match(/[A-Z]/g) || []).length
     return capsCount / letters.length > 0.7
@@ -628,7 +628,7 @@ export class ChatSystem {
   findMessage(messageId) {
     for (const messages of this.messages.values()) {
       const message = messages.find(m => m.id === messageId)
-      if (message) return message
+      if (message) {return message}
     }
     return null
   }

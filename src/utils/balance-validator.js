@@ -256,7 +256,8 @@ export class BalanceValidator {
       
       if (typeof fieldSchema === 'object' && !fieldSchema.type) {
         // Nested object
-        if (data[key] == null) {
+        // eslint-disable-next-line eqeqeq
+    if (data[key] == null) {
           if (this.options.strict) {
             result.valid = false;
             result.errors.push(`Missing required section: ${fieldContext}`);
@@ -303,12 +304,14 @@ export class BalanceValidator {
     const result = { valid: true };
     
     // Check required
+    // eslint-disable-next-line eqeqeq
     if (schema.required && value == null) {
       result.valid = false;
       result.error = `Missing required field: ${context}`;
       return result;
     }
     
+    // eslint-disable-next-line eqeqeq
     if (value == null) {
       return result; // Optional field not present
     }
@@ -321,10 +324,12 @@ export class BalanceValidator {
           result.error = `Invalid type for ${context}: expected number, got ${typeof value}`;
         } else {
           // Range validation
+          // eslint-disable-next-line eqeqeq
           if (schema.min != null && value < schema.min) {
             result.valid = false;
             result.error = `Value out of range for ${context}: ${value} < ${schema.min}`;
           }
+          // eslint-disable-next-line eqeqeq
           if (schema.max != null && value > schema.max) {
             result.valid = false;
             result.error = `Value out of range for ${context}: ${value} > ${schema.max}`;
@@ -486,6 +491,7 @@ export class BalanceValidator {
         
         if (typeof fieldSchema === 'object' && !fieldSchema.type) {
           // Nested object
+          // eslint-disable-next-line eqeqeq
           if (obj[key] == null) {
             obj[key] = {};
             if (this.options.verbose) {
@@ -493,21 +499,25 @@ export class BalanceValidator {
             }
           }
           fixObject(obj[key], fieldSchema, fieldPath);
+        // eslint-disable-next-line eqeqeq
         } else if (fieldSchema.required && obj[key] == null) {
           // Add missing required field with default value
           obj[key] = this.getDefaultValue(fieldSchema);
           if (this.options.verbose) {
             console.log(`Added missing field: ${fieldPath} = ${obj[key]}`);
           }
+        // eslint-disable-next-line eqeqeq
         } else if (obj[key] != null) {
           // Fix out-of-range values
           if (fieldSchema.type === 'number') {
+            // eslint-disable-next-line eqeqeq
             if (fieldSchema.min != null && obj[key] < fieldSchema.min) {
               obj[key] = fieldSchema.min;
               if (this.options.verbose) {
                 console.log(`Fixed min value: ${fieldPath} = ${obj[key]}`);
               }
             }
+            // eslint-disable-next-line eqeqeq
             if (fieldSchema.max != null && obj[key] > fieldSchema.max) {
               obj[key] = fieldSchema.max;
               if (this.options.verbose) {
@@ -532,8 +542,10 @@ export class BalanceValidator {
   getDefaultValue(schema) {
     switch (schema.type) {
       case 'number':
-        if (schema.min != null) return schema.min;
-        if (schema.max != null && schema.max < 0) return schema.max;
+        // eslint-disable-next-line eqeqeq
+        if (schema.min != null) { return schema.min; }
+        // eslint-disable-next-line eqeqeq
+        if (schema.max != null && schema.max < 0) { return schema.max; }
         return 0;
       case 'string':
         return '';

@@ -252,12 +252,8 @@ export class EnhancedMultiplayerSync {
       onRecoveryCompleted: (success, method) => {
         this.handleRecoveryCompleted(success, method)
       },
-      requestStateResync: async (playerId, frame) => {
-        return this.requestStateResync(playerId, frame)
-      },
-      requestFullResync: async () => {
-        return this.requestFullResync()
-      }
+      requestStateResync: async (playerId, frame) => this.requestStateResync(playerId, frame),
+      requestFullResync: async () => this.requestFullResync()
     }
     
     this.desyncDetection.initialize(validators, recoveryHandlers)
@@ -342,13 +338,13 @@ export class EnhancedMultiplayerSync {
     const originalOnPeerConnected = this.networkIntegration.onPeerConnected
     this.networkIntegration.onPeerConnected = (peerId) => {
       this.handlePeerConnected(peerId)
-      if (originalOnPeerConnected) originalOnPeerConnected(peerId)
+      if (originalOnPeerConnected) {originalOnPeerConnected(peerId)}
     }
     
     const originalOnPeerDisconnected = this.networkIntegration.onPeerDisconnected
     this.networkIntegration.onPeerDisconnected = (peerId) => {
       this.handlePeerDisconnected(peerId)
-      if (originalOnPeerDisconnected) originalOnPeerDisconnected(peerId)
+      if (originalOnPeerDisconnected) {originalOnPeerDisconnected(peerId)}
     }
   }
   
@@ -480,7 +476,7 @@ export class EnhancedMultiplayerSync {
    */
   removePlayerFromAllSystems(playerId) {
     const player = this.sessionState.players.get(playerId)
-    if (!player) return
+    if (!player) {return}
     
     this.sessionState.players.delete(playerId)
     
@@ -550,7 +546,7 @@ export class EnhancedMultiplayerSync {
    * Send local input
    */
   sendInput(input) {
-    if (!this.rollbackNetcode) return
+    if (!this.rollbackNetcode) {return}
     
     let processedInput = input
     

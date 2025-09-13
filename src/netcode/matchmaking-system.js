@@ -163,19 +163,19 @@ export class MatchmakingSystem {
   tryFormMatch(request, queue) {
     // Filter compatible players
     const candidates = queue.filter(other => {
-      if (other.playerId === request.playerId) return false
+      if (other.playerId === request.playerId) {return false}
       
       // Check skill compatibility
       const skillDiff = Math.abs(other.rating - request.rating)
-      if (skillDiff > request.skillRange) return false
+      if (skillDiff > request.skillRange) {return false}
       
       // Check region compatibility
       if (request.region !== 'auto' && other.region !== 'auto') {
-        if (request.region !== other.region) return false
+        if (request.region !== other.region) {return false}
       }
       
       // Check team size compatibility
-      if (request.teamSize !== other.teamSize) return false
+      if (request.teamSize !== other.teamSize) {return false}
       
       return true
     })
@@ -237,12 +237,12 @@ export class MatchmakingSystem {
    * Calculate match quality
    */
   calculateMatchQuality(players) {
-    if (players.length < 2) return 0
+    if (players.length < 2) {return 0}
     
     // Calculate rating variance
     const ratings = players.map(p => p.rating)
     const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length
-    const variance = ratings.reduce((sum, r) => sum + Math.pow(r - avgRating, 2), 0) / ratings.length
+    const variance = ratings.reduce((sum, r) => sum + (r - avgRating)**2, 0) / ratings.length
     const stdDev = Math.sqrt(variance)
     
     // Lower standard deviation = better match quality
@@ -371,7 +371,7 @@ export class MatchmakingSystem {
     const currentRating = this.getPlayerRating(playerId)
     
     // Calculate expected score
-    const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - currentRating) / 400))
+    const expectedScore = 1 / (1 + 10**((opponentRating - currentRating) / 400))
     
     // Calculate new rating
     const actualScore = won ? 1 : 0
@@ -469,7 +469,7 @@ export class MatchmakingSystem {
    * Calculate average wait time for queue
    */
   calculateAverageWaitTime(queue) {
-    if (queue.length === 0) return 0
+    if (queue.length === 0) {return 0}
     
     const now = Date.now()
     const totalWait = queue.reduce((sum, p) => sum + (now - p.joinTime), 0)

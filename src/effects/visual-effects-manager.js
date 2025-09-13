@@ -226,7 +226,7 @@ export class VisualEffectsManager {
   /**
    * Update camera effects
    */
-  updateCamera(deltaTime) {
+  updateCamera(_deltaTime) {
     // Smooth camera zoom
     const zoomDiff = this.camera.targetZoom - this.camera.zoom;
     this.camera.zoom += zoomDiff * this.camera.smoothing;

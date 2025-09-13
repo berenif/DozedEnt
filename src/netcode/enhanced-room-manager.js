@@ -124,7 +124,7 @@ export class EnhancedRoomManager {
    * Process matchmaking queue
    */
   async processMatchmakingQueue() {
-    if (this.matchmakingQueue.length < 2) return
+    if (this.matchmakingQueue.length < 2) {return}
     
     // Group players by game mode and skill level
     const groups = new Map()
@@ -665,22 +665,22 @@ export class EnhancedRoomManager {
     return rooms
       .filter(room => {
         // Basic filters
-        if (room.type !== this.roomTypes.PUBLIC) return false
-        if (room.state !== this.roomStates.WAITING) return false
-        if (room.players.size >= room.maxPlayers) return false
-        if (room.password) return false
+        if (room.type !== this.roomTypes.PUBLIC) {return false}
+        if (room.state !== this.roomStates.WAITING) {return false}
+        if (room.players.size >= room.maxPlayers) {return false}
+        if (room.password) {return false}
         
         // Preference filters
-        if (preferences.gameMode && room.gameMode !== preferences.gameMode) return false
-        if (preferences.maxPlayers && room.maxPlayers > preferences.maxPlayers) return false
-        if (preferences.region && room.region !== preferences.region) return false
+        if (preferences.gameMode && room.gameMode !== preferences.gameMode) {return false}
+        if (preferences.maxPlayers && room.maxPlayers > preferences.maxPlayers) {return false}
+        if (preferences.region && room.region !== preferences.region) {return false}
         
         return true
       })
-      .sort((a, b) => {
+      .sort((a, b) => 
         // Sort by player count (prefer rooms with more players)
-        return b.players.size - a.players.size
-      })
+         b.players.size - a.players.size
+      )
   }
   
   /**
@@ -689,9 +689,9 @@ export class EnhancedRoomManager {
   findMatch(request) {
     // Look for other players in queue with similar rating
     const candidates = this.matchmakingQueue.filter(other => {
-      if (other.playerId === request.playerId) return false
-      if (other.gameMode !== request.gameMode) return false
-      if (Math.abs(other.rating - request.rating) > request.skillRange) return false
+      if (other.playerId === request.playerId) {return false}
+      if (other.gameMode !== request.gameMode) {return false}
+      if (Math.abs(other.rating - request.rating) > request.skillRange) {return false}
       return true
     })
     
@@ -748,7 +748,7 @@ export class EnhancedRoomManager {
    */
   migrateHost(roomId) {
     const room = this.rooms.get(roomId)
-    if (!room || room.players.size === 0) return
+    if (!room || room.players.size === 0) {return}
     
     // Select oldest player as new host
     const players = Array.from(room.players.values())
@@ -776,7 +776,7 @@ export class EnhancedRoomManager {
    */
   deleteRoom(roomId) {
     const room = this.rooms.get(roomId)
-    if (!room) return
+    if (!room) {return}
     
     // Clean up chat history
     this.chatHistory.delete(roomId)
@@ -803,7 +803,7 @@ export class EnhancedRoomManager {
    */
   checkAndStartGame(roomId) {
     const room = this.rooms.get(roomId)
-    if (!room) return
+    if (!room) {return}
     
     // Check if all players are ready
     const allReady = Array.from(room.players.values()).every(p => p.isReady)
@@ -823,10 +823,10 @@ export class EnhancedRoomManager {
    */
   assignToTeam(roomId, playerId, teamName) {
     const room = this.rooms.get(roomId)
-    if (!room || !room.teams) return
+    if (!room || !room.teams) {return}
     
     const player = room.players.get(playerId)
-    if (!player) return
+    if (!player) {return}
     
     // Remove from current team
     for (const [name, team] of room.teams) {
@@ -861,11 +861,11 @@ export class EnhancedRoomManager {
    */
   detectLanguage(message) {
     // Simple language detection based on character sets
-    if (/[\u4e00-\u9fa5]/.test(message)) return 'zh'
-    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(message)) return 'ja'
-    if (/[\uac00-\ud7af]/.test(message)) return 'ko'
-    if (/[\u0600-\u06ff]/.test(message)) return 'ar'
-    if (/[\u0400-\u04ff]/.test(message)) return 'ru'
+    if (/[\u4e00-\u9fa5]/.test(message)) {return 'zh'}
+    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(message)) {return 'ja'}
+    if (/[\uac00-\ud7af]/.test(message)) {return 'ko'}
+    if (/[\u0600-\u06ff]/.test(message)) {return 'ar'}
+    if (/[\u0400-\u04ff]/.test(message)) {return 'ru'}
     return 'en'
   }
   
@@ -892,7 +892,7 @@ export class EnhancedRoomManager {
     }
   }
   
-  persistRoom(room) {
+  persistRoom(_room) {
     try {
       const data = {
         rooms: Array.from(this.rooms.values()).map(r => ({
@@ -908,7 +908,7 @@ export class EnhancedRoomManager {
     }
   }
   
-  removePersistedRoom(roomId) {
+  removePersistedRoom(_roomId) {
     this.persistRoom(null) // Re-persist all rooms
   }
   

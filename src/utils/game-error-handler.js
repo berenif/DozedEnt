@@ -128,7 +128,7 @@ export class GameErrorHandler {
   /**
    * Handle WASM state reading errors
    */
-  handleWasmStateError(error, context) {
+  handleWasmStateError(error, _context) {
     this.logger.error('WASM state reading failed:', error);
     
     // If we can't read state, we might need to reset
@@ -142,7 +142,7 @@ export class GameErrorHandler {
   /**
    * Handle generic WASM errors
    */
-  handleGenericWasmError(error, context) {
+  handleGenericWasmError(error, _context) {
     this.logger.error('Generic WASM error:', error);
     
     // If too many errors, suggest recovery

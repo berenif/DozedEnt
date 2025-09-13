@@ -500,7 +500,7 @@ export class ThreatAwarenessUI {
     /**
      * Update audio warnings
      */
-    updateAudioWarnings(deltaTime) {
+    updateAudioWarnings(_deltaTime) {
         const now = performance.now();
         const warningCooldown = 2000; // 2 seconds
         

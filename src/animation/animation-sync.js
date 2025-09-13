@@ -152,9 +152,9 @@ export class AnimationSyncSystem {
     }
 
     // Interpolate between animation states
-    interpolateStates(entity, animator, deltaTime) {
+    interpolateStates(entity, animator, _deltaTime) {
         const buffer = this.interpolationBuffers.get(entity.id)
-        if (!buffer || buffer.length < 2) return
+        if (!buffer || buffer.length < 2) {return}
         
         const now = this.getNetworkTime() - this.interpolationDelay
         
@@ -224,7 +224,7 @@ export class AnimationSyncSystem {
 
     // Rollback and replay for client-side prediction
     rollbackAndReplay(entity, animator, confirmedSnapshot) {
-        if (!this.rollbackEnabled) return
+        if (!this.rollbackEnabled) {return}
         
         // Find the confirmed state in history
         const history = this.stateHistory.get(entity.id) || []
@@ -232,7 +232,7 @@ export class AnimationSyncSystem {
             s => s.timestamp === confirmedSnapshot.timestamp
         )
         
-        if (confirmedIndex === -1) return
+        if (confirmedIndex === -1) {return}
         
         // Apply confirmed state
         this.directApplySnapshot(entity, animator, confirmedSnapshot)
@@ -355,9 +355,9 @@ export class AnimationSyncSystem {
     // Pack combat state into bit flags
     packCombatState(combat) {
         let flags = 0
-        if (combat.attacking) flags |= 1
-        if (combat.blocking) flags |= 2
-        if (combat.invulnerable) flags |= 4
+        if (combat.attacking) {flags |= 1}
+        if (combat.blocking) {flags |= 2}
+        if (combat.invulnerable) {flags |= 4}
         return flags | (combat.comboCount << 3)
     }
 
@@ -390,13 +390,16 @@ export class AnimationSyncSystem {
         
         // Apply delta changes
         const delta = compressed.delta
-        if (delta.animationName !== undefined) {
+        // eslint-disable-next-line eqeqeq
+        if (delta.animationName != null) {
             snapshot.state.animationName = delta.animationName
         }
-        if (delta.animationFrame !== undefined) {
+        // eslint-disable-next-line eqeqeq
+        if (delta.animationFrame != null) {
             snapshot.state.animationFrame = delta.animationFrame
         }
-        if (delta.facing !== undefined) {
+        // eslint-disable-next-line eqeqeq
+        if (delta.facing != null) {
             snapshot.state.facing = delta.facing
         }
         if (delta.position) {
@@ -405,10 +408,12 @@ export class AnimationSyncSystem {
         if (delta.velocity) {
             snapshot.state.velocity = delta.velocity
         }
-        if (delta.attacking !== undefined) {
+        // eslint-disable-next-line eqeqeq
+        if (delta.attacking != null) {
             snapshot.state.combat.attacking = delta.attacking
         }
-        if (delta.blocking !== undefined) {
+        // eslint-disable-next-line eqeqeq
+        if (delta.blocking != null) {
             snapshot.state.combat.blocking = delta.blocking
         }
         
@@ -444,7 +449,7 @@ export class AnimationSyncSystem {
 
     cleanInterpolationBuffer(entityId, currentTime) {
         const buffer = this.interpolationBuffers.get(entityId)
-        if (!buffer) return
+        if (!buffer) {return}
         
         // Remove old snapshots
         const cutoff = currentTime - this.interpolationDelay * 2

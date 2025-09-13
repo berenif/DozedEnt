@@ -43,7 +43,7 @@ export class AnimationEventSystem {
 
     // Remove event listener
     off(eventName, callback) {
-        if (!this.listeners.has(eventName)) return
+        if (!this.listeners.has(eventName)) {return}
         
         const listeners = this.listeners.get(eventName)
         for (const listener of listeners) {
