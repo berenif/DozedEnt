@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Roguelite UI Demo</title>
+    <link rel="stylesheet" href="src/css/modern-roguelite-ui.css">
+    <style>
+        /* Additional demo styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        
+        .demo-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .demo-info h3 {
+            margin: 0 0 10px 0;
+            color: #4a9eff;
+        }
+        
+        .demo-info ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .demo-info li {
+            margin-bottom: 5px;
+        }
+        
+        .demo-controls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .demo-controls button {
+            background: #4a9eff;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 2px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .demo-controls button:hover {
+            background: #3a8ae0;
+        }
+        
+        /* Simulated game canvas */
+        .game-canvas {
+            background: 
+                radial-gradient(circle at 30% 40%, rgba(74, 158, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(255, 107, 74, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+        }
+        
+        /* Performance mode styles */
+        .performance-mode .damage-number,
+        .performance-mode .pickup-notification {
+            animation-duration: 0.5s !important;
+        }
+        
+        .performance-mode .cooldown-ring,
+        .performance-mode .ultimate-charge-ring {
+            transition-duration: 0.1s !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Information -->
+    <div class="demo-info">
+        <h3>Modern Roguelite UI Demo</h3>
+        <ul>
+            <li><strong>WASD</strong> - Movement</li>
+            <li><strong>J/K/L</strong> - Combat abilities</li>
+            <li><strong>Shift</strong> - Block</li>
+            <li><strong>Ctrl</strong> - Roll</li>
+            <li><strong>R</strong> - Ultimate</li>
+            <li><strong>1/2</strong> - Consumables</li>
+            <li><strong>ESC</strong> - Pause menu</li>
+            <li><strong>Tab</strong> - Keyboard navigation</li>
+        </ul>
+    </div>
+    
+    <!-- Demo Controls -->
+    <div class="demo-controls">
+        <button onclick="simulateDamage()">Take Damage</button>
+        <button onclick="simulatePickup()">Show Pickup</button>
+        <button onclick="simulateScreenShake()">Screen Shake</button>
+        <button onclick="togglePerformanceMode()">Performance Mode</button>
+        <button onclick="showMetaProgression()">Meta Screen</button>
+        <button onclick="showRunSummary()">Run Summary</button>
+    </div>
+    
+    <!-- The UI will be injected here by JavaScript -->
+    
+    <script type="module">
+        import { ModernRogueliteUI } from './src/ui/modern-roguelite-ui.js';
+        import { InputManager } from './src/ui/input-manager.js';
+        import { AccessibilityManager } from './src/ui/accessibility-manager.js';
+        import { PerformanceOptimizer } from './src/ui/performance-optimizer.js';
+        
+        // Mock WASM Manager that simulates the real WASM interface
+        class MockWASMManager {
+            constructor() {
+                this.gameState = {
+                    health: 1.0,
+                    shield: 0.5,
+                    stamina: 0.8,
+                    x: 0.5,
+                    y: 0.5,
+                    phase: 0, // Explore phase
+                    roomCount: 3,
+                    gold: 150,
+                    essence: 75,
+                    abilities: {
+                        'ability-1': { cooldown: 0.3 },
+                        'ability-2': { cooldown: 0.7 },
+                        'ability-3': { cooldown: 1.0 },
+                        'ultimate': { charge: 0.6 }
+                    }
+                };
+                
+                // Simulate ability cooldowns
+                this.startCooldownSimulation();
+            }
+            
+            // WASM API methods (following the guidelines)
+            getHP() { return this.gameState.health; }
+            getShield() { return this.gameState.shield; }
+            getStamina() { return this.gameState.stamina; }
+            getX() { return this.gameState.x; }
+            getY() { return this.gameState.y; }
+            getPhase() { return this.gameState.phase; }
+            getRoomCount() { return this.gameState.roomCount; }
+            getGold() { return this.gameState.gold; }
+            getEssence() { return this.gameState.essence; }
+            
+            getAbilityCooldown(abilityId) {
+                return this.gameState.abilities[abilityId]?.cooldown || 0;
+            }
+            
+            // Combat actions
+            onAttack() {
+                console.log('Light attack triggered');
+                this.triggerCooldown('ability-1', 2000);
+                return 1;
+            }
+            
+            onHeavyAttack() {
+                console.log('Heavy attack triggered');
+                this.triggerCooldown('ability-2', 3000);
+                return 1;
+            }
+            
+            onSpecialAttack() {
+                console.log('Special attack triggered');
+                this.triggerCooldown('ability-3', 4000);
+                return 1;
+            }
+            
+            onRollStart() {
+                console.log('Roll started');
+                return 1;
+            }
+            
+            setBlocking(on, faceX, faceY, timestamp) {
+                console.log('Blocking:', on ? 'ON' : 'OFF');
+                return on;
+            }
+            
+            onUltimate() {
+                if (this.gameState.abilities.ultimate.charge >= 1.0) {
+                    console.log('Ultimate activated!');
+                    this.gameState.abilities.ultimate.charge = 0;
+                }
+                return 1;
+            }
+            
+            useConsumable(slot) {
+                console.log('Used consumable', slot);
+            }
+            
+            updateMovement(x, y) {
+                // Simulate player movement
+                this.gameState.x = Math.max(0, Math.min(1, this.gameState.x + x * 0.01));
+                this.gameState.y = Math.max(0, Math.min(1, this.gameState.y + y * 0.01));
+            }
+            
+            handleInput(action, isPressed) {
+                console.log('Input:', action, isPressed ? 'pressed' : 'released');
+            }
+            
+            // Simulation methods
+            triggerCooldown(abilityId, duration) {
+                if (this.gameState.abilities[abilityId]) {
+                    this.gameState.abilities[abilityId].cooldown = 0;
+                    
+                    const interval = setInterval(() => {
+                        this.gameState.abilities[abilityId].cooldown += 0.05;
+                        if (this.gameState.abilities[abilityId].cooldown >= 1.0) {
+                            this.gameState.abilities[abilityId].cooldown = 1.0;
+                            clearInterval(interval);
+                        }
+                    }, duration * 0.05);
+                }
+            }
+            
+            startCooldownSimulation() {
+                // Simulate ultimate charge building
+                setInterval(() => {
+                    if (this.gameState.abilities.ultimate.charge < 1.0) {
+                        this.gameState.abilities.ultimate.charge += 0.01;
+                    }
+                }, 100);
+                
+                // Simulate random events
+                setInterval(() => {
+                    // Random damage
+                    if (Math.random() < 0.1) {
+                        this.takeDamage(0.05 + Math.random() * 0.1);
+                    }
+                    
+                    // Random shield regeneration
+                    if (Math.random() < 0.2 && this.gameState.shield < 1.0) {
+                        this.gameState.shield = Math.min(1.0, this.gameState.shield + 0.02);
+                    }
+                }, 1000);
+            }
+            
+            takeDamage(amount) {
+                if (this.gameState.shield > 0) {
+                    this.gameState.shield = Math.max(0, this.gameState.shield - amount * 0.5);
+                } else {
+                    this.gameState.health = Math.max(0, this.gameState.health - amount);
+                }
+                
+                // Trigger damage effects
+                if (window.modernUI) {
+                    window.modernUI.showDamageVignette();
+                    window.modernUI.triggerScreenShake(amount * 2);
+                }
+            }
+        }
+        
+        // Initialize the system
+        const wasmManager = new MockWASMManager();
+        const performanceOptimizer = new PerformanceOptimizer();
+        const accessibilityManager = new AccessibilityManager();
+        const inputManager = new InputManager(wasmManager);
+        const modernUI = new ModernRogueliteUI(wasmManager);
+        
+        // Make available globally for demo controls
+        window.modernUI = modernUI;
+        window.wasmManager = wasmManager;
+        window.performanceOptimizer = performanceOptimizer;
+        window.accessibilityManager = accessibilityManager;
+        
+        // Enable performance dashboard for demo
+        performanceOptimizer.enableDashboard();
+        
+        // Demo functions
+        window.simulateDamage = function() {
+            wasmManager.takeDamage(0.1 + Math.random() * 0.2);
+            const damage = Math.floor(20 + Math.random() * 30);
+            const isCrit = Math.random() < 0.3;
+            modernUI.showDamageNumber(damage, 400 + Math.random() * 200, 300 + Math.random() * 100, isCrit);
+        };
+        
+        window.simulatePickup = function() {
+            const items = ['Health Potion', 'Magic Sword', 'Shield Boost', 'Speed Boots'];
+            const icons = ['🧪', '⚔️', '🛡️', '👢'];
+            const index = Math.floor(Math.random() * items.length);
+            modernUI.showPickupNotification(items[index], icons[index]);
+        };
+        
+        window.simulateScreenShake = function() {
+            modernUI.triggerScreenShake(1 + Math.random());
+        };
+        
+        window.togglePerformanceMode = function() {
+            document.documentElement.classList.toggle('performance-mode');
+            const isEnabled = document.documentElement.classList.contains('performance-mode');
+            console.log('Performance mode:', isEnabled ? 'ON' : 'OFF');
+        };
+        
+        window.showMetaProgression = function() {
+            modernUI.showMenu('meta-progression');
+        };
+        
+        window.showRunSummary = function() {
+            // Set some demo data
+            document.getElementById('death-cause-text').textContent = 'Overwhelmed by Shadow Wraiths';
+            document.getElementById('top-stat-value').textContent = '2,847';
+            document.getElementById('top-stat-label').textContent = 'Damage Dealt';
+            document.getElementById('standout-moment').textContent = 'Critical chain: 5 enemies in 2.3 seconds!';
+            
+            modernUI.showMenu('run-summary');
+        };
+        
+        // Listen for UI events
+        document.addEventListener('ui-action', (e) => {
+            const { action } = e.detail;
+            
+            switch (action) {
+                case 'pause':
+                    modernUI.showMenu('pause-menu');
+                    break;
+                case 'inventory':
+                    modernUI.showMenu('pause-menu');
+                    // Switch to inventory tab
+                    document.querySelector('[data-tab="inventory"]').click();
+                    break;
+            }
+        });
+        
+        // Demo status effects
+        setTimeout(() => {
+            const statusContainer = document.getElementById('status-effects');
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <div class="status-effect">
+                        <div class="effect-icon">🔥</div>
+                        <div class="effect-name">Burning</div>
+                        <div class="effect-duration">5s</div>
+                    </div>
+                    <div class="status-effect">
+                        <div class="effect-icon">⚡</div>
+                        <div class="effect-name">Speed Boost</div>
+                        <div class="effect-duration">12s</div>
+                    </div>
+                `;
+            }
+        }, 2000);
+        
+        // Simulate phase changes
+        setTimeout(() => {
+            wasmManager.gameState.phase = 1; // Fight phase
+        }, 5000);
+        
+        setTimeout(() => {
+            wasmManager.gameState.phase = 2; // Choose phase
+        }, 10000);
+        
+        console.log('Modern Roguelite UI Demo initialized');
+        console.log('- Use keyboard controls to test input');
+        console.log('- Click demo buttons to test effects');
+        console.log('- Press ESC to open pause menu');
+        console.log('- All features follow WASM-first architecture');
+    </script>
+</body>
+</html>
