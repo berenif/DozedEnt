@@ -666,10 +666,10 @@ export class EnhancedUIIntegration {
      */
     loadEnhancedStyles() {
         const stylesheets = [
-            'src/css/death-feedback-system.css',
-            'src/css/combat-ui-optimizer.css',
-            'src/css/threat-awareness-ui.css',
-            'src/css/comprehensive-accessibility.css'
+            'js/src/css/death-feedback-system.css',
+            'js/src/css/combat-ui-optimizer.css',
+            'js/src/css/threat-awareness-ui.css',
+            'js/src/css/comprehensive-accessibility.css'
         ];
         
         stylesheets.forEach(href => {
