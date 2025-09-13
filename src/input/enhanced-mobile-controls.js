@@ -107,7 +107,7 @@ export class EnhancedMobileControls {
       { id: 'roll', emoji: '🌀', action: 'roll', color: '#FF9800', label: 'Roll' }
     ];
     
-    buttons.forEach((buttonConfig, index) => {
+    buttons.forEach((buttonConfig, _index) => {
       const button = document.createElement('div');
       button.className = 'action-btn enhanced-btn';
       button.id = buttonConfig.id;
@@ -537,7 +537,7 @@ export class EnhancedMobileControls {
   /**
    * Show visual indicators for gestures
    */
-  showSwipeIndicator(direction, start, end) {
+  showSwipeIndicator(_direction, _start, _end) {
     // Implementation for swipe visual feedback
     const indicator = document.querySelector('.swipe-indicator');
     if (indicator) {

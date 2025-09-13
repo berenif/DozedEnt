@@ -361,7 +361,7 @@ export class WasmStateSerializer {
   deserialize(state, schema) {
     for (const [key, value] of Object.entries(state)) {
       const config = schema[key];
-      if (!config) continue;
+      if (!config) {continue;}
       
       if (config.type === 'function' && this.exports[config.setter]) {
         this.exports[config.setter](value);

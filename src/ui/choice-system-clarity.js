@@ -467,7 +467,7 @@ export class ChoiceSystemClarity {
     /**
      * Calculate reward level for a choice
      */
-    calculateRewardLevel(choice, wasmData) {
+    calculateRewardLevel(choice, _wasmData) {
         let reward = 0;
         
         // Base reward from rarity
@@ -538,7 +538,7 @@ export class ChoiceSystemClarity {
     /**
      * Analyze synergies with existing choices
      */
-    analyzeSynergies(choice, wasmData) {
+    analyzeSynergies(choice, _wasmData) {
         const synergies = {
             positive: [],
             negative: [],
@@ -564,7 +564,7 @@ export class ChoiceSystemClarity {
     /**
      * Gather statistical data about choice
      */
-    gatherStatistics(choice, wasmData) {
+    gatherStatistics(choice, _wasmData) {
         return {
             pickRate: Math.random() * 100, // Placeholder - would come from analytics
             winRate: 50 + Math.random() * 40, // Placeholder
@@ -577,7 +577,7 @@ export class ChoiceSystemClarity {
     /**
      * Generate recommendation for choice
      */
-    generateRecommendation(choice) {
+    generateRecommendation(_choice) {
         const recommendations = [
             'Good for beginners',
             'Advanced strategy choice',
@@ -611,8 +611,8 @@ export class ChoiceSystemClarity {
      * Get risk color based on level
      */
     getRiskColor(riskLevel) {
-        if (riskLevel < 0.3) return this.visualConfig.riskColors.safe;
-        if (riskLevel < 0.7) return this.visualConfig.riskColors.moderate;
+        if (riskLevel < 0.3) {return this.visualConfig.riskColors.safe;}
+        if (riskLevel < 0.7) {return this.visualConfig.riskColors.moderate;}
         return this.visualConfig.riskColors.risky;
     }
 
@@ -620,9 +620,9 @@ export class ChoiceSystemClarity {
      * Get reward color based on level
      */
     getRewardColor(rewardLevel) {
-        if (rewardLevel < 0.3) return this.visualConfig.rewardColors.low;
-        if (rewardLevel < 0.6) return this.visualConfig.rewardColors.medium;
-        if (rewardLevel < 0.9) return this.visualConfig.rewardColors.high;
+        if (rewardLevel < 0.3) {return this.visualConfig.rewardColors.low;}
+        if (rewardLevel < 0.6) {return this.visualConfig.rewardColors.medium;}
+        if (rewardLevel < 0.9) {return this.visualConfig.rewardColors.high;}
         return this.visualConfig.rewardColors.legendary;
     }
 
@@ -630,8 +630,8 @@ export class ChoiceSystemClarity {
      * Get risk label
      */
     getRiskLabel(riskLevel) {
-        if (riskLevel < 0.3) return 'Safe';
-        if (riskLevel < 0.7) return 'Moderate';
+        if (riskLevel < 0.3) {return 'Safe';}
+        if (riskLevel < 0.7) {return 'Moderate';}
         return 'Risky';
     }
 
@@ -639,9 +639,9 @@ export class ChoiceSystemClarity {
      * Get reward label
      */
     getRewardLabel(rewardLevel) {
-        if (rewardLevel < 0.3) return 'Low';
-        if (rewardLevel < 0.6) return 'Medium';
-        if (rewardLevel < 0.9) return 'High';
+        if (rewardLevel < 0.3) {return 'Low';}
+        if (rewardLevel < 0.6) {return 'Medium';}
+        if (rewardLevel < 0.9) {return 'High';}
         return 'Legendary';
     }
 
@@ -650,7 +650,7 @@ export class ChoiceSystemClarity {
      */
     populateChoiceCards() {
         const grid = document.getElementById('choices-grid');
-        if (!grid) return;
+        if (!grid) {return;}
 
         grid.innerHTML = '';
         
@@ -873,7 +873,7 @@ export class ChoiceSystemClarity {
      */
     updateConsequencesTab() {
         const tab = document.getElementById('consequences-tab');
-        if (!tab) return;
+        if (!tab) {return;}
 
         const overallConsequences = this.analyzeOverallConsequences();
         
@@ -1036,13 +1036,13 @@ export class ChoiceSystemClarity {
      * Get timeline summary
      */
     getTimelineSummary(consequences) {
-        if (!consequences) return 'Unknown';
+        if (!consequences) {return 'Unknown';}
         
         const timings = [];
-        if (consequences.immediate?.length > 0) timings.push('Now');
-        if (consequences.shortTerm?.length > 0) timings.push('Short');
-        if (consequences.longTerm?.length > 0) timings.push('Long');
-        if (consequences.permanent?.length > 0) timings.push('Permanent');
+        if (consequences.immediate?.length > 0) {timings.push('Now');}
+        if (consequences.shortTerm?.length > 0) {timings.push('Short');}
+        if (consequences.longTerm?.length > 0) {timings.push('Long');}
+        if (consequences.permanent?.length > 0) {timings.push('Permanent');}
         
         return timings.join(', ') || 'No effects';
     }
@@ -1052,7 +1052,7 @@ export class ChoiceSystemClarity {
      */
     updateSynergiesTab() {
         const tab = document.getElementById('synergies-tab');
-        if (!tab) return;
+        if (!tab) {return;}
 
         tab.innerHTML = `
             <div class="synergies-content">
@@ -1118,7 +1118,7 @@ export class ChoiceSystemClarity {
      */
     updateStatisticsTab() {
         const tab = document.getElementById('statistics-tab');
-        if (!tab) return;
+        if (!tab) {return;}
 
         tab.innerHTML = `
             <div class="statistics-content">
@@ -1298,7 +1298,7 @@ export class ChoiceSystemClarity {
      */
     showComparisonPanel() {
         const panel = document.getElementById('comparison-panel');
-        if (!panel) return;
+        if (!panel) {return;}
 
         panel.classList.remove('hidden');
         this.populateComparisonPanel();
@@ -1319,7 +1319,7 @@ export class ChoiceSystemClarity {
      */
     populateComparisonPanel() {
         const content = document.getElementById('comparison-content');
-        if (!content) return;
+        if (!content) {return;}
 
         const selectedChoices = this.currentChoices.filter(choice => 
             this.selectedForComparison.has(choice.id)
@@ -1337,7 +1337,7 @@ export class ChoiceSystemClarity {
      * Render choice comparison
      */
     renderChoiceComparison(choices) {
-        let comparison = `
+        const comparison = `
             <div class="comparison-grid">
                 ${choices.map(choice => this.renderComparisonCard(choice)).join('')}
             </div>
@@ -1479,9 +1479,9 @@ export class ChoiceSystemClarity {
             return 'Focus on the safer options if you\'re struggling or want consistent progress.';
         } else if (hasHighReward) {
             return 'The high-reward options could be game-changing if you\'re willing to take the risk.';
-        } else {
+        } 
             return 'All options are fairly balanced. Consider which type of effect would benefit your current strategy most.';
-        }
+        
     }
 
     /**

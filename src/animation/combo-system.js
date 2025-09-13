@@ -138,24 +138,24 @@ export class ComboSystem {
     }
 
     getInputType(input) {
-        if (input.lightAttack) return 'light'
-        if (input.heavyAttack) return 'heavy'
-        if (input.special) return 'special'
-        if (input.roll) return 'roll'
-        if (input.block) return 'block'
-        if (input.jump) return 'jump'
+        if (input.lightAttack) {return 'light'}
+        if (input.heavyAttack) {return 'heavy'}
+        if (input.special) {return 'special'}
+        if (input.roll) {return 'roll'}
+        if (input.block) {return 'block'}
+        if (input.jump) {return 'jump'}
         
         // Directional inputs for special moves
-        if (input.up) return 'up'
-        if (input.down) return 'down'
-        if (input.left) return this.facing === 1 ? 'back' : 'forward'
-        if (input.right) return this.facing === 1 ? 'forward' : 'back'
+        if (input.up) {return 'up'}
+        if (input.down) {return 'down'}
+        if (input.left) {return this.facing === 1 ? 'back' : 'forward'}
+        if (input.right) {return this.facing === 1 ? 'forward' : 'back'}
         
         return null
     }
 
     addToCombo(move) {
-        if (!move) return
+        if (!move) {return}
         
         const now = Date.now()
         const timeSinceLastInput = (now - this.lastInputTime) / 1000
@@ -321,7 +321,7 @@ export class ComboSystem {
     }
 
     // Special move buffer for complex inputs
-    updateSpecialMoveBuffer(input, deltaTime) {
+    updateSpecialMoveBuffer(input, _deltaTime) {
         const currentInput = this.getDirectionalInput(input)
         
         if (currentInput) {
@@ -340,10 +340,10 @@ export class ComboSystem {
 
     getDirectionalInput(input) {
         const dirs = []
-        if (input.up) dirs.push('up')
-        if (input.down) dirs.push('down')
-        if (input.left) dirs.push(this.facing === 1 ? 'back' : 'forward')
-        if (input.right) dirs.push(this.facing === 1 ? 'forward' : 'back')
+        if (input.up) {dirs.push('up')}
+        if (input.down) {dirs.push('down')}
+        if (input.left) {dirs.push(this.facing === 1 ? 'back' : 'forward')}
+        if (input.right) {dirs.push(this.facing === 1 ? 'forward' : 'back')}
         
         return dirs.length > 0 ? dirs.join('-') : null
     }
@@ -362,13 +362,13 @@ export class ComboSystem {
 
     // Cancel current move into another
     cancelInto(newMove) {
-        if (!this.canCancel) return false
+        if (!this.canCancel) {return false}
         
         const currentProperties = this.getCurrentMoveProperties()
-        if (!currentProperties) return false
+        if (!currentProperties) {return false}
         
         const cancelWindow = currentProperties.cancelWindow
-        if (!cancelWindow) return false
+        if (!cancelWindow) {return false}
         
         // Check if we're in cancel window (normalized time)
         const normalizedTime = this.getMoveProgress()
@@ -382,7 +382,7 @@ export class ComboSystem {
     }
 
     getCurrentMoveProperties() {
-        if (!this.currentMove) return null
+        if (!this.currentMove) {return null}
         
         const combo = this.combos.get(this.currentMove)
         return combo ? combo.properties : null
@@ -463,7 +463,7 @@ export class ComboUIRenderer {
     }
 
     render(ctx, x, y) {
-        if (this.displayTimer <= 0 || !this.lastComboInfo) return
+        if (this.displayTimer <= 0 || !this.lastComboInfo) {return}
         
         const alpha = Math.min(1, this.displayTimer)
         ctx.save()
@@ -521,10 +521,10 @@ export class ComboUIRenderer {
     }
 
     getComboColor(hits) {
-        if (hits >= 20) return '#ff00ff' // Purple
-        if (hits >= 15) return '#ff0000' // Red
-        if (hits >= 10) return '#ff8800' // Orange
-        if (hits >= 5) return '#ffff00'  // Yellow
+        if (hits >= 20) {return '#ff00ff'} // Purple
+        if (hits >= 15) {return '#ff0000'} // Red
+        if (hits >= 10) {return '#ff8800'} // Orange
+        if (hits >= 5) {return '#ffff00'}  // Yellow
         return '#ffffff' // White
     }
 }

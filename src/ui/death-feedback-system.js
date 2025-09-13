@@ -572,7 +572,7 @@ export class DeathFeedbackSystem {
         }
         
         // Draw events
-        this.combatTimeline.forEach((event, index) => {
+        this.combatTimeline.forEach((event, _index) => {
             const x = padding + (timelineWidth * event.timestamp / maxTime);
             const y = this.getEventY(event, timelineHeight, padding);
             
@@ -724,9 +724,9 @@ export class DeathFeedbackSystem {
         const missedParriesElement = document.getElementById('missed-parries');
         const missedRollsElement = document.getElementById('missed-rolls');
         
-        if (missedBlocksElement) missedBlocksElement.textContent = missedBlocks.toString();
-        if (missedParriesElement) missedParriesElement.textContent = missedParries.toString();
-        if (missedRollsElement) missedRollsElement.textContent = missedRolls.toString();
+        if (missedBlocksElement) {missedBlocksElement.textContent = missedBlocks.toString();}
+        if (missedParriesElement) {missedParriesElement.textContent = missedParries.toString();}
+        if (missedRollsElement) {missedRollsElement.textContent = missedRolls.toString();}
 
         // Populate opportunities list
         const opportunitiesListElement = document.getElementById('opportunities-list');

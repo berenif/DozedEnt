@@ -118,7 +118,7 @@ export class WolfAIWASMIntegration {
     // Play appropriate sound for vocalization
     playVocalizationSound(vocalization) {
         let soundName = null;
-        let volume = vocalization.intensity;
+        const volume = vocalization.intensity;
         
         switch (vocalization.type) {
             case this.VocalizationType.HowlRally:

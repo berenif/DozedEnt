@@ -184,11 +184,11 @@ export class CoverageReporter {
     const fileMetadata = this.fileData.get(file) || {};
     
     let covered = 0;
-    let total = fileMetadata[`total${metric.charAt(0).toUpperCase() + metric.slice(1)}`] || 0;
+    const total = fileMetadata[`total${metric.charAt(0).toUpperCase() + metric.slice(1)}`] || 0;
     
     for (const [key, count] of coverageMap) {
       if (key.startsWith(file + ':')) {
-        if (count > 0) covered++;
+        if (count > 0) {covered++;}
       }
     }
     
@@ -214,8 +214,8 @@ export class CoverageReporter {
     for (const [key, data] of this.coverage.branches) {
       if (key.startsWith(file + ':')) {
         totalBranches += 2; // Each branch has two paths
-        if (data.taken > 0) coveredBranches++;
-        if (data.notTaken > 0) coveredBranches++;
+        if (data.taken > 0) {coveredBranches++;}
+        if (data.notTaken > 0) {coveredBranches++;}
       }
     }
     
@@ -504,9 +504,7 @@ export class CoverageReporter {
    * @private
    */
   generateHTMLFileRow(file) {
-    const getCssClass = (percentage) => {
-      return percentage >= 80 ? 'good' : percentage >= 50 ? 'medium' : 'bad';
-    };
+    const getCssClass = (percentage) => percentage >= 80 ? 'good' : percentage >= 50 ? 'medium' : 'bad';
     
     return `
       <tr>

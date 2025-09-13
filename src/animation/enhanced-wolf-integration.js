@@ -197,7 +197,7 @@ export class EnhancedWolfIntegration {
         const startTime = performance.now()
         let activeWolves = 0
 
-        this.wolves.forEach((wolfData, wolfId) => {
+        this.wolves.forEach((wolfData, _wolfId) => {
             const wolf = wolfData.wolf
 
             // Skip if wolf is dead or inactive
@@ -287,7 +287,7 @@ export class EnhancedWolfIntegration {
         const startTime = performance.now()
         let totalFurStrands = 0
 
-        this.wolves.forEach((wolfData, wolfId) => {
+        this.wolves.forEach((wolfData, _wolfId) => {
             const wolf = wolfData.wolf
 
             // Skip if wolf is dead or inactive
@@ -855,7 +855,7 @@ class EnhancedWolfCharacter {
     }
 
     // Enhanced render method (placeholder - actual rendering handled by integration system)
-    render(ctx, camera) {
+    render(_ctx, _camera) {
         // This will be overridden by the integration system
         console.log(`Rendering enhanced wolf ${this.id}`)
     }

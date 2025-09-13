@@ -1202,9 +1202,9 @@ export class PersistenceUI {
     
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    } else {
+    } 
       return `${minutes}:${secs.toString().padStart(2, '0')}`;
-    }
+    
     
   }
   
@@ -1246,7 +1246,7 @@ export class PersistenceUI {
   /**
    * Import achievement data
    */
-  importAchievementData(data) {
+  importAchievementData(_data) {
     // Achievement data is managed by WASM, so we'd need to
     // restore it through the save system
     console.log('Achievement data import not yet implemented');
@@ -1264,7 +1264,7 @@ export class PersistenceUI {
   /**
    * Import statistics data
    */
-  importStatisticsData(data) {
+  importStatisticsData(_data) {
     // Statistics data is managed by WASM
     console.log('Statistics data import not yet implemented');
   }

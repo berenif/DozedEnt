@@ -155,7 +155,7 @@ export function updateEnhancedWolfAnimation(comp, deltaTime, raycastGround, envi
 }
 
 // Update behavioral state machine
-function updateBehavioralState(comp, deltaTime, environmentData) {
+function updateBehavioralState(comp, deltaTime, _environmentData) {
     comp.behaviorTimer += deltaTime
     
     const speed = comp.speed
@@ -200,7 +200,7 @@ function updateBehavioralState(comp, deltaTime, environmentData) {
 }
 
 // Get target intensity for current behavior
-function getBehaviorIntensity(behavior, comp) {
+function getBehaviorIntensity(behavior, _comp) {
     switch (behavior) {
         case EnhancedWolfBehavior.Resting: return 0.1
         case EnhancedWolfBehavior.Patrolling: return 0.3
@@ -347,7 +347,7 @@ function updateWeightDistribution(comp) {
 }
 
 // Update momentum and physics
-function updateMomentum(comp, deltaTime) {
+function updateMomentum(comp, _deltaTime) {
     const mass = 50 // kg, average wolf weight
     
     // Update linear momentum
@@ -635,7 +635,7 @@ function updateScentTracking(comp, scents) {
 }
 
 // Update procedural variations based on personality
-function updateProceduralVariations(comp, deltaTime) {
+function updateProceduralVariations(comp, _deltaTime) {
     const traits = comp.personalityTraits
     const seed = comp.individualSeed
     
@@ -675,7 +675,7 @@ function updateAdvancedSecondaryMotion(comp, deltaTime) {
 }
 
 // Advanced tail physics with realistic constraints
-function updateAdvancedTailPhysics(comp, deltaTime) {
+function updateAdvancedTailPhysics(comp, _deltaTime) {
     const segments = comp.tailSegments
     const windEffect = comp.windStrength * 0.2
     const emotionalEffect = comp.behaviorIntensity * 0.3
@@ -704,7 +704,7 @@ function updateAdvancedTailPhysics(comp, deltaTime) {
 }
 
 // Advanced ear dynamics
-function updateAdvancedEarDynamics(comp, deltaTime) {
+function updateAdvancedEarDynamics(comp, _deltaTime) {
     const alertness = comp.alertness
     const behavior = comp.behavior
     const windEffect = comp.windStrength * 0.1
@@ -729,7 +729,7 @@ function updateAdvancedEarDynamics(comp, deltaTime) {
 }
 
 // Advanced breathing with realistic patterns
-function updateAdvancedBreathing(comp, deltaTime) {
+function updateAdvancedBreathing(comp, _deltaTime) {
     const breathPhase = (comp.time * comp.breathingRate) % 1
     const breathDepth = 0.02 + comp.fatigueLevel * 0.03 + comp.temperature * 0.02
     
@@ -755,7 +755,7 @@ function updateAdvancedBreathing(comp, deltaTime) {
 }
 
 // Advanced fur dynamics
-function updateAdvancedFurDynamics(comp, deltaTime) {
+function updateAdvancedFurDynamics(comp, _deltaTime) {
     const movement = comp.speed
     const wind = comp.windStrength
     const emotional = comp.behaviorIntensity

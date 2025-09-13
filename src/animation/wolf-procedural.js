@@ -185,6 +185,143 @@ export const WolfPoseLayout = Object.freeze({
 // Component factory
 // ---------------------------------------------
 
+// ---------------------------------------------
+// Helpers
+// ---------------------------------------------
+
+function lerp(a, b, t) { return a + (b - a) * t }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)) }
+function smoothstep(edge0, edge1, x) {
+	// Hermite smoothstep: 0 at edge0, 1 at edge1, smooth cubic in between
+	const t = clamp((x - edge0) / ((edge1 - edge0) || 1e-6), 0, 1)
+	return t * t * (3 - 2 * t)
+}
+function wrap01(v) { return v - Math.floor(v) }
+function length2D(v) { return Math.hypot(v.x, v.y) }
+function normalize2D(v) { const L = length2D(v); return L > 1e-5 ? { x: v.x / L, y: v.y / L } : { x: 1, y: 0 } }
+function mul2D(v, s) { return { x: v.x * s, y: v.y * s } }
+function distance2D(a, b) { return Math.hypot(a.x - b.x, a.y - b.y) }
+function atan2safe(y, x) { return Math.atan2(y, x || 1e-6) }
+function smooth(current, target, rate, dt) { const t = 1 - Math.exp(-rate * dt); return current + (target - current) * t }
+
+function parabolicArc(t, height) {
+	// Simple parabola peaking at t=0.5, f(0)=0, f(1)=0
+	const s = t * (1 - t) * 4
+	return s * height
+}
+
+function worldFromBody(comp, p) {
+	// Body frame assumed centered at pelvis root at (root.x, root.y)
+	const c = Math.cos(comp.root.yaw)
+	const s = Math.sin(comp.root.yaw)
+	return {
+		x: comp.root.x + c * p.x - s * p.y,
+		y: comp.root.y + s * p.x + c * p.y
+	}
+}
+
+function bodyFromWorld(comp, p) {
+	const c = Math.cos(-comp.root.yaw)
+	const s = Math.sin(-comp.root.yaw)
+	const dx = p.x - comp.root.x
+	const dy = p.y - comp.root.y
+	return { x: c * dx - s * dy, y: s * dx + c * dy }
+}
+
+function frictionFromTerrain(terrainType) {
+	switch (terrainType) {
+		case TerrainType.Water: return 0.3
+		case TerrainType.LowGround: return 0.6
+		case TerrainType.OpenField: return 0.8
+		case TerrainType.Cover: return 0.75
+		case TerrainType.Chokepoint: return 0.85
+		case TerrainType.HighGround: return 0.9
+		default: return 0.8
+	}
+}
+
+// Planner-side refinement using known slope/terrain (no raycasts here)
+function refineFootTargetWithTerrain(comp, legIndex, nominalWorld) {
+	// Slight bias along downhill based on slope normal
+	const n = comp.slopeNormal || { x: 0, y: 1, z: 0 }
+	const downhill = { x: -n.x, y: 0 } // 2D projection
+	const scale = 0.04 * (1 - n.y) // steeper slope => more bias
+	const px = nominalWorld.x + downhill.x * scale
+	const py = nominalWorld.y // y will be set by placement raycast later
+	return {
+		position: { x: px, y: py },
+		normal: { x: 0, y: 1, z: 0 },
+		friction: frictionFromTerrain(comp.terrainType)
+	}
+}
+
+// IK-side refinement performing terrain sampling via raycasts
+function refineFootPlacement(comp, legIndex, desiredWorld, raycastGround) {
+	const radius = comp.ik.stepSearchRadius || 0.1
+	const samples = []
+	const forward = normalize2D(comp.velocityWorld)
+	const lateral = { x: -forward.y, y: forward.x }
+	// Candidate offsets: center, forward/back, lateral, diagonals
+	const offs = [
+		{ x: 0, y: 0, w: 1.0 },
+		{ x: radius, y: 0, w: 0.8 },
+		{ x: -radius, y: 0, w: 0.8 },
+		{ x: 0, y: radius, w: 0.8 },
+		{ x: 0, y: -radius, w: 0.8 },
+		{ x: radius * 0.7, y: radius * 0.7, w: 0.7 },
+		{ x: radius * 0.7, y: -radius * 0.7, w: 0.7 },
+		{ x: -radius * 0.7, y: radius * 0.7, w: 0.7 },
+		{ x: -radius * 0.7, y: -radius * 0.7, w: 0.7 }
+	]
+	for (let k = 0; k < offs.length; k++) {
+		const o = offs[k]
+		const dx = forward.x * o.x + lateral.x * o.y
+		const dy = forward.y * o.x + lateral.y * o.y
+		const cx = desiredWorld.x + dx
+		const cy = desiredWorld.y + dy
+		const hit = raycastGround(cx, cy)
+		const gy = hit?.hit ? hit.y : comp.groundHeight
+		samples.push({
+			pos: { x: cx, y: gy },
+			normal: hit?.normal || { x: 0, y: 1, z: 0 },
+			w: o.w
+		})
+	}
+	// Score: prefer flatter (normal.y close to 1), smaller offset, and small height delta to current lock
+	let best = samples[0]
+	let bestScore = Infinity
+	for (let s = 0; s < samples.length; s++) {
+		const c = samples[s]
+		const flat = 1 - (c.normal.y || 1)
+		const offset = distance2D(c.pos, desiredWorld)
+		const heightDelta = Math.abs(c.pos.y - (comp.footLock[legIndex].y || comp.groundHeight))
+		const score = flat * 2.0 + offset * 1.0 + heightDelta * 0.5 - c.w * 0.2
+		if (score < bestScore) { bestScore = score; best = c }
+	}
+	return { position: best.pos, normal: best.normal, friction: frictionFromTerrain(comp.terrainType) }
+}
+
+function alignPawOrientation(comp, legIndex, surfaceNormal, dt) {
+	// Yaw follows body yaw; pitch and roll respond to surface and motion
+	const yawTarget = comp.root.yaw
+	const sideSign = (legIndex % 2 === 0) ? 1 : -1 // left positive, right negative
+	const slopeAmt = clamp(1 - (surfaceNormal?.y ?? 1), 0, 1)
+	const pitchTarget = clamp((legIndex < 2 ? -1 : 1) * slopeAmt * 0.25, -0.4, 0.4)
+	const rollTarget = clamp(sideSign * comp.speed * comp.body.lateralLeanGain * 0.8, -0.35, 0.35)
+	const o = comp.footOrient[legIndex]
+	o.yaw = smooth(o.yaw, yawTarget, comp.ik.orientYawRate, dt)
+	o.pitch = smooth(o.pitch, pitchTarget, comp.ik.orientPitchRate, dt)
+	o.roll = smooth(o.roll, rollTarget, comp.ik.orientRollRate, dt)
+}
+
+function hashNoise(x) {
+	// Small, fast deterministic noise in [0,1]
+	const n = Math.sin(x * 12.9898) * 43758.5453
+	return n - Math.floor(n)
+}
+
+
+
 export function createWolfAnimComponent(overrides = {}) {
 	return {
 		// Inputs, set per frame by gameplay/AI/physics
@@ -1047,142 +1184,6 @@ export function readInputsFromBuffer(comp, input) {
 	comp.packLeaderDistance = Math.max(0, input[WolfInputLayout.PackLeaderDistance])
 	comp.packSyncPhase = input[WolfInputLayout.PackSyncPhase]
 }
-
-// ---------------------------------------------
-// Helpers
-// ---------------------------------------------
-
-function lerp(a, b, t) { return a + (b - a) * t }
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)) }
-function smoothstep(edge0, edge1, x) {
-	// Hermite smoothstep: 0 at edge0, 1 at edge1, smooth cubic in between
-	const t = clamp((x - edge0) / ((edge1 - edge0) || 1e-6), 0, 1)
-	return t * t * (3 - 2 * t)
-}
-function wrap01(v) { return v - Math.floor(v) }
-function length2D(v) { return Math.hypot(v.x, v.y) }
-function normalize2D(v) { const L = length2D(v); return L > 1e-5 ? { x: v.x / L, y: v.y / L } : { x: 1, y: 0 } }
-function mul2D(v, s) { return { x: v.x * s, y: v.y * s } }
-function distance2D(a, b) { return Math.hypot(a.x - b.x, a.y - b.y) }
-function atan2safe(y, x) { return Math.atan2(y, x || 1e-6) }
-function smooth(current, target, rate, dt) { const t = 1 - Math.exp(-rate * dt); return current + (target - current) * t }
-
-function parabolicArc(t, height) {
-	// Simple parabola peaking at t=0.5, f(0)=0, f(1)=0
-	const s = t * (1 - t) * 4
-	return s * height
-}
-
-function worldFromBody(comp, p) {
-	// Body frame assumed centered at pelvis root at (root.x, root.y)
-	const c = Math.cos(comp.root.yaw)
-	const s = Math.sin(comp.root.yaw)
-	return {
-		x: comp.root.x + c * p.x - s * p.y,
-		y: comp.root.y + s * p.x + c * p.y
-	}
-}
-
-function bodyFromWorld(comp, p) {
-	const c = Math.cos(-comp.root.yaw)
-	const s = Math.sin(-comp.root.yaw)
-	const dx = p.x - comp.root.x
-	const dy = p.y - comp.root.y
-	return { x: c * dx - s * dy, y: s * dx + c * dy }
-}
-
-function frictionFromTerrain(terrainType) {
-	switch (terrainType) {
-		case TerrainType.Water: return 0.3
-		case TerrainType.LowGround: return 0.6
-		case TerrainType.OpenField: return 0.8
-		case TerrainType.Cover: return 0.75
-		case TerrainType.Chokepoint: return 0.85
-		case TerrainType.HighGround: return 0.9
-		default: return 0.8
-	}
-}
-
-// Planner-side refinement using known slope/terrain (no raycasts here)
-function refineFootTargetWithTerrain(comp, legIndex, nominalWorld) {
-	// Slight bias along downhill based on slope normal
-	const n = comp.slopeNormal || { x: 0, y: 1, z: 0 }
-	const downhill = { x: -n.x, y: 0 } // 2D projection
-	const scale = 0.04 * (1 - n.y) // steeper slope => more bias
-	const px = nominalWorld.x + downhill.x * scale
-	const py = nominalWorld.y // y will be set by placement raycast later
-	return {
-		position: { x: px, y: py },
-		normal: { x: 0, y: 1, z: 0 },
-		friction: frictionFromTerrain(comp.terrainType)
-	}
-}
-
-// IK-side refinement performing terrain sampling via raycasts
-function refineFootPlacement(comp, legIndex, desiredWorld, raycastGround) {
-	const radius = comp.ik.stepSearchRadius || 0.1
-	const samples = []
-	const forward = normalize2D(comp.velocityWorld)
-	const lateral = { x: -forward.y, y: forward.x }
-	// Candidate offsets: center, forward/back, lateral, diagonals
-	const offs = [
-		{ x: 0, y: 0, w: 1.0 },
-		{ x: radius, y: 0, w: 0.8 },
-		{ x: -radius, y: 0, w: 0.8 },
-		{ x: 0, y: radius, w: 0.8 },
-		{ x: 0, y: -radius, w: 0.8 },
-		{ x: radius * 0.7, y: radius * 0.7, w: 0.7 },
-		{ x: radius * 0.7, y: -radius * 0.7, w: 0.7 },
-		{ x: -radius * 0.7, y: radius * 0.7, w: 0.7 },
-		{ x: -radius * 0.7, y: -radius * 0.7, w: 0.7 }
-	]
-	for (let k = 0; k < offs.length; k++) {
-		const o = offs[k]
-		const dx = forward.x * o.x + lateral.x * o.y
-		const dy = forward.y * o.x + lateral.y * o.y
-		const cx = desiredWorld.x + dx
-		const cy = desiredWorld.y + dy
-		const hit = raycastGround(cx, cy)
-		const gy = hit?.hit ? hit.y : comp.groundHeight
-		samples.push({
-			pos: { x: cx, y: gy },
-			normal: hit?.normal || { x: 0, y: 1, z: 0 },
-			w: o.w
-		})
-	}
-	// Score: prefer flatter (normal.y close to 1), smaller offset, and small height delta to current lock
-	let best = samples[0]
-	let bestScore = Infinity
-	for (let s = 0; s < samples.length; s++) {
-		const c = samples[s]
-		const flat = 1 - (c.normal.y || 1)
-		const offset = distance2D(c.pos, desiredWorld)
-		const heightDelta = Math.abs(c.pos.y - (comp.footLock[legIndex].y || comp.groundHeight))
-		const score = flat * 2.0 + offset * 1.0 + heightDelta * 0.5 - c.w * 0.2
-		if (score < bestScore) { bestScore = score; best = c }
-	}
-	return { position: best.pos, normal: best.normal, friction: frictionFromTerrain(comp.terrainType) }
-}
-
-function alignPawOrientation(comp, legIndex, surfaceNormal, dt) {
-	// Yaw follows body yaw; pitch and roll respond to surface and motion
-	const yawTarget = comp.root.yaw
-	const sideSign = (legIndex % 2 === 0) ? 1 : -1 // left positive, right negative
-	const slopeAmt = clamp(1 - (surfaceNormal?.y ?? 1), 0, 1)
-	const pitchTarget = clamp((legIndex < 2 ? -1 : 1) * slopeAmt * 0.25, -0.4, 0.4)
-	const rollTarget = clamp(sideSign * comp.speed * comp.body.lateralLeanGain * 0.8, -0.35, 0.35)
-	const o = comp.footOrient[legIndex]
-	o.yaw = smooth(o.yaw, yawTarget, comp.ik.orientYawRate, dt)
-	o.pitch = smooth(o.pitch, pitchTarget, comp.ik.orientPitchRate, dt)
-	o.roll = smooth(o.roll, rollTarget, comp.ik.orientRollRate, dt)
-}
-
-function hashNoise(x) {
-	// Small, fast deterministic noise in [0,1]
-	const n = Math.sin(x * 12.9898) * 43758.5453
-	return n - Math.floor(n)
-}
-
 // ---------------------------------------------
 // Optional debug utilities (no-op placeholders)
 // ---------------------------------------------
@@ -1326,7 +1327,7 @@ export function updateEnhancedWolfAnimation(comp, deltaTime, raycastGround, envi
 	return comp
 }
 
-function updateBehavioralState(comp, deltaTime, environmentData) {
+function updateBehavioralState(comp, deltaTime, _environmentData) {
 	comp.behaviorTimer += deltaTime
 	const speed = comp.speed
 	const alertness = comp.alertness
@@ -1359,7 +1360,7 @@ function updateBehavioralState(comp, deltaTime, environmentData) {
 	applyBehavioralModifications(comp)
 }
 
-function getBehaviorIntensity(behavior, comp) {
+function getBehaviorIntensity(behavior, _comp) {
 	switch (behavior) {
 		case EnhancedWolfBehavior.Resting: return 0.1
 		case EnhancedWolfBehavior.Patrolling: return 0.3
@@ -1472,7 +1473,7 @@ function updateWeightDistribution(comp) {
 	}
 }
 
-function updateMomentum(comp, deltaTime) {
+function updateMomentum(comp, _deltaTime) {
 	const mass = 50
 	comp.momentum.x = mass * comp.velocityWorld.x
 	comp.momentum.y = mass * comp.velocityWorld.y
@@ -1671,7 +1672,7 @@ function updateScentTracking(comp, scents) {
 	}
 }
 
-function updateProceduralVariations(comp, deltaTime) {
+function updateProceduralVariations(comp, _deltaTime) {
 	const traits = comp.personalityTraits
 	const seed = comp.individualSeed
 	if (traits.confidence > 0.7) {
@@ -1699,7 +1700,7 @@ function updateAdvancedSecondaryMotion(comp, deltaTime) {
 	updateAdvancedFurDynamics(comp, deltaTime)
 }
 
-function updateAdvancedTailPhysics(comp, deltaTime) {
+function updateAdvancedTailPhysics(comp, _deltaTime) {
 	const segments = comp.tailSegments
 	const windEffect = comp.windStrength * 0.2
 	const emotionalEffect = comp.behaviorIntensity * 0.3
@@ -1714,7 +1715,7 @@ function updateAdvancedTailPhysics(comp, deltaTime) {
 	comp.tailAngle = baseTailAngle + windEffect * Math.sin(comp.time * 2)
 }
 
-function updateAdvancedEarDynamics(comp, deltaTime) {
+function updateAdvancedEarDynamics(comp, _deltaTime) {
 	const alertness = comp.alertness
 	const behavior = comp.behavior
 	const windEffect = comp.windStrength * 0.1
@@ -1727,7 +1728,7 @@ function updateAdvancedEarDynamics(comp, deltaTime) {
 	comp.earRightYaw = baseEarRotation - earTwitch + windEffect
 }
 
-function updateAdvancedBreathing(comp, deltaTime) {
+function updateAdvancedBreathing(comp, _deltaTime) {
 	const breathPhase = (comp.time * comp.breathingRate) % 1
 	const breathDepth = 0.02 + comp.fatigueLevel * 0.03 + comp.temperature * 0.02
 	let breathValue = 0
@@ -1744,7 +1745,7 @@ function updateAdvancedBreathing(comp, deltaTime) {
 	}
 }
 
-function updateAdvancedFurDynamics(comp, deltaTime) {
+function updateAdvancedFurDynamics(comp, _deltaTime) {
 	const movement = comp.speed
 	const wind = comp.windStrength
 	const emotional = comp.behaviorIntensity

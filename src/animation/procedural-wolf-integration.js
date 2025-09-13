@@ -296,7 +296,7 @@ export class ProceduralWolfSystem {
     }
     
     // Update pack coordination
-    updatePackCoordination(alphaWolf, deltaTime) {
+    updatePackCoordination(alphaWolf, _deltaTime) {
         const wolves = Array.from(this.wolves.values())
         
         wolves.forEach(wolf => {
@@ -322,7 +322,7 @@ export class ProceduralWolfSystem {
     
     // Create raycast function for procedural system
     createRaycastFunction() {
-        return (x, y) => 
+        return (_x, _y) => 
             // Simple ground plane for now
             // In a full implementation, this would query the actual terrain
              ({
@@ -368,7 +368,7 @@ export class ProceduralWolfSystem {
     }
     
     // Render debug information
-    renderDebugInfo(ctx, camera) {
+    renderDebugInfo(ctx, _camera) {
         ctx.save()
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
         ctx.fillRect(10, 10, 300, 200)
@@ -666,7 +666,7 @@ class WolfBehaviorManager {
         })
         
         this.behaviorRules.set('rest_when_tired', {
-            trigger: (wolf, environment) => wolf.animComponent.fatigueLevel > 0.8 && wolf.animComponent.speed < 0.1,
+            trigger: (wolf, _environment) => wolf.animComponent.fatigueLevel > 0.8 && wolf.animComponent.speed < 0.1,
             targetBehavior: EnhancedWolfBehavior.Resting,
             priority: 6
         })
@@ -690,7 +690,7 @@ class WolfBehaviorManager {
         }
     }
     
-    updateGlobalBehaviorState(environment, deltaTime) {
+    updateGlobalBehaviorState(environment, _deltaTime) {
         // Update pack-wide behavior influences
         this.globalBehaviorState.huntingOpportunity = environment.scents
             .filter(s => s.type === 'prey')
@@ -701,7 +701,7 @@ class WolfBehaviorManager {
             .reduce((max, s) => Math.max(max, s.strength), 0)
     }
     
-    updateWolfBehavior(wolf, environment, deltaTime) {
+    updateWolfBehavior(wolf, environment, _deltaTime) {
         // Check behavior rules
         let bestRule = null
         let bestPriority = -1

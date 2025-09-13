@@ -1089,7 +1089,7 @@ export class ModernRogueliteUI {
   /**
    * Render frame (called every frame)
    */
-  render(deltaTime) {
+  render(_deltaTime) {
     // Main rendering is handled by the game engine
     // UI only updates visual state based on WASM data
     
