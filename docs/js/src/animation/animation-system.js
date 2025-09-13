@@ -820,6 +820,17 @@ export class CharacterAnimator {
         
         this.targetBlendFactors = { ...this.blendFactors }
         this.blendSpeed = 0.2
+
+        // Internal timers for temporary states
+        this.hurtTimer = 0
+        this.attackTimer = 0
+        this.rollTimer = 0
+    }
+
+    resetActionTimers() {
+        this.hurtTimer = 0
+        this.attackTimer = 0
+        this.rollTimer = 0
     }
 
     // Helper function to convert numeric WASM state to string for internal use
@@ -844,7 +855,8 @@ export class CharacterAnimator {
 
     setAnimState(newState) {
         if (this.state === newState) {return}
-        
+        this.resetActionTimers()
+
         this.state = newState
         this.stateName = this.getAnimStateName(newState)
         
@@ -895,6 +907,26 @@ export class CharacterAnimator {
     }
 
     update(deltaTime, position, velocity = { x: 0, y: 0 }, isGrounded = true) {
+        // Update state timers
+        if (this.hurtTimer > 0) {
+            this.hurtTimer -= deltaTime
+            if (this.hurtTimer <= 0 && this.state === 5) {
+                this.setAnimState(0) // Idle
+            }
+        }
+        if (this.attackTimer > 0) {
+            this.attackTimer -= deltaTime
+            if (this.attackTimer <= 0 && this.state === 2) {
+                this.setAnimState(0) // Idle
+            }
+        }
+        if (this.rollTimer > 0) {
+            this.rollTimer -= deltaTime
+            if (this.rollTimer <= 0 && this.state === 4) {
+                this.setAnimState(0) // Idle
+            }
+        }
+
         // Update animation controller
         this.controller.update(deltaTime)
 
@@ -978,29 +1010,17 @@ export class CharacterAnimator {
 
     triggerHurt() {
         this.setAnimState(5) // Hurt
-        setTimeout(() => {
-            if (this.state === 5) { // Hurt
-                this.setAnimState(0) // Idle
-            }
-        }, 300)
+        this.hurtTimer = 300
     }
 
     triggerAttack() {
         this.setAnimState(2) // Attack
-        setTimeout(() => {
-            if (this.state === 2) { // Attack
-                this.setAnimState(0) // Idle
-            }
-        }, 400)
+        this.attackTimer = 400
     }
 
     triggerRoll() {
         this.setAnimState(4) // Roll
-        setTimeout(() => {
-            if (this.state === 4) { // Roll
-                this.setAnimState(0) // Idle
-            }
-        }, 400)
+        this.rollTimer = 400
     }
 
     triggerBlock() {
