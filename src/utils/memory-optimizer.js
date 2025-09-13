@@ -3,6 +3,8 @@
  * Implements object pooling, garbage collection monitoring, and memory leak detection
  */
 
+/* global global */
+
 export class MemoryOptimizer {
   constructor() {
     // Object pools for frequently created/destroyed objects

@@ -130,7 +130,7 @@ export class WasmManager {
             candidatePaths.push(`${repo}/dist/game.wasm`);
           }
         }
-      } catch (_) {}
+      } catch (_) {\n        // Ignore URL construction errors\n      }
 
       const wasmUrls = candidatePaths.map(resolveUrl);
 
@@ -265,7 +265,7 @@ export class WasmManager {
    * Initialize game run with deterministic seed
    * @private
    */
-  async initializeGameRun() {
+  initializeGameRun() {
     if (typeof this.exports.init_run !== 'function') {
       console.warn('WASM init_run function not available');
       return;
@@ -292,7 +292,7 @@ export class WasmManager {
       
       // Make seed available for visual RNG
       globalThis.runSeedForVisuals = this.runSeed;
-      try { setVisualRngSeed(this.runSeed); } catch {}
+      try { setVisualRngSeed(this.runSeed); } catch {\n        // Ignore visual RNG seed setting errors\n      }
       
       // Verify initialization by checking basic functions
       this.verifyWasmInitialization();
@@ -1265,19 +1265,19 @@ export class WasmManager {
   setWeather(weather) {
     if (!this.isLoaded) {return;}
     
-    if (weather.rain !== undefined && typeof this.exports.set_weather_rain === 'function') {
+    if (typeof weather.rain !== "undefined" && typeof this.exports.set_weather_rain === 'function') {
       this.exports.set_weather_rain(weather.rain);
     }
-    if (weather.wind !== undefined && typeof this.exports.set_weather_wind === 'function') {
+    if (typeof weather.wind !== "undefined" && typeof this.exports.set_weather_wind === 'function') {
       this.exports.set_weather_wind(weather.wind.speed || 0, 
                                    weather.wind.dirX || 0, 
                                    weather.wind.dirY || 0, 
                                    weather.wind.dirZ || 0);
     }
-    if (weather.temperature !== undefined && typeof this.exports.set_weather_temperature === 'function') {
+    if (typeof weather.temperature !== "undefined" && typeof this.exports.set_weather_temperature === 'function') {
       this.exports.set_weather_temperature(weather.temperature);
     }
-    if (weather.lightning !== undefined && typeof this.exports.set_weather_lightning === 'function') {
+    if (typeof weather.lightning !== "undefined" && typeof this.exports.set_weather_lightning === 'function') {
       this.exports.set_weather_lightning(weather.lightning ? 1 : 0);
     }
   }
@@ -1909,7 +1909,7 @@ export class WasmManager {
       // Game loop functions with basic state management
       init_run: (seed, startWeapon) => {
         trackCall('init_run');
-        if (seed !== undefined && seed !== null) {
+        if (typeof seed !== "undefined" && seed !== null) {
           this.runSeed = BigInt(seed);
         }
         
@@ -1930,7 +1930,7 @@ export class WasmManager {
       
       reset_run: (newSeed) => {
         trackCall('reset_run');
-        if (newSeed !== undefined && newSeed !== null) {
+        if (typeof newSeed !== "undefined" && newSeed !== null) {
           this.runSeed = BigInt(newSeed);
         }
         

@@ -390,7 +390,7 @@ export class LeaderboardSystem {
   /**
    * Submit scores to global leaderboards
    */
-  async submitToGlobalLeaderboards(gameResult) {
+  submitToGlobalLeaderboards(gameResult) {
     // In a real implementation, this would submit to a server
     // For now, we'll simulate local global leaderboards
     

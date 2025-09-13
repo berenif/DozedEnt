@@ -994,7 +994,7 @@ export class EnhancedAudioManager {
   /**
    * Create reverb impulse response
    */
-  async createReverbImpulse() {
+  createReverbImpulse() {
     const sampleRate = this.audioContext.sampleRate;
     const duration = 2;
     const impulse = this.audioContext.createBuffer(2, sampleRate * duration, sampleRate);

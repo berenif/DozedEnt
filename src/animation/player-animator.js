@@ -129,7 +129,9 @@ export class AnimatedPlayer {
             if (options.wasmModule && !globalThis.wasmExports) {
                 globalThis.wasmExports = options.wasmModule
             }
-        } catch {}
+        } catch {
+            // Ignore WASM module loading errors - fallback handling elsewhere
+        }
     }
 
     loadSpriteSheet() {
@@ -295,7 +297,7 @@ export class AnimatedPlayer {
     getNormalizedTime() {
         try {
             // If WASM provides an explicit attack state machine, derive normalized phase
-            const get = (fn) => (typeof globalThis.wasmExports?.[fn] === 'function') ? globalThis.wasmExports[fn]() : undefined
+            const get = (fn) => (typeof globalThis.wasmExports?.[fn] === 'function') ? globalThis.wasmExports[fn]() : void 0
             const attackState = get('get_attack_state') // 0 Idle, 1 Windup, 2 Active, 3 Recovery
             const stateStartTime = get('get_attack_state_time')
             const now = get('get_time_seconds')
@@ -336,7 +338,9 @@ export class AnimatedPlayer {
                     return Math.max(0, Math.min(1, playerStateTimer / duration))
                 }
             }
-        } catch {}
+        } catch {
+            // Ignore WASM timing errors - fallback to animation controller
+        }
 
         // Fallback: use current animation controller progress
         try {
@@ -346,7 +350,9 @@ export class AnimatedPlayer {
                 const coarse = anim.currentFrame / (anim.frames.length - 1)
                 return Math.max(0, Math.min(1, coarse))
             }
-        } catch {}
+        } catch {
+            // Ignore animation controller errors - return default
+        }
 
         return 0
     }
@@ -1032,7 +1038,7 @@ export class AnimatedPlayer {
         ]
         
         joints.forEach(joint => {
-            if (joint && joint.x !== undefined && joint.y !== undefined) {
+            if (joint && typeof joint.x !== "undefined" && typeof joint.y !== "undefined") {
                 ctx.beginPath()
                 ctx.arc(joint.x, joint.y, 2, 0, Math.PI * 2)
                 ctx.fill()
@@ -1044,7 +1050,7 @@ export class AnimatedPlayer {
     
     // Helper method to draw bones
     drawBone(ctx, start, end) {
-        if (!start || !end || start.x === undefined || end.x === undefined) {return}
+        if (!start || !end || typeof start.x === "undefined" || typeof end.x === "undefined") {return}
         
         ctx.beginPath()
         ctx.moveTo(start.x, start.y)
@@ -1105,5 +1111,7 @@ AnimatedPlayer.attachDebugToggle = function(playerInstance, key = 'F3') {
     try {
         addEventListener('keydown', handler)
         playerInstance.__debugToggleAttached = true
-    } catch {}
+    } catch {
+        // Ignore debug handler attachment errors
+    }
 }

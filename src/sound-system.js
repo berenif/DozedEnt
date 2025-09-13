@@ -114,7 +114,7 @@ export class SoundSystem {
 
     // Stop existing music
     if (this.currentMusic) {
-      try { this.currentMusic.stop() } catch (_) {}
+      try { this.currentMusic.stop() } catch (_) {\n        // Ignore stop errors on already stopped audio\n      }
     }
 
     const source = this.context.createBufferSource()
@@ -145,7 +145,7 @@ export class SoundSystem {
 
   stopMusic() {
     if (this.currentMusic) {
-      try { this.currentMusic.stop() } catch (_) {}
+      try { this.currentMusic.stop() } catch (_) {\n        // Ignore stop errors on already stopped audio\n      }
     }
     this.currentMusic = null
     this.currentMusicName = null

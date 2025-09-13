@@ -69,7 +69,7 @@ export function randInt(max, stream = 'default') {
 
 /** Choose an element from an array via named stream */
 export function randChoice(arr, stream = 'default') {
-  if (!arr || arr.length === 0) { return undefined }
+  if (!arr || arr.length === 0) { return void 0 }
   return arr[randInt(arr.length, stream)]
 }
 

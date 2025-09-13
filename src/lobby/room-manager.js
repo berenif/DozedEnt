@@ -17,7 +17,7 @@ export class RoomManager {
    * @param {Object} options - Room creation options
    * @returns {Promise<Object>} Created room object
    */
-  async createRoom(options = {}) {
+  createRoom(options = {}) {
     const roomConfig = {
       name: options.name || 'New Room',
       type: options.type || 'public',
@@ -66,7 +66,7 @@ export class RoomManager {
    * @param {string} roomId - Room ID to join
    * @returns {Promise<Object>} Room object
    */
-  async joinRoom(roomId) {
+  joinRoom(roomId) {
     try {
       const room = this.rooms.get(roomId);
       
