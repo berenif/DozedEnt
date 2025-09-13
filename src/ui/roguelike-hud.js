@@ -209,6 +209,7 @@ export class RoguelikeHUD {
       scale: 0.1, // World scale for minimap
       playerSize: 3,
       enemySize: 2,
+      exitSize: 3,
       exploredAlpha: 0.6,
       unexploredAlpha: 0.2
     };
@@ -221,22 +222,26 @@ export class RoguelikeHUD {
     // Controls toggle
     const controlsToggle = document.getElementById('controls-toggle');
     const controlsPanel = document.getElementById('controls-panel');
-    
-    controlsToggle.addEventListener('click', () => {
+
+    this.controlsToggle = controlsToggle;
+    this.controlsToggleClickHandler = () => {
       controlsPanel.classList.toggle('visible');
-    });
-    
+    };
+    controlsToggle.addEventListener('click', this.controlsToggleClickHandler);
+
     // Hide controls when clicking outside
-    document.addEventListener('click', (event) => {
+    this.documentClickHandler = (event) => {
       if (!controlsToggle.contains(event.target) && !controlsPanel.contains(event.target)) {
         controlsPanel.classList.remove('visible');
       }
-    });
-    
+    };
+    document.addEventListener('click', this.documentClickHandler);
+
     // Listen for game state changes
-    this.gameStateManager.on('phaseChanged', (phase) => {
+    this.phaseChangedHandler = (phase) => {
       this.updatePhaseDisplay(phase);
-    });
+    };
+    this.gameStateManager.on('phaseChanged', this.phaseChangedHandler);
   }
 
   /**
@@ -348,8 +353,39 @@ export class RoguelikeHUD {
     ctx.moveTo(mapPlayerX, mapPlayerY);
     ctx.lineTo(mapPlayerX + 8, mapPlayerY);
     ctx.stroke();
-    
-    // TODO: Draw enemies, exits, and other points of interest when available
+
+    // Draw enemies
+    if (this.wasmManager.getEnemyPositions) {
+      try {
+        const enemies = this.wasmManager.getEnemyPositions();
+        ctx.fillStyle = '#e74c3c';
+        enemies.forEach(enemy => {
+          const ex = enemy.x * canvas.width;
+          const ey = enemy.y * canvas.height;
+          ctx.beginPath();
+          ctx.arc(ex, ey, this.minimapSettings.enemySize, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } catch (error) {
+        console.error('Error drawing enemies on minimap:', error);
+      }
+    }
+
+    // Draw exits
+    if (this.wasmManager.getExitPositions) {
+      try {
+        const exits = this.wasmManager.getExitPositions();
+        ctx.fillStyle = '#2ecc71';
+        exits.forEach(exit => {
+          const ex = exit.x * canvas.width;
+          const ey = exit.y * canvas.height;
+          const size = this.minimapSettings.exitSize;
+          ctx.fillRect(ex - size, ey - size, size * 2, size * 2);
+        });
+      } catch (error) {
+        console.error('Error drawing exits on minimap:', error);
+      }
+    }
   }
 
   /**
@@ -362,29 +398,8 @@ export class RoguelikeHUD {
     // Clear existing effects
     container.innerHTML = '';
     
-    // TODO: Get actual status effects from WASM when available
-    // For now, show placeholder effects based on game state
-    const phase = this.wasmManager.getPhase ? this.wasmManager.getPhase() : 0;
-    
-    if (phase === 4) { // Risk phase
-      this.addStatusEffect(container, {
-        icon: '💀',
-        name: 'Risk',
-        description: 'Taking risks for greater rewards',
-        duration: -1, // Permanent during phase
-        type: 'neutral'
-      });
-    }
-    
-    if (this.wasmManager.getStamina && this.wasmManager.getStamina() < 0.25) {
-      this.addStatusEffect(container, {
-        icon: '😰',
-        name: 'Exhausted',
-        description: 'Low stamina - reduced movement speed',
-        duration: -1,
-        type: 'debuff'
-      });
-    }
+    const effects = this.wasmManager.getStatusEffects ? this.wasmManager.getStatusEffects() : [];
+    effects.forEach(effect => this.addStatusEffect(container, effect));
   }
 
   /**
@@ -511,10 +526,21 @@ export class RoguelikeHUD {
     if (hud) {
       hud.remove();
     }
-    
+
+    // Remove event listeners
+    if (this.controlsToggle && this.controlsToggleClickHandler) {
+      this.controlsToggle.removeEventListener('click', this.controlsToggleClickHandler);
+    }
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler);
+    }
+    if (this.phaseChangedHandler && this.gameStateManager?.off) {
+      this.gameStateManager.off('phaseChanged', this.phaseChangedHandler);
+    }
+
     // Clear combat feedback
     this.hudCombatState.damageNumbers.forEach(damage => {
-      if (damage.element) {damage.element.remove();}
+      if (damage.element?.remove) {damage.element.remove();}
     });
     this.hudCombatState.damageNumbers = [];
   }

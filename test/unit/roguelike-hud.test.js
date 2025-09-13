@@ -40,7 +40,10 @@ function createMockWasmModule() {
     getStamina: sinon.stub().returns(1.0),
     getPhase: sinon.stub().returns(0),
     getGold: sinon.stub().returns(100),
-    getEssence: sinon.stub().returns(50)
+    getEssence: sinon.stub().returns(50),
+    getEnemyPositions: sinon.stub().returns([]),
+    getExitPositions: sinon.stub().returns([]),
+    getStatusEffects: sinon.stub().returns([])
   };
 }
 
@@ -51,6 +54,8 @@ describe('RoguelikeHUD', () => {
   let mockCombatFeedback;
   let mockCanvas;
   let mockContext;
+  let controlsToggleMock;
+  let controlsPanelMock;
 
   beforeEach(() => {
     // Mock DOM environment
@@ -110,12 +115,21 @@ describe('RoguelikeHUD', () => {
     };
 
     global.document.createElement.returns(mockHUDElement);
+    controlsToggleMock = {
+      addEventListener: sinon.stub(),
+      removeEventListener: sinon.stub(),
+      contains: sinon.stub().returns(false)
+    };
+    controlsPanelMock = {
+      classList: { toggle: sinon.stub(), remove: sinon.stub() },
+      contains: sinon.stub().returns(false)
+    };
     global.document.getElementById.callsFake((id) => {
       const elementMocks = {
         'roguelike-hud': { remove: sinon.stub() },
         'minimap-canvas': mockCanvas,
-        'controls-toggle': { addEventListener: sinon.stub() },
-        'controls-panel': { classList: { toggle: sinon.stub(), remove: sinon.stub() } },
+        'controls-toggle': controlsToggleMock,
+        'controls-panel': controlsPanelMock,
         'status-effects-container': { innerHTML: '', appendChild: sinon.stub() },
         'combo-display': mockElement,
         'gold-value': { textContent: '' },
@@ -141,6 +155,7 @@ describe('RoguelikeHUD', () => {
     // Mock dependencies
     mockGameStateManager = {
       on: sinon.stub(),
+      off: sinon.stub(),
       getHP: sinon.stub().returns(1.0),
       getStamina: sinon.stub().returns(0.8)
     };
@@ -163,10 +178,10 @@ describe('RoguelikeHUD', () => {
   });
 
   afterEach(() => {
-    sinon.restore();
     if (roguelikeHUD) {
       roguelikeHUD.destroy();
     }
+    sinon.restore();
   });
 
   describe('Constructor', () => {
@@ -426,6 +441,30 @@ describe('RoguelikeHUD', () => {
       expect(mockContext.lineTo.called).to.be.true;
       expect(mockContext.stroke.called).to.be.true;
     });
+
+    it('should draw enemy and exit markers', () => {
+      const enemy = { x: 0.1, y: 0.2 };
+      const exit = { x: 0.8, y: 0.9 };
+      mockWasmManager.getEnemyPositions.returns([enemy]);
+      mockWasmManager.getExitPositions.returns([exit]);
+
+      roguelikeHUD.updateMinimap();
+
+      const enemyMapX = enemy.x * mockCanvas.width;
+      const enemyMapY = enemy.y * mockCanvas.height;
+      const exitMapX = exit.x * mockCanvas.width;
+      const exitMapY = exit.y * mockCanvas.height;
+
+      expect(mockContext.arc.calledWith(enemyMapX, enemyMapY, roguelikeHUD.minimapSettings.enemySize)).to.be.true;
+      expect(
+        mockContext.fillRect.calledWith(
+          exitMapX - roguelikeHUD.minimapSettings.exitSize,
+          exitMapY - roguelikeHUD.minimapSettings.exitSize,
+          roguelikeHUD.minimapSettings.exitSize * 2,
+          roguelikeHUD.minimapSettings.exitSize * 2
+        )
+      ).to.be.true;
+    });
   });
 
   describe('Status Effects', () => {
@@ -442,17 +481,16 @@ describe('RoguelikeHUD', () => {
       expect(mockContainer.innerHTML).to.equal('');
     });
 
-    it('should show risk phase status effect', () => {
-      mockWasmManager.getPhase.returns(4); // Risk phase
-      
+    it('should request status effects from wasmManager', () => {
       roguelikeHUD.updateStatusEffects();
-
-      expect(mockContainer.appendChild.called).to.be.true;
+      expect(mockWasmManager.getStatusEffects.called).to.be.true;
     });
 
-    it('should show exhausted status when stamina is low', () => {
-      mockWasmManager.getStamina.returns(0.2);
-      
+    it('should render status effects returned by wasmManager', () => {
+      mockWasmManager.getStatusEffects.returns([
+        { icon: '🔥', name: 'Burning', description: 'Losing health', duration: 5, type: 'debuff' }
+      ]);
+
       roguelikeHUD.updateStatusEffects();
 
       expect(mockContainer.appendChild.called).to.be.true;
@@ -533,7 +571,7 @@ describe('RoguelikeHUD', () => {
     });
 
     it('should remove faded damage numbers', () => {
-      const mockDamageElement = { remove: sinon.stub() };
+      const mockDamageElement = { style: {}, remove: sinon.stub() };
       roguelikeHUD.hudCombatState.damageNumbers = [{
         element: mockDamageElement,
         x: 100,
@@ -745,6 +783,17 @@ describe('RoguelikeHUD', () => {
       roguelikeHUD.hudCombatState.damageNumbers = [{ element: null }];
 
       expect(() => roguelikeHUD.destroy()).to.not.throw();
+    });
+
+    it('should remove event listeners and subscriptions on destroy', () => {
+      roguelikeHUD.destroy();
+
+      expect(controlsToggleMock.removeEventListener.calledWith('click', roguelikeHUD.controlsToggleClickHandler)).to.be.true;
+      expect(global.document.removeEventListener.calledWith('click', roguelikeHUD.documentClickHandler)).to.be.true;
+      expect(mockGameStateManager.off.calledWith('phaseChanged', roguelikeHUD.phaseChangedHandler)).to.be.true;
+
+      // Prevent afterEach from destroying again
+      roguelikeHUD = null;
     });
   });
 
