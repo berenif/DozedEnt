@@ -153,7 +153,9 @@ export class PerformanceOptimizer {
    */
   getFromPool(poolName) {
     const pool = this.pools.get(poolName);
-    if (!pool) return null;
+    if (!pool) {
+      return null;
+    }
     
     let obj = pool.objects.pop();
     if (!obj) {
@@ -170,7 +172,9 @@ export class PerformanceOptimizer {
    */
   returnToPool(poolName, obj) {
     const pool = this.pools.get(poolName);
-    if (!pool || !pool.active.has(obj)) return;
+    if (!pool || !pool.active.has(obj)) {
+      return;
+    }
     
     pool.active.delete(obj);
     
@@ -180,11 +184,9 @@ export class PerformanceOptimizer {
     // Return to pool if not at max capacity
     if (pool.objects.length < pool.maxSize) {
       pool.objects.push(obj);
-    } else {
+    } else if (obj.parentNode) {
       // Pool full, remove from DOM
-      if (obj.parentNode) {
-        obj.parentNode.removeChild(obj);
-      }
+      obj.parentNode.removeChild(obj);
     }
   }
 
@@ -224,7 +226,9 @@ export class PerformanceOptimizer {
    * Main monitoring loop
    */
   monitoringLoop() {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
     
     const now = performance.now();
     
@@ -281,7 +285,9 @@ export class PerformanceOptimizer {
    * Check memory usage
    */
   checkMemoryUsage() {
-    if (!performance.memory) return;
+    if (!performance.memory) {
+      return;
+    }
     
     const currentMemory = performance.memory.usedJSHeapSize;
     this.metrics.memoryUsage = currentMemory - this.initialMemory;
@@ -368,7 +374,7 @@ export class PerformanceOptimizer {
    * Clear object pools to free memory
    */
   clearObjectPools() {
-    for (const [name, pool] of this.pools) {
+    for (const [, pool] of this.pools) {
       // Remove inactive objects from DOM
       pool.objects.forEach(obj => {
         if (obj.parentNode) {
@@ -432,7 +438,9 @@ export class PerformanceOptimizer {
    * Process deferred updates
    */
   processDeferredUpdates() {
-    if (this.deferredUpdates.size === 0) return;
+    if (this.deferredUpdates.size === 0) {
+      return;
+    }
     
     const maxProcessingTime = 5; // Max 5ms per frame for deferred updates
     const startTime = performance.now();
@@ -474,7 +482,9 @@ export class PerformanceOptimizer {
    */
   processUpdateBatches() {
     for (const [type, updates] of this.updateBatch) {
-      if (updates.length === 0) continue;
+      if (updates.length === 0) {
+        continue;
+      }
       
       // Process all updates of this type together
       performance.mark(`batch-${type}-start`);
@@ -506,15 +516,13 @@ export class PerformanceOptimizer {
     }
     
     let lastCall = 0;
-    const throttled = (originalFunction) => {
-      return (...args) => {
-        const now = performance.now();
-        if (now - lastCall >= delay) {
-          lastCall = now;
-          return originalFunction.apply(this, args);
-        }
-      };
-    };
+        const throttled = (originalFunction) => (...args) => {
+          const now = performance.now();
+          if (now - lastCall >= delay) {
+            lastCall = now;
+            return originalFunction.apply(this, args);
+          }
+        };
     
     this.throttledFunctions.set(name, { throttled, delay });
     return throttled;
@@ -529,15 +537,13 @@ export class PerformanceOptimizer {
       clearTimeout(existing.timeout);
     }
     
-    const debounced = (originalFunction) => {
-      return (...args) => {
-        const timeout = setTimeout(() => {
-          originalFunction.apply(this, args);
-          this.debouncedFunctions.delete(name);
-        }, delay);
-        
-        this.debouncedFunctions.set(name, { timeout });
-      };
+    const debounced = (originalFunction) => (...args) => {
+      const timeout = setTimeout(() => {
+        originalFunction.apply(this, args);
+        this.debouncedFunctions.delete(name);
+      }, delay);
+      
+      this.debouncedFunctions.set(name, { timeout });
     };
     
     return debounced;
@@ -584,12 +590,11 @@ export class PerformanceOptimizer {
       createOffscreenCanvas: (width, height) => {
         if ('OffscreenCanvas' in window) {
           return new OffscreenCanvas(width, height);
-        } else {
-          const offscreen = document.createElement('canvas');
-          offscreen.width = width;
-          offscreen.height = height;
-          return offscreen;
         }
+        const offscreen = document.createElement('canvas');
+        offscreen.width = width;
+        offscreen.height = height;
+        return offscreen;
       },
       
       // Batch canvas operations
@@ -703,10 +708,18 @@ export class PerformanceOptimizer {
     const memoryValue = document.getElementById('memory-value');
     const rendersValue = document.getElementById('renders-value');
     
-    if (fpsValue) fpsValue.textContent = Math.round(this.metrics.fps);
-    if (frameTimeValue) frameTimeValue.textContent = this.metrics.avgFrameTime.toFixed(2) + 'ms';
-    if (memoryValue) memoryValue.textContent = (this.metrics.memoryUsage / 1024 / 1024).toFixed(1) + 'MB';
-    if (rendersValue) rendersValue.textContent = this.metrics.renderCalls;
+    if (fpsValue) {
+      fpsValue.textContent = Math.round(this.metrics.fps);
+    }
+    if (frameTimeValue) {
+      frameTimeValue.textContent = this.metrics.avgFrameTime.toFixed(2) + 'ms';
+    }
+    if (memoryValue) {
+      memoryValue.textContent = (this.metrics.memoryUsage / 1024 / 1024).toFixed(1) + 'MB';
+    }
+    if (rendersValue) {
+      rendersValue.textContent = this.metrics.renderCalls;
+    }
   }
 
   /**
@@ -724,6 +737,8 @@ export class PerformanceOptimizer {
     
     // Remove dashboard
     const dashboard = document.getElementById('performance-dashboard');
-    if (dashboard) dashboard.remove();
+    if (dashboard) {
+      dashboard.remove();
+    }
   }
 }

@@ -162,7 +162,9 @@ export class InputManager {
     }
     
     const action = this.keybinds.get(e.code);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
     
     // Prevent default for game keys
     if (this.isGameKey(e.code)) {
@@ -176,23 +178,27 @@ export class InputManager {
     this.inputState.keyboard.set(action, true);
     
     // Forward to WASM
-    this.forwardInputToWASM(action, true, 'keyboard');
+    this.forwardInputToWASM(action, true);
   }
 
   /**
    * Handle keyboard key release
    */
   handleKeyUp(e) {
-    if (this.isRemapping) return;
+    if (this.isRemapping) {
+      return;
+    }
     
     const action = this.keybinds.get(e.code);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
     
     // Update input state
     this.inputState.keyboard.set(action, false);
     
     // Forward to WASM
-    this.forwardInputToWASM(action, false, 'keyboard');
+    this.forwardInputToWASM(action, false);
   }
 
   /**
@@ -279,7 +285,9 @@ export class InputManager {
    * Handle touch movement
    */
   handleTouchMove(e) {
-    if (!this.inputState.touch.active) return;
+    if (!this.inputState.touch.active) {
+      return;
+    }
     
     this.inputState.touch.points = Array.from(e.touches).map(touch => ({
       id: touch.identifier,
@@ -347,7 +355,9 @@ export class InputManager {
    * Poll gamepad state (called every frame)
    */
   updateGamepad() {
-    if (this.gamepadIndex === -1) return;
+    if (this.gamepadIndex === -1) {
+      return;
+    }
     
     const gamepads = navigator.getGamepads();
     const gamepad = gamepads[this.gamepadIndex];
@@ -386,7 +396,9 @@ export class InputManager {
     
     gamepad.buttons.forEach((button, index) => {
       const action = buttonMappings[index];
-      if (!action) return;
+      if (!action) {
+      return;
+    }
       
       const isPressed = button.pressed || button.value > 0.5;
       const wasPressed = this.inputState.gamepad?.buttons[index]?.pressed || false;
@@ -404,7 +416,9 @@ export class InputManager {
    * Process gamepad analog stick inputs
    */
   processGamepadAxes(gamepad) {
-    if (gamepad.axes.length < 2) return;
+    if (gamepad.axes.length < 2) {
+      return;
+    }
     
     // Left stick for movement
     const leftX = Math.abs(gamepad.axes[0]) > this.gamepadDeadzone ? gamepad.axes[0] : 0;
@@ -493,7 +507,9 @@ export class InputManager {
    */
   isInInputBuffer(action) {
     const timestamp = this.inputBuffer.get(action);
-    if (!timestamp) return false;
+    if (!timestamp) {
+      return false;
+    }
     
     return (Date.now() - timestamp) <= this.bufferDuration;
   }
@@ -501,8 +517,10 @@ export class InputManager {
   /**
    * Forward input to WASM following WASM-first architecture
    */
-  forwardInputToWASM(action, isPressed, inputType) {
-    if (!this.wasmManager) return;
+  forwardInputToWASM(action, isPressed) {
+    if (!this.wasmManager) {
+      return;
+    }
     
     // Forward to appropriate WASM function based on action
     switch (action) {
@@ -577,12 +595,21 @@ export class InputManager {
    * Update movement based on current keyboard state
    */
   updateMovementFromInput() {
-    let x = 0, y = 0;
+    let x = 0;
+    let y = 0;
     
-    if (this.inputState.keyboard.get('move-left')) x -= 1;
-    if (this.inputState.keyboard.get('move-right')) x += 1;
-    if (this.inputState.keyboard.get('move-up')) y -= 1;
-    if (this.inputState.keyboard.get('move-down')) y += 1;
+    if (this.inputState.keyboard.get('move-left')) {
+      x -= 1;
+    }
+    if (this.inputState.keyboard.get('move-right')) {
+      x += 1;
+    }
+    if (this.inputState.keyboard.get('move-up')) {
+      y -= 1;
+    }
+    if (this.inputState.keyboard.get('move-down')) {
+      y += 1;
+    }
     
     // Normalize diagonal movement
     if (x !== 0 && y !== 0) {
@@ -601,7 +628,9 @@ export class InputManager {
    * Handle UI-specific actions (not forwarded to WASM)
    */
   handleUIAction(action, isPressed) {
-    if (!isPressed) return; // Only handle key press, not release
+    if (!isPressed) {
+      return; // Only handle key press, not release
+    }
     
     // Dispatch custom events for UI components to handle
     const event = new CustomEvent('ui-action', {
@@ -648,7 +677,9 @@ export class InputManager {
    * Handle key remapping
    */
   handleRemapKey(keyCode) {
-    if (!this.isRemapping || !this.remappingKey) return;
+    if (!this.isRemapping || !this.remappingKey) {
+      return;
+    }
     
     // Remove old binding for this key
     for (const [key, action] of this.keybinds) {
@@ -751,7 +782,9 @@ export class InputManager {
   isTouchInGameArea(touch) {
     // Determine if touch is in game area vs UI elements
     const gameCanvas = document.getElementById('game-canvas');
-    if (!gameCanvas) return false;
+    if (!gameCanvas) {
+      return false;
+    }
     
     const rect = gameCanvas.getBoundingClientRect();
     return touch.clientX >= rect.left && touch.clientX <= rect.right &&
@@ -760,7 +793,9 @@ export class InputManager {
 
   calculateTouchMovement(touch) {
     const zone = this.touchZones.get('movement');
-    if (!zone) return { x: 0, y: 0 };
+    if (!zone) {
+      return { x: 0, y: 0 };
+    }
     
     const centerX = zone.x + zone.width / 2;
     const centerY = zone.y + zone.height / 2;
@@ -771,7 +806,9 @@ export class InputManager {
     const maxDistance = Math.min(zone.width, zone.height) / 3;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    if (distance < 10) return { x: 0, y: 0 }; // Dead zone
+    if (distance < 10) {
+      return { x: 0, y: 0 }; // Dead zone
+    }
     
     const normalizedDistance = Math.min(distance / maxDistance, 1);
     const angle = Math.atan2(deltaY, deltaX);
