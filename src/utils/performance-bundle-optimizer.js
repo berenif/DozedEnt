@@ -70,7 +70,7 @@ export class BundleOptimizer {
    * @param {string} content - File content
    * @returns {Object} File analysis
    */
-  async analyzeFile(filePath, content) {
+  analyzeFile(filePath, content) {
     const lines = content.split('\n');
     const analysis = {
       imports: [],
@@ -81,7 +81,6 @@ export class BundleOptimizer {
     };
 
     let inCommentBlock = false;
-    let currentFunction = null;
     const importedSymbols = new Map();
     const usedSymbols = new Set();
 
@@ -89,12 +88,20 @@ export class BundleOptimizer {
       const line = lines[i].trim();
       
       // Skip empty lines and comments
-      if (!line || line.startsWith('//')) continue;
+      if (!line || line.startsWith('//')) {
+        continue;
+      }
       
       // Handle multi-line comments
-      if (line.includes('/*')) inCommentBlock = true;
-      if (line.includes('*/')) inCommentBlock = false;
-      if (inCommentBlock) continue;
+      if (line.includes('/*')) {
+        inCommentBlock = true;
+      }
+      if (line.includes('*/')) {
+        inCommentBlock = false;
+      }
+      if (inCommentBlock) {
+        continue;
+      }
 
       // Detect imports
       const importMatch = line.match(/import\s+(?:{([^}]+)}|\*\s+as\s+(\w+)|(\w+))\s+from\s+['"]([^'"]+)['"]/);
@@ -155,7 +162,12 @@ export class BundleOptimizer {
       // Detect unused functions (simple heuristic)
       const functionMatch = line.match(/(?:function\s+(\w+)|const\s+(\w+)\s*=\s*(?:async\s+)?(?:\([^)]*\)\s*=>|\([^)]*\)\s*{))/);
       if (functionMatch) {
-        currentFunction = functionMatch[1] || functionMatch[2];
+        // Store function name for potential dead code analysis
+        const functionName = functionMatch[1] || functionMatch[2];
+        // Could be used for tracking function usage
+        if (functionName) {
+          // Function detected - could be analyzed for usage
+        }
       }
     }
 
@@ -592,7 +604,7 @@ export const globalMemoryLeakDetector = new MemoryLeakDetector();`;
    * Helper method to read file (stub for actual implementation)
    * @private
    */
-  async readFile(filePath) {
+  readFile() {
     // In actual implementation, this would read from filesystem
     // For now, return empty string as placeholder
     return '';

@@ -306,7 +306,7 @@ const createMockInputManager = () => {
     }
 
     setCallback(type, callback) {
-      if (this.callbacks.hasOwnProperty(type)) {
+      if (Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
         this.callbacks[type] = callback;
       }
     }

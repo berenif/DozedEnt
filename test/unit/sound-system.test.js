@@ -102,14 +102,12 @@ describe('SoundSystem', () => {
         delayTime: { value: 0.1 },
         maxDelayTime: 1
       }),
-      createBiquadFilter: sinon.stub().returns(mockLowPassFilter),
       createWaveShaper: sinon.stub().returns({
         connect: sinon.stub(),
         disconnect: sinon.stub(),
         curve: null,
         oversample: 'none'
       }),
-      createGain: sinon.stub().returns(mockGainNode),
       destination: { connect: sinon.stub() },
       sampleRate: 44100,
       currentTime: 0,

@@ -34,7 +34,7 @@ export class DeadCodeEliminator {
    * @param {string} filePath - File path for context
    * @returns {Object} Analysis results
    */
-  analyzeFile(content, filePath = '') {
+  analyzeFile(content) {
     const analysis = {
       unusedImports: [],
       unusedVariables: [],
@@ -49,22 +49,32 @@ export class DeadCodeEliminator {
     const usedSymbols = new Set();
     
     let inCommentBlock = false;
-    let inDebugBlock = false;
+    // let inDebugBlock = false; // Not used in current implementation
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
       
       // Skip empty lines
-      if (!trimmedLine) continue;
+      if (!trimmedLine) {
+        continue;
+      }
 
       // Handle comment blocks
-      if (trimmedLine.includes('/*')) inCommentBlock = true;
-      if (trimmedLine.includes('*/')) inCommentBlock = false;
-      if (inCommentBlock) continue;
+      if (trimmedLine.includes('/*')) {
+        inCommentBlock = true;
+      }
+      if (trimmedLine.includes('*/')) {
+        inCommentBlock = false;
+      }
+      if (inCommentBlock) {
+        continue;
+      }
 
       // Skip single-line comments
-      if (trimmedLine.startsWith('//')) continue;
+      if (trimmedLine.startsWith('//')) {
+        continue;
+      }
 
       // Detect debug blocks
       if (trimmedLine.includes('// DEBUG START')) {

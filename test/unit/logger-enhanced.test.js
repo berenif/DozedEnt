@@ -41,7 +41,7 @@ const createMockLogger = () => {
     }
 
     setLevel(level) {
-      if (this.logLevels.hasOwnProperty(level)) {
+      if (Object.prototype.hasOwnProperty.call(this.logLevels, level)) {
         this.options.level = level;
       } else {
         this.warn(`Invalid log level: ${level}`);

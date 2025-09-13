@@ -5,7 +5,7 @@
 
 import { globalWasmLoader } from './wasm-lazy-loader.js';
 import { globalMemoryOptimizer } from './memory-optimizer.js';
-import { globalDeadCodeEliminator } from './dead-code-eliminator.js';
+// import { globalDeadCodeEliminator } from './dead-code-eliminator.js'; // Not used
 import { globalProfiler } from './performance-profiler.js';
 import { globalDashboard } from '../ui/performance-dashboard.js';
 
@@ -83,7 +83,7 @@ export class PerformanceIntegration {
    * Initialize memory optimization
    * @private
    */
-  async initializeMemoryOptimization() {
+  initializeMemoryOptimization() {
     try {
       if (globalMemoryOptimizer && !globalMemoryOptimizer.isMonitoring) {
         globalMemoryOptimizer.startMonitoring();
@@ -121,7 +121,7 @@ export class PerformanceIntegration {
    * Initialize performance profiling
    * @private
    */
-  async initializePerformanceProfiling() {
+  initializePerformanceProfiling() {
     try {
       if (globalProfiler && !globalProfiler.isEnabled) {
         globalProfiler.enable();
@@ -137,7 +137,7 @@ export class PerformanceIntegration {
    * Initialize performance dashboard
    * @private
    */
-  async initializePerformanceDashboard() {
+  initializePerformanceDashboard() {
     try {
       if (globalDashboard) {
         // Set up keyboard shortcut (Ctrl+Shift+P)
@@ -174,7 +174,9 @@ export class PerformanceIntegration {
    * @private
    */
   performAutoOptimization() {
-    if (!globalProfiler || !globalProfiler.isEnabled) return;
+    if (!globalProfiler || !globalProfiler.isEnabled) {
+      return;
+    }
 
     const metrics = globalProfiler.getMetricsSummary();
     
@@ -278,7 +280,7 @@ export class PerformanceIntegration {
   /**
    * Run performance analysis
    */
-  async runPerformanceAnalysis() {
+  runPerformanceAnalysis() {
     console.log('🔍 Running performance analysis...');
     
     const analysis = {
