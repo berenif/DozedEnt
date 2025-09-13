@@ -1,0 +1,29 @@
+# MIME type configuration for GitHub Pages
+# Fix MIME type issues for JavaScript modules and WebAssembly files
+
+# Ensure JavaScript files are served with correct MIME type
+AddType application/javascript .js
+AddType application/javascript .mjs
+AddType text/javascript .js
+
+# Ensure WebAssembly files are served with correct MIME type
+AddType application/wasm .wasm
+
+# Enable CORS for WebAssembly and JavaScript modules
+<FilesMatch "\.(js|mjs|wasm)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</FilesMatch>
+
+# Prevent caching issues during development
+<FilesMatch "\.(js|mjs|wasm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
+# Security headers
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set X-XSS-Protection "1; mode=block"

@@ -6,7 +6,6 @@
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { CombatFeedback } from '../../src/ui/combat-feedback.js';
 import { RoguelikeHUD } from '../../src/ui/roguelike-hud.js';
 import { UIEventHandlers } from '../../src/ui/ui-event-handlers.js';
 
@@ -227,103 +226,7 @@ describe('UI Performance and Memory Management', () => {
     };
   }
 
-  describe('CombatFeedback Performance', () => {
-    let combatFeedback;
-
-    beforeEach(() => {
-      combatFeedback = new CombatFeedback();
-    });
-
-    afterEach(() => {
-      if (combatFeedback) {
-        combatFeedback.destroy();
-      }
-    });
-
-    it('should handle rapid damage number creation efficiently', () => {
-      const startTime = 1000;
-      const endTime = 1050;
-      mockPerformance.now.onFirstCall().returns(startTime);
-
-      // Create many damage numbers rapidly
-      for (let i = 0; i < 100; i++) {
-        combatFeedback.showDamageNumber(Math.random(), Math.random(), i, 'damage');
-      }
-
-      mockPerformance.now.returns(endTime);
-      const duration = endTime - startTime;
-
-      expect(duration).to.equal(50);
-      expect(combatFeedback.feedbackElements.length).to.equal(100);
-    });
-
-    it('should cleanup damage numbers to prevent memory leaks', () => {
-      const initialElementCount = memoryTracker.elements.size;
-
-      // Create damage numbers
-      for (let i = 0; i < 20; i++) {
-        combatFeedback.showDamageNumber(0.5, 0.3, i, 'damage');
-      }
-
-      const peakElementCount = memoryTracker.elements.size;
-      expect(peakElementCount).to.be.greaterThan(initialElementCount);
-
-      // Simulate time passage and cleanup
-      combatFeedback.feedbackElements.forEach(feedback => {
-        if (feedback.element && feedback.element.remove) {
-          feedback.element.remove();
-        }
-      });
-      combatFeedback.feedbackElements = [];
-
-      // Verify cleanup
-      expect(combatFeedback.feedbackElements).to.be.empty;
-    });
-
-    it('should handle combo updates efficiently', () => {
-      mockPerformance.now.returns(1000);
-      const startTime = mockPerformance.now();
-
-      // Rapid combo updates
-      for (let i = 0; i < 50; i++) {
-        combatFeedback.updateCombo(true, i % 5 === 0);
-        mockPerformance.now.returns(1000 + i * 10);
-      }
-
-      expect(combatFeedback.comboState.count).to.equal(50);
-      expect(combatFeedback.comboState.multiplier).to.be.greaterThan(1);
-    });
-
-    it('should limit maximum feedback elements to prevent memory bloat', () => {
-      const maxElements = 50;
-      
-      // Create more elements than the limit
-      for (let i = 0; i < maxElements + 20; i++) {
-        combatFeedback.showDamageNumber(Math.random(), Math.random(), i, 'damage');
-      }
-
-      // In a real implementation, there should be a limit
-      // For testing, we verify the system can handle many elements
-      expect(combatFeedback.feedbackElements.length).to.be.at.most(maxElements + 20);
-    });
-
-    it('should update animation frames efficiently', () => {
-      // Add feedback elements
-      for (let i = 0; i < 10; i++) {
-        combatFeedback.showDamageNumber(0.5, 0.3, i, 'damage');
-      }
-
-      mockPerformance.now.returns(1500);
-      
-      const startUpdate = mockPerformance.now();
-      combatFeedback.update();
-      mockPerformance.now.returns(1502);
-      const endUpdate = mockPerformance.now();
-
-      const updateDuration = endUpdate - startUpdate;
-      expect(updateDuration).to.equal(2); // Should be very fast
-    });
-  });
+  // CombatFeedback tests removed - component deleted
 
   describe('RoguelikeHUD Performance', () => {
     let roguelikeHUD;
@@ -524,8 +427,8 @@ describe('UI Performance and Memory Management', () => {
 
       // Create multiple UI components
       for (let i = 0; i < 5; i++) {
-        const combatFeedback = new CombatFeedback();
-        components.push(combatFeedback);
+        // CombatFeedback component removed
+        // CombatFeedback component removed
       }
 
       const peakElements = memoryTracker.elements.size;
@@ -607,8 +510,8 @@ describe('UI Performance and Memory Management', () => {
 
       const components = [];
       for (let i = 0; i < 10; i++) {
-        const combatFeedback = new CombatFeedback();
-        components.push(combatFeedback);
+        // CombatFeedback component removed
+        // CombatFeedback component removed
       }
 
       mockPerformance.now.returns(7020);
@@ -622,7 +525,7 @@ describe('UI Performance and Memory Management', () => {
     });
 
     it('should benchmark UI update performance', () => {
-      const combatFeedback = new CombatFeedback();
+      // CombatFeedback component removed
       
       // Add elements to update
       for (let i = 0; i < 20; i++) {
@@ -644,7 +547,7 @@ describe('UI Performance and Memory Management', () => {
 
       expect(avgFrameTime).to.be.lessThan(16.67); // Should be faster than 60 FPS
 
-      combatFeedback.destroy();
+      // combatFeedback.destroy() removed
     });
 
     it('should measure memory usage patterns', () => {
@@ -765,7 +668,7 @@ describe('UI Performance and Memory Management', () => {
     });
 
     it('should prevent resource exhaustion under stress', () => {
-      const combatFeedback = new CombatFeedback();
+      // CombatFeedback component removed
       const maxElements = 100;
       
       // Stress test - create many elements rapidly
@@ -784,7 +687,7 @@ describe('UI Performance and Memory Management', () => {
       // Should not exceed reasonable limits
       expect(combatFeedback.feedbackElements.length).to.be.at.most(maxElements);
       
-      combatFeedback.destroy();
+      // combatFeedback.destroy() removed
     });
   });
 });

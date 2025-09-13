@@ -18,7 +18,6 @@ import { AudioManager } from './src/audio/audio-manager.js'
 import { GameStateManager } from './src/game/game-state-manager.js'
 import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
 import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
-import { CombatFeedback } from './src/ui/combat-feedback.js'
 import { InputManager } from './src/input/input-manager.js'
 import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
@@ -169,14 +168,10 @@ class GameApplication {
       );
       console.log('✅ UI event handlers initialized');
 
-      // Initialize Combat Feedback
-      console.log('🔧 Initializing Combat Feedback...');
-      this.combatFeedback = new CombatFeedback();
-      console.log('✅ Combat Feedback initialized');
 
       // Initialize Roguelike HUD
       console.log('🔧 Initializing Roguelike HUD...');
-      this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager, this.combatFeedback);
+      this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
       console.log('✅ Roguelike HUD initialized');
 
       // Initialize game state with WASM

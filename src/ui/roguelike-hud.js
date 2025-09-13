@@ -4,19 +4,12 @@
  */
 
 export class RoguelikeHUD {
-  constructor(gameStateManager, wasmManager, combatFeedback = null) {
+  constructor(gameStateManager, wasmManager) {
     this.gameStateManager = gameStateManager;
     this.wasmManager = wasmManager;
-    this.combatFeedback = combatFeedback;
     
     // HUD state
     this.isVisible = true;
-    this.hudCombatState = {
-      damageNumbers: [],
-      hitIndicators: [],
-      comboCounter: 0,
-      lastComboTime: 0
-    };
     
     // Status effects tracking
     this.statusEffects = new Map();
@@ -120,24 +113,6 @@ export class RoguelikeHUD {
       
       <!-- Right Side Panel -->
       <div class="hud-right-panel">
-        <!-- Combat Feedback -->
-        <div class="combat-panel">
-          <div class="panel-title">Combat</div>
-          <div class="combat-stats">
-            <div class="stat">
-              <span class="stat-label">Hits:</span>
-              <span class="stat-value" id="hits-counter">0</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Blocks:</span>
-              <span class="stat-value" id="blocks-counter">0</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Rolls:</span>
-              <span class="stat-value" id="rolls-counter">0</span>
-            </div>
-          </div>
-        </div>
         
         <!-- Currency and Resources -->
         <div class="resources-panel">
@@ -155,10 +130,6 @@ export class RoguelikeHUD {
         </div>
       </div>
       
-      <!-- Combat Feedback Overlay -->
-      <div id="combat-feedback-overlay" class="combat-feedback-overlay">
-        <!-- Damage numbers and hit indicators will be spawned here -->
-      </div>
       
       <!-- Controls Reference -->
       <div class="controls-reference">
@@ -174,8 +145,6 @@ export class RoguelikeHUD {
             <div class="control-item"><kbd>J</kbd> Light Attack</div>
             <div class="control-item"><kbd>K</kbd> Heavy Attack</div>
             <div class="control-item"><kbd>L</kbd> Special</div>
-            <div class="control-item"><kbd>Shift</kbd> Block/Parry</div>
-            <div class="control-item"><kbd>Space</kbd> Roll</div>
           </div>
         </div>
       </div>
@@ -254,7 +223,6 @@ export class RoguelikeHUD {
     this.updatePhaseInfo();
     this.updateMinimap();
     this.updateStatusEffects();
-    this.updateCombatFeedback();
     this.updateResources();
   }
 
@@ -419,13 +387,6 @@ export class RoguelikeHUD {
     container.appendChild(effectEl);
   }
 
-  /**
-   * Update combat feedback and statistics
-   */
-  updateCombatFeedback() {
-    // Animate damage numbers and hit indicators
-    this.animateCombatFeedback();
-  }
 
   /**
    * Update resource displays
@@ -443,53 +404,7 @@ export class RoguelikeHUD {
     }
   }
 
-  /**
-   * Animate combat feedback elements
-   */
-  animateCombatFeedback() {
-    const overlay = document.getElementById('combat-feedback-overlay');
-    if (!overlay) {return;}
-    
-    // Update existing damage numbers
-    this.hudCombatState.damageNumbers.forEach((damage, index) => {
-      damage.element.style.transform = `translate(${damage.x}px, ${damage.y}px)`;
-      damage.element.style.opacity = damage.opacity;
-      
-      // Update position and fade
-      damage.y -= 2;
-      damage.opacity -= 0.02;
-      
-      // Remove if faded out
-      if (damage.opacity <= 0) {
-        damage.element.remove();
-        this.hudCombatState.damageNumbers.splice(index, 1);
-      }
-    });
-  }
 
-  /**
-   * Show damage number at position
-   */
-  showDamageNumber(x, y, damage, type = 'damage') {
-    const overlay = document.getElementById('combat-feedback-overlay');
-    if (!overlay) {return;}
-    
-    const damageEl = document.createElement('div');
-    damageEl.className = `damage-number ${type}`;
-    damageEl.textContent = Math.floor(damage);
-    damageEl.style.left = `${x}px`;
-    damageEl.style.top = `${y}px`;
-    
-    overlay.appendChild(damageEl);
-    
-    // Add to tracking array
-    this.hudCombatState.damageNumbers.push({
-      element: damageEl,
-      x: x,
-      y: y,
-      opacity: 1.0
-    });
-  }
 
   /**
    * Update phase display

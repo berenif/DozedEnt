@@ -18,7 +18,6 @@ import { AudioManager } from './src/audio/audio-manager.js'
 import { GameStateManager } from './src/game/game-state-manager.js'
 import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
 import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
-import { CombatFeedback } from './src/ui/combat-feedback.js'
 import { InputManager } from './src/input/input-manager.js'
 import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
@@ -169,14 +168,10 @@ class GameApplication {
       );
       console.log('✅ UI event handlers initialized');
 
-      // Initialize Combat Feedback
-      console.log('🔧 Initializing Combat Feedback...');
-      this.combatFeedback = new CombatFeedback();
-      console.log('✅ Combat Feedback initialized');
 
       // Initialize Roguelike HUD
       console.log('🔧 Initializing Roguelike HUD...');
-      this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager, this.combatFeedback);
+      this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
       console.log('✅ Roguelike HUD initialized');
 
       // Initialize game state with WASM
@@ -714,20 +709,8 @@ class GameApplication {
       // Update game state
       this.gameStateManager.update(deltaTime, inputState);
 
-      // Sync player position from WASM to animated player
-      if (this.animatedPlayer && this.gameStateManager.playerState) {
-        const oldX = this.animatedPlayer.x;
-        const oldY = this.animatedPlayer.y;
-        this.animatedPlayer.x = this.gameStateManager.playerState.position.x;
-        this.animatedPlayer.y = this.gameStateManager.playerState.position.y;
-        
-        // Log significant movement
-        const dx = this.animatedPlayer.x - oldX;
-        const dy = this.animatedPlayer.y - oldY;
-        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-          console.log(`Player moved: (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) -> (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})`);
-        }
-      }
+      // Note: Player position synchronization is now handled in render() method
+      // to ensure consistent coordinate system handling
 
       // Update wolf AI
       if (this.wolfAISystem && this.animatedPlayer) {
@@ -771,22 +754,42 @@ class GameApplication {
       const ctx = this.gameRenderer.ctx;
       ctx.clearRect(0, 0, this.VIRTUAL_WIDTH, this.VIRTUAL_HEIGHT);
 
-      // Update camera to follow player
-      if (this.animatedPlayer) {
-        // Update game renderer's player position for camera tracking
-        this.gameRenderer.player.x = this.animatedPlayer.x;
-        this.gameRenderer.player.y = this.animatedPlayer.y;
+      // Get player position from WASM if available, otherwise use fallback
+      let playerWorldX = this.WORLD_WIDTH / 2;
+      let playerWorldY = this.WORLD_HEIGHT / 2;
+      
+      if (this.wasmManager && this.wasmManager.isLoaded) {
+        const playerPos = this.wasmManager.getPlayerPosition();
+        playerWorldX = playerPos.x * this.WORLD_WIDTH;
+        playerWorldY = playerPos.y * this.WORLD_HEIGHT;
         
-        // Apply camera effects to follow player
-        this.cameraEffects.followTarget(this.animatedPlayer.x, this.animatedPlayer.y);
+        // Update animated player position from WASM
+        if (this.animatedPlayer) {
+          this.animatedPlayer.x = playerWorldX;
+          this.animatedPlayer.y = playerWorldY;
+        }
+      } else if (this.animatedPlayer) {
+        // Use animated player position as fallback
+        playerWorldX = this.animatedPlayer.x;
+        playerWorldY = this.animatedPlayer.y;
       }
+
+      // Update game renderer's player position for camera tracking
+      this.gameRenderer.player.x = playerWorldX;
+      this.gameRenderer.player.y = playerWorldY;
+      
+      // Apply camera effects to follow player
+      this.cameraEffects.followTarget(playerWorldX, playerWorldY);
 
       // Apply camera shake if needed
       const cameraState = this.gameStateManager.cameraState;
       this.cameraEffects.shake(cameraState.shakeStrength);
 
-      // Render world
+      // Render world (but disable internal player rendering)
+      const originalUseExternalPlayer = this.gameRenderer.useExternalPlayer;
+      this.gameRenderer.useExternalPlayer = true;
       this.gameRenderer.render();
+      this.gameRenderer.useExternalPlayer = originalUseExternalPlayer;
 
       // Render wolves
       const camera = this.gameRenderer.camera;
@@ -794,9 +797,17 @@ class GameApplication {
         wolf.render(ctx, camera);
       });
 
-      // Render player
+      // Render player using AnimatedPlayer (primary renderer)
       if (this.animatedPlayer) {
         this.animatedPlayer.render(ctx, camera);
+      } else {
+        // Fallback: render simple player rectangle
+        ctx.save();
+        ctx.fillStyle = '#4a90e2';
+        const screenX = playerWorldX - camera.x;
+        const screenY = playerWorldY - camera.y;
+        ctx.fillRect(screenX - 16, screenY - 16, 32, 32);
+        ctx.restore();
       }
 
       // Render UI overlays
@@ -836,13 +847,39 @@ class GameApplication {
         <div>Wolves: ${gameState.wolfState?.characterCount || 0}</div>
     `;
 
+    // Show player position information
     if (this.wasmManager.isLoaded && gameState.isGameRunning) {
       const playerPos = this.wasmManager.getPlayerPosition();
       const stamina = this.wasmManager.getStamina();
+      const worldX = playerPos.x * this.WORLD_WIDTH;
+      const worldY = playerPos.y * this.WORLD_HEIGHT;
+      
       debugInfo += `
-        <div>Pos: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)})</div>
+        <div>WASM Pos: (${playerPos.x.toFixed(3)}, ${playerPos.y.toFixed(3)})</div>
+        <div>World Pos: (${worldX.toFixed(0)}, ${worldY.toFixed(0)})</div>
         <div>Stamina: ${(stamina * 100).toFixed(0)}%</div>
       `;
+    } else if (this.animatedPlayer) {
+      debugInfo += `
+        <div>Fallback Pos: (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})</div>
+        <div>No WASM - Using fallback rendering</div>
+      `;
+    }
+
+    // Show input state
+    const inputState = this.inputManager?.getInputState();
+    if (inputState) {
+      const hasInput = inputState.direction.x !== 0 || inputState.direction.y !== 0 || 
+                      inputState.lightAttack || inputState.heavyAttack || 
+                      inputState.block || inputState.roll || inputState.special;
+      debugInfo += `
+        <div>Input: ${hasInput ? '🎮 Active' : '⏸️ Idle'}</div>
+      `;
+      if (hasInput) {
+        debugInfo += `
+          <div>Dir: (${inputState.direction.x.toFixed(1)}, ${inputState.direction.y.toFixed(1)})</div>
+        `;
+      }
     }
 
     debugInfo += `</div>`;

@@ -43,34 +43,47 @@ defaults:
       path: "*.wasm"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "wasm/**/*.wasm"
     values:
       layout: null
+      sitemap: false
+  - scope:
+      path: "*.js"
+    values:
+      layout: null
+      sitemap: false
   - scope:
       path: "js/**/*.js"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "js/**/*.mjs"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "js/**/*.ts"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "js/**/*.d.ts"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "css/**/*.css"
     values:
       layout: null
+      sitemap: false
   - scope:
       path: "assets/**/*"
     values:
       layout: null
+      sitemap: false
 
 # MIME type configuration for WebAssembly
 webrick:

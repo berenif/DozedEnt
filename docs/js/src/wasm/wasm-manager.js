@@ -40,8 +40,17 @@ export class WasmManager {
     try {
       // Load the local WASM helper module with multiple fallback strategies
       let wasmHelperModule;
-      const helperModulePaths = [
+      
+      // On GitHub Pages, prioritize the local copies and avoid MIME type issues
+      const isGitHubPages = location && /\.github\.io$/.test(location.hostname);
+      const helperModulePaths = isGitHubPages ? [
+        './js/src/utils/wasm.js',
+        './js/src/utils/trystero-wasm.min.js',
+        './trystero-wasm.min.js',
+        '../utils/wasm.js'
+      ] : [
         './dist/trystero-wasm.min.js',
+        './js/src/utils/wasm.js',
         './src/utils/wasm.js',
         '../utils/wasm.js'
       ];
@@ -55,7 +64,11 @@ export class WasmManager {
           console.log(`Successfully loaded WASM helper from: ${wasmModulePath}`);
           break;
         } catch (error) {
-          console.warn(`Failed to load WASM helper from ${modulePath}:`, error.message);
+          if (modulePath.includes('trystero-wasm.min.js')) {
+            console.log(`ℹ️ Minified WASM helper not available (${error.message}), trying fallback...`);
+          } else {
+            console.warn(`Failed to load WASM helper from ${modulePath}:`, error.message);
+          }
           // Continue to next fallback
         }
       }

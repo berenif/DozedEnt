@@ -15,7 +15,6 @@ const projectRoot = join(__dirname, '..');
 
 // UI test files to run
 const uiTestFiles = [
-  'test/unit/combat-feedback.test.js',
   'test/unit/ui-dom-integration.test.js',
   'test/unit/ui-performance.test.js'
 ];

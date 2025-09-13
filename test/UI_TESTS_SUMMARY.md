@@ -4,8 +4,8 @@ This document summarizes the comprehensive UI test suite created for the DozedEn
 
 ## 📋 Test Files Created
 
-### 1. `test/unit/combat-feedback.test.js` ✅
-**Purpose**: Tests the CombatFeedback UI component
+### 1. Combat feedback tests removed ❌
+**Purpose**: Combat feedback UI components have been removed
 **Coverage**: 38 test cases covering:
 - Component initialization and DOM structure
 - Damage number rendering and animation

@@ -612,6 +612,18 @@ export class AnimatedPlayer {
         let screenY = 0
         const camX = camera?.x || 0
         const camY = camera?.y || 0
+        
+        // Debug logging for position tracking
+        const debugPositions = false; // Set to true for debugging
+        if (debugPositions && Math.random() < 0.01) { // Log occasionally to avoid spam
+            console.log('AnimatedPlayer.render:', {
+                playerPos: { x: this.x, y: this.y },
+                camera: { x: camX, y: camY },
+                hasGameRenderer: !!globalThis.gameRenderer,
+                hasWasmToWorld: !!(globalThis.gameRenderer?.wasmToWorld)
+            });
+        }
+        
         if (globalThis.gameRenderer && typeof globalThis.gameRenderer.wasmToWorld === 'function') {
             const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0.5, this.y || 0.5)
             screenX = pos.x - camX
@@ -664,8 +676,8 @@ export class AnimatedPlayer {
             
             ctx.restore()
         } else {
-            // Fallback to colored rectangle
-            ctx.fillStyle = this.color
+            // Fallback to colored rectangle - ensure it's always visible
+            ctx.fillStyle = this.color || '#4a90e2' // Default blue color
             
             // Apply state-based visual effects
             if (this.state === 'hurt') {
@@ -676,12 +688,32 @@ export class AnimatedPlayer {
                 ctx.fillStyle = '#ffff44'
             }
             
+            // Draw a more visible rectangle
+            const rectWidth = this.width || 32;
+            const rectHeight = this.height || 32;
+            
             ctx.fillRect(
-                screenX - this.width/2,
-                screenY - this.height/2,
-                this.width,
-                this.height
-            )
+                screenX - rectWidth/2,
+                screenY - rectHeight/2,
+                rectWidth,
+                rectHeight
+            );
+            
+            // Add a border to make it more visible
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+                screenX - rectWidth/2,
+                screenY - rectHeight/2,
+                rectWidth,
+                rectHeight
+            );
+            
+            // Add a center dot to show exact position
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+            ctx.fill();
         }
         
         // Draw health bar

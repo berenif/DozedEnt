@@ -51,7 +51,6 @@ describe('RoguelikeHUD', () => {
   let roguelikeHUD;
   let mockGameStateManager;
   let mockWasmManager;
-  let mockCombatFeedback;
   let mockCanvas;
   let mockContext;
   let controlsToggleMock;
@@ -134,7 +133,7 @@ describe('RoguelikeHUD', () => {
         'combo-display': mockElement,
         'gold-value': { textContent: '' },
         'essence-value': { textContent: '' },
-        'combat-feedback-overlay': { appendChild: sinon.stub() }
+        // combat-feedback-overlay removed
       };
       return elementMocks[id] || mockCanvas;
     });
@@ -170,11 +169,7 @@ describe('RoguelikeHUD', () => {
     mockWasmManager.getGold = sinon.stub().returns(150);
     mockWasmManager.getEssence = sinon.stub().returns(25);
 
-    mockCombatFeedback = {
-      getComboState: sinon.stub().returns({ count: 5, multiplier: 1.4 })
-    };
-
-    roguelikeHUD = new RoguelikeHUD(mockGameStateManager, mockWasmManager, mockCombatFeedback);
+    roguelikeHUD = new RoguelikeHUD(mockGameStateManager, mockWasmManager);
   });
 
   afterEach(() => {
@@ -188,7 +183,7 @@ describe('RoguelikeHUD', () => {
     it('should initialize with required dependencies', () => {
       expect(roguelikeHUD.gameStateManager).to.equal(mockGameStateManager);
       expect(roguelikeHUD.wasmManager).to.equal(mockWasmManager);
-      expect(roguelikeHUD.combatFeedback).to.equal(mockCombatFeedback);
+      // combatFeedback removed from constructor
     });
 
     it('should initialize with default state', () => {
@@ -564,7 +559,7 @@ describe('RoguelikeHUD', () => {
         opacity: 0.8
       }];
 
-      roguelikeHUD.animateCombatFeedback();
+      // animateCombatFeedback method removed
 
       expect(mockDamageElement.style.transform).to.include('translate');
       expect(mockDamageElement.style.opacity).to.equal(0.8);
@@ -579,7 +574,7 @@ describe('RoguelikeHUD', () => {
         opacity: 0
       }];
 
-      roguelikeHUD.animateCombatFeedback();
+      // animateCombatFeedback method removed
 
       expect(mockDamageElement.remove.called).to.be.true;
       expect(roguelikeHUD.hudCombatState.damageNumbers).to.be.empty;
@@ -633,7 +628,7 @@ describe('RoguelikeHUD', () => {
 
     beforeEach(() => {
       mockOverlay = { appendChild: sinon.stub() };
-      global.document.getElementById.withArgs('combat-feedback-overlay').returns(mockOverlay);
+      // combat-feedback-overlay removed
     });
 
     it('should show damage number at position', () => {
@@ -665,7 +660,7 @@ describe('RoguelikeHUD', () => {
     });
 
     it('should handle missing overlay gracefully', () => {
-      global.document.getElementById.withArgs('combat-feedback-overlay').returns(null);
+      // combat-feedback-overlay removed
       
       expect(() => roguelikeHUD.showDamageNumber(100, 200, 25)).to.not.throw();
     });
@@ -677,7 +672,7 @@ describe('RoguelikeHUD', () => {
       const updatePhaseInfoSpy = sinon.spy(roguelikeHUD, 'updatePhaseInfo');
       const updateMinimapSpy = sinon.spy(roguelikeHUD, 'updateMinimap');
       const updateStatusEffectsSpy = sinon.spy(roguelikeHUD, 'updateStatusEffects');
-      const updateCombatFeedbackSpy = sinon.spy(roguelikeHUD, 'updateCombatFeedback');
+      // updateCombatFeedback method removed
       const updateResourcesSpy = sinon.spy(roguelikeHUD, 'updateResources');
 
       roguelikeHUD.update();
@@ -686,7 +681,7 @@ describe('RoguelikeHUD', () => {
       expect(updatePhaseInfoSpy.called).to.be.true;
       expect(updateMinimapSpy.called).to.be.true;
       expect(updateStatusEffectsSpy.called).to.be.true;
-      expect(updateCombatFeedbackSpy.called).to.be.true;
+      // updateCombatFeedback method removed
       expect(updateResourcesSpy.called).to.be.true;
     });
 
@@ -817,7 +812,7 @@ describe('RoguelikeHUD', () => {
         roguelikeHUD.updateVitals();
         roguelikeHUD.updatePhaseInfo();
         roguelikeHUD.updateStatusEffects();
-        roguelikeHUD.updateCombatFeedback();
+        // updateCombatFeedback method removed
         roguelikeHUD.updateResources();
       }).to.not.throw();
     });
