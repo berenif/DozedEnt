@@ -93,9 +93,13 @@ describe('Animation System', () => {
 
       it('should stop playing when stop() is called', () => {
         anim.play();
+        anim.currentFrame = 2;
+        anim.elapsedTime = 500;
         anim.stop();
-        
+
         expect(anim.isPlaying).to.be.false;
+        expect(anim.currentFrame).to.equal(0);
+        expect(anim.elapsedTime).to.equal(0);
       });
 
       it('should pause when pause() is called', () => {
@@ -271,10 +275,12 @@ describe('Animation System', () => {
     it('should stop current animation', () => {
       controller.addAnimation('idle', animations.idle);
       controller.play('idle');
+      animations.idle.currentFrame = 2;
       controller.stop();
-      
-      expect(controller.currentAnimation).to.be.null;
+
+      expect(controller.currentAnimation).to.equal(animations.idle);
       expect(animations.idle.isPlaying).to.be.false;
+      expect(animations.idle.currentFrame).to.equal(0);
     });
 
     it('should update animations', () => {

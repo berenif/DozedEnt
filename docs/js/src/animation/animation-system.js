@@ -38,6 +38,7 @@ export class Animation {
 
     stop() {
         this.isPlaying = false
+        this.reset()
     }
 
     pause() {
