@@ -3,6 +3,8 @@
  * Collects, analyzes, and reports errors across all game systems
  */
 
+/* global gc */
+
 import { createLogger } from './logger.js';
 import { gameErrorHandler } from './game-error-handler.js';
 import { networkErrorRecovery } from './network-error-recovery.js';
@@ -516,7 +518,7 @@ export class ErrorReporter {
       webRTC: !!window.RTCPeerConnection,
       gamepad: !!navigator.getGamepads,
       fullscreen: !!(document.fullscreenEnabled || document.webkitFullscreenEnabled),
-      pointerLock: !!(document.pointerLockElement !== undefined),
+      pointerLock: !!(typeof document.pointerLockElement !== "undefined"),
       localStorage: !!window.localStorage,
       sessionStorage: !!window.sessionStorage,
       indexedDB: !!window.indexedDB,

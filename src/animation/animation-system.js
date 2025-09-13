@@ -221,9 +221,7 @@ export class ProceduralAnimator {
             baseScale = 1.0,
             intensity = 0.015,
             speed = 2.0,
-            depthVariation = 0.3, // Reserved for future depth-based breathing
-            asymmetry = 0.2,
-            heartRateSync = true // Reserved for future heart rate synchronization
+            asymmetry = 0.2
         } = options
 
         return {
@@ -535,7 +533,6 @@ export class ProceduralAnimator {
             segments = 5,
             length = 15,
             damping = 0.85,
-            stiffness = 0.3, // Reserved for future spring stiffness calculations
             gravity = 0.5,
             windStrength = 0.1
         } = options
@@ -1240,8 +1237,7 @@ export class WolfAnimator {
         }
     }
 
-    update(deltaTime, position, velocity = {x: 0, y: 0}, isGrounded = true) {
-        // velocity and isGrounded parameters reserved for future physics integration
+    update(deltaTime) {
         this.controller.update(deltaTime);
         
         const breathing = this.sniffing.update(deltaTime);

@@ -31,7 +31,7 @@ export class EnhancedWolfIntegration {
     }
 
     // Initialize all systems
-    async initialize() {
+    initialize() {
         try {
             console.log('Initializing Enhanced Wolf Integration System...')
 

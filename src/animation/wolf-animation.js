@@ -24,14 +24,14 @@ export class WolfAnimationSystem {
     
     // --- Helpers: seeded RNG, smoothing, math ---
     _seedWolf(wolf) {
-        if (wolf._animSeed == null) {
+        if (wolf._animSeed === null) {
             // Derive a stable-ish seed from existing visual-only properties
             const fx = Math.floor((wolf.position?.x || 0) * 1000) & 0xffff
             const fy = Math.floor((wolf.position?.y || 0) * 1000) & 0xffff
             const fp = Math.floor(((wolf.furPattern || 0.5) * 1e6)) & 0xffff
             wolf._animSeed = ((fx << 16) ^ fy ^ (fp << 1)) >>> 0
         }
-        if (wolf._animRngState == null) { wolf._animRngState = wolf._animSeed >>> 0 }
+        if (wolf._animRngState === null) { wolf._animRngState = wolf._animSeed >>> 0 }
     }
     _rand(wolf) {
         // xorshift32
@@ -49,7 +49,7 @@ export class WolfAnimationSystem {
         return this._lerp(current, target, t)
     }
     _smoothProp(wolf, key, target, rate = 8) {
-        const cur = wolf[key] != null ? wolf[key] : target
+        const cur = wolf[key] !== null ? wolf[key] : target
         wolf[key] = this._smoothNumber(cur, target, rate)
     }
     _updateSmoothedVelocity(wolf) {

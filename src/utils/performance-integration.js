@@ -36,7 +36,7 @@ export class PerformanceIntegration {
    * Initialize all performance optimizations
    */
   async initialize() {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
 
     const startTime = performance.now();
     console.log('🚀 Initializing Performance Optimization System...');

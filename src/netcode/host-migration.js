@@ -419,7 +419,7 @@ export class HostMigrationSystem {
   /**
    * Announce migration to all players
    */
-  async announceMigration(newHostId, reason) {
+  announceMigration(newHostId, reason) {
     const message = {
       type: 'host_migration',
       newHostId,
@@ -506,7 +506,7 @@ export class HostMigrationSystem {
   /**
    * Request state from a specific player
    */
-  async requestStateFromPlayer(playerId) {
+  requestStateFromPlayer(playerId) {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('State request timeout'))
@@ -545,7 +545,7 @@ export class HostMigrationSystem {
   /**
    * Announce that the new host is ready
    */
-  async announceHostReady() {
+  announceHostReady() {
     const message = {
       type: 'host_ready',
       hostId: this.sessionState.localPlayerId,
@@ -563,7 +563,7 @@ export class HostMigrationSystem {
   /**
    * Wait for new host to be ready
    */
-  async waitForNewHost(newHostId) {
+  waitForNewHost(newHostId) {
     this.logger.info('Waiting for new host', { newHostId })
     
     return new Promise((resolve) => {

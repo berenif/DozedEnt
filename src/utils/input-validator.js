@@ -134,7 +134,7 @@ export class InputValidator {
     
     try {
       // Handle various truthy/falsy representations
-      if (input === null || input === undefined) {
+      if (input === null || typeof input === "undefined") {
         return defaultValue;
       }
       
@@ -405,7 +405,7 @@ export class InputValidator {
    * Sanitize number input with bounds
    */
   sanitizeNumber(input, min = -Infinity, max = Infinity) {
-    if (input === null || input === undefined) {
+    if (input === null || typeof input === "undefined") {
       return 0;
     }
     

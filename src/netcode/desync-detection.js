@@ -217,7 +217,7 @@ export class DesyncDetectionSystem {
       const localChecksum = checksumData.local[layer]
       const remoteChecksum = checksumData.remote[layer]?.[playerId]
       
-      if (localChecksum !== undefined && remoteChecksum !== undefined) {
+      if (typeof localChecksum !== "undefined" && typeof remoteChecksum !== "undefined") {
         const isMatch = this.compareChecksums(localChecksum, remoteChecksum, layer)
         
         desyncInfo.layers[layer] = {
@@ -471,7 +471,7 @@ export class DesyncDetectionSystem {
   isFrameSynced(checksumData) {
     // Check basic layer (most reliable)
     const localBasic = checksumData.local[CHECKSUM_LAYERS.BASIC]
-    if (localBasic === undefined) {return false}
+    if (typeof localBasic === "undefined") {return false}
     
     const remoteBasic = checksumData.remote[CHECKSUM_LAYERS.BASIC]
     for (const playerId of this.playerDesyncs.keys()) {

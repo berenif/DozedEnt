@@ -466,7 +466,7 @@ export class PersistenceUI {
   /**
    * Perform quick save
    */
-  async performQuickSave() {
+  performQuickSave() {
     try {
       if (this.wasmManager?.exports?.quick_save) {
         const result = this.wasmManager.exports.quick_save();
@@ -486,7 +486,7 @@ export class PersistenceUI {
   /**
    * Save to specific slot
    */
-  async saveTo(slotId) {
+  saveTo(slotId) {
     try {
       if (this.wasmManager?.exports?.create_save_data) {
         // Get save data from WASM
@@ -522,7 +522,7 @@ export class PersistenceUI {
   /**
    * Load from specific slot
    */
-  async loadSave(slotId) {
+  loadSave(slotId) {
     try {
       const saveData = this.getSaveData(slotId);
       if (!saveData) {

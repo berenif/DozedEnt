@@ -369,7 +369,7 @@ export class GameRenderer {
 
         try {
             // Use provided seed or derive deterministically (callers pass seed from run seed)
-            const environmentSeed = (seed != null) ? seed : 0;
+            const environmentSeed = (seed !== null) ? seed : 0;
             
             // Generate environment in WASM
             wasmModule.generate_environment(biomeType, environmentSeed);
@@ -581,8 +581,8 @@ export class GameRenderer {
         this.camera.y += (this.camera.targetY - this.camera.y) * smoothing
     }
     
-    // Main render method
-    render(followPlayer = true) {
+    // Legacy render method with camera following
+    renderWithCameraFollow(followPlayer = true) {
         // Update camera to follow player if enabled
         if (followPlayer) {
             this.updateCamera(this.player.x, this.player.y, 1/60)

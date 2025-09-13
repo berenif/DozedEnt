@@ -575,7 +575,7 @@ export class SpectatorSystem {
     });
     
     // Update spectator count if this is spectator data
-    if (state.isSpectating !== undefined) {
+    if (typeof state.isSpectating !== "undefined") {
       this.updateSpectatorCount();
     }
   }

@@ -3,6 +3,8 @@
  * Identifies and removes unused variables, functions, and imports
  */
 
+/* global inDebugBlock */
+
 export class DeadCodeEliminator {
   constructor() {
     this.unusedVariables = new Set();

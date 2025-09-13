@@ -224,7 +224,7 @@ export class PersistenceManager {
   /**
    * Process individual event
    */
-  async processEvent(event) {
+  processEvent(event) {
     try {
       // Update statistics
       this.updateStatistics(event);
@@ -492,7 +492,7 @@ export class PersistenceManager {
   /**
    * Perform auto-save
    */
-  async performAutoSave() {
+  performAutoSave() {
     if (!this.autoSaveEnabled || !this.wasmManager?.exports) {return;}
     
     try {
@@ -631,7 +631,7 @@ export class PersistenceManager {
   /**
    * Perform quick save
    */
-  async performQuickSave() {
+  performQuickSave() {
     if (!this.wasmManager?.exports?.quick_save) {return;}
     
     try {
@@ -804,7 +804,7 @@ export class PersistenceManager {
   /**
    * Export all persistence data
    */
-  async exportAllData() {
+  exportAllData() {
     const data = {
       saves: {},
       achievements: null,
@@ -860,7 +860,7 @@ export class PersistenceManager {
   /**
    * Import all persistence data
    */
-  async importAllData(data) {
+  importAllData(data) {
     try {
       // Import saves
       if (data.saves) {

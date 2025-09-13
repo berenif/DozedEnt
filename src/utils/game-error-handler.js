@@ -3,6 +3,8 @@
  * Handles complex game interaction errors, WASM failures, and recovery strategies
  */
 
+/* global validatedAttack */
+
 import { inputValidator } from './input-validator.js';
 import { createLogger } from './logger.js';
 

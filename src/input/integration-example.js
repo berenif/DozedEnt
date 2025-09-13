@@ -4,6 +4,8 @@
  * with the existing game architecture following WASM-first principles
  */
 
+/* global MobileGameControls */
+
 import { InputManager } from './input-manager.js';
 
 /**

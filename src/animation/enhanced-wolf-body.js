@@ -322,7 +322,7 @@ export class EnhancedWolfBody {
     // Update fur dynamics
     updateFurDynamics(deltaTime, wolf) {
         // Fur flow based on movement and wind
-        const speed = Math.sqrt(wolf.velocity.x ** 2 + wolf.velocity.y ** 2)
+        // Calculate movement speed for fur dynamics
         const windEffect = { x: Math.sin(Date.now() * 0.001) * 0.1, y: 0 }
 
         this.animationState.furFlow.x = -wolf.velocity.x * 0.001 + windEffect.x
@@ -449,18 +449,18 @@ export class EnhancedWolfBody {
         // Left leg
         ctx.save()
         ctx.translate(baseX - this.proportions.bodyWidth * 0.15, this.proportions.bodyWidth * 0.1)
-        this.renderSingleLeg(ctx, wolf, legData.left, type)
+        this.renderSingleLeg(ctx, legData.left)
         ctx.restore()
 
         // Right leg
         ctx.save()
         ctx.translate(baseX + this.proportions.bodyWidth * 0.15, this.proportions.bodyWidth * 0.1)
-        this.renderSingleLeg(ctx, wolf, legData.right, type)
+        this.renderSingleLeg(ctx, legData.right)
         ctx.restore()
     }
 
     // Render single leg
-    renderSingleLeg(ctx, wolf, legData, type) {
+    renderSingleLeg(ctx, legData) {
         // Upper leg
         ctx.fillStyle = this.colors.primary
         ctx.fillRect(-legData.upper.width/2, 0, legData.upper.width, legData.upper.height)
@@ -572,7 +572,7 @@ export class EnhancedWolfBody {
         this.renderEars(ctx, wolf)
 
         // Snout
-        this.renderSnout(ctx, wolf)
+        this.renderSnout(ctx)
 
         // Eyes
         this.renderEyes(ctx, wolf)
@@ -633,7 +633,7 @@ export class EnhancedWolfBody {
     }
 
     // Render snout
-    renderSnout(ctx, wolf) {
+    renderSnout(ctx) {
         const snoutLength = this.proportions.snoutLength
 
         // Snout shape

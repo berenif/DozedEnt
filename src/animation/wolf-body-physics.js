@@ -711,7 +711,7 @@ export class WolfBodyPhysics {
         }
 
         // Update tail position
-        if (wolf.tailPosition !== undefined) {
+        if (typeof wolf.tailPosition !== "undefined") {
             wolf.tailPosition = segments.tail.angle
         }
     }
