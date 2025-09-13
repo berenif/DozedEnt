@@ -1889,6 +1889,16 @@ float get_terrain_temperature(float world_x, float world_y) {
   return g_world_sim.terrain[grid_x][grid_y].temperature;
 }
 
+__attribute__((export_name("set_terrain_elevation")))
+void set_terrain_elevation(float x, float y, float elevation) {
+  int grid_x = (int)(x * TERRAIN_GRID_SIZE);
+  int grid_y = (int)(y * TERRAIN_GRID_SIZE);
+  if (grid_x < 0 || grid_x >= TERRAIN_GRID_SIZE || grid_y < 0 || grid_y >= TERRAIN_GRID_SIZE) {
+    return;
+  }
+  g_world_sim.terrain[grid_x][grid_y].elevation = elevation;
+}
+
 
 // Environmental hazards
 

@@ -1,7 +1,7 @@
 // Enhanced Animation overlay state and computation (WASM-side, UI reads via getters)
 #pragma once
 
-#include "internal_core.h"
+#include "world_simulation.h"
 
 // Primary overlay values computed deterministically each update()
 static float g_anim_scale_x = 1.0f;
@@ -304,24 +304,33 @@ static inline void update_anim_overlay_internal() {
   }
   
   // Environmental responses
-  // Wind effect (could be driven by world simulation)
-  float windStrength = 0.0f; // TODO: Get from world simulation
+  // Wind effect driven by world simulation
+  float windStrength = get_weather_wind_speed() * 0.1f; // Normalize 0..10 m/s
+  if (windStrength > 1.0f) windStrength = 1.0f;
   g_anim_wind_response = __builtin_sinf(g_time_seconds * 0.8f) * windStrength * 0.5f;
   g_anim_cloth_sway += g_anim_wind_response;
   g_anim_hair_bounce += g_anim_wind_response * 0.3f;
-  
+
   // Temperature response (shivering in cold)
-  float temperature = 1.0f; // TODO: Get from environment system (0=cold, 1=warm)
+  float temperatureC = get_weather_temperature();
+  float temperature = temperatureC / 40.0f; // Normalize 0..40C to 0..1
+  if (temperature < 0.0f) temperature = 0.0f;
+  if (temperature > 1.0f) temperature = 1.0f;
   if (temperature < 0.3f) {
     float shiverIntensity = (0.3f - temperature) / 0.3f;
     g_anim_temperature_shiver = __builtin_sinf(g_time_seconds * 12.0f) * shiverIntensity * 0.02f;
     g_anim_scale_x *= 1.0f + g_anim_temperature_shiver;
     g_anim_scale_y *= 1.0f - g_anim_temperature_shiver * 0.5f;
   }
-  
-  // Ground adaptation (slope detection)
-  // TODO: Implement slope detection and foot placement
-  g_anim_ground_adapt = 0.0f;
+
+  // Ground adaptation (slope detection and foot placement)
+  float sampleOffset = 0.02f;
+  float baseHeight = get_terrain_elevation(g_pos_x, g_pos_y);
+  float forwardHeight = get_terrain_elevation(
+      g_pos_x + g_face_x * sampleOffset,
+      g_pos_y + g_face_y * sampleOffset);
+  float slope = (forwardHeight - baseHeight) / sampleOffset;
+  g_anim_ground_adapt = slope * 50.0f; // Scale to animation units
 }
 
 

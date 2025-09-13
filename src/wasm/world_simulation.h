@@ -887,11 +887,13 @@ extern "C" {
         g_world_sim.weather.rain_intensity = intensity;
     }
     
+    __attribute__((export_name("set_weather_wind")))
     void set_weather_wind(float speed, float dir_x, float dir_y, float dir_z) {
         g_world_sim.weather.wind_speed = speed;
         g_world_sim.weather.wind_direction = Vector3(dir_x, dir_y, dir_z).normalized();
     }
-    
+
+    __attribute__((export_name("set_weather_temperature")))
     void set_weather_temperature(float temp) {
         g_world_sim.weather.temperature = temp;
     }
@@ -901,8 +903,13 @@ extern "C" {
     }
     
     float get_weather_rain() { return g_world_sim.weather.rain_intensity; }
+
+    __attribute__((export_name("get_weather_wind_speed")))
     float get_weather_wind_speed() { return g_world_sim.weather.wind_speed; }
+
+    __attribute__((export_name("get_weather_temperature")))
     float get_weather_temperature() { return g_world_sim.weather.temperature; }
+
     int get_weather_lightning() { return g_world_sim.weather.lightning_active ? 1 : 0; }
     
     // Time system
