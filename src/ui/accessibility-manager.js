@@ -157,7 +157,9 @@ export class AccessibilityManager {
   createColorblindFilters() {
     // Remove existing filters
     const existing = document.getElementById('accessibility-filters');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
     
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'accessibility-filters';
@@ -357,7 +359,9 @@ export class AccessibilityManager {
    */
   injectReduceMotionCSS() {
     const existingStyle = document.getElementById('reduce-motion-style');
-    if (existingStyle) return;
+    if (existingStyle) {
+      return;
+    }
     
     const style = document.createElement('style');
     style.id = 'reduce-motion-style';
@@ -422,7 +426,9 @@ export class AccessibilityManager {
     const focusableElements = this.getFocusableElements();
     const currentIndex = focusableElements.indexOf(document.activeElement);
     
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      return;
+    }
     
     let nextIndex;
     if (e.shiftKey) {
@@ -462,12 +468,16 @@ export class AccessibilityManager {
    */
   handleGridNavigation(e, currentElement) {
     const container = currentElement.closest('.ability-bar, .inventory-grid');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     
     const slots = Array.from(container.querySelectorAll('.ability-slot, .consumable-slot, .ultimate-slot, .inventory-slot'));
     const currentIndex = slots.indexOf(currentElement);
     
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      return;
+    }
     
     let nextIndex = currentIndex;
     
@@ -497,12 +507,16 @@ export class AccessibilityManager {
    */
   handleMenuNavigation(e, currentElement) {
     const container = currentElement.closest('.menu-tabs');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     
     const tabs = Array.from(container.querySelectorAll('.menu-tab, .tab-button'));
     const currentIndex = tabs.indexOf(currentElement);
     
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      return;
+    }
     
     let nextIndex = currentIndex;
     
@@ -596,11 +610,9 @@ export class AccessibilityManager {
     ].join(', ');
     
     return Array.from(document.querySelectorAll(selectors))
-      .filter(element => {
-        return element.offsetWidth > 0 && element.offsetHeight > 0 &&
+      .filter(element => element.offsetWidth > 0 && element.offsetHeight > 0 &&
                !element.closest('.hidden') &&
-               getComputedStyle(element).visibility !== 'hidden';
-      });
+               getComputedStyle(element).visibility !== 'hidden');
   }
 
   /**
@@ -620,14 +632,16 @@ export class AccessibilityManager {
    * Announce focus changes for screen readers
    */
   announceFocusChange(element) {
-    if (!this.settings.soundCues) return;
+    if (!this.settings.soundCues) {
+      return;
+    }
     
     // Get element description
-    let description = element.getAttribute('aria-label') ||
-                     element.getAttribute('title') ||
-                     element.textContent ||
-                     element.getAttribute('alt') ||
-                     'Interactive element';
+    const description = element.getAttribute('aria-label') ||
+                       element.getAttribute('title') ||
+                       element.textContent ||
+                       element.getAttribute('alt') ||
+                       'Interactive element';
     
     // Create announcement
     this.announceToScreenReader(description);
@@ -639,7 +653,9 @@ export class AccessibilityManager {
   announceToScreenReader(text) {
     // Remove existing announcements
     const existing = document.getElementById('accessibility-announcement');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
     
     // Create new announcement element
     const announcement = document.createElement('div');
@@ -667,7 +683,9 @@ export class AccessibilityManager {
    * Provide haptic feedback (if supported)
    */
   provideHapticFeedback(type = 'light') {
-    if (!this.settings.hapticFeedback) return;
+    if (!this.settings.hapticFeedback) {
+      return;
+    }
     
     if ('vibrate' in navigator) {
       const patterns = {
@@ -749,7 +767,7 @@ export class AccessibilityManager {
    */
   destroy() {
     // Remove media query listeners
-    for (const [name, mq] of this.mediaQueries) {
+    for (const [, mq] of this.mediaQueries) {
       mq.removeListener();
     }
     this.mediaQueries.clear();
@@ -765,6 +783,8 @@ export class AccessibilityManager {
     
     // Remove SVG filters
     const filters = document.getElementById('accessibility-filters');
-    if (filters) filters.remove();
+    if (filters) {
+      filters.remove();
+    }
   }
 }
