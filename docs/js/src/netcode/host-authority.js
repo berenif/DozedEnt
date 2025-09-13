@@ -12,7 +12,8 @@ class HostAuthority {
     this.wasmGame = null
     this.gameState = null
     this.updateInterval = null
-    this.lastUpdateTime = Date.now()
+    this.tickCounter = 0 // Deterministic tick counter instead of Date.now()
+    this.lastUpdateTick = 0
     this.playerInputs = new Map() // playerId -> input queue
     this.config = {
       updateRate: 60, // 60 FPS
@@ -37,8 +38,8 @@ class HostAuthority {
             const { fromWasm } = createStringCodec(runtime)
             console.log('[WASM]:', fromWasm(ptr, len))
           },
-          js_get_timestamp: () => Date.now(),
-          js_random: () => Math.random(),
+          // REMOVED: js_get_timestamp - WASM should use deterministic tick counters
+          // REMOVED: js_random - WASM should use its own deterministic RNG
           // Network callbacks
           js_broadcast_state: (ptr, len) => {
             const { fromWasm } = createStringCodec(runtime)
@@ -88,13 +89,13 @@ class HostAuthority {
     // Clear any existing interval
     this.stopGameLoop()
     
-    let lastSnapshotTime = Date.now()
+    let lastSnapshotTick = this.tickCounter
     
     // Main game update loop
     this.updateInterval = setInterval(() => {
-      const now = Date.now()
-      const deltaTime = now - this.lastUpdateTime
-      this.lastUpdateTime = now
+      this.tickCounter++
+      const deltaTime = 1000 / this.config.updateRate // Fixed delta time for determinism
+      this.lastUpdateTick = this.tickCounter
       
       // Process player inputs
       this.processPlayerInputs()
@@ -105,9 +106,9 @@ class HostAuthority {
       }
       
       // Send state snapshots at lower frequency
-      if (now - lastSnapshotTime >= 1000 / this.config.stateSnapshotRate) {
+      if (this.tickCounter - lastSnapshotTick >= this.config.updateRate / this.config.stateSnapshotRate) {
         this.sendStateSnapshot()
-        lastSnapshotTime = now
+        lastSnapshotTick = this.tickCounter
       }
     }, 1000 / this.config.updateRate)
   }
@@ -136,7 +137,7 @@ class HostAuthority {
     const inputQueue = this.playerInputs.get(playerId)
     inputQueue.push({
       ...action,
-      timestamp: Date.now(),
+      timestamp: this.tickCounter, // Use tick counter instead of Date.now()
       playerId
     })
     
@@ -198,8 +199,8 @@ class HostAuthority {
       const state = fromJson(stateJson)
       
       // Add metadata
-      state.timestamp = Date.now()
-      state.frameNumber = (state.frameNumber || 0) + 1
+      state.timestamp = this.tickCounter // Use tick counter instead of Date.now()
+      state.frameNumber = this.tickCounter
       
       this.broadcastGameState(state)
     }

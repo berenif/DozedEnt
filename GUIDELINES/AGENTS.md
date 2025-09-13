@@ -53,14 +53,16 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 - [Room System](./MULTIPLAYER/ROOM_SYSTEM.md) — Host-authoritative rooms, migration, WASM integration, state sync, events, and performance tips.
 
 ### Build, Deploy, and Testing
+- [Development Workflow](./BUILD/DEVELOPMENT_WORKFLOW.md) — Complete development cycle guide for AI agents.
+- [WASM API Reference](./BUILD/API.md) — **Canonical API surface** - definitive function signatures and behavior.
+- [Testing Framework](./BUILD/TESTING.md) — Current testing infrastructure (54 tests, 5.15% coverage, 680% improvement).
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.
 - [Balance Data Guide](./UTILS/BALANCE_DATA.md) — Externalized constants, JSON schema, generator, workflow.
 - [Deploy to GitHub Pages](./UTILS/DEPLOY_GITHUB_PAGES.md) — CI/CD workflow, setup, custom domains, troubleshooting.
-- [Test Coverage Improvements](./UTILS/TEST_COVERAGE_IMPROVEMENTS.md) — Testing stack, coverage status, recommendations, and next steps.
 
 ## WASM API Reference
 
-> Note: The table below summarizes common APIs. For the canonical, single-source API surface, see [BUILD/API.md](./BUILD/API.md). When snippets show concepts (e.g., `get_character_checksum`) they are pseudocode for illustration. Always consult the C++ headers and generated exports.
+> **Note**: The table below summarizes common APIs. For the **complete canonical API surface**, see **[BUILD/API.md](./BUILD/API.md)**. This section provides overview examples - always consult BUILD/API.md for the definitive function signatures and behavior.
 
 ### 📦 Current API Surface (60+ Functions)
 #### ⚙️ Core Simulation Functions

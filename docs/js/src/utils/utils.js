@@ -1,4 +1,4 @@
-const {floor, random, sin} = Math
+const {floor, sin} = Math
 
 export const libName = 'Trystero'
 
@@ -6,8 +6,38 @@ export const alloc = (n, f) => Array(n).fill().map(f)
 
 const charSet = '0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz'
 
-export const genId = n =>
-  alloc(n, () => charSet[floor(random() * charSet.length)]).join('')
+// Secure crypto-based ID generation
+const getCrypto = () => {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+      return globalThis.crypto
+    }
+    return null
+  } catch (e) {
+    return null
+  }
+}
+
+export const genId = n => {
+  const crypto = getCrypto()
+  
+  if (crypto) {
+    // Use cryptographically secure random values
+    const bytes = new Uint8Array(n)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, byte => charSet[byte % charSet.length]).join('')
+  } else {
+    // Fallback to deterministic generation based on current time and counter
+    let counter = genId.counter || 0
+    genId.counter = (counter + 1) % 1000000
+    const seed = Date.now() + counter
+    
+    return alloc(n, (_, i) => {
+      const value = (seed + i * 1664525 + 1013904223) % charSet.length
+      return charSet[Math.abs(value) % charSet.length]
+    }).join('')
+  }
+}
 
 export const selfId = genId(20)
 

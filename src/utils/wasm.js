@@ -145,9 +145,17 @@ const createWasiPreview1 = (memory) => {
 		configurable: false
 	});
 
+	// Deterministic time counter for WASM (starts at 0, increments on each call)
+	let __wasiTimeCounter = 0n;
+	const __wasiTimeIncrement = 16666666n; // ~16.67ms in nanoseconds (60 FPS)
+	
 	Object.defineProperty(wasi, 'clock_time_get', {
 		value: (_id, _precision, timePtr) => {
-			const nowNs = BigInt(Date.now()) * 1000000n;
+			// Use deterministic time counter instead of Date.now()
+			// This ensures reproducible behavior across runs
+			__wasiTimeCounter += __wasiTimeIncrement;
+			const nowNs = __wasiTimeCounter;
+			
 			const dataView = dv();
 			if (typeof dataView.setBigUint64 === 'function') {
 				dataView.setBigUint64(timePtr >>> 0, nowNs, true);

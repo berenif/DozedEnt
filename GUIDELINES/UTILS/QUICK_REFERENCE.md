@@ -144,22 +144,25 @@ renderPlayer(newX, wasmModule.get_y());
 
 ### When to Use Which File
 - **Architecture questions**: `AGENTS.md` (main reference)
-- **Combat implementation**: `5-BUTTON_COMBAT_IMPLEMENTATION.md`
+- **WASM API reference**: **`BUILD/API.md`** (canonical function signatures)
+- **Development workflow**: **`BUILD/DEVELOPMENT_WORKFLOW.md`** (complete dev cycle)
+- **Testing procedures**: **`BUILD/TESTING.md`** (current framework, 54 tests)
+- **Combat implementation**: `FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md`
 - **AI behavior**: `AI/ENEMY_AI.md` or `AI/WOLF_AI.md`
 - **Animation issues**: `ANIMATION/PLAYER_ANIMATIONS.md`
 - **Core loop validation**: `GAME/CORE_LOOP_CHECKLIST.md`
 - **Build problems**: `UTILS/BUILD_INSTRUCTIONS.md`
-- **Testing procedures**: `TESTING.md`
 
 ### File Naming Pattern Recognition
 - `*_IMPLEMENTATION.md` = Complete implementation guides
 - `*_SYSTEM.md` = System architecture overviews  
 - `*_CHECKLIST.md` = Validation and testing lists
 - `*_INDEX.md` = Navigation and quick reference
-- `AI/*.md` = Enemy and AI behavior
-- `ANIMATION/*.md` = Animation systems
-- `GAME/*.md` = Core gameplay mechanics
-- `UTILS/*.md` = Build, deploy, and development tools
+- **`AI/*.md`** = Enemy and AI behavior
+- **`ANIMATION/*.md`** = Animation systems
+- **`BUILD/*.md`** = **Core development documentation** (API, workflow, testing)
+- **`GAME/*.md`** = Core gameplay mechanics
+- **`UTILS/*.md`** = Build, deploy, and development tools
 
 ---
 

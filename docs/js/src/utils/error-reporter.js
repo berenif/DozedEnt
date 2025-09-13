@@ -791,10 +791,38 @@ export class ErrorReporter {
   }
 
   /**
-   * Generate unique error ID
+   * Generate unique error ID using crypto-secure random values
    */
   generateErrorId() {
-    return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const getCrypto = () => {
+      try {
+        if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+          return globalThis.crypto
+        }
+        return null
+      } catch (e) {
+        return null
+      }
+    }
+    
+    const crypto = getCrypto()
+    
+    if (crypto) {
+      // Use cryptographically secure random values
+      const bytes = new Uint8Array(9)
+      crypto.getRandomValues(bytes)
+      const randomSuffix = Array.from(bytes, byte => 
+        '0123456789abcdefghijklmnopqrstuvwxyz'[byte % 36]
+      ).join('')
+      return `err_${Date.now()}_${randomSuffix}`
+    } else {
+      // Fallback to deterministic generation
+      const counter = (this.generateErrorId.counter || 0) + 1
+      this.generateErrorId.counter = counter % 1000000
+      const seed = Date.now() + counter
+      const randomSuffix = (seed * 1664525 + 1013904223).toString(36).substr(2, 9)
+      return `err_${Date.now()}_${randomSuffix}`
+    }
   }
 
   /**

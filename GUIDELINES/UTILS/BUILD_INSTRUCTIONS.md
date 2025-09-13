@@ -1,45 +1,70 @@
-# 🛠️ Enhanced Build Instructions for Trystero Game Framework
+# 🛠️ WASM-First Game Build Instructions
 
 ## Overview
 
-This document provides comprehensive instructions for building and deploying the complete Trystero game framework, including player animations, wolf AI, WASM modules, and multiplayer systems to the docs directory for GitHub Pages or local hosting.
+This document provides comprehensive instructions for building the **DozedEnt WASM-first game framework**, including C++ game logic compilation to WebAssembly, balance data generation, and deployment to GitHub Pages.
+
+> **Architecture**: All game logic lives in WASM (C++). JavaScript handles only rendering, input, and networking.
 
 ## Prerequisites
 
-- Node.js 14+ and npm installed
-- Git for version control
-- Modern web browser for testing
+- **Node.js 20+** and npm installed
+- **Emscripten SDK** (vendored in `emsdk/` directory)
+- **Git** for version control
+- **Modern web browser** with WebAssembly support
 
-## Build Commands
+## 🚀 Primary Build Commands
 
 ### Install Dependencies
 ```bash
 npm install
 ```
 
-### Build Animation System Only
+### WASM Production Build
 ```bash
-npm run build:animations
+npm run wasm:build        # Builds optimized game.wasm
 ```
-This command builds the player animation module into multiple formats:
-- `dist/player-animator.js` - ES module with source maps
-- `dist/player-animator.min.js` - Minified ES module
-- `dist/player-animator.umd.js` - UMD module for universal compatibility
+**Output**: `./game.wasm` (~43KB optimized)
 
-### Build Everything for Docs
+### WASM Development Build
 ```bash
-npm run build:docs
+npm run wasm:build:dev    # Builds with debug info and assertions
 ```
-This command:
-1. Builds all Trystero modules
-2. Builds the animation system
-3. Copies all built files to `docs/dist/`
+**Output**: `./game.wasm` (larger, with debugging)
 
-### Build All Modules
+### Host-Authoritative WASM
 ```bash
-npm run build:all
+npm run wasm:build:host   # Builds multiplayer host module
 ```
-Builds both Trystero modules and animation system without copying to docs.
+**Output**: `./game-host.wasm`
+
+### Build All WASM Modules
+```bash
+npm run wasm:build:all    # Builds both game.wasm and game-host.wasm
+```
+
+## 🔧 Build Process Details
+
+### What Happens During Build
+
+1. **Environment Setup**: Initializes Emscripten SDK from `emsdk/`
+2. **Balance Generation**: Runs `generate-balance.cjs` to create `src/wasm/generated/balance_data.h`
+3. **C++ Compilation**: Compiles `src/wasm/game.cpp` with all dependencies
+4. **Optimization**: Applies `-O3` optimization and WASM-specific flags
+5. **Output**: Generates standalone `.wasm` files in project root
+
+### Build Flags Used
+
+```bash
+# Production build flags
+em++ src/wasm/game.cpp \
+    -O3 \                           # Maximum optimization
+    -s STANDALONE_WASM=1 \          # Standalone WASM without JS glue
+    -s WASM_BIGINT=1 \             # BigInt support for 64-bit integers
+    -s EXPORT_ALL=0 \              # Export only marked functions
+    -s ALLOW_MEMORY_GROWTH=1 \     # Dynamic memory allocation
+    -o ./game.wasm
+```
 
 ## Project Structure
 

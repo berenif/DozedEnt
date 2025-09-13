@@ -16,22 +16,25 @@
 #define PLAYER_SPEED 200.0f // pixels per second
 #define PLAYER_RADIUS 16.0f
 
-// External JS functions - provide fallback implementations for standalone WASM
+// External JS functions - REMOVED js_random and js_get_timestamp for determinism
 extern "C" {
     void js_log(const char* msg, int len);
-    double js_get_timestamp();
-    double js_random();
     void js_broadcast_state(const char* json, int len);
 }
 
-// Fallback implementations for standalone WASM builds
-static double g_game_time = 0.0;
+// Deterministic game state - tick counter instead of timestamps
+static unsigned int g_game_tick = 0;
 static unsigned int g_rng_seed = 12345;
 
-// Simple LCG random number generator for deterministic behavior
-static double standalone_random() {
+// Deterministic LCG random number generator - seeded and managed internally
+static double deterministic_random() {
     g_rng_seed = g_rng_seed * 1664525 + 1013904223;
     return (double)(g_rng_seed % 1000000) / 1000000.0;
+}
+
+// Get current game tick (deterministic time)
+static unsigned int get_game_tick() {
+    return g_game_tick;
 }
 
 // Weak symbol implementations (will be used if JS functions are not available)
@@ -39,16 +42,6 @@ __attribute__((weak))
 void js_log(const char* msg, int len) {
     // No-op for standalone builds
     (void)msg; (void)len;
-}
-
-__attribute__((weak))
-double js_get_timestamp() {
-    return g_game_time * 1000.0; // Convert to milliseconds
-}
-
-__attribute__((weak))
-double js_random() {
-    return standalone_random();
 }
 
 __attribute__((weak))
@@ -68,9 +61,9 @@ struct Player {
     int health;
     int score;
     bool active;
-    float lastInputTime;
+    unsigned int lastInputTick; // Changed from timestamp to tick counter
     
-    Player() : id(-1), x(0), y(0), vx(0), vy(0), health(100), score(0), active(false), lastInputTime(0) {}
+    Player() : id(-1), x(0), y(0), vx(0), vy(0), health(100), score(0), active(false), lastInputTick(0) {}
 };
 
 // Game state
@@ -78,16 +71,17 @@ struct GameState {
     Player players[MAX_PLAYERS];
     int maxPlayers;
     int frameNumber;
-    double lastUpdateTime;
+    unsigned int lastUpdateTick; // Changed from timestamp to tick counter
     float worldWidth;
     float worldHeight;
     
-    GameState() : maxPlayers(8), frameNumber(0), lastUpdateTime(0), 
+    GameState() : maxPlayers(8), frameNumber(0), lastUpdateTick(0), 
                   worldWidth(WORLD_WIDTH), worldHeight(WORLD_HEIGHT) {
         for (int i = 0; i < MAX_PLAYERS; i++) {
             players[i].id = i;
-            players[i].x = worldWidth / 2 + (js_random() - 0.5) * 200;
-            players[i].y = worldHeight / 2 + (js_random() - 0.5) * 200;
+            // Use deterministic positioning instead of random
+            players[i].x = worldWidth / 2 + (deterministic_random() - 0.5) * 200;
+            players[i].y = worldHeight / 2 + (deterministic_random() - 0.5) * 200;
         }
     }
 };
@@ -160,7 +154,7 @@ void parseInput(const char* inputJson, int playerIndex, GameState* state) {
     // Update player velocity
     player.vx = dx * PLAYER_SPEED;
     player.vy = dy * PLAYER_SPEED;
-    player.lastInputTime = js_get_timestamp();
+    player.lastInputTick = get_game_tick();
     
     // Check for action type
     if (strstr(inputJson, "\"type\":\"attack\"")) {
@@ -196,7 +190,7 @@ void game_init(const char* configJson, int configLen) {
 GameState* game_create_state(int maxPlayers) {
     GameState* state = new GameState();
     state->maxPlayers = (maxPlayers > 0 && maxPlayers <= MAX_PLAYERS) ? maxPlayers : 8;
-    state->lastUpdateTime = js_get_timestamp();
+    state->lastUpdateTick = get_game_tick();
     return state;
 }
 
@@ -204,7 +198,10 @@ GameState* game_create_state(int maxPlayers) {
 void game_update(GameState* state, float deltaTime) {
     if (!state) return;
     
+    // Increment deterministic tick counter
+    g_game_tick++;
     state->frameNumber++;
+    state->lastUpdateTick = g_game_tick;
     
     // Update internal time for standalone builds
     g_game_time += deltaTime / 1000.0f; // deltaTime is in milliseconds
@@ -252,8 +249,8 @@ void game_update(GameState* state, float deltaTime) {
         player.vy *= 0.95f;
         
         // Deactivate players who haven't sent input in a while
-        double now = js_get_timestamp();
-        if (now - player.lastInputTime > 10000) { // 10 seconds timeout
+        unsigned int currentTick = get_game_tick();
+        if (currentTick - player.lastInputTick > 600) { // 10 seconds timeout (60 ticks/sec * 10)
             player.active = false;
         }
     }
