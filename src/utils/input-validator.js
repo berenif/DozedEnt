@@ -39,7 +39,7 @@ export class InputValidator {
       /function\(/i,
       /<.*>/,
       /\$\{.*\}/,
-      /\.\.\//g
+      /\.\.\//
     ];
   }
 
