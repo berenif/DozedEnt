@@ -139,7 +139,7 @@ export class RealisticProceduralAnimator {
             legLiftRight: exports.get_anim_leg_lift_right?.() || 0.0,
             torsoTwist: exports.get_anim_torso_twist?.() || 0.0,
             breathingIntensity: exports.get_anim_breathing_intensity?.() || 1.0,
-            fatigueFactory: exports.get_anim_fatigue_factor?.() || 0.0,
+            fatigueFactor: exports.get_anim_fatigue_factor?.() || 0.0,
             momentumX: exports.get_anim_momentum_x?.() || 0.0,
             momentumY: exports.get_anim_momentum_y?.() || 0.0,
             
@@ -303,10 +303,9 @@ export class RealisticProceduralAnimator {
         targetX += wasmData.momentumX * 0.2;
         
         // Fatigue effect - less precise foot placement
-        // Fatigue offset calculation - commented out due to architectural fix
-        // const fatigueOffset = wasmData.fatigueFactory * 2;
-        // ARCHITECTURAL VIOLATION FIXED: Fatigue variation should be deterministic from WASM
-        // targetX += (Math.random() - 0.5) * fatigueOffset;
+        // Apply a deterministic offset based on fatigue level
+        const fatigueOffset = wasmData.fatigueFactor * sideMultiplier * 0.5;
+        targetX += fatigueOffset;
         
         return { x: targetX, y: targetY };
     }
@@ -399,7 +398,7 @@ export class RealisticProceduralAnimator {
             debug: {
                 frameCount: this.frameCount,
                 animState: wasmData.animState,
-                fatigue: wasmData.fatigueFactory,
+                fatigue: wasmData.fatigueFactor,
                 breathing: wasmData.breathingIntensity
             }
         };
