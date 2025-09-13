@@ -47,7 +47,14 @@ export class WasmManager {
     try {
       // Load the local WASM helper module with multiple fallback strategies
       let wasmHelperModule;
-      const helperModulePaths = [
+      
+      // On GitHub Pages, prioritize the unminified version due to MIME type issues
+      const isGitHubPages = location && /\.github\.io$/.test(location.hostname);
+      const helperModulePaths = isGitHubPages ? [
+        './src/utils/wasm.js',
+        './dist/trystero-wasm.min.js',
+        '../utils/wasm.js'
+      ] : [
         './dist/trystero-wasm.min.js',
         './src/utils/wasm.js',
         '../utils/wasm.js'
@@ -59,10 +66,14 @@ export class WasmManager {
           const wasmModulePath = new URL(modulePath, baseUrl).href;
           console.log(`Attempting to load WASM helper from: ${wasmModulePath}`);
           wasmHelperModule = await import(wasmModulePath);
-          console.log(`Successfully loaded WASM helper from: ${wasmModulePath}`);
+          console.log(`✅ Successfully loaded WASM helper from: ${wasmModulePath}`);
           break;
         } catch (error) {
-          console.warn(`Failed to load WASM helper from ${modulePath}:`, error.message);
+          if (modulePath.includes('trystero-wasm.min.js')) {
+            console.log(`ℹ️ Minified WASM helper not available (${error.message}), trying fallback...`);
+          } else {
+            console.warn(`Failed to load WASM helper from ${modulePath}:`, error.message);
+          }
           // Continue to next fallback
         }
       }
@@ -430,8 +441,20 @@ export class WasmManager {
         );
       }
       
-      // Then call update with just deltaTime
-      this.exports.update(safeDeltaTime);
+      // Then call update with just deltaTime, with timeout protection
+      const updateTimeout = setTimeout(() => {
+        console.error('WASM update function timed out after 100ms - likely infinite loop');
+        this.isLoaded = false; // Prevent further updates
+        throw new Error('WASM update timeout - infinite loop detected');
+      }, 100); // 100ms timeout
+      
+      try {
+        this.exports.update(safeDeltaTime);
+        clearTimeout(updateTimeout);
+      } catch (error) {
+        clearTimeout(updateTimeout);
+        throw error;
+      }
       
       // Validate state after update
       const newPhase = this.getPhase();

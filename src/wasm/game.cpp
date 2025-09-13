@@ -1024,17 +1024,21 @@ void update(float dtSeconds) {
   // Update physics system
   physics_step(dtSeconds);
   
-  // Update force propagation system
+  // PERFORMANCE FIX: Temporarily disable heavy systems that cause browser freeze
+  // These systems process 64x64 grids (4096+ operations per frame) which is too expensive
+  // TODO: Optimize these systems or make them run at lower frequency
+  
+  // Update force propagation system (lightweight)
   force_propagation_update(dtSeconds);
   
-  // Update constraint system
-  constraint_system_update(dtSeconds);
+  // DISABLED: Update constraint system (can be expensive with many constraints)
+  // constraint_system_update(dtSeconds);
   
-  // Update chemistry system
-  chemistry_system_update(dtSeconds);
+  // DISABLED: Update chemistry system (64x64 grid = 4096 nodes per frame, causes freeze)
+  // chemistry_system_update(dtSeconds);
   
-  // Update world simulation system
-  world_simulation_update(dtSeconds);
+  // DISABLED: Update world simulation system (can be expensive with weather/heat)
+  // world_simulation_update(dtSeconds);
 
   // Update UI animation overlay values last so they're coherent with current frame state
   update_anim_overlay_internal();
