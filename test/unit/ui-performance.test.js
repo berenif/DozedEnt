@@ -343,7 +343,10 @@ describe('UI Performance and Memory Management', () => {
         getX: sinon.stub().returns(0.4),
         getY: sinon.stub().returns(0.6),
         getGold: sinon.stub().returns(150),
-        getEssence: sinon.stub().returns(25)
+        getEssence: sinon.stub().returns(25),
+        getEnemyPositions: sinon.stub().returns([]),
+        getExitPositions: sinon.stub().returns([]),
+        getStatusEffects: sinon.stub().returns([])
       };
 
       roguelikeHUD = new RoguelikeHUD(mockGameStateManager, mockWasmManager);
@@ -652,10 +655,12 @@ describe('UI Performance and Memory Management', () => {
       for (let i = 0; i < 20; i++) {
         const hud = new RoguelikeHUD(
           { on: sinon.stub() },
-          { 
-            getHP: () => 1, getStamina: () => 1, getPhase: () => 0, 
+          {
+            getHP: () => 1, getStamina: () => 1, getPhase: () => 0,
             getRoomCount: () => 1, getX: () => 0.5, getY: () => 0.5,
-            getGold: () => 0, getEssence: () => 0
+            getGold: () => 0, getEssence: () => 0,
+            getEnemyPositions: () => [], getExitPositions: () => [],
+            getStatusEffects: () => []
           }
         );
         components.push(hud);

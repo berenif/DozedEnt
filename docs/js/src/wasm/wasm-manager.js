@@ -553,6 +553,87 @@ export class WasmManager {
   }
 
   /**
+   * Get active enemy positions
+   * @returns {Array<{x:number,y:number}>} Array of enemy positions
+   */
+  getEnemyPositions() {
+    if (!this.isLoaded || typeof this.exports.get_enemy_count !== 'function') {return [];}
+    try {
+      const count = this.exports.get_enemy_count();
+      const enemies = [];
+      for (let i = 0; i < count; i++) {
+        try {
+          const x = typeof this.exports.get_enemy_x === 'function' ? this.exports.get_enemy_x(i) : 0;
+          const y = typeof this.exports.get_enemy_y === 'function' ? this.exports.get_enemy_y(i) : 0;
+          enemies.push({ x, y });
+        } catch (err) {
+          console.error(`Error getting enemy position ${i}:`, err);
+          break;
+        }
+      }
+      return enemies;
+    } catch (error) {
+      console.error('Error getting enemy positions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get exit positions
+   * @returns {Array<{x:number,y:number}>} Array of exit positions
+   */
+  getExitPositions() {
+    if (!this.isLoaded || typeof this.exports.get_exit_count !== 'function') {return [];}
+    try {
+      const count = this.exports.get_exit_count();
+      const exits = [];
+      for (let i = 0; i < count; i++) {
+        try {
+          const x = typeof this.exports.get_exit_x === 'function' ? this.exports.get_exit_x(i) : 0;
+          const y = typeof this.exports.get_exit_y === 'function' ? this.exports.get_exit_y(i) : 0;
+          exits.push({ x, y });
+        } catch (err) {
+          console.error(`Error getting exit position ${i}:`, err);
+          break;
+        }
+      }
+      return exits;
+    } catch (error) {
+      console.error('Error getting exit positions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get current status effects from WASM
+   * @returns {Array<Object>} Array of status effect objects
+   */
+  getStatusEffects() {
+    if (!this.isLoaded || typeof this.exports.get_status_effect_count !== 'function') {return [];}
+    try {
+      const count = this.exports.get_status_effect_count();
+      const effects = [];
+      for (let i = 0; i < count; i++) {
+        try {
+          const icon = typeof this.exports.get_status_effect_icon === 'function' ? this.exports.get_status_effect_icon(i) : '';
+          const name = typeof this.exports.get_status_effect_name === 'function' ? this.exports.get_status_effect_name(i) : '';
+          const description = typeof this.exports.get_status_effect_description === 'function' ? this.exports.get_status_effect_description(i) : '';
+          const duration = typeof this.exports.get_status_effect_duration === 'function' ? this.exports.get_status_effect_duration(i) : 0;
+          const type = typeof this.exports.get_status_effect_type === 'function' ? this.exports.get_status_effect_type(i) : 'neutral';
+          effects.push({ icon, name, description, duration, type });
+        } catch (err) {
+          console.error(`Error getting status effect ${i}:`, err);
+          break;
+        }
+      }
+      return effects;
+    } catch (error) {
+      console.error('Error getting status effects:', error);
+      return [];
+    }
+  }
+
+  /**
    * Execute attack action (alias for attack)
    * @returns {number} Attack result (1 for success, 0 for failure)
    */
