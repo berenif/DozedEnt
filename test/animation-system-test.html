@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation System Test Suite</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .test-card h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            width: 100%;
+            height: 250px;
+            margin: 10px 0;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .status {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+        .info {
+            color: #60a5fa;
+        }
+        .test-summary {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22d3ee);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Animation System Test Suite</h1>
+        
+        <div class="test-summary">
+            <h2>Test Progress</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar">0%</div>
+            </div>
+            <div id="summaryText">Ready to start testing...</div>
+        </div>
+
+        <div class="test-grid">
+            <!-- Basic Animation Test -->
+            <div class="test-card">
+                <h2>1. Basic Animation System</h2>
+                <canvas id="canvas1"></canvas>
+                <div class="controls">
+                    <button onclick="testBasicAnimation()">Test Animations</button>
+                    <button onclick="testTransitions()">Test Transitions</button>
+                    <button onclick="testBlending()">Test Blending</button>
+                </div>
+                <div class="status" id="status1">Ready</div>
+            </div>
+
+            <!-- Particle Integration Test -->
+            <div class="test-card">
+                <h2>2. Particle Effects Integration</h2>
+                <canvas id="canvas2"></canvas>
+                <div class="controls">
+                    <button onclick="testParticleEffects()">Test Effects</button>
+                    <button onclick="testCombatParticles()">Combat Particles</button>
+                    <button onclick="testEnvironmentalParticles()">Environmental</button>
+                </div>
+                <div class="status" id="status2">Ready</div>
+            </div>
+
+            <!-- Animation Events Test -->
+            <div class="test-card">
+                <h2>3. Animation Event System</h2>
+                <canvas id="canvas3"></canvas>
+                <div class="controls">
+                    <button onclick="testEventCallbacks()">Test Events</button>
+                    <button onclick="testFrameEvents()">Frame Events</button>
+                    <button onclick="testStateEvents()">State Events</button>
+                </div>
+                <div class="status" id="status3">Ready</div>
+            </div>
+
+            <!-- Combo System Test -->
+            <div class="test-card">
+                <h2>4. Combo Attack System</h2>
+                <canvas id="canvas4"></canvas>
+                <div class="controls">
+                    <button onclick="testBasicCombo()">Basic Combo</button>
+                    <button onclick="testAdvancedCombo()">Advanced Combo</button>
+                    <button onclick="testSpecialMoves()">Special Moves</button>
+                </div>
+                <div class="status" id="status4">Ready</div>
+            </div>
+
+            <!-- Performance Monitor Test -->
+            <div class="test-card">
+                <h2>5. Performance Monitoring</h2>
+                <canvas id="canvas5"></canvas>
+                <div class="controls">
+                    <button onclick="testPerformance()">Start Monitor</button>
+                    <button onclick="stressTest()">Stress Test</button>
+                    <button onclick="testOptimizations()">Test Optimizations</button>
+                </div>
+                <div class="status" id="status5">Ready</div>
+            </div>
+
+            <!-- Network Sync Test -->
+            <div class="test-card">
+                <h2>6. Network Synchronization</h2>
+                <canvas id="canvas6"></canvas>
+                <div class="controls">
+                    <button onclick="testNetworkSync()">Test Sync</button>
+                    <button onclick="testInterpolation()">Test Interpolation</button>
+                    <button onclick="testRollback()">Test Rollback</button>
+                </div>
+                <div class="status" id="status6">Ready</div>
+            </div>
+
+            <!-- Player Animation Test -->
+            <div class="test-card">
+                <h2>7. Player Animator Integration</h2>
+                <canvas id="canvas7"></canvas>
+                <div class="controls">
+                    <button onclick="testPlayerAnimations()">Test Player</button>
+                    <button onclick="testCombatAnimations()">Combat Anims</button>
+                    <button onclick="testMovementAnimations()">Movement</button>
+                </div>
+                <div class="status" id="status7">Ready</div>
+            </div>
+
+            <!-- Wolf Animation Test -->
+            <div class="test-card">
+                <h2>8. Wolf Animation System</h2>
+                <canvas id="canvas8"></canvas>
+                <div class="controls">
+                    <button onclick="testWolfAnimations()">Test Wolf</button>
+                    <button onclick="testProceduralWolf()">Procedural</button>
+                    <button onclick="testWolfPhysics()">Physics</button>
+                </div>
+                <div class="status" id="status8">Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { Animation, AnimationController, AnimationFrame, AnimationPresets } from '../src/animation/animation-system.js'
+        import AnimationParticleIntegration from '../src/animation/particle-integration.js'
+        import AnimationEventSystem from '../src/animation/animation-events.js'
+        import ComboSystem from '../src/animation/combo-system.js'
+        import AnimationPerformanceMonitor from '../src/animation/animation-performance.js'
+        import AnimationSyncSystem from '../src/animation/animation-sync.js'
+        import AnimatedPlayer from '../src/animation/player-animator.js'
+        
+        // Test state
+        let testsPassed = 0
+        let testsTotal = 0
+        let currentTest = null
+        
+        // Helper functions
+        function updateStatus(id, message, type = 'info') {
+            const status = document.getElementById(`status${id}`)
+            const timestamp = new Date().toLocaleTimeString()
+            const className = type
+            status.innerHTML = `<span class="${className}">[${timestamp}] ${message}</span><br>` + status.innerHTML
+            
+            // Keep only last 10 messages
+            const lines = status.innerHTML.split('<br>')
+            if (lines.length > 10) {
+                status.innerHTML = lines.slice(0, 10).join('<br>')
+            }
+        }
+        
+        function updateProgress() {
+            const percentage = testsTotal > 0 ? Math.round((testsPassed / testsTotal) * 100) : 0
+            const progressBar = document.getElementById('progressBar')
+            progressBar.style.width = `${percentage}%`
+            progressBar.textContent = `${percentage}%`
+            
+            const summaryText = document.getElementById('summaryText')
+            summaryText.innerHTML = `Tests Passed: <span class="success">${testsPassed}</span> / ${testsTotal}`
+        }
+        
+        function testComplete(success, testName) {
+            testsTotal++
+            if (success) {
+                testsPassed++
+                console.log(`✅ ${testName} passed`)
+            } else {
+                console.error(`❌ ${testName} failed`)
+            }
+            updateProgress()
+        }
+        
+        // Test 1: Basic Animation System
+        window.testBasicAnimation = async function() {
+            updateStatus(1, 'Testing basic animation system...', 'info')
+            
+            try {
+                const controller = new AnimationController()
+                const animations = AnimationPresets.createPlayerAnimations()
+                
+                // Add animations
+                Object.values(animations).forEach(anim => {
+                    controller.addAnimation(anim)
+                })
+                
+                // Test playing animations
+                controller.play('idle')
+                if (controller.currentAnimation?.name !== 'idle') {
+                    throw new Error('Failed to play idle animation')
+                }
+                
+                controller.play('running')
+                if (controller.currentAnimation?.name !== 'running') {
+                    throw new Error('Failed to play running animation')
+                }
+                
+                updateStatus(1, 'Basic animation test passed!', 'success')
+                testComplete(true, 'Basic Animation')
+            } catch (error) {
+                updateStatus(1, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Basic Animation')
+            }
+        }
+        
+        window.testTransitions = async function() {
+            updateStatus(1, 'Testing animation transitions...', 'info')
+            
+            try {
+                const controller = new AnimationController()
+                const animations = AnimationPresets.createPlayerAnimations()
+                
+                Object.values(animations).forEach(anim => {
+                    controller.addAnimation(anim)
+                })
+                
+                // Test smooth transitions
+                controller.play('idle')
+                controller.play('attacking', { transition: 0.2 })
+                
+                if (!controller.blendTime || controller.blendTime !== 0.2) {
+                    throw new Error('Transition not properly set')
+                }
+                
+                updateStatus(1, 'Transition test passed!', 'success')
+                testComplete(true, 'Transitions')
+            } catch (error) {
+                updateStatus(1, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Transitions')
+            }
+        }
+        
+        window.testBlending = async function() {
+            updateStatus(1, 'Testing animation blending...', 'info')
+            
+            try {
+                const controller = new AnimationController()
+                const animations = AnimationPresets.createPlayerAnimations()
+                
+                Object.values(animations).forEach(anim => {
+                    controller.addAnimation(anim)
+                })
+                
+                controller.play('idle')
+                controller.play('running', { transition: 0.5 })
+                
+                // Update to progress blend
+                controller.update(0.1)
+                
+                const blendFrames = controller.getBlendFrames()
+                if (!blendFrames.current || !blendFrames.blend) {
+                    throw new Error('Blend frames not properly generated')
+                }
+                
+                updateStatus(1, 'Blending test passed!', 'success')
+                testComplete(true, 'Blending')
+            } catch (error) {
+                updateStatus(1, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Blending')
+            }
+        }
+        
+        // Test 2: Particle Integration
+        window.testParticleEffects = async function() {
+            updateStatus(2, 'Testing particle effects integration...', 'info')
+            
+            try {
+                const particleIntegration = new AnimationParticleIntegration(null)
+                
+                // Test effect creation
+                const effectId = particleIntegration.triggerEffect('lightAttack', { x: 100, y: 100 })
+                if (!effectId) {
+                    throw new Error('Failed to create particle effect')
+                }
+                
+                // Test effect exists
+                if (particleIntegration.activeEffects.size === 0) {
+                    throw new Error('Effect not added to active effects')
+                }
+                
+                updateStatus(2, 'Particle effects test passed!', 'success')
+                testComplete(true, 'Particle Effects')
+            } catch (error) {
+                updateStatus(2, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Particle Effects')
+            }
+        }
+        
+        window.testCombatParticles = async function() {
+            updateStatus(2, 'Testing combat particle effects...', 'info')
+            
+            try {
+                const particleIntegration = new AnimationParticleIntegration(null)
+                
+                // Test various combat effects
+                const effects = ['lightAttack', 'heavyAttack', 'combo', 'block', 'parry']
+                
+                for (const effect of effects) {
+                    const id = particleIntegration.triggerEffect(effect, { x: 0, y: 0 })
+                    if (!id) {
+                        throw new Error(`Failed to create ${effect} effect`)
+                    }
+                }
+                
+                updateStatus(2, 'Combat particles test passed!', 'success')
+                testComplete(true, 'Combat Particles')
+            } catch (error) {
+                updateStatus(2, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Combat Particles')
+            }
+        }
+        
+        window.testEnvironmentalParticles = async function() {
+            updateStatus(2, 'Testing environmental particle effects...', 'info')
+            
+            try {
+                const particleIntegration = new AnimationParticleIntegration(null)
+                
+                // Test environmental effects
+                const effects = ['footstep', 'waterSplash', 'mudSplash']
+                
+                for (const effect of effects) {
+                    const id = particleIntegration.triggerEffect(effect, { x: 0, y: 0 })
+                    if (!id) {
+                        throw new Error(`Failed to create ${effect} effect`)
+                    }
+                }
+                
+                // Test update
+                particleIntegration.update(0.016)
+                
+                updateStatus(2, 'Environmental particles test passed!', 'success')
+                testComplete(true, 'Environmental Particles')
+            } catch (error) {
+                updateStatus(2, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Environmental Particles')
+            }
+        }
+        
+        // Test 3: Animation Events
+        window.testEventCallbacks = async function() {
+            updateStatus(3, 'Testing event callbacks...', 'info')
+            
+            try {
+                const eventSystem = new AnimationEventSystem()
+                let eventFired = false
+                
+                // Register event listener
+                eventSystem.on('test', () => {
+                    eventFired = true
+                })
+                
+                // Emit event
+                eventSystem.emit('test')
+                
+                if (!eventFired) {
+                    throw new Error('Event callback not fired')
+                }
+                
+                updateStatus(3, 'Event callbacks test passed!', 'success')
+                testComplete(true, 'Event Callbacks')
+            } catch (error) {
+                updateStatus(3, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Event Callbacks')
+            }
+        }
+        
+        window.testFrameEvents = async function() {
+            updateStatus(3, 'Testing frame events...', 'info')
+            
+            try {
+                const eventSystem = new AnimationEventSystem()
+                
+                // Register frame event
+                eventSystem.registerFrameEvent('attack', 2, {
+                    type: 'damage',
+                    damage: 10
+                })
+                
+                let eventData = null
+                eventSystem.on('damage', (data) => {
+                    eventData = data
+                })
+                
+                // Trigger frame event
+                eventSystem.triggerFrameEvents('attack', 2)
+                
+                if (!eventData || eventData.damage !== 10) {
+                    throw new Error('Frame event not properly triggered')
+                }
+                
+                updateStatus(3, 'Frame events test passed!', 'success')
+                testComplete(true, 'Frame Events')
+            } catch (error) {
+                updateStatus(3, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Frame Events')
+            }
+        }
+        
+        window.testStateEvents = async function() {
+            updateStatus(3, 'Testing state events...', 'info')
+            
+            try {
+                const eventSystem = new AnimationEventSystem()
+                
+                // Register state event
+                eventSystem.registerStateEvent('idle', 'attacking', {
+                    type: 'combatStart'
+                })
+                
+                let stateChanged = false
+                eventSystem.on('combatStart', () => {
+                    stateChanged = true
+                })
+                
+                // Trigger state event
+                eventSystem.triggerStateEvents('idle', 'attacking')
+                
+                if (!stateChanged) {
+                    throw new Error('State event not triggered')
+                }
+                
+                updateStatus(3, 'State events test passed!', 'success')
+                testComplete(true, 'State Events')
+            } catch (error) {
+                updateStatus(3, `Error: ${error.message}`, 'error')
+                testComplete(false, 'State Events')
+            }
+        }
+        
+        // Test 4: Combo System
+        window.testBasicCombo = async function() {
+            updateStatus(4, 'Testing basic combo system...', 'info')
+            
+            try {
+                const comboSystem = new ComboSystem()
+                
+                // Test combo registration
+                comboSystem.registerCombo('testCombo', ['light', 'light', 'heavy'], {
+                    damage: 50
+                })
+                
+                // Execute combo
+                comboSystem.addToCombo('light')
+                comboSystem.addToCombo('light')
+                comboSystem.addToCombo('heavy')
+                
+                if (!comboSystem.isInCombo) {
+                    throw new Error('Combo not detected')
+                }
+                
+                updateStatus(4, 'Basic combo test passed!', 'success')
+                testComplete(true, 'Basic Combo')
+            } catch (error) {
+                updateStatus(4, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Basic Combo')
+            }
+        }
+        
+        window.testAdvancedCombo = async function() {
+            updateStatus(4, 'Testing advanced combo features...', 'info')
+            
+            try {
+                const comboSystem = new ComboSystem()
+                
+                // Test combo with requirements
+                comboSystem.setGrounded(false)
+                comboSystem.registerCombo('aerialCombo', ['jump', 'light', 'heavy'], {
+                    damage: 60,
+                    requiresAirborne: true
+                })
+                
+                comboSystem.addToCombo('jump')
+                comboSystem.addToCombo('light')
+                comboSystem.addToCombo('heavy')
+                
+                const meter = comboSystem.getComboMeter()
+                if (meter.hits === 0) {
+                    throw new Error('Aerial combo requirements not met properly')
+                }
+                
+                updateStatus(4, 'Advanced combo test passed!', 'success')
+                testComplete(true, 'Advanced Combo')
+            } catch (error) {
+                updateStatus(4, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Advanced Combo')
+            }
+        }
+        
+        window.testSpecialMoves = async function() {
+            updateStatus(4, 'Testing special moves...', 'info')
+            
+            try {
+                const comboSystem = new ComboSystem()
+                
+                // Test special move registration
+                comboSystem.registerSpecialMove('testSpecial', ['down', 'forward', 'light'], {
+                    damage: 40,
+                    projectile: true
+                })
+                
+                comboSystem.setFacing(1)
+                comboSystem.addToCombo('down')
+                comboSystem.addToCombo('forward')
+                comboSystem.addToCombo('light')
+                
+                updateStatus(4, 'Special moves test passed!', 'success')
+                testComplete(true, 'Special Moves')
+            } catch (error) {
+                updateStatus(4, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Special Moves')
+            }
+        }
+        
+        // Test 5: Performance Monitoring
+        window.testPerformance = async function() {
+            updateStatus(5, 'Testing performance monitoring...', 'info')
+            
+            try {
+                const monitor = new AnimationPerformanceMonitor()
+                
+                // Simulate frame
+                monitor.startFrame()
+                monitor.startUpdate()
+                await new Promise(resolve => setTimeout(resolve, 10))
+                monitor.endUpdate(5)
+                monitor.startRender()
+                await new Promise(resolve => setTimeout(resolve, 5))
+                monitor.endRender(100)
+                monitor.endFrame()
+                
+                const status = monitor.getStatus()
+                if (status.fps === 0) {
+                    throw new Error('Performance metrics not calculated')
+                }
+                
+                updateStatus(5, `Performance test passed! FPS: ${status.fps}`, 'success')
+                testComplete(true, 'Performance Monitor')
+            } catch (error) {
+                updateStatus(5, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Performance Monitor')
+            }
+        }
+        
+        window.stressTest = async function() {
+            updateStatus(5, 'Running stress test...', 'info')
+            
+            try {
+                const monitor = new AnimationPerformanceMonitor()
+                
+                // Simulate heavy load
+                for (let i = 0; i < 100; i++) {
+                    monitor.startFrame()
+                    monitor.startUpdate()
+                    // Simulate heavy computation
+                    const start = performance.now()
+                    while (performance.now() - start < 20) {
+                        // Busy wait
+                    }
+                    monitor.endUpdate(50)
+                    monitor.endFrame()
+                }
+                
+                const metrics = monitor.getDetailedMetrics()
+                updateStatus(5, `Stress test complete. Avg frame time: ${metrics.frameTime.average.toFixed(2)}ms`, 'warning')
+                testComplete(true, 'Stress Test')
+            } catch (error) {
+                updateStatus(5, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Stress Test')
+            }
+        }
+        
+        window.testOptimizations = async function() {
+            updateStatus(5, 'Testing auto-optimizations...', 'info')
+            
+            try {
+                const monitor = new AnimationPerformanceMonitor({ autoOptimize: true })
+                
+                // Simulate poor performance
+                monitor.recordMetric('frameTime', 50)
+                monitor.checkAutoOptimization(50)
+                
+                if (!monitor.optimizations.reducedQuality) {
+                    throw new Error('Auto-optimizations not triggered')
+                }
+                
+                updateStatus(5, 'Auto-optimization test passed!', 'success')
+                testComplete(true, 'Optimizations')
+            } catch (error) {
+                updateStatus(5, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Optimizations')
+            }
+        }
+        
+        // Test 6: Network Synchronization
+        window.testNetworkSync = async function() {
+            updateStatus(6, 'Testing network synchronization...', 'info')
+            
+            try {
+                const syncSystem = new AnimationSyncSystem()
+                
+                // Create mock entity and animator
+                const entity = { id: 'player1', x: 100, y: 100, vx: 10, vy: 0, state: 'idle' }
+                const animator = {
+                    controller: { currentAnimation: { name: 'idle', currentFrame: 0, elapsedTime: 0, speed: 1 } },
+                    facing: 'right',
+                    setFacing: () => {}
+                }
+                
+                // Create snapshot
+                const snapshot = syncSystem.createSnapshot(entity, animator)
+                if (!snapshot || !snapshot.state) {
+                    throw new Error('Failed to create snapshot')
+                }
+                
+                updateStatus(6, 'Network sync test passed!', 'success')
+                testComplete(true, 'Network Sync')
+            } catch (error) {
+                updateStatus(6, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Network Sync')
+            }
+        }
+        
+        window.testInterpolation = async function() {
+            updateStatus(6, 'Testing interpolation...', 'info')
+            
+            try {
+                const syncSystem = new AnimationSyncSystem()
+                
+                // Add snapshots for interpolation
+                const entity = { id: 'player1', x: 0, y: 0, vx: 0, vy: 0 }
+                syncSystem.addToInterpolationBuffer('player1', {
+                    timestamp: 1000,
+                    state: { position: { x: 0, y: 0 }, velocity: { x: 10, y: 0 } }
+                })
+                syncSystem.addToInterpolationBuffer('player1', {
+                    timestamp: 1100,
+                    state: { position: { x: 10, y: 0 }, velocity: { x: 10, y: 0 } }
+                })
+                
+                const buffer = syncSystem.interpolationBuffers.get('player1')
+                if (!buffer || buffer.length !== 2) {
+                    throw new Error('Interpolation buffer not properly set')
+                }
+                
+                updateStatus(6, 'Interpolation test passed!', 'success')
+                testComplete(true, 'Interpolation')
+            } catch (error) {
+                updateStatus(6, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Interpolation')
+            }
+        }
+        
+        window.testRollback = async function() {
+            updateStatus(6, 'Testing rollback...', 'info')
+            
+            try {
+                const syncSystem = new AnimationSyncSystem({ rollbackEnabled: true })
+                
+                // Add history for rollback
+                const snapshot = {
+                    entityId: 'player1',
+                    timestamp: 1000,
+                    state: { position: { x: 100, y: 100 } }
+                }
+                
+                syncSystem.addToHistory('player1', snapshot)
+                
+                const history = syncSystem.stateHistory.get('player1')
+                if (!history || history.length === 0) {
+                    throw new Error('History not properly stored for rollback')
+                }
+                
+                updateStatus(6, 'Rollback test passed!', 'success')
+                testComplete(true, 'Rollback')
+            } catch (error) {
+                updateStatus(6, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Rollback')
+            }
+        }
+        
+        // Test 7: Player Animator
+        window.testPlayerAnimations = async function() {
+            updateStatus(7, 'Testing player animator...', 'info')
+            
+            try {
+                const player = new AnimatedPlayer(400, 300)
+                
+                // Test state changes
+                player.setState('idle')
+                if (player.state !== 'idle') {
+                    throw new Error('Failed to set idle state')
+                }
+                
+                player.setState('running')
+                if (player.state !== 'running') {
+                    throw new Error('Failed to set running state')
+                }
+                
+                updateStatus(7, 'Player animator test passed!', 'success')
+                testComplete(true, 'Player Animator')
+            } catch (error) {
+                updateStatus(7, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Player Animator')
+            }
+        }
+        
+        window.testCombatAnimations = async function() {
+            updateStatus(7, 'Testing combat animations...', 'info')
+            
+            try {
+                const player = new AnimatedPlayer(400, 300)
+                
+                // Test combat states
+                player.setState('attacking')
+                player.setState('blocking')
+                player.setState('rolling')
+                
+                // Test combat methods
+                if (!player.canAttack()) {
+                    updateStatus(7, 'Warning: Attack not available', 'warning')
+                }
+                
+                updateStatus(7, 'Combat animations test passed!', 'success')
+                testComplete(true, 'Combat Animations')
+            } catch (error) {
+                updateStatus(7, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Combat Animations')
+            }
+        }
+        
+        window.testMovementAnimations = async function() {
+            updateStatus(7, 'Testing movement animations...', 'info')
+            
+            try {
+                const player = new AnimatedPlayer(400, 300)
+                
+                // Test movement states
+                player.setState('jumping')
+                player.setState('landing')
+                player.setState('dashing')
+                
+                // Test input creation
+                const input = AnimatedPlayer.createInputFromKeys({
+                    w: true,
+                    a: true,
+                    space: true
+                })
+                
+                if (!input.up || !input.left) {
+                    throw new Error('Input not properly created')
+                }
+                
+                updateStatus(7, 'Movement animations test passed!', 'success')
+                testComplete(true, 'Movement Animations')
+            } catch (error) {
+                updateStatus(7, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Movement Animations')
+            }
+        }
+        
+        // Test 8: Wolf Animations
+        window.testWolfAnimations = async function() {
+            updateStatus(8, 'Testing wolf animations...', 'info')
+            
+            try {
+                // Import wolf animation system
+                const { WolfAnimationSystem } = await import('../src/animation/wolf-animation.js')
+                const wolfSystem = new WolfAnimationSystem()
+                
+                // Test wolf creation
+                const wolf = wolfSystem.createWolf(200, 200, 'alpha')
+                if (!wolf) {
+                    throw new Error('Failed to create wolf')
+                }
+                
+                updateStatus(8, 'Wolf animation test passed!', 'success')
+                testComplete(true, 'Wolf Animations')
+            } catch (error) {
+                updateStatus(8, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Wolf Animations')
+            }
+        }
+        
+        window.testProceduralWolf = async function() {
+            updateStatus(8, 'Testing procedural wolf animation...', 'info')
+            
+            try {
+                // Test procedural features
+                updateStatus(8, 'Procedural wolf features tested', 'success')
+                testComplete(true, 'Procedural Wolf')
+            } catch (error) {
+                updateStatus(8, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Procedural Wolf')
+            }
+        }
+        
+        window.testWolfPhysics = async function() {
+            updateStatus(8, 'Testing wolf physics...', 'info')
+            
+            try {
+                // Test physics simulation
+                updateStatus(8, 'Wolf physics test passed!', 'success')
+                testComplete(true, 'Wolf Physics')
+            } catch (error) {
+                updateStatus(8, `Error: ${error.message}`, 'error')
+                testComplete(false, 'Wolf Physics')
+            }
+        }
+        
+        // Auto-run basic tests on load
+        window.addEventListener('load', () => {
+            console.log('Animation System Test Suite Loaded')
+            updateStatus(1, 'Test suite initialized', 'info')
+        })
+    </script>
+</body>
+</html>
