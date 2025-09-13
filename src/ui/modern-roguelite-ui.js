@@ -53,7 +53,9 @@ export class ModernRogueliteUI {
   createHUDLayout() {
     // Remove any existing UI
     const existing = document.getElementById('modern-roguelite-ui');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.remove();
+    }
 
     const uiContainer = document.createElement('div');
     uiContainer.id = 'modern-roguelite-ui';
@@ -392,7 +394,9 @@ export class ModernRogueliteUI {
     const dpr = window.devicePixelRatio || 1;
     
     canvases.forEach(canvas => {
-      if (!canvas) return;
+      if (!canvas) {
+        return;
+      }
       
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
@@ -481,7 +485,9 @@ export class ModernRogueliteUI {
    */
   setupAccessibilityFeatures() {
     const settingsPanel = document.getElementById('settings-panel');
-    if (!settingsPanel) return;
+    if (!settingsPanel) {
+      return;
+    }
     
     settingsPanel.innerHTML = `
       <!-- Gameplay Settings -->
@@ -634,7 +640,9 @@ export class ModernRogueliteUI {
    */
   handleKeyDown(e) {
     const action = this.inputState.keybinds.get(e.code);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
     
     // Prevent default for game keys
     if (this.isGameKey(e.code)) {
@@ -658,7 +666,9 @@ export class ModernRogueliteUI {
    */
   handleKeyUp(e) {
     const action = this.inputState.keybinds.get(e.code);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
     
     // Remove from active actions
     this.inputState.actions.delete(action);
@@ -676,12 +686,21 @@ export class ModernRogueliteUI {
    * Update movement input based on active keys
    */
   updateMovementInput() {
-    let x = 0, y = 0;
+    let x = 0;
+    let y = 0;
     
-    if (this.inputState.actions.has('move-left')) x -= 1;
-    if (this.inputState.actions.has('move-right')) x += 1;
-    if (this.inputState.actions.has('move-up')) y -= 1;
-    if (this.inputState.actions.has('move-down')) y += 1;
+    if (this.inputState.actions.has('move-left')) {
+      x -= 1;
+    }
+    if (this.inputState.actions.has('move-right')) {
+      x += 1;
+    }
+    if (this.inputState.actions.has('move-up')) {
+      y -= 1;
+    }
+    if (this.inputState.actions.has('move-down')) {
+      y += 1;
+    }
     
     // Normalize diagonal movement
     if (x !== 0 && y !== 0) {
@@ -723,7 +742,9 @@ export class ModernRogueliteUI {
    * Update UI state from WASM (read-only)
    */
   updateFromWASM() {
-    if (!this.wasmManager) return;
+    if (!this.wasmManager) {
+      return;
+    }
     
     // Update vitals
     this.updateVitalsDisplay();
@@ -782,7 +803,9 @@ export class ModernRogueliteUI {
     
     abilities.forEach(abilityId => {
       const cooldownElement = document.getElementById(`${abilityId}-cooldown`);
-      if (!cooldownElement) return;
+      if (!cooldownElement) {
+        return;
+      }
       
       // Get cooldown from WASM (example - actual API may differ)
       const cooldownPercent = this.wasmManager.getAbilityCooldown ? 
@@ -805,7 +828,9 @@ export class ModernRogueliteUI {
    * Update minimap display
    */
   updateMinimap() {
-    if (!this.minimapCtx) return;
+    if (!this.minimapCtx) {
+      return;
+    }
     
     const ctx = this.minimapCtx;
     const canvas = this.minimapCanvas;
@@ -848,7 +873,9 @@ export class ModernRogueliteUI {
    */
   updateObjectiveBreadcrumb(playerX, playerY) {
     const breadcrumbPath = document.getElementById('breadcrumb-path');
-    if (!breadcrumbPath) return;
+    if (!breadcrumbPath) {
+      return;
+    }
     
     // Get objective position from WASM (example)
     const objectiveX = this.wasmManager.getObjectiveX ? this.wasmManager.getObjectiveX() : 0.8;
@@ -866,7 +893,9 @@ export class ModernRogueliteUI {
    * Update animations
    */
   updateAnimations(deltaTime) {
-    if (this.animationSettings.reduceMotion) return;
+    if (this.animationSettings.reduceMotion) {
+      return;
+    }
     
     // Update damage numbers
     this.updateDamageNumbers(deltaTime);
@@ -906,10 +935,14 @@ export class ModernRogueliteUI {
    * Show damage number at position
    */
   showDamageNumber(damage, x, y, isCrit = false) {
-    if (this.animationSettings.reduceMotion) return;
+    if (this.animationSettings.reduceMotion) {
+      return;
+    }
     
     const container = document.getElementById('damage-numbers');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     
     const damageEl = document.createElement('div');
     damageEl.className = `damage-number ${isCrit ? 'critical' : ''}`;
@@ -933,7 +966,9 @@ export class ModernRogueliteUI {
    */
   showPickupNotification(item, icon) {
     const container = document.getElementById('pickup-notifications');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     
     const pickupEl = document.createElement('div');
     pickupEl.className = 'pickup-notification';
@@ -956,10 +991,14 @@ export class ModernRogueliteUI {
    * Trigger screen shake effect
    */
   triggerScreenShake(intensity = 1) {
-    if (!this.animationSettings.screenShake || this.animationSettings.reduceMotion) return;
+    if (!this.animationSettings.screenShake || this.animationSettings.reduceMotion) {
+      return;
+    }
     
     const shakeContainer = document.getElementById('screen-shake');
-    if (!shakeContainer) return;
+    if (!shakeContainer) {
+      return;
+    }
     
     const duration = 200 * intensity;
     const amplitude = 5 * intensity;
@@ -977,7 +1016,9 @@ export class ModernRogueliteUI {
    */
   showDamageVignette() {
     const vignette = document.getElementById('damage-vignette');
-    if (!vignette || this.animationSettings.reduceMotion) return;
+    if (!vignette || this.animationSettings.reduceMotion) {
+      return;
+    }
     
     vignette.classList.add('active');
     setTimeout(() => vignette.classList.remove('active'), 200);
@@ -1054,8 +1095,8 @@ export class ModernRogueliteUI {
     
     // Update performance metrics
     if (this.frameCount % 60 === 0) {
-      const fps = Math.round(1000 / deltaTime);
       // Could display FPS counter if needed
+      // const fps = Math.round(1000 / deltaTime);
     }
   }
 
@@ -1077,18 +1118,18 @@ export class ModernRogueliteUI {
   }
 
   // Placeholder methods for input handling
-  handleMouseDown(e) { /* Forward to WASM */ }
-  handleMouseUp(e) { /* Forward to WASM */ }
-  handleMouseMove(e) { /* Forward to WASM */ }
-  handleTouchStart(e) { /* Basic touch support */ }
-  handleTouchEnd(e) { /* Basic touch support */ }
-  handleTouchMove(e) { /* Basic touch support */ }
-  handleControllerConnect(e) { /* Controller support */ }
-  handleControllerDisconnect(e) { /* Controller support */ }
+  handleMouseDown() { /* Forward to WASM */ }
+  handleMouseUp() { /* Forward to WASM */ }
+  handleMouseMove() { /* Forward to WASM */ }
+  handleTouchStart() { /* Basic touch support */ }
+  handleTouchEnd() { /* Basic touch support */ }
+  handleTouchMove() { /* Basic touch support */ }
+  handleControllerConnect() { /* Controller support */ }
+  handleControllerDisconnect() { /* Controller support */ }
   
   updatePhaseDisplay() { /* Update phase UI from WASM */ }
   updateStatusEffects() { /* Update status effects from WASM */ }
-  updatePickupNotifications(deltaTime) { /* Update pickup animations */ }
-  updateScreenEffects(deltaTime) { /* Update screen effects */ }
+  updatePickupNotifications() { /* Update pickup animations */ }
+  updateScreenEffects() { /* Update screen effects */ }
   showKeybindConfiguration() { /* Show keybind config UI */ }
 }
