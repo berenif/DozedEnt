@@ -723,51 +723,88 @@ class GameApplication {
       // Get input state from input manager (with null check)
       const inputState = this.inputManager?.getInputState() || {};
 
-      // Update game state
-      this.gameStateManager.update(deltaTime, inputState);
+      // Update game state with individual error handling
+      try {
+        this.gameStateManager.update(deltaTime, inputState);
+      } catch (gameStateError) {
+        console.error('Error updating game state:', gameStateError);
+        // Continue with other updates even if game state update fails
+      }
 
       // Sync player position from WASM to animated player
-      if (this.animatedPlayer && this.gameStateManager.playerState) {
-        const oldX = this.animatedPlayer.x;
-        const oldY = this.animatedPlayer.y;
-        this.animatedPlayer.x = this.gameStateManager.playerState.position.x;
-        this.animatedPlayer.y = this.gameStateManager.playerState.position.y;
-        
-        // Log significant movement
-        const dx = this.animatedPlayer.x - oldX;
-        const dy = this.animatedPlayer.y - oldY;
-        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-          console.log(`Player moved: (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) -> (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})`);
+      try {
+        if (this.animatedPlayer && this.gameStateManager.playerState) {
+          const oldX = this.animatedPlayer.x;
+          const oldY = this.animatedPlayer.y;
+          this.animatedPlayer.x = this.gameStateManager.playerState.position?.x || this.animatedPlayer.x;
+          this.animatedPlayer.y = this.gameStateManager.playerState.position?.y || this.animatedPlayer.y;
+          
+          // Log significant movement
+          const dx = this.animatedPlayer.x - oldX;
+          const dy = this.animatedPlayer.y - oldY;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            console.log(`Player moved: (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) -> (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})`);
+          }
         }
+      } catch (positionError) {
+        console.error('Error syncing player position:', positionError);
       }
 
       // Update wolf AI
-      if (this.wolfAISystem && this.animatedPlayer) {
-        this.wolfAISystem.update(deltaTime, this.animatedPlayer, this.wolfCharacters);
+      try {
+        if (this.wolfAISystem && this.animatedPlayer) {
+          this.wolfAISystem.update(deltaTime, this.animatedPlayer, this.wolfCharacters);
+        }
+      } catch (aiError) {
+        console.error('Error updating wolf AI:', aiError);
       }
 
       // Update audio visualizations
-      this.audioManager.updateVocalizationVisuals();
+      try {
+        this.audioManager.updateVocalizationVisuals();
+      } catch (audioError) {
+        console.error('Error updating audio visualizations:', audioError);
+      }
 
       // Update Roguelike HUD
-      if (this.roguelikeHUD) {
-        this.roguelikeHUD.update();
+      try {
+        if (this.roguelikeHUD) {
+          this.roguelikeHUD.update();
+        }
+      } catch (hudError) {
+        console.error('Error updating Roguelike HUD:', hudError);
       }
 
       // Update Combat Feedback
-      if (this.combatFeedback) {
-        this.combatFeedback.update();
+      try {
+        if (this.combatFeedback) {
+          this.combatFeedback.update();
+        }
+      } catch (combatError) {
+        console.error('Error updating Combat Feedback:', combatError);
       }
 
       // Render frame
-      this.render();
+      try {
+        this.render();
+      } catch (renderError) {
+        console.error('Error rendering frame:', renderError);
+      }
 
       // Continue loop
       this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
 
     } catch (error) {
-      console.error('Error in game loop:', error);
-      this.stopGameLoop();
+      console.error('Critical error in game loop:', error);
+      // Only stop the game loop for truly critical errors
+      // For WASM errors, try to continue running
+      if (error.message && (error.message.includes('WASM') || error.message.includes('index out of bounds'))) {
+        console.warn('WASM error detected, continuing game loop with degraded functionality');
+        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+      } else {
+        console.error('Stopping game loop due to critical error');
+        this.stopGameLoop();
+      }
     }
   }
 

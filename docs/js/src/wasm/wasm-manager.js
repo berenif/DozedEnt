@@ -492,35 +492,120 @@ export class WasmManager {
       return this._cachedPlayerState;
     }
     
-    // Batch all commonly-used state reads
-    const state = {};
-    state.x = typeof this.exports.get_x === 'function' ? this.exports.get_x() : 0.5;
-    state.y = typeof this.exports.get_y === 'function' ? this.exports.get_y() : 0.5;
-    state.stamina = typeof this.exports.get_stamina === 'function' ? this.exports.get_stamina() : 1.0;
-    state.phase = typeof this.exports.get_phase === 'function' ? this.exports.get_phase() : 0;
-    state.health = typeof this.exports.get_health === 'function' ? this.exports.get_health() : 1.0;
-    state.gold = typeof this.exports.get_gold === 'function' ? this.exports.get_gold() : 0;
-    state.essence = typeof this.exports.get_essence === 'function' ? this.exports.get_essence() : 0;
-    
-    // Add additional state for batching
-    state.velX = typeof this.exports.get_vel_x === 'function' ? this.exports.get_vel_x() : 0;
-    state.velY = typeof this.exports.get_vel_y === 'function' ? this.exports.get_vel_y() : 0;
-    state.isRolling = typeof this.exports.get_is_rolling === 'function' ? this.exports.get_is_rolling() : 0;
-    state.isBlocking = typeof this.exports.get_block_state === 'function' ? this.exports.get_block_state() : 0;
-    state.animState = typeof this.exports.get_player_anim_state === 'function' ? this.exports.get_player_anim_state() : 0;
-    
-    // Validate and clamp values
-    state.x = Number.isFinite(state.x) ? Math.max(0, Math.min(1, state.x)) : 0.5;
-    state.y = Number.isFinite(state.y) ? Math.max(0, Math.min(1, state.y)) : 0.5;
-    state.stamina = Number.isFinite(state.stamina) ? Math.max(0, Math.min(1, state.stamina)) : 1.0;
-    state.health = Number.isFinite(state.health) ? Math.max(0, Math.min(1, state.health)) : 1.0;
-    state.phase = Number.isFinite(state.phase) ? Math.max(0, Math.min(7, state.phase)) : 0;
-    
-    // Cache the state
-    this._cachedPlayerState = state;
-    this._lastStateUpdate = now;
-    
-    return state;
+    try {
+      // Batch all commonly-used state reads with error handling
+      const state = {};
+      
+      // Core position and movement state
+      try {
+        state.x = typeof this.exports.get_x === 'function' ? this.exports.get_x() : 0.5;
+      } catch (error) {
+        console.warn('Error getting player X position:', error);
+        state.x = 0.5;
+      }
+      
+      try {
+        state.y = typeof this.exports.get_y === 'function' ? this.exports.get_y() : 0.5;
+      } catch (error) {
+        console.warn('Error getting player Y position:', error);
+        state.y = 0.5;
+      }
+      
+      try {
+        state.stamina = typeof this.exports.get_stamina === 'function' ? this.exports.get_stamina() : 1.0;
+      } catch (error) {
+        console.warn('Error getting player stamina:', error);
+        state.stamina = 1.0;
+      }
+      
+      try {
+        state.phase = typeof this.exports.get_phase === 'function' ? this.exports.get_phase() : 0;
+      } catch (error) {
+        console.warn('Error getting game phase:', error);
+        state.phase = 0;
+      }
+      
+      try {
+        state.health = typeof this.exports.get_health === 'function' ? this.exports.get_health() : 1.0;
+      } catch (error) {
+        console.warn('Error getting player health:', error);
+        state.health = 1.0;
+      }
+      
+      try {
+        state.gold = typeof this.exports.get_gold === 'function' ? this.exports.get_gold() : 0;
+      } catch (error) {
+        console.warn('Error getting player gold:', error);
+        state.gold = 0;
+      }
+      
+      try {
+        state.essence = typeof this.exports.get_essence === 'function' ? this.exports.get_essence() : 0;
+      } catch (error) {
+        console.warn('Error getting player essence:', error);
+        state.essence = 0;
+      }
+      
+      // Add additional state for batching with individual error handling
+      try {
+        state.velX = typeof this.exports.get_vel_x === 'function' ? this.exports.get_vel_x() : 0;
+      } catch (error) {
+        console.warn('Error getting player velocity X:', error);
+        state.velX = 0;
+      }
+      
+      try {
+        state.velY = typeof this.exports.get_vel_y === 'function' ? this.exports.get_vel_y() : 0;
+      } catch (error) {
+        console.warn('Error getting player velocity Y:', error);
+        state.velY = 0;
+      }
+      
+      try {
+        state.isRolling = typeof this.exports.get_is_rolling === 'function' ? this.exports.get_is_rolling() : 0;
+      } catch (error) {
+        console.warn('Error getting player rolling state:', error);
+        state.isRolling = 0;
+      }
+      
+      try {
+        state.isBlocking = typeof this.exports.get_block_state === 'function' ? this.exports.get_block_state() : 0;
+      } catch (error) {
+        console.warn('Error getting player blocking state:', error);
+        state.isBlocking = 0;
+      }
+      
+      try {
+        state.animState = typeof this.exports.get_player_anim_state === 'function' ? this.exports.get_player_anim_state() : 0;
+      } catch (error) {
+        console.warn('Error getting player animation state:', error);
+        state.animState = 0;
+      }
+      
+      // Validate and clamp values
+      state.x = Number.isFinite(state.x) ? Math.max(0, Math.min(1, state.x)) : 0.5;
+      state.y = Number.isFinite(state.y) ? Math.max(0, Math.min(1, state.y)) : 0.5;
+      state.stamina = Number.isFinite(state.stamina) ? Math.max(0, Math.min(1, state.stamina)) : 1.0;
+      state.health = Number.isFinite(state.health) ? Math.max(0, Math.min(1, state.health)) : 1.0;
+      state.phase = Number.isFinite(state.phase) ? Math.max(0, Math.min(7, state.phase)) : 0;
+      
+      // Cache the state
+      this._cachedPlayerState = state;
+      this._lastStateUpdate = now;
+      
+      return state;
+    } catch (error) {
+      console.error('Critical error in getPlayerState:', error);
+      // Return safe fallback state if there's a critical error
+      const fallbackState = { 
+        x: 0.5, y: 0.5, stamina: 1.0, phase: 0, 
+        health: 1.0, gold: 0, essence: 0, velX: 0, velY: 0,
+        isRolling: 0, isBlocking: 0, animState: 0
+      };
+      this._cachedPlayerState = fallbackState;
+      this._lastStateUpdate = now;
+      return fallbackState;
+    }
   }
 
   /**

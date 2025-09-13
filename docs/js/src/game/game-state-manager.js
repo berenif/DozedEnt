@@ -210,29 +210,41 @@ export class GameStateManager {
    * Reduces WASM/JS boundary calls from multiple individual calls to one batch
    */
   updateStateFromWasm() {
-    if (!this.wasmManager || !this.wasmManager.isLoaded) return;
+    if (!this.wasmManager || !this.wasmManager.isLoaded) {return;}
 
-    // Get all state in one batched call
-    const playerState = this.wasmManager.getPlayerState();
-    
-    // Update player state
-    this.playerState.x = playerState.x;
-    this.playerState.y = playerState.y;
-    this.playerState.stamina = playerState.stamina;
-    this.playerState.health = playerState.health;
-    this.playerState.gold = playerState.gold;
-    this.playerState.essence = playerState.essence;
-    this.playerState.velX = playerState.velX;
-    this.playerState.velY = playerState.velY;
-    this.playerState.isRolling = Boolean(playerState.isRolling);
-    this.playerState.isBlocking = Boolean(playerState.isBlocking);
-    this.playerState.animState = playerState.animState;
-    
-    // Update game phase
-    this.currentPhase = playerState.phase;
-    
-    // Update camera to follow player
-    this.updateCameraState();
+    try {
+      // Get all state in one batched call
+      const playerState = this.wasmManager.getPlayerState();
+      
+      // Validate playerState before using it
+      if (!playerState || typeof playerState !== 'object') {
+        console.warn('Invalid player state received from WASM:', playerState);
+        return;
+      }
+      
+      // Update player state with safe fallbacks
+      this.playerState.x = Number.isFinite(playerState.x) ? playerState.x : this.playerState.x || 0.5;
+      this.playerState.y = Number.isFinite(playerState.y) ? playerState.y : this.playerState.y || 0.5;
+      this.playerState.stamina = Number.isFinite(playerState.stamina) ? playerState.stamina : this.playerState.stamina || 1.0;
+      this.playerState.health = Number.isFinite(playerState.health) ? playerState.health : this.playerState.health || 1.0;
+      this.playerState.gold = Number.isFinite(playerState.gold) ? playerState.gold : this.playerState.gold || 0;
+      this.playerState.essence = Number.isFinite(playerState.essence) ? playerState.essence : this.playerState.essence || 0;
+      this.playerState.velX = Number.isFinite(playerState.velX) ? playerState.velX : 0;
+      this.playerState.velY = Number.isFinite(playerState.velY) ? playerState.velY : 0;
+      this.playerState.isRolling = Boolean(playerState.isRolling);
+      this.playerState.isBlocking = Boolean(playerState.isBlocking);
+      this.playerState.animState = Number.isFinite(playerState.animState) ? playerState.animState : 0;
+      
+      // Update game phase with validation
+      const newPhase = Number.isFinite(playerState.phase) ? Math.max(0, Math.min(7, playerState.phase)) : 0;
+      this.currentPhase = newPhase;
+      
+      // Update camera to follow player
+      this.updateCameraState();
+    } catch (error) {
+      console.error('Error updating state from WASM:', error);
+      // Don't propagate the error - just log it and continue with existing state
+    }
   }
 
   /**
