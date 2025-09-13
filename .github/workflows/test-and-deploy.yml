@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Install PowerShell
+        uses: actions/setup-powershell@v2
+        
       - name: Run linter
         run: npm run lint || true
         continue-on-error: true
@@ -78,6 +81,9 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
+        
+      - name: Install PowerShell
+        uses: actions/setup-powershell@v2
         
       - name: Build project and prepare docs
         run: bash ./deploy.sh
