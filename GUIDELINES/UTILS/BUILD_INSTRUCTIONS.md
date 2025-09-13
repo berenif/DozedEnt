@@ -66,280 +66,233 @@ em++ src/wasm/game.cpp \
     -o ./game.wasm
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 DozedEnt/
-  _config.yml
-  dist/
-    player-animator.js
-    player-animator.min.js
-    player-animator.umd.js
-    wolf-animation.js
-    wolf-animation.min.js
-    wolf-animation.umd.js
-    trystero-*.min.js
-  emsdk/
-    ... (Emscripten SDK and toolchain files)
-  GUIDELINES/
-    ... (project docs and guides)
-  index.html
-  LICENSE
-  node_modules/
-  package.json
-  package-lock.json
-  playwright.config.js
-  README.md
-  rollup.config.js
-  rollup.config.animations.js
-  rollup.config.wolf.js
-  scripts/
-    build-wasm-host.sh
-    find-proxy.js
-    get-bundle-sizes.js
-    pre-build-check.js
-    test-ice.js
-    test-relays.js
-    validate-github-pages.js
-  site.js
-  src/
-    ai/
-      wolf-ai-enhanced.js
-    animation/
-      animation-system.js
-      environmental-animations.js
-      player-animator.js
-      wolf-animation.js
-    css/            (2 *.css)
-    effects/        (3 *.png)
-    gameentity/     (2 *.js)
-    images/         (2 *.png)
-    netcode/        (16 *.js, 13 *.ts)
-    utils/          (16 *.js, 2 *.ts)
-    wasm/           (10 *.h, 2 *.cpp, 1 *.wasm)
-  test/
-    bug-fixes.spec.js
-    ... (other *.spec.js and test assets)
+├── src/wasm/                    # C++ game logic (WASM source)
+│   ├── game.cpp                 # Main game module
+│   ├── game-host.cpp           # Host-authoritative module
+│   ├── internal_core.h         # Core game structures
+│   ├── enemies.h               # Wolf AI and pack behavior
+│   ├── choices.h               # Choice system logic
+│   ├── weapons.h               # Combat system
+│   └── generated/              # Auto-generated files
+│       └── balance_data.h      # Generated from JSON
+├── data/balance/               # Externalized game constants
+│   ├── player.json             # Player stats and abilities
+│   └── enemies.json            # Enemy stats and behaviors
+├── emsdk/                      # Emscripten SDK (vendored)
+├── tools/scripts/              # Build automation
+│   ├── build-wasm.ps1         # Windows WASM build
+│   ├── build-wasm.sh          # Linux/macOS WASM build
+│   └── generate-balance.cjs    # Balance data generator
+├── docs/                       # GitHub Pages deployment
+│   ├── game.wasm              # Deployed game module
+│   ├── index.html             # Game UI
+│   └── js/src/               # JavaScript integration layer
+├── src/                        # JavaScript integration layer
+│   ├── ui/                    # UI components (rendering only)
+│   ├── input/                 # Input handling (forward to WASM)
+│   ├── audio/                 # Audio system
+│   └── netcode/              # Multiplayer networking
+├── test/                      # Testing infrastructure
+│   ├── unit/                  # 50+ unit test files
+│   └── setup-browser-mocks.js # Comprehensive API mocking
+├── GUIDELINES/                 # Complete documentation
+├── game.wasm                   # Built game module (output)
+└── game-host.wasm             # Built host module (output)
 ```
 
-## Testing Locally
+## 🧪 Testing & Validation
 
-### Using Python HTTP Server
+### Local Development Server
 ```bash
+# Start development server
+npm run dev
+
+# Or use Python HTTP server
 cd docs
 python3 -m http.server 8080
 ```
-Then open: http://localhost:8080/animations-showcase.html
 
-### Using Node.js serve
+### Build Validation
 ```bash
-npx serve docs
+# Test WASM build
+npm run wasm:build
+ls -la game.wasm          # Should exist and be ~43KB
+
+# Run unit tests
+npm run test:unit
+
+# Run full test suite
+npm test
 ```
 
-### Using npm package serve
-```bash
-npm install -g serve
-serve docs
-```
+### Performance Validation
+- **Binary Size**: game.wasm should be ~43KB optimized
+- **Load Time**: < 100ms WASM instantiation
+- **Frame Rate**: 60+ FPS with < 16ms frame time
+- **Memory Usage**: < 32MB total WASM memory
 
-## Integration in HTML
+## 🔗 WASM Integration in JavaScript
 
-### ES Module Import
-```html
-<script type="module">
-import AnimatedPlayer from './dist/player-animator.js'
-
-const player = new AnimatedPlayer(x, y, options)
-</script>
-```
-
-### UMD Script Tag
-```html
-<script src="./dist/player-animator.umd.js"></script>
-<script>
-const player = new AnimatedPlayer(x, y, options)
-</script>
-```
-
-## Animation Features
-
-The built system includes:
-
-### Player States
-- **Idle**: Default resting animation
-- **Running**: Movement animation
-- **Attack**: Combat animation with damage
-- **Block**: Defensive stance
-- **Roll**: Dodge with invulnerability
-- **Hurt**: Damage reaction
-- **Death**: Game over state
-
-### Visual Effects
-- Particle systems for each action
-- Color feedback for states
-- Health and stamina bars
-- Smooth animation transitions
-
-### Input System
-- Keyboard controls (WASD, Space, Shift, Ctrl)
-- Alternative key bindings
-- Gamepad support (future)
-
-## Configuration Options
-
-### Rollup Configuration
-The animation build uses `rollup.config.animations.js`:
+### Loading WASM Module
 ```javascript
-{
-  input: 'src/animation/player-animator.js',
-  output: [
-    { file: 'dist/player-animator.js', format: 'es' },
-    { file: 'dist/player-animator.min.js', format: 'es', minified },
-    { file: 'dist/player-animator.umd.js', format: 'umd' }
-  ]
+// Using WasmManager (recommended)
+import { WasmManager } from './src/wasm/wasm-manager.js';
+
+const wasmManager = new WasmManager();
+await wasmManager.initialize();
+
+// Access WASM exports
+const wasmModule = wasmManager.exports;
+```
+
+### Basic Game Loop Integration
+```javascript
+// Initialize game
+wasmModule.init_run(12345, 0);  // seed, start_weapon
+
+// Game loop
+function gameLoop(deltaTime) {
+    // 1. Forward inputs to WASM
+    wasmModule.update(inputX, inputY, isRolling, deltaTime);
+    
+    // 2. Read state for rendering
+    const playerX = wasmModule.get_x();
+    const playerY = wasmModule.get_y();
+    const stamina = wasmModule.get_stamina();
+    const phase = wasmModule.get_phase();
+    
+    // 3. Update UI (JavaScript rendering only)
+    renderPlayer(playerX, playerY);
+    updateStaminaBar(stamina);
+    handlePhaseTransitions(phase);
+    
+    requestAnimationFrame(gameLoop);
 }
 ```
 
-### Build Optimization
-- Tree shaking enabled
-- ES2019 target
-- Console logs removed in production
-- Source maps for debugging
+## 🚨 Troubleshooting
 
-## Deployment
+### WASM Build Failures
 
-### GitHub Pages
-1. Build the docs:
-   ```bash
-   npm run build:docs
-   ```
-
-2. Commit and push:
-   ```bash
-   git add docs/
-   git commit -m "Update animation build"
-   git push origin main
-   ```
-
-3. Enable GitHub Pages in repository settings
-4. Select `/docs` as the source directory
-
-### Custom Server
-1. Build files:
-   ```bash
-   npm run build:docs
-   ```
-
-2. Upload `docs/` directory to your server
-
-3. Configure web server to serve static files
-
-## Available Demos
-
-### Production Demo
-`docs/animations-showcase.html`
-- Full-featured animation showcase
-- Interactive controls
-- Enemy AI for testing
-- Status panel
-- Documentation links
-
-### Development Demo
-`demo/player-animations-demo.html`
-- Debug information
-- Test buttons
-- Performance metrics
-- Raw animation testing
-
-## Troubleshooting
-
-### Build Errors
-
-**Issue**: `rollup: not found`
-**Solution**: Run `npm install` first
-
-**Issue**: External module warnings
-**Solution**: These are expected for modular design
-
-**Issue**: Missing animations
-**Solution**: Ensure `animation-system.js` is in `src/animation/`
-
-### Runtime Errors
-
-**Issue**: Module not found
-**Solution**: Use correct import path `./dist/player-animator.js`
-
-**Issue**: Animations not playing
-**Solution**: Check browser console for errors, ensure deltaTime is passed
-
-**Issue**: Input not working
-**Solution**: Verify event listeners are attached
-
-## Performance Tips
-
-1. **Use minified version in production**
-   ```html
-   <script src="./dist/player-animator.min.js"></script>
-   ```
-
-2. **Enable hardware acceleration**
-   ```css
-   canvas {
-     will-change: transform;
-   }
-   ```
-
-3. **Optimize render loop**
-   ```javascript
-   // Use requestAnimationFrame
-   requestAnimationFrame(gameLoop)
-   ```
-
-## API Quick Reference
-
-```javascript
-// Create player
-const player = new AnimatedPlayer(x, y, {
-    health: 100,
-    stamina: 100,
-    speed: 250,
-    particleSystem: particles
-})
-
-// Update in game loop
-player.update(deltaTime, input)
-
-// Render
-player.render(ctx, camera)
-
-// Combat
-player.takeDamage(damage, knockbackX, knockbackY)
-player.startAttack()
-player.startBlock()
-player.startRoll(input)
-
-// State management
-player.setState('idle')
-player.respawn(x, y)
+#### Emscripten Not Found
+```bash
+# Initialize Emscripten environment
+source ./emsdk/emsdk_env.sh  # Linux/macOS
+# OR
+.\emsdk\emsdk_env.ps1       # Windows PowerShell
 ```
 
-## Contributing
+#### Balance Generation Fails
+```bash
+# Manually generate balance data
+node tools/scripts/generate-balance.cjs
 
-To add new animations:
+# Check JSON syntax
+npx jsonlint data/balance/player.json
+npx jsonlint data/balance/enemies.json
+```
 
-1. Define frames in `AnimationPresets`
-2. Add state to `AnimatedPlayer`
-3. Implement transition logic
-4. Update documentation
-5. Run build: `npm run build:docs`
-6. Test in demo page
+#### Build Optimization Issues
+```bash
+# Try development build first
+npm run wasm:build:dev
 
-## Support
+# If dev works, then try production
+npm run wasm:build
+```
 
-- Documentation: `docs/PLAYER_ANIMATIONS.md`
-- Demo: `docs/animations-showcase.html`
-- Source: `src/animation/player-animator.js`
+### Runtime Issues
 
-## License
+#### WASM Module Won't Load
+```javascript
+// Debug WASM loading
+fetch('game.wasm')
+    .then(response => response.arrayBuffer())
+    .then(bytes => WebAssembly.instantiate(bytes))
+    .catch(error => console.error('WASM load failed:', error));
+```
 
-Part of the Trystero project - MIT License
+**Common causes**:
+- CORS issues with local server
+- WASM binary corruption  
+- Missing Emscripten flags
+- Browser compatibility
+
+#### Multiplayer Desync
+**Symptoms**: Different game states across clients
+
+```bash
+# Verify deterministic behavior
+npm run test:golden
+```
+
+**Check for**:
+- WASM module versions match
+- Seed synchronization
+- Math.random() usage in gameplay
+- Input timestamp handling
+
+## 📈 Performance Optimization
+
+### Build Optimization
+```bash
+# Maximum optimization
+npm run wasm:build          # Uses -O3 optimization
+
+# Profile build size
+ls -la game.wasm            # Should be ~43KB
+wasm-opt --print-size game.wasm
+```
+
+### Runtime Optimization
+1. **Batch WASM calls**: Read all state once per frame
+2. **Minimize boundary crossings**: Group related operations
+3. **Profile regularly**: Use browser dev tools
+4. **Memory management**: Monitor WASM memory usage
+
+### Performance Targets
+| Metric | Target | Critical |
+|--------|--------|---------|
+| Build Size | ~43KB | <100KB |
+| Load Time | <100ms | <500ms |
+| Frame Time | <16ms | <33ms |
+| Memory | <32MB | <64MB |
+
+## 🚀 Deployment
+
+### GitHub Pages (Automatic)
+```bash
+# Build and commit
+npm run wasm:build
+git add game.wasm docs/
+git commit -m "Update WASM build"
+git push origin main
+
+# GitHub Actions will deploy automatically
+```
+
+### Manual Deployment
+```bash
+# Copy WASM to docs for GitHub Pages
+cp game.wasm docs/
+cp game-host.wasm docs/wasm/
+
+# Validate deployment
+npm run validate:github-pages
+```
+
+## 📚 Related Documentation
+
+- **[BUILD/API.md](../BUILD/API.md)** - Complete WASM API reference
+- **[BUILD/DEVELOPMENT_WORKFLOW.md](../BUILD/DEVELOPMENT_WORKFLOW.md)** - Development process
+- **[BUILD/TESTING.md](../BUILD/TESTING.md)** - Testing framework
+- **[AGENTS.md](../AGENTS.md)** - Architecture overview
+- **[UTILS/QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick reference for AI agents
+
+---
+
+*This build guide is specifically for the WASM-first DozedEnt game architecture. For questions about the build process, consult the BUILD/ documentation folder.*
