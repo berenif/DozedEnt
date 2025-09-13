@@ -490,7 +490,7 @@ export class InputManager {
         };
         
         const inputAction = actionMap[action];
-        if (inputAction && this.inputState.hasOwnProperty(inputAction)) {
+        if (inputAction && Object.prototype.hasOwnProperty.call(this.inputState, inputAction)) {
             this.inputState[inputAction] = pressed;
             
             // Visual feedback
