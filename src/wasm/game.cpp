@@ -121,6 +121,11 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   init_wolf_pack_system();
   // Clear wolf animation data
   reset_wolf_anim_data();
+  
+  // Initialize new AI systems
+  init_vocalization_system();
+  init_scent_tracking();
+  g_alpha_wolf.wolf_index = -1; // Reset alpha wolf
 
   // Initialize physics system
   physics_init();
@@ -1926,6 +1931,160 @@ float get_wolf_anim_body_offset_y(unsigned int wolf_idx) { return (wolf_idx < g_
 
 __attribute__((export_name("get_wolf_anim_fur_ruffle")))
 float get_wolf_anim_fur_ruffle(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.fur_ruffle : 0.f; }
+
+// ============================================================================
+// Enhanced AI System Exports
+// ============================================================================
+
+// Vocalization System
+__attribute__((export_name("get_vocalization_count")))
+int get_vocalization_count() { return (int)g_vocalization_count; }
+
+__attribute__((export_name("get_vocalization_type")))
+int get_vocalization_type(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? (int)g_vocalizations[idx].type : 0; 
+}
+
+__attribute__((export_name("get_vocalization_x")))
+float get_vocalization_x(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].x : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_y")))
+float get_vocalization_y(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].y : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_intensity")))
+float get_vocalization_intensity(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].intensity : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_wolf_index")))
+int get_vocalization_wolf_index(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? (int)g_vocalizations[idx].wolf_index : -1; 
+}
+
+// Alpha Wolf System
+__attribute__((export_name("get_alpha_wolf_index")))
+int get_alpha_wolf_index() { return g_alpha_wolf.wolf_index; }
+
+__attribute__((export_name("get_alpha_ability")))
+int get_alpha_ability() { 
+  return (g_alpha_wolf.wolf_index >= 0) ? (int)g_alpha_wolf.current_ability : 0; 
+}
+
+__attribute__((export_name("get_alpha_is_enraged")))
+int get_alpha_is_enraged() { 
+  return (g_alpha_wolf.wolf_index >= 0 && g_alpha_wolf.is_enraged) ? 1 : 0; 
+}
+
+__attribute__((export_name("get_alpha_leadership_bonus")))
+float get_alpha_leadership_bonus() { 
+  return (g_alpha_wolf.wolf_index >= 0) ? g_alpha_wolf.leadership_bonus : 0.f; 
+}
+
+// Territory System
+__attribute__((export_name("get_territory_count")))
+int get_territory_count() { return (int)g_territory_count; }
+
+__attribute__((export_name("get_territory_x")))
+float get_territory_x(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].center_x : 0.f; 
+}
+
+__attribute__((export_name("get_territory_y")))
+float get_territory_y(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].center_y : 0.f; 
+}
+
+__attribute__((export_name("get_territory_radius")))
+float get_territory_radius(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].radius : 0.f; 
+}
+
+__attribute__((export_name("get_territory_strength")))
+float get_territory_strength(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].strength : 0.f; 
+}
+
+// Scent System
+__attribute__((export_name("get_scent_strength_at")))
+float get_scent_strength_at_export(float x, float y) { 
+  return get_scent_strength_at(x, y); 
+}
+
+__attribute__((export_name("get_scent_marker_count")))
+int get_scent_marker_count() { return (int)g_scent_marker_count; }
+
+__attribute__((export_name("get_scent_marker_x")))
+float get_scent_marker_x(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].x : 0.f; 
+}
+
+__attribute__((export_name("get_scent_marker_y")))
+float get_scent_marker_y(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].y : 0.f; 
+}
+
+__attribute__((export_name("get_scent_marker_strength")))
+float get_scent_marker_strength(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].strength : 0.f; 
+}
+
+// Enemy Emotional State
+__attribute__((export_name("get_enemy_emotion")))
+int get_enemy_emotion(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? (int)g_enemies[idx].emotion : 0; 
+}
+
+__attribute__((export_name("get_enemy_emotion_intensity")))
+float get_enemy_emotion_intensity(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].emotionIntensity : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_aggression")))
+float get_enemy_aggression(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].aggression : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_intelligence")))
+float get_enemy_intelligence(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].intelligence : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_coordination")))
+float get_enemy_coordination(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].coordination : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_morale")))
+float get_enemy_morale(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].morale : 0.f; 
+}
+
+// Pack Information
+__attribute__((export_name("get_pack_plan")))
+int get_pack_plan() { return (int)g_pack_plan; }
+
+__attribute__((export_name("get_pack_morale")))
+float get_pack_morale() { return g_pack_morale; }
+
+__attribute__((export_name("get_pack_sync_timer")))
+float get_pack_sync_timer() { return g_pack_sync_timer; }
+
+// Adaptive AI Information
+__attribute__((export_name("get_player_skill_estimate")))
+float get_player_skill_estimate() { return g_player_skill_estimate; }
+
+__attribute__((export_name("get_difficulty_wolf_speed")))
+float get_difficulty_wolf_speed() { return g_difficulty.wolfSpeed; }
+
+__attribute__((export_name("get_difficulty_wolf_aggression")))
+float get_difficulty_wolf_aggression() { return g_difficulty.wolfAggression; }
+
+__attribute__((export_name("get_difficulty_wolf_intelligence")))
+float get_difficulty_wolf_intelligence() { return g_difficulty.wolfIntelligence; }
 
 // ============================================================================
 // Weapon System Exports

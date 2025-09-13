@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Wolf AI Demo - Advanced Features Showcase</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #aed6f1;
+            margin-bottom: 30px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .game-canvas {
+            background: #000;
+            border: 3px solid #5dade2;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 100%;
+            height: 600px;
+        }
+        
+        .info-panel {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #5dade2;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .feature-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 4px solid #5dade2;
+        }
+        
+        .feature-title {
+            font-size: 1.3em;
+            color: #5dade2;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-icon {
+            margin-right: 10px;
+            font-size: 1.5em;
+        }
+        
+        .status-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-label {
+            color: #aed6f1;
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #5dade2);
+            transition: width 0.3s ease;
+        }
+        
+        .vocalization-log {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .vocal-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .control-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: linear-gradient(135deg, #5dade2, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .alpha-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            background: gold;
+            color: black;
+            border-radius: 15px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .emotion-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            margin-left: 5px;
+        }
+        
+        .emotion-calm { background: #27ae60; }
+        .emotion-aggressive { background: #e74c3c; }
+        .emotion-fearful { background: #f39c12; }
+        .emotion-desperate { background: #8e44ad; }
+        .emotion-confident { background: #3498db; }
+        .emotion-frustrated { background: #e67e22; }
+        .emotion-hurt { background: #95a5a6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐺 Enhanced Wolf AI Demo</h1>
+        <p class="subtitle">Advanced AI Features: Vocalizations • Alpha Wolf • Scent Tracking • Adaptive Difficulty</p>
+        
+        <div class="demo-grid">
+            <canvas id="gameCanvas" class="game-canvas"></canvas>
+            
+            <div class="info-panel">
+                <!-- Vocalization System -->
+                <div class="feature-section">
+                    <div class="feature-title">
+                        <span class="feature-icon">🎵</span>
+                        Vocalization System
+                    </div>
+                    <div class="vocalization-log" id="vocalLog">
+                        <div class="vocal-entry">Waiting for vocalizations...</div>
+                    </div>
+                </div>
+                
+                <!-- Alpha Wolf Status -->
+                <div class="feature-section">
+                    <div class="feature-title">
+                        <span class="feature-icon">👑</span>
+                        Alpha Wolf Status
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Alpha Present:</span>
+                        <span class="status-value" id="alphaPresent">No</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Current Ability:</span>
+                        <span class="status-value" id="alphaAbility">None</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Leadership Bonus:</span>
+                        <span class="status-value" id="alphaBonus">0%</span>
+                    </div>
+                    <div class="status-item" id="alphaEnraged" style="display: none;">
+                        <span class="alpha-indicator">ENRAGED!</span>
+                    </div>
+                </div>
+                
+                <!-- Pack Information -->
+                <div class="feature-section">
+                    <div class="feature-title">
+                        <span class="feature-icon">🦊</span>
+                        Pack Dynamics
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Pack Plan:</span>
+                        <span class="status-value" id="packPlan">Stalk</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Pack Morale:</span>
+                        <div style="flex: 1; margin: 0 10px;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="packMoraleBar" style="width: 70%"></div>
+                            </div>
+                        </div>
+                        <span class="status-value" id="packMorale">70%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Sync Timer:</span>
+                        <span class="status-value" id="syncTimer">0.0s</span>
+                    </div>
+                </div>
+                
+                <!-- Adaptive Difficulty -->
+                <div class="feature-section">
+                    <div class="feature-title">
+                        <span class="feature-icon">📊</span>
+                        Adaptive Difficulty
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Player Skill:</span>
+                        <div style="flex: 1; margin: 0 10px;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="playerSkillBar" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <span class="status-value" id="playerSkill">50%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Wolf Speed:</span>
+                        <span class="status-value" id="wolfSpeed">1.0x</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Wolf Intelligence:</span>
+                        <span class="status-value" id="wolfIntel">50%</span>
+                    </div>
+                </div>
+                
+                <!-- Territory Info -->
+                <div class="feature-section">
+                    <div class="feature-title">
+                        <span class="feature-icon">🗺️</span>
+                        Territory Control
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Territories:</span>
+                        <span class="status-value" id="territoryCount">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Scent Markers:</span>
+                        <span class="status-value" id="scentCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="spawnWolfPack()">🐺 Spawn Wolf Pack</button>
+            <button class="control-btn" onclick="triggerHowl()">🎵 Trigger Howl</button>
+            <button class="control-btn" onclick="promoteAlpha()">👑 Promote Alpha</button>
+            <button class="control-btn" onclick="increaseDifficulty()">📈 Increase Difficulty</button>
+            <button class="control-btn" onclick="decreaseDifficulty()">📉 Decrease Difficulty</button>
+            <button class="control-btn" onclick="toggleDebugOverlay()">🔍 Toggle Debug</button>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: gold;"></div>
+                <span>Alpha Wolf</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(255, 100, 0, 0.3);"></div>
+                <span>Territory</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(100, 255, 100, 0.3);"></div>
+                <span>Scent Trail</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 1.5em;">🎵</span>
+                <span>Howl</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 1.5em;">💢</span>
+                <span>Growl</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 1.5em;">❗</span>
+                <span>Bark</span>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // This is a demonstration of the enhanced AI features
+        // In production, this would integrate with the actual WASM module
+        
+        let debugOverlay = true;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Resize canvas
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Mock AI state for demonstration
+        let aiState = {
+            vocalizations: [],
+            alphaWolf: null,
+            packPlan: 'Stalk',
+            packMorale: 0.7,
+            syncTimer: 0,
+            playerSkill: 0.5,
+            wolfSpeed: 1.0,
+            wolfIntelligence: 0.5,
+            territories: [],
+            scentMarkers: [],
+            wolves: []
+        };
+        
+        // Vocalization types
+        const VocalizationTypes = {
+            1: { name: 'Rally Howl', icon: '🎵', color: 'cyan' },
+            2: { name: 'Hunt Howl', icon: '🎵', color: 'orange' },
+            3: { name: 'Victory Howl', icon: '🎵', color: 'gold' },
+            4: { name: 'Mourning Howl', icon: '🎵', color: 'purple' },
+            5: { name: 'Warning Growl', icon: '💢', color: 'red' },
+            6: { name: 'Aggressive Growl', icon: '💢', color: 'darkred' },
+            7: { name: 'Defensive Growl', icon: '💢', color: 'orange' },
+            8: { name: 'Alert Bark', icon: '❗', color: 'yellow' },
+            9: { name: 'Command Bark', icon: '❗', color: 'gold' },
+            10: { name: 'Acknowledge Bark', icon: '❗', color: 'lightblue' }
+        };
+        
+        // Initialize demo
+        function initDemo() {
+            // Create initial wolf pack
+            for (let i = 0; i < 5; i++) {
+                aiState.wolves.push({
+                    x: 0.3 + Math.random() * 0.4,
+                    y: 0.3 + Math.random() * 0.4,
+                    emotion: Math.floor(Math.random() * 7),
+                    isAlpha: i === 0
+                });
+            }
+            
+            // Create initial territory
+            aiState.territories.push({
+                x: 0.5,
+                y: 0.5,
+                radius: 0.2,
+                strength: 0.8
+            });
+            
+            // Start animation loop
+            animate();
+        }
+        
+        // Animation loop
+        function animate() {
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (debugOverlay) {
+                // Draw territories
+                ctx.save();
+                ctx.globalAlpha = 0.2;
+                for (const territory of aiState.territories) {
+                    const x = territory.x * canvas.width;
+                    const y = territory.y * canvas.height;
+                    const radius = territory.radius * Math.min(canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = `rgba(255, 100, 0, ${territory.strength})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw scent markers
+                ctx.globalAlpha = 0.3;
+                for (const marker of aiState.scentMarkers) {
+                    const x = marker.x * canvas.width;
+                    const y = marker.y * canvas.height;
+                    
+                    ctx.fillStyle = `rgba(100, 255, 100, ${marker.strength})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+            
+            // Draw wolves
+            for (const wolf of aiState.wolves) {
+                const x = wolf.x * canvas.width;
+                const y = wolf.y * canvas.height;
+                
+                // Draw wolf circle
+                ctx.fillStyle = wolf.isAlpha ? 'gold' : 'gray';
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw emotion indicator
+                const emotions = ['😐', '😠', '😨', '😰', '😎', '😤', '🤕'];
+                ctx.font = '20px Arial';
+                ctx.fillText(emotions[wolf.emotion], x - 10, y - 20);
+                
+                // Animate wolf movement
+                wolf.x += (Math.random() - 0.5) * 0.005;
+                wolf.y += (Math.random() - 0.5) * 0.005;
+                wolf.x = Math.max(0.05, Math.min(0.95, wolf.x));
+                wolf.y = Math.max(0.05, Math.min(0.95, wolf.y));
+            }
+            
+            // Draw vocalizations
+            for (let i = aiState.vocalizations.length - 1; i >= 0; i--) {
+                const vocal = aiState.vocalizations[i];
+                vocal.age += 0.016;
+                
+                if (vocal.age > 2) {
+                    aiState.vocalizations.splice(i, 1);
+                    continue;
+                }
+                
+                const x = vocal.x * canvas.width;
+                const y = vocal.y * canvas.height;
+                const type = VocalizationTypes[vocal.type];
+                
+                ctx.save();
+                ctx.globalAlpha = 1 - vocal.age / 2;
+                ctx.font = `${30 + vocal.age * 10}px Arial`;
+                ctx.fillStyle = type.color;
+                ctx.fillText(type.icon, x - 15, y - 15);
+                ctx.restore();
+            }
+            
+            // Update UI
+            updateUI();
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Update UI elements
+        function updateUI() {
+            // Update vocalization log
+            const vocalLog = document.getElementById('vocalLog');
+            if (aiState.vocalizations.length > 0) {
+                const latestVocals = aiState.vocalizations.slice(-5).reverse();
+                vocalLog.innerHTML = latestVocals.map(v => {
+                    const type = VocalizationTypes[v.type];
+                    return `<div class="vocal-entry">${type.icon} ${type.name} from Wolf ${v.wolfId}</div>`;
+                }).join('');
+            }
+            
+            // Update alpha status
+            const alpha = aiState.wolves.find(w => w.isAlpha);
+            document.getElementById('alphaPresent').textContent = alpha ? 'Yes' : 'No';
+            document.getElementById('alphaAbility').textContent = alpha ? 'Rally Pack' : 'None';
+            document.getElementById('alphaBonus').textContent = alpha ? '25%' : '0%';
+            
+            // Update pack info
+            document.getElementById('packPlan').textContent = aiState.packPlan;
+            document.getElementById('packMorale').textContent = Math.round(aiState.packMorale * 100) + '%';
+            document.getElementById('packMoraleBar').style.width = (aiState.packMorale * 100) + '%';
+            document.getElementById('syncTimer').textContent = aiState.syncTimer.toFixed(1) + 's';
+            
+            // Update difficulty
+            document.getElementById('playerSkill').textContent = Math.round(aiState.playerSkill * 100) + '%';
+            document.getElementById('playerSkillBar').style.width = (aiState.playerSkill * 100) + '%';
+            document.getElementById('wolfSpeed').textContent = aiState.wolfSpeed.toFixed(1) + 'x';
+            document.getElementById('wolfIntel').textContent = Math.round(aiState.wolfIntelligence * 100) + '%';
+            
+            // Update territory
+            document.getElementById('territoryCount').textContent = aiState.territories.length;
+            document.getElementById('scentCount').textContent = aiState.scentMarkers.length;
+        }
+        
+        // Control functions
+        window.spawnWolfPack = function() {
+            for (let i = 0; i < 3; i++) {
+                aiState.wolves.push({
+                    x: 0.1 + Math.random() * 0.8,
+                    y: 0.1 + Math.random() * 0.8,
+                    emotion: Math.floor(Math.random() * 7),
+                    isAlpha: false
+                });
+            }
+        };
+        
+        window.triggerHowl = function() {
+            const wolf = aiState.wolves[Math.floor(Math.random() * aiState.wolves.length)];
+            if (wolf) {
+                aiState.vocalizations.push({
+                    type: 1 + Math.floor(Math.random() * 4), // Random howl type
+                    x: wolf.x,
+                    y: wolf.y,
+                    wolfId: aiState.wolves.indexOf(wolf),
+                    age: 0
+                });
+            }
+        };
+        
+        window.promoteAlpha = function() {
+            // Remove current alpha
+            aiState.wolves.forEach(w => w.isAlpha = false);
+            // Promote random wolf
+            if (aiState.wolves.length > 0) {
+                const newAlpha = aiState.wolves[Math.floor(Math.random() * aiState.wolves.length)];
+                newAlpha.isAlpha = true;
+                newAlpha.emotion = 4; // Confident
+                
+                // Rally howl
+                aiState.vocalizations.push({
+                    type: 1, // Rally howl
+                    x: newAlpha.x,
+                    y: newAlpha.y,
+                    wolfId: aiState.wolves.indexOf(newAlpha),
+                    age: 0
+                });
+            }
+        };
+        
+        window.increaseDifficulty = function() {
+            aiState.playerSkill = Math.min(1, aiState.playerSkill + 0.1);
+            aiState.wolfSpeed = Math.min(1.5, aiState.wolfSpeed + 0.1);
+            aiState.wolfIntelligence = Math.min(1, aiState.wolfIntelligence + 0.1);
+        };
+        
+        window.decreaseDifficulty = function() {
+            aiState.playerSkill = Math.max(0, aiState.playerSkill - 0.1);
+            aiState.wolfSpeed = Math.max(0.5, aiState.wolfSpeed - 0.1);
+            aiState.wolfIntelligence = Math.max(0, aiState.wolfIntelligence - 0.1);
+        };
+        
+        window.toggleDebugOverlay = function() {
+            debugOverlay = !debugOverlay;
+        };
+        
+        // Periodic events
+        setInterval(() => {
+            // Random vocalizations
+            if (Math.random() < 0.3 && aiState.wolves.length > 0) {
+                const wolf = aiState.wolves[Math.floor(Math.random() * aiState.wolves.length)];
+                aiState.vocalizations.push({
+                    type: 5 + Math.floor(Math.random() * 6), // Random vocalization
+                    x: wolf.x,
+                    y: wolf.y,
+                    wolfId: aiState.wolves.indexOf(wolf),
+                    age: 0
+                });
+            }
+            
+            // Update pack plan
+            const plans = ['Stalk', 'Encircle', 'Harass', 'Commit', 'Ambush', 'Pincer', 'Retreat'];
+            if (Math.random() < 0.2) {
+                aiState.packPlan = plans[Math.floor(Math.random() * plans.length)];
+            }
+            
+            // Update pack morale
+            aiState.packMorale = Math.max(0, Math.min(1, aiState.packMorale + (Math.random() - 0.5) * 0.1));
+            
+            // Update sync timer
+            aiState.syncTimer = (aiState.syncTimer + 0.1) % 5;
+            
+            // Add scent markers
+            if (Math.random() < 0.3) {
+                aiState.scentMarkers.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    strength: Math.random()
+                });
+                
+                // Limit scent markers
+                if (aiState.scentMarkers.length > 20) {
+                    aiState.scentMarkers.shift();
+                }
+            }
+        }, 1000);
+        
+        // Initialize
+        initDemo();
+    </script>
+</body>
+</html>
