@@ -40,6 +40,9 @@ static float g_stamina = 1.0f;
 static float g_max_stamina = 1.0f;
 static float g_stamina_regen_mult = 1.0f;
 static float g_hp = 1.0f;
+static uint32_t g_gold = 0;         // Gold currency
+static uint32_t g_essence = 0;      // Essence currency
+static uint32_t g_experience = 0;   // Experience points
 
 // Combat multipliers
 static float g_attack_damage_mult = 1.0f;

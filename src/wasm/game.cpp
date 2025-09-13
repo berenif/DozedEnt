@@ -23,6 +23,10 @@
 // External reference to world simulation
 extern WorldSimulation g_world_sim;
 
+// Include achievement and statistics systems
+#include "achievement-system.h"
+#include "statistics-system.h"
+
 // Player input variables - 5-button combat system
 static float g_input_x = 0.f;
 static float g_input_y = 0.f;
@@ -141,6 +145,11 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   
   // Initialize world simulation system
   world_simulation_init();
+
+  // Initialize achievement and statistics systems
+  init_achievement_system();
+  initialize_statistics_system();
+  start_stats_session();
 
   // Randomly select a biome for the new run
   g_current_biome = (BiomeType)(rng_u32() % (unsigned int)BiomeType::Count);
