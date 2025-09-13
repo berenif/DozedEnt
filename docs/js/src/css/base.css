@@ -3,6 +3,41 @@
     --scale: 1;
     --shake-x: 0px;
     --shake-y: 0px;
+    
+    /* UI Z-Index Layers */
+    --z-game-canvas: 1;
+    --z-game-ui: 100;
+    --z-hud: 200;
+    --z-overlays: 300;
+    --z-modals: 400;
+    --z-tooltips: 500;
+    --z-loading: 1000;
+    
+    /* Color Palette */
+    --color-primary: #4a90e2;
+    --color-secondary: #6c757d;
+    --color-success: #28a745;
+    --color-danger: #dc3545;
+    --color-warning: #ffc107;
+    --color-info: #17a2b8;
+    --color-light: #f8f9fa;
+    --color-dark: #343a40;
+    
+    /* Health/Stamina Colors */
+    --color-health: #e74c3c;
+    --color-health-low: #c0392b;
+    --color-stamina: #f39c12;
+    --color-stamina-low: #d68910;
+    
+    /* Background Colors */
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #1a1a1a;
+    --color-bg-overlay: rgba(0, 0, 0, 0.8);
+    
+    /* Text Colors */
+    --color-text-primary: #e0e0e0;
+    --color-text-secondary: #b0b0b0;
+    --color-text-muted: #888888;
 }
 
 * {
@@ -14,15 +49,40 @@ body {
     padding: 0;
     font-family: 'Courier New', monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: 
-        linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%),
+        linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 50%, var(--color-bg-primary) 100%),
         radial-gradient(circle at 30% 70%, rgba(139, 69, 19, 0.05) 0%, transparent 50%),
         radial-gradient(circle at 70% 30%, rgba(139, 69, 19, 0.03) 0%, transparent 50%);
     background-attachment: fixed;
-    color: #e0e0e0;
+    color: var(--color-text-primary);
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Prevent UI conflicts by ensuring proper layering */
+.ui-layer-game {
+    z-index: var(--z-game-canvas);
+}
+
+.ui-layer-hud {
+    z-index: var(--z-hud);
+}
+
+.ui-layer-overlay {
+    z-index: var(--z-overlays);
+}
+
+.ui-layer-modal {
+    z-index: var(--z-modals);
+}
+
+.ui-layer-tooltip {
+    z-index: var(--z-tooltips);
+}
+
+.ui-layer-loading {
+    z-index: var(--z-loading);
 }

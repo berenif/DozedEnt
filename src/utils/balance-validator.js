@@ -229,7 +229,7 @@ export class BalanceValidator {
     // In Node.js environment
     if (typeof require !== 'undefined') {
       try {
-        const fs = require('fs');
+        const fs = await import('fs');
         const content = await fs.promises.readFile(filePath, 'utf8');
         return JSON.parse(content);
       } catch (error) {
@@ -256,7 +256,7 @@ export class BalanceValidator {
       
       if (typeof fieldSchema === 'object' && !fieldSchema.type) {
         // Nested object
-        if (data[key] === undefined) {
+        if (data[key] == null) {
           if (this.options.strict) {
             result.valid = false;
             result.errors.push(`Missing required section: ${fieldContext}`);
@@ -303,13 +303,13 @@ export class BalanceValidator {
     const result = { valid: true };
     
     // Check required
-    if (schema.required && value === undefined) {
+    if (schema.required && value == null) {
       result.valid = false;
       result.error = `Missing required field: ${context}`;
       return result;
     }
     
-    if (value === undefined) {
+    if (value == null) {
       return result; // Optional field not present
     }
     
@@ -321,11 +321,11 @@ export class BalanceValidator {
           result.error = `Invalid type for ${context}: expected number, got ${typeof value}`;
         } else {
           // Range validation
-          if (schema.min !== undefined && value < schema.min) {
+          if (schema.min != null && value < schema.min) {
             result.valid = false;
             result.error = `Value out of range for ${context}: ${value} < ${schema.min}`;
           }
-          if (schema.max !== undefined && value > schema.max) {
+          if (schema.max != null && value > schema.max) {
             result.valid = false;
             result.error = `Value out of range for ${context}: ${value} > ${schema.max}`;
           }
@@ -486,29 +486,29 @@ export class BalanceValidator {
         
         if (typeof fieldSchema === 'object' && !fieldSchema.type) {
           // Nested object
-          if (obj[key] === undefined) {
+          if (obj[key] == null) {
             obj[key] = {};
             if (this.options.verbose) {
               console.log(`Created missing section: ${fieldPath}`);
             }
           }
           fixObject(obj[key], fieldSchema, fieldPath);
-        } else if (fieldSchema.required && obj[key] === undefined) {
+        } else if (fieldSchema.required && obj[key] == null) {
           // Add missing required field with default value
           obj[key] = this.getDefaultValue(fieldSchema);
           if (this.options.verbose) {
             console.log(`Added missing field: ${fieldPath} = ${obj[key]}`);
           }
-        } else if (obj[key] !== undefined) {
+        } else if (obj[key] != null) {
           // Fix out-of-range values
           if (fieldSchema.type === 'number') {
-            if (fieldSchema.min !== undefined && obj[key] < fieldSchema.min) {
+            if (fieldSchema.min != null && obj[key] < fieldSchema.min) {
               obj[key] = fieldSchema.min;
               if (this.options.verbose) {
                 console.log(`Fixed min value: ${fieldPath} = ${obj[key]}`);
               }
             }
-            if (fieldSchema.max !== undefined && obj[key] > fieldSchema.max) {
+            if (fieldSchema.max != null && obj[key] > fieldSchema.max) {
               obj[key] = fieldSchema.max;
               if (this.options.verbose) {
                 console.log(`Fixed max value: ${fieldPath} = ${obj[key]}`);
@@ -532,8 +532,8 @@ export class BalanceValidator {
   getDefaultValue(schema) {
     switch (schema.type) {
       case 'number':
-        if (schema.min !== undefined) return schema.min;
-        if (schema.max !== undefined && schema.max < 0) return schema.max;
+        if (schema.min != null) return schema.min;
+        if (schema.max != null && schema.max < 0) return schema.max;
         return 0;
       case 'string':
         return '';

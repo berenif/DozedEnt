@@ -23,6 +23,9 @@ import { EnhancedMobileControls } from './src/input/mobile-controls.js'
 
 // Enhanced UI Systems
 import { EnhancedUIIntegration } from './src/ui/enhanced-ui-integration.js'
+import { uiCoordinator } from './src/ui/ui-coordinator.js'
+import { PhaseOverlayManager } from './src/ui/phase-overlay-manager.js'
+import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js'
 
 /**
  * Main Game Application Class
@@ -56,6 +59,7 @@ class GameApplication {
     
     // Enhanced UI Integration
     this.enhancedUI = null;
+    this.phaseOverlayManager = null;
 
     // Game systems
     this.gameRenderer = null;
@@ -71,6 +75,7 @@ class GameApplication {
     // Game loop
     this.lastFrameTime = 0;
     this.animationFrameId = null;
+    this.frameCount = 0;
     this.isInitialized = false;
   }
 
@@ -128,6 +133,16 @@ class GameApplication {
     try {
       console.log('🔧 Initializing game application...');
 
+      // Initialize UI Performance Optimizer first
+      console.log('⚡ Initializing UI Performance Optimizer...');
+      uiPerformanceOptimizer.initialize();
+      console.log('✅ UI Performance Optimizer initialized');
+
+      // Initialize UI Coordinator
+      console.log('🎛️ Initializing UI Coordinator...');
+      uiCoordinator.initialize();
+      console.log('✅ UI Coordinator initialized');
+
       // Initialize DOM elements
       console.log('📋 Initializing DOM elements...');
       this.initializeDOM();
@@ -178,6 +193,7 @@ class GameApplication {
       // Initialize Roguelike HUD
       console.log('🔧 Initializing Roguelike HUD...');
       this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
+      uiCoordinator.registerSystem('roguelike-hud', this.roguelikeHUD);
       console.log('✅ Roguelike HUD initialized');
 
       // Initialize game state with WASM
@@ -193,6 +209,7 @@ class GameApplication {
       // Initialize enhanced mobile controls
       console.log('🔧 Initializing enhanced mobile controls...');
       this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
+      uiCoordinator.registerSystem('mobile-controls', this.enhancedMobileControls);
       console.log('✅ Enhanced mobile controls initialized');
 
       // Initialize enhanced UI systems after WASM is ready
@@ -203,8 +220,16 @@ class GameApplication {
           this.gameCanvas,
           this.audioManager
         );
+        uiCoordinator.registerSystem('enhanced-ui', this.enhancedUI);
         console.log('✅ Enhanced UI Systems initialized');
       }
+
+      // Initialize Phase Overlay Manager
+      console.log('🔧 Initializing Phase Overlay Manager...');
+      this.phaseOverlayManager = new PhaseOverlayManager(this.wasmManager);
+      this.phaseOverlayManager.initialize();
+      uiCoordinator.registerSystem('phase-overlays', this.phaseOverlayManager);
+      console.log('✅ Phase Overlay Manager initialized');
 
       // Setup event listeners
       console.log('🔧 Setting up event listeners...');
@@ -336,10 +361,10 @@ class GameApplication {
       this.resumeGameLoop();
     });
 
-    // Phase change event listener
-    this.gameStateManager.on('phaseChanged', (phase) => {
-      this.handlePhaseChange(phase);
-    });
+    // Phase change event listener - handled by PhaseOverlayManager
+    // this.gameStateManager.on('phaseChanged', (phase) => {
+    //   this.handlePhaseChange(phase);
+    // });
 
     // Room manager event listeners
     this.roomManager.on('roomCreated', (room) => {
@@ -718,6 +743,7 @@ class GameApplication {
     const currentTime = performance.now();
     const deltaTime = (currentTime - this.lastFrameTime) / 1000; // Convert to seconds
     this.lastFrameTime = currentTime;
+    this.frameCount++;
 
     try {
       // Get input state from input manager (with null check)
@@ -782,6 +808,24 @@ class GameApplication {
         }
       } catch (combatError) {
         console.error('Error updating Combat Feedback:', combatError);
+      }
+
+      // Update Phase Overlay Manager
+      try {
+        if (this.phaseOverlayManager) {
+          this.phaseOverlayManager.update();
+        }
+      } catch (phaseError) {
+        console.error('Error updating Phase Overlay Manager:', phaseError);
+      }
+
+      // Run adaptive performance optimization every 60 frames
+      if (this.frameCount % 60 === 0) {
+        try {
+          uiPerformanceOptimizer.adaptiveOptimization();
+        } catch (perfError) {
+          console.error('Error in adaptive performance optimization:', perfError);
+        }
       }
 
       // Render frame

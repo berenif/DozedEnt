@@ -1,4 +1,4 @@
-/* UI Overlays */
+/* UI Overlays - Fixed positioning and z-index conflicts */
 .ui-overlay {
     position: fixed;
     top: 0;
@@ -6,10 +6,14 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 100;
+    z-index: var(--z-game-ui);
 }
 
-/* Connection Status */
+.ui-overlay > * {
+    pointer-events: auto;
+}
+
+/* Connection Status - Top right corner */
 #connectionStatus {
     position: fixed;
     top: 20px;
@@ -18,57 +22,62 @@
     border-radius: 20px;
     font-size: 14px;
     font-weight: 600;
-    z-index: 200;
+    z-index: var(--z-hud);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
 }
 
 .status-connecting {
     background: rgba(255, 193, 7, 0.2);
-    color: #ffc107;
-    border: 1px solid #ffc107;
+    color: var(--color-warning);
+    border: 1px solid var(--color-warning);
 }
 
 .status-connected {
     background: rgba(40, 167, 69, 0.2);
-    color: #28a745;
-    border: 1px solid #28a745;
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
 }
 
 .status-offline {
     background: rgba(220, 53, 69, 0.2);
-    color: #dc3545;
-    border: 1px solid #dc3545;
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
 }
 
-/* Player Count */
+/* Player Count - Top left corner, below enhanced UI elements */
 #playerCount {
     position: fixed;
     top: 20px;
     left: 20px;
     padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--color-bg-overlay);
     border-radius: 20px;
     font-size: 14px;
     font-weight: 600;
-    color: #fff;
-    z-index: 200;
+    color: var(--color-text-primary);
+    z-index: var(--z-hud);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Debug HUD */
+/* Debug HUD - Positioned to avoid conflicts */
 #debug-hud {
     position: fixed;
     top: 60px;
     left: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
+    background: var(--color-bg-overlay);
+    color: var(--color-text-primary);
     padding: 10px;
     border-radius: 8px;
     font-size: 12px;
     font-family: monospace;
-    z-index: 200;
+    z-index: var(--z-hud);
     max-width: 200px;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     line-height: 1.3;
+    transition: opacity 0.3s ease;
 }
 
 #debug-hud div {

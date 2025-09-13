@@ -375,10 +375,559 @@ export class NetworkDiagnostics {
    */
   updateLatencyMetrics(metrics, latency) {
     metrics.latency.current = latency
-    metrics.latency.min = Math.min(metrics.latency.min, latency)\n    metrics.latency.max = Math.max(metrics.latency.max, latency)
+    metrics.latency.min = Math.min(metrics.latency.min, latency)
+    metrics.latency.max = Math.max(metrics.latency.max, latency)
     
     // Add to samples (keep last 100)
     metrics.latency.samples.push(latency)
     if (metrics.latency.samples.length > 100) {
       metrics.latency.samples.shift()
-    }\n    \n    // Calculate average\n    metrics.latency.avg = metrics.latency.samples.reduce((a, b) => a + b, 0) / metrics.latency.samples.length\n    \n    // Calculate jitter (standard deviation)\n    const variance = metrics.latency.samples.reduce((acc, val) => {\n      return acc + Math.pow(val - metrics.latency.avg, 2)\n    }, 0) / metrics.latency.samples.length\n    \n    metrics.latency.jitter = Math.sqrt(variance)\n    \n    // Notify if latency changed significantly\n    if (this.eventHandlers.onPeerLatencyChanged) {\n      this.eventHandlers.onPeerLatencyChanged(peerId, latency)\n    }\n  }\n  \n  /**\n   * Update packet loss metrics\n   */\n  updatePacketLossMetrics(metrics) {\n    const total = metrics.packetLoss.sent\n    if (total > 0) {\n      metrics.packetLoss.lossRate = metrics.packetLoss.lost / total\n    }\n  }\n  \n  /**\n   * Start bandwidth test for a peer\n   */\n  startBandwidthTest(peerId) {\n    const metrics = this.peerMetrics.get(peerId)\n    if (!metrics) return\n    \n    const testId = `bandwidth_${Date.now()}`\n    const testData = new ArrayBuffer(1024) // 1KB test packet\n    \n    const bandwidthTest = {\n      testId,\n      startTime: performance.now(),\n      bytesSent: 0,\n      bytesReceived: 0,\n      packetsReceived: 0,\n      interval: null\n    }\n    \n    this.testing.bandwidthTests.set(peerId, bandwidthTest)\n    \n    // Send test packets for 5 seconds\n    let packetCount = 0\n    bandwidthTest.interval = setInterval(() => {\n      if (packetCount >= 50) { // Send 50 packets max\n        this.completeBandwidthTest(peerId)\n        return\n      }\n      \n      const testMessage = {\n        type: 'bandwidth_test',\n        testId,\n        packetId: packetCount++,\n        timestamp: performance.now(),\n        data: testData\n      }\n      \n      bandwidthTest.bytesSent += 1024\n      \n      if (this.networkCallbacks.sendToPeer) {\n        this.networkCallbacks.sendToPeer(peerId, testMessage)\n      }\n    }, 100) // Send every 100ms\n    \n    // Auto-complete after 10 seconds\n    setTimeout(() => {\n      this.completeBandwidthTest(peerId)\n    }, 10000)\n  }\n  \n  /**\n   * Handle bandwidth test packet\n   */\n  handleBandwidthTest(peerId, message) {\n    const bandwidthTest = this.testing.bandwidthTests.get(peerId)\n    if (!bandwidthTest || bandwidthTest.testId !== message.testId) {\n      return\n    }\n    \n    bandwidthTest.bytesReceived += (message.data ? message.data.byteLength : 1024)\n    bandwidthTest.packetsReceived++\n    \n    // Send acknowledgment\n    const ackMessage = {\n      type: 'bandwidth_ack',\n      testId: message.testId,\n      packetId: message.packetId,\n      timestamp: performance.now()\n    }\n    \n    if (this.networkCallbacks.sendToPeer) {\n      this.networkCallbacks.sendToPeer(peerId, ackMessage)\n    }\n  }\n  \n  /**\n   * Complete bandwidth test\n   */\n  completeBandwidthTest(peerId) {\n    const bandwidthTest = this.testing.bandwidthTests.get(peerId)\n    if (!bandwidthTest) return\n    \n    const metrics = this.peerMetrics.get(peerId)\n    if (!metrics) return\n    \n    const testDuration = (performance.now() - bandwidthTest.startTime) / 1000 // seconds\n    \n    if (testDuration > 0) {\n      const uploadBandwidth = (bandwidthTest.bytesSent * 8) / testDuration / 1000 // kbps\n      const downloadBandwidth = (bandwidthTest.bytesReceived * 8) / testDuration / 1000 // kbps\n      \n      metrics.bandwidth.upload = uploadBandwidth\n      metrics.bandwidth.download = downloadBandwidth\n      \n      // Add to measurements (keep last 10)\n      metrics.bandwidth.measurements.push({\n        timestamp: performance.now(),\n        upload: uploadBandwidth,\n        download: downloadBandwidth\n      })\n      \n      if (metrics.bandwidth.measurements.length > 10) {\n        metrics.bandwidth.measurements.shift()\n      }\n      \n      // Calculate averages\n      const measurements = metrics.bandwidth.measurements\n      metrics.bandwidth.avgUpload = measurements.reduce((a, b) => a + b.upload, 0) / measurements.length\n      metrics.bandwidth.avgDownload = measurements.reduce((a, b) => a + b.download, 0) / measurements.length\n      \n      metrics.lastBandwidthTest = performance.now()\n      \n      this.logger.info('Bandwidth test completed', {\n        peerId,\n        uploadBandwidth: uploadBandwidth.toFixed(2),\n        downloadBandwidth: downloadBandwidth.toFixed(2),\n        testDuration: testDuration.toFixed(2)\n      })\n      \n      if (this.eventHandlers.onBandwidthMeasured) {\n        this.eventHandlers.onBandwidthMeasured(peerId, {\n          upload: uploadBandwidth,\n          download: downloadBandwidth\n        })\n      }\n    }\n    \n    // Clean up\n    if (bandwidthTest.interval) {\n      clearInterval(bandwidthTest.interval)\n    }\n    this.testing.bandwidthTests.delete(peerId)\n    \n    // Schedule next test\n    setTimeout(() => {\n      if (this.testing.isRunning && this.peerMetrics.has(peerId)) {\n        this.startBandwidthTest(peerId)\n      }\n    }, this.config.bandwidthTestInterval)\n  }\n  \n  /**\n   * Update WebRTC metrics for a peer\n   */\n  updateWebRTCMetrics(peerId, connection) {\n    const metrics = this.peerMetrics.get(peerId)\n    if (!metrics || !connection) return\n    \n    // Update connection states\n    metrics.webrtc.iceConnectionState = connection.iceConnectionState\n    metrics.webrtc.dtlsState = connection.connectionState\n    \n    // Get statistics\n    connection.getStats().then(stats => {\n      stats.forEach(report => {\n        if (report.type === 'transport') {\n          metrics.webrtc.bytesReceived = report.bytesReceived || 0\n          metrics.webrtc.bytesSent = report.bytesSent || 0\n          metrics.webrtc.packetsReceived = report.packetsReceived || 0\n          metrics.webrtc.packetsSent = report.packetsSent || 0\n        } else if (report.type === 'candidate-pair' && report.state === 'succeeded') {\n          metrics.webrtc.selectedCandidatePair = {\n            localType: report.localCandidateType,\n            remoteType: report.remoteCandidateType,\n            priority: report.priority\n          }\n        }\n      })\n    }).catch(error => {\n      this.logger.warn('Failed to get WebRTC stats', { peerId, error: error.message })\n    })\n  }\n  \n  /**\n   * Update quality assessment for a peer\n   */\n  updatePeerQuality(peerId) {\n    const metrics = this.peerMetrics.get(peerId)\n    if (!metrics) return\n    \n    const oldQuality = metrics.quality.overall\n    \n    // Calculate quality score (0-100)\n    let score = 100\n    \n    // Latency penalty\n    if (metrics.latency.avg > this.config.latencyThreshold) {\n      score -= Math.min(40, (metrics.latency.avg - this.config.latencyThreshold) / 10)\n    }\n    \n    // Jitter penalty\n    if (metrics.latency.jitter > this.config.jitterThreshold) {\n      score -= Math.min(20, (metrics.latency.jitter - this.config.jitterThreshold) / 5)\n    }\n    \n    // Packet loss penalty\n    if (metrics.packetLoss.lossRate > this.config.packetLossThreshold) {\n      score -= Math.min(30, metrics.packetLoss.lossRate * 100)\n    }\n    \n    // Connection stability penalty\n    const stabilityPenalty = (metrics.stability.disconnections + metrics.stability.consecutiveTimeouts) * 5\n    score -= Math.min(20, stabilityPenalty)\n    \n    score = Math.max(0, Math.min(100, score))\n    metrics.quality.score = score\n    \n    // Determine quality rating\n    if (score >= 90) {\n      metrics.quality.overall = 'excellent'\n    } else if (score >= 75) {\n      metrics.quality.overall = 'good'\n    } else if (score >= 50) {\n      metrics.quality.overall = 'fair'\n    } else {\n      metrics.quality.overall = 'poor'\n    }\n    \n    // Update connection quality\n    if (metrics.latency.avg < 50 && metrics.packetLoss.lossRate < 0.01) {\n      metrics.quality.connection = 'excellent'\n    } else if (metrics.latency.avg < 100 && metrics.packetLoss.lossRate < 0.03) {\n      metrics.quality.connection = 'good'\n    } else if (metrics.latency.avg < 200 && metrics.packetLoss.lossRate < 0.05) {\n      metrics.quality.connection = 'fair'\n    } else {\n      metrics.quality.connection = 'poor'\n    }\n    \n    // Calculate stability\n    const uptime = performance.now() - metrics.stability.connectionStartTime\n    const disconnectionRate = metrics.stability.disconnections / Math.max(1, uptime / 60000) // per minute\n    metrics.quality.stability = Math.max(0, 1 - (disconnectionRate * 0.1))\n    \n    metrics.lastQualityUpdate = performance.now()\n    \n    // Notify if quality changed\n    if (oldQuality !== metrics.quality.overall && this.eventHandlers.onQualityChanged) {\n      this.eventHandlers.onQualityChanged(peerId, metrics.quality.overall)\n    }\n  }\n  \n  /**\n   * Update global network metrics\n   */\n  updateGlobalMetrics() {\n    const peers = Array.from(this.peerMetrics.values())\n    if (peers.length === 0) {\n      this.globalMetrics.overallQuality = 'unknown'\n      return\n    }\n    \n    // Calculate averages\n    this.globalMetrics.avgLatency = peers.reduce((sum, p) => sum + p.latency.avg, 0) / peers.length\n    this.globalMetrics.avgPacketLoss = peers.reduce((sum, p) => sum + p.packetLoss.lossRate, 0) / peers.length\n    this.globalMetrics.avgJitter = peers.reduce((sum, p) => sum + p.latency.jitter, 0) / peers.length\n    this.globalMetrics.avgBandwidth = peers.reduce((sum, p) => sum + p.bandwidth.avgDownload, 0) / peers.length\n    \n    // Calculate connection stability\n    const totalDisconnections = peers.reduce((sum, p) => sum + p.stability.disconnections, 0)\n    const avgUptime = peers.reduce((sum, p) => sum + (performance.now() - p.stability.connectionStartTime), 0) / peers.length\n    this.globalMetrics.connectionStability = Math.max(0, 1 - (totalDisconnections / Math.max(1, avgUptime / 60000)))\n    \n    // Determine overall quality\n    const qualityScores = peers.map(p => p.quality.score)\n    const avgQualityScore = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length\n    \n    if (avgQualityScore >= 90) {\n      this.globalMetrics.overallQuality = 'excellent'\n    } else if (avgQualityScore >= 75) {\n      this.globalMetrics.overallQuality = 'good'\n    } else if (avgQualityScore >= 50) {\n      this.globalMetrics.overallQuality = 'fair'\n    } else {\n      this.globalMetrics.overallQuality = 'poor'\n    }\n    \n    // Determine network condition\n    const oldCondition = this.globalMetrics.networkCondition\n    \n    if (this.globalMetrics.avgPacketLoss > 0.1 || this.globalMetrics.avgLatency > 300) {\n      this.globalMetrics.networkCondition = 'unstable'\n    } else if (this.globalMetrics.avgPacketLoss > 0.05 || this.globalMetrics.avgLatency > 200) {\n      this.globalMetrics.networkCondition = 'degraded'\n    } else {\n      this.globalMetrics.networkCondition = 'stable'\n    }\n    \n    // Notify if condition changed\n    if (oldCondition !== this.globalMetrics.networkCondition && this.eventHandlers.onNetworkConditionChanged) {\n      this.eventHandlers.onNetworkConditionChanged(this.globalMetrics.networkCondition)\n    }\n    \n    // Add to history\n    this.addMeasurementToHistory({\n      timestamp: performance.now(),\n      globalMetrics: { ...this.globalMetrics },\n      peerCount: peers.length\n    })\n  }\n  \n  /**\n   * Handle network message\n   */\n  handleMessage(message, senderId) {\n    switch (message.type) {\n      case 'network_ping':\n        this.handlePingRequest(senderId, message)\n        break\n        \n      case 'network_pong':\n        this.handlePingResponse(senderId, message)\n        break\n        \n      case 'bandwidth_test':\n        this.handleBandwidthTest(senderId, message)\n        break\n        \n      case 'bandwidth_ack':\n        // Handle bandwidth test acknowledgment\n        break\n        \n      default:\n        // Unknown message type\n        break\n    }\n  }\n  \n  /**\n   * Add measurement to history\n   */\n  addMeasurementToHistory(measurement) {\n    this.history.measurements.push(measurement)\n    \n    if (this.history.measurements.length > this.history.maxHistorySize) {\n      this.history.measurements.shift()\n    }\n  }\n  \n  /**\n   * Add event to history\n   */\n  addEventToHistory(event) {\n    this.history.events.push({\n      timestamp: performance.now(),\n      ...event\n    })\n    \n    if (this.history.events.length > this.history.maxHistorySize) {\n      this.history.events.shift()\n    }\n  }\n  \n  /**\n   * Get comprehensive diagnostics report\n   */\n  getDiagnosticsReport() {\n    const peers = Array.from(this.peerMetrics.values())\n    \n    return {\n      timestamp: performance.now(),\n      global: { ...this.globalMetrics },\n      peers: peers.map(peer => ({\n        peerId: peer.peerId,\n        connectionType: peer.connectionType,\n        region: peer.region,\n        latency: { ...peer.latency },\n        packetLoss: { ...peer.packetLoss },\n        bandwidth: { ...peer.bandwidth },\n        quality: { ...peer.quality },\n        stability: { ...peer.stability },\n        webrtc: { ...peer.webrtc }\n      })),\n      testing: {\n        isRunning: this.testing.isRunning,\n        activePings: this.testing.pingIntervals.size,\n        activeBandwidthTests: this.testing.bandwidthTests.size\n      },\n      history: {\n        measurementCount: this.history.measurements.length,\n        eventCount: this.history.events.length,\n        recentEvents: this.history.events.slice(-10)\n      }\n    }\n  }\n  \n  /**\n   * Get network recommendations\n   */\n  getNetworkRecommendations() {\n    const recommendations = []\n    const peers = Array.from(this.peerMetrics.values())\n    \n    // Global recommendations\n    if (this.globalMetrics.avgLatency > this.config.latencyThreshold) {\n      recommendations.push({\n        type: 'warning',\n        category: 'latency',\n        message: `High average latency detected (${this.globalMetrics.avgLatency.toFixed(0)}ms). Consider using closer servers or checking network conditions.`,\n        priority: 'high'\n      })\n    }\n    \n    if (this.globalMetrics.avgPacketLoss > this.config.packetLossThreshold) {\n      recommendations.push({\n        type: 'error',\n        category: 'packet_loss',\n        message: `High packet loss detected (${(this.globalMetrics.avgPacketLoss * 100).toFixed(1)}%). Check network stability.`,\n        priority: 'critical'\n      })\n    }\n    \n    if (this.globalMetrics.connectionStability < 0.9) {\n      recommendations.push({\n        type: 'warning',\n        category: 'stability',\n        message: 'Connection instability detected. Monitor for frequent disconnections.',\n        priority: 'medium'\n      })\n    }\n    \n    // Per-peer recommendations\n    peers.forEach(peer => {\n      if (peer.quality.overall === 'poor') {\n        recommendations.push({\n          type: 'warning',\n          category: 'peer_quality',\n          message: `Poor connection quality with peer ${peer.peerId}. Consider connection optimization.`,\n          priority: 'medium',\n          peerId: peer.peerId\n        })\n      }\n      \n      if (peer.packetLoss.consecutiveLoss > 5) {\n        recommendations.push({\n          type: 'error',\n          category: 'peer_packet_loss',\n          message: `Consecutive packet loss with peer ${peer.peerId}. Connection may be failing.`,\n          priority: 'high',\n          peerId: peer.peerId\n        })\n      }\n    })\n    \n    return recommendations.sort((a, b) => {\n      const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 }\n      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)\n    })\n  }\n  \n  /**\n   * Export diagnostics data\n   */\n  exportDiagnosticsData(format = 'json') {\n    const data = {\n      exportTime: new Date().toISOString(),\n      diagnosticsReport: this.getDiagnosticsReport(),\n      recommendations: this.getNetworkRecommendations(),\n      fullHistory: {\n        measurements: this.history.measurements,\n        events: this.history.events\n      }\n    }\n    \n    switch (format) {\n      case 'json':\n        return JSON.stringify(data, null, 2)\n        \n      case 'csv':\n        // Convert to CSV format (simplified)\n        const csvRows = ['timestamp,peerId,latency,packetLoss,bandwidth,quality']\n        data.diagnosticsReport.peers.forEach(peer => {\n          csvRows.push(`${data.exportTime},${peer.peerId},${peer.latency.avg},${peer.packetLoss.lossRate},${peer.bandwidth.avgDownload},${peer.quality.overall}`)\n        })\n        return csvRows.join('\\n')\n        \n      default:\n        return data\n    }\n  }\n  \n  /**\n   * Reset all metrics and history\n   */\n  reset() {\n    // Stop all testing\n    this.stopAutomaticTesting()\n    \n    // Clear all metrics\n    this.peerMetrics.clear()\n    \n    // Reset global metrics\n    this.globalMetrics = {\n      overallQuality: 'unknown',\n      avgLatency: 0,\n      avgPacketLoss: 0,\n      avgJitter: 0,\n      avgBandwidth: 0,\n      connectionStability: 1.0,\n      networkCondition: 'stable'\n    }\n    \n    // Clear history\n    this.history.measurements = []\n    this.history.events = []\n    \n    this.logger.info('Network diagnostics system reset')\n  }\n  \n  /**\n   * Shutdown the diagnostics system\n   */\n  shutdown() {\n    this.stopAutomaticTesting()\n    this.reset()\n    \n    this.logger.info('Network diagnostics system shutdown')\n  }\n}\n\nexport default NetworkDiagnostics
+    }
+    
+    // Calculate average
+    metrics.latency.avg = metrics.latency.samples.reduce((a, b) => a + b, 0) / metrics.latency.samples.length
+    
+    // Calculate jitter (standard deviation)
+    const variance = metrics.latency.samples.reduce((acc, val) => {
+      return acc + Math.pow(val - metrics.latency.avg, 2)
+    }, 0) / metrics.latency.samples.length
+    
+    metrics.latency.jitter = Math.sqrt(variance)
+    
+    // Notify if latency changed significantly
+    if (this.eventHandlers.onPeerLatencyChanged) {
+      this.eventHandlers.onPeerLatencyChanged(peerId, latency)
+    }
+  }
+  
+  /**
+   * Update packet loss metrics
+   */
+  updatePacketLossMetrics(metrics) {
+    const total = metrics.packetLoss.sent
+    if (total > 0) {
+      metrics.packetLoss.lossRate = metrics.packetLoss.lost / total
+    }
+  }
+  
+  /**
+   * Start bandwidth test for a peer
+   */
+  startBandwidthTest(peerId) {
+    const metrics = this.peerMetrics.get(peerId)
+    if (!metrics) return
+    
+    const testId = `bandwidth_${Date.now()}`
+    const testData = new ArrayBuffer(1024) // 1KB test packet
+    
+    const bandwidthTest = {
+      testId,
+      startTime: performance.now(),
+      bytesSent: 0,
+      bytesReceived: 0,
+      packetsReceived: 0,
+      interval: null
+    }
+    
+    this.testing.bandwidthTests.set(peerId, bandwidthTest)
+    
+    // Send test packets for 5 seconds
+    let packetCount = 0
+    bandwidthTest.interval = setInterval(() => {
+      if (packetCount >= 50) { // Send 50 packets max
+        this.completeBandwidthTest(peerId)
+        return
+      }
+      
+      const testMessage = {
+        type: 'bandwidth_test',
+        testId,
+        packetId: packetCount++,
+        timestamp: performance.now(),
+        data: testData
+      }
+      
+      bandwidthTest.bytesSent += 1024
+      
+      if (this.networkCallbacks.sendToPeer) {
+        this.networkCallbacks.sendToPeer(peerId, testMessage)
+      }
+    }, 100) // Send every 100ms
+    
+    // Auto-complete after 10 seconds
+    setTimeout(() => {
+      this.completeBandwidthTest(peerId)
+    }, 10000)
+  }
+  
+  /**
+   * Handle bandwidth test packet
+   */
+  handleBandwidthTest(peerId, message) {
+    const bandwidthTest = this.testing.bandwidthTests.get(peerId)
+    if (!bandwidthTest || bandwidthTest.testId !== message.testId) {
+      return
+    }
+    
+    bandwidthTest.bytesReceived += (message.data ? message.data.byteLength : 1024)
+    bandwidthTest.packetsReceived++
+    
+    // Send acknowledgment
+    const ackMessage = {
+      type: 'bandwidth_ack',
+      testId: message.testId,
+      packetId: message.packetId,
+      timestamp: performance.now()
+    }
+    
+    if (this.networkCallbacks.sendToPeer) {
+      this.networkCallbacks.sendToPeer(peerId, ackMessage)
+    }
+  }
+  
+  /**
+   * Complete bandwidth test
+   */
+  completeBandwidthTest(peerId) {
+    const bandwidthTest = this.testing.bandwidthTests.get(peerId)
+    if (!bandwidthTest) return
+    
+    const metrics = this.peerMetrics.get(peerId)
+    if (!metrics) return
+    
+    const testDuration = (performance.now() - bandwidthTest.startTime) / 1000 // seconds
+    
+    if (testDuration > 0) {
+      const uploadBandwidth = (bandwidthTest.bytesSent * 8) / testDuration / 1000 // kbps
+      const downloadBandwidth = (bandwidthTest.bytesReceived * 8) / testDuration / 1000 // kbps
+      
+      metrics.bandwidth.upload = uploadBandwidth
+      metrics.bandwidth.download = downloadBandwidth
+      
+      // Add to measurements (keep last 10)
+      metrics.bandwidth.measurements.push({
+        timestamp: performance.now(),
+        upload: uploadBandwidth,
+        download: downloadBandwidth
+      })
+      
+      if (metrics.bandwidth.measurements.length > 10) {
+        metrics.bandwidth.measurements.shift()
+      }
+      
+      // Calculate averages
+      const measurements = metrics.bandwidth.measurements
+      metrics.bandwidth.avgUpload = measurements.reduce((a, b) => a + b.upload, 0) / measurements.length
+      metrics.bandwidth.avgDownload = measurements.reduce((a, b) => a + b.download, 0) / measurements.length
+      
+      metrics.lastBandwidthTest = performance.now()
+      
+      this.logger.info('Bandwidth test completed', {
+        peerId,
+        uploadBandwidth: uploadBandwidth.toFixed(2),
+        downloadBandwidth: downloadBandwidth.toFixed(2),
+        testDuration: testDuration.toFixed(2)
+      })
+      
+      if (this.eventHandlers.onBandwidthMeasured) {
+        this.eventHandlers.onBandwidthMeasured(peerId, {
+          upload: uploadBandwidth,
+          download: downloadBandwidth
+        })
+      }
+    }
+    
+    // Clean up
+    if (bandwidthTest.interval) {
+      clearInterval(bandwidthTest.interval)
+    }
+    this.testing.bandwidthTests.delete(peerId)
+    
+    // Schedule next test
+    setTimeout(() => {
+      if (this.testing.isRunning && this.peerMetrics.has(peerId)) {
+        this.startBandwidthTest(peerId)
+      }
+    }, this.config.bandwidthTestInterval)
+  }
+  
+  /**
+   * Update WebRTC metrics for a peer
+   */
+  updateWebRTCMetrics(peerId, connection) {
+    const metrics = this.peerMetrics.get(peerId)
+    if (!metrics || !connection) return
+    
+    // Update connection states
+    metrics.webrtc.iceConnectionState = connection.iceConnectionState
+    metrics.webrtc.dtlsState = connection.connectionState
+    
+    // Get statistics
+    connection.getStats().then(stats => {
+      stats.forEach(report => {
+        if (report.type === 'transport') {
+          metrics.webrtc.bytesReceived = report.bytesReceived || 0
+          metrics.webrtc.bytesSent = report.bytesSent || 0
+          metrics.webrtc.packetsReceived = report.packetsReceived || 0
+          metrics.webrtc.packetsSent = report.packetsSent || 0
+        } else if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          metrics.webrtc.selectedCandidatePair = {
+            localType: report.localCandidateType,
+            remoteType: report.remoteCandidateType,
+            priority: report.priority
+          }
+        }
+      })
+    }).catch(error => {
+      this.logger.warn('Failed to get WebRTC stats', { peerId, error: error.message })
+    })
+  }
+  
+  /**
+   * Update quality assessment for a peer
+   */
+  updatePeerQuality(peerId) {
+    const metrics = this.peerMetrics.get(peerId)
+    if (!metrics) return
+    
+    const oldQuality = metrics.quality.overall
+    
+    // Calculate quality score (0-100)
+    let score = 100
+    
+    // Latency penalty
+    if (metrics.latency.avg > this.config.latencyThreshold) {
+      score -= Math.min(40, (metrics.latency.avg - this.config.latencyThreshold) / 10)
+    }
+    
+    // Jitter penalty
+    if (metrics.latency.jitter > this.config.jitterThreshold) {
+      score -= Math.min(20, (metrics.latency.jitter - this.config.jitterThreshold) / 5)
+    }
+    
+    // Packet loss penalty
+    if (metrics.packetLoss.lossRate > this.config.packetLossThreshold) {
+      score -= Math.min(30, metrics.packetLoss.lossRate * 100)
+    }
+    
+    // Connection stability penalty
+    const stabilityPenalty = (metrics.stability.disconnections + metrics.stability.consecutiveTimeouts) * 5
+    score -= Math.min(20, stabilityPenalty)
+    
+    score = Math.max(0, Math.min(100, score))
+    metrics.quality.score = score
+    
+    // Determine quality rating
+    if (score >= 90) {
+      metrics.quality.overall = 'excellent'
+    } else if (score >= 75) {
+      metrics.quality.overall = 'good'
+    } else if (score >= 50) {
+      metrics.quality.overall = 'fair'
+    } else {
+      metrics.quality.overall = 'poor'
+    }
+    
+    // Update connection quality
+    if (metrics.latency.avg < 50 && metrics.packetLoss.lossRate < 0.01) {
+      metrics.quality.connection = 'excellent'
+    } else if (metrics.latency.avg < 100 && metrics.packetLoss.lossRate < 0.03) {
+      metrics.quality.connection = 'good'
+    } else if (metrics.latency.avg < 200 && metrics.packetLoss.lossRate < 0.05) {
+      metrics.quality.connection = 'fair'
+    } else {
+      metrics.quality.connection = 'poor'
+    }
+    
+    // Calculate stability
+    const uptime = performance.now() - metrics.stability.connectionStartTime
+    const disconnectionRate = metrics.stability.disconnections / Math.max(1, uptime / 60000) // per minute
+    metrics.quality.stability = Math.max(0, 1 - (disconnectionRate * 0.1))
+    
+    metrics.lastQualityUpdate = performance.now()
+    
+    // Notify if quality changed
+    if (oldQuality !== metrics.quality.overall && this.eventHandlers.onQualityChanged) {
+      this.eventHandlers.onQualityChanged(peerId, metrics.quality.overall)
+    }
+  }
+  
+  /**
+   * Update global network metrics
+   */
+  updateGlobalMetrics() {
+    const peers = Array.from(this.peerMetrics.values())
+    if (peers.length === 0) {
+      this.globalMetrics.overallQuality = 'unknown'
+      return
+    }
+    
+    // Calculate averages
+    this.globalMetrics.avgLatency = peers.reduce((sum, p) => sum + p.latency.avg, 0) / peers.length
+    this.globalMetrics.avgPacketLoss = peers.reduce((sum, p) => sum + p.packetLoss.lossRate, 0) / peers.length
+    this.globalMetrics.avgJitter = peers.reduce((sum, p) => sum + p.latency.jitter, 0) / peers.length
+    this.globalMetrics.avgBandwidth = peers.reduce((sum, p) => sum + p.bandwidth.avgDownload, 0) / peers.length
+    
+    // Calculate connection stability
+    const totalDisconnections = peers.reduce((sum, p) => sum + p.stability.disconnections, 0)
+    const avgUptime = peers.reduce((sum, p) => sum + (performance.now() - p.stability.connectionStartTime), 0) / peers.length
+    this.globalMetrics.connectionStability = Math.max(0, 1 - (totalDisconnections / Math.max(1, avgUptime / 60000)))
+    
+    // Determine overall quality
+    const qualityScores = peers.map(p => p.quality.score)
+    const avgQualityScore = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length
+    
+    if (avgQualityScore >= 90) {
+      this.globalMetrics.overallQuality = 'excellent'
+    } else if (avgQualityScore >= 75) {
+      this.globalMetrics.overallQuality = 'good'
+    } else if (avgQualityScore >= 50) {
+      this.globalMetrics.overallQuality = 'fair'
+    } else {
+      this.globalMetrics.overallQuality = 'poor'
+    }
+    
+    // Determine network condition
+    const oldCondition = this.globalMetrics.networkCondition
+    
+    if (this.globalMetrics.avgPacketLoss > 0.1 || this.globalMetrics.avgLatency > 300) {
+      this.globalMetrics.networkCondition = 'unstable'
+    } else if (this.globalMetrics.avgPacketLoss > 0.05 || this.globalMetrics.avgLatency > 200) {
+      this.globalMetrics.networkCondition = 'degraded'
+    } else {
+      this.globalMetrics.networkCondition = 'stable'
+    }
+    
+    // Notify if condition changed
+    if (oldCondition !== this.globalMetrics.networkCondition && this.eventHandlers.onNetworkConditionChanged) {
+      this.eventHandlers.onNetworkConditionChanged(this.globalMetrics.networkCondition)
+    }
+    
+    // Add to history
+    this.addMeasurementToHistory({
+      timestamp: performance.now(),
+      globalMetrics: { ...this.globalMetrics },
+      peerCount: peers.length
+    })
+  }
+  
+  /**
+   * Handle network message
+   */
+  handleMessage(message, senderId) {
+    switch (message.type) {
+      case 'network_ping':
+        this.handlePingRequest(senderId, message)
+        break
+        
+      case 'network_pong':
+        this.handlePingResponse(senderId, message)
+        break
+        
+      case 'bandwidth_test':
+        this.handleBandwidthTest(senderId, message)
+        break
+        
+      case 'bandwidth_ack':
+        // Handle bandwidth test acknowledgment
+        break
+        
+      default:
+        // Unknown message type
+        break
+    }
+  }
+  
+  /**
+   * Add measurement to history
+   */
+  addMeasurementToHistory(measurement) {
+    this.history.measurements.push(measurement)
+    
+    if (this.history.measurements.length > this.history.maxHistorySize) {
+      this.history.measurements.shift()
+    }
+  }
+  
+  /**
+   * Add event to history
+   */
+  addEventToHistory(event) {
+    this.history.events.push({
+      timestamp: performance.now(),
+      ...event
+    })
+    
+    if (this.history.events.length > this.history.maxHistorySize) {
+      this.history.events.shift()
+    }
+  }
+  
+  /**
+   * Get comprehensive diagnostics report
+   */
+  getDiagnosticsReport() {
+    const peers = Array.from(this.peerMetrics.values())
+    
+    return {
+      timestamp: performance.now(),
+      global: { ...this.globalMetrics },
+      peers: peers.map(peer => ({
+        peerId: peer.peerId,
+        connectionType: peer.connectionType,
+        region: peer.region,
+        latency: { ...peer.latency },
+        packetLoss: { ...peer.packetLoss },
+        bandwidth: { ...peer.bandwidth },
+        quality: { ...peer.quality },
+        stability: { ...peer.stability },
+        webrtc: { ...peer.webrtc }
+      })),
+      testing: {
+        isRunning: this.testing.isRunning,
+        activePings: this.testing.pingIntervals.size,
+        activeBandwidthTests: this.testing.bandwidthTests.size
+      },
+      history: {
+        measurementCount: this.history.measurements.length,
+        eventCount: this.history.events.length,
+        recentEvents: this.history.events.slice(-10)
+      }
+    }
+  }
+  
+  /**
+   * Get network recommendations
+   */
+  getNetworkRecommendations() {
+    const recommendations = []
+    const peers = Array.from(this.peerMetrics.values())
+    
+    // Global recommendations
+    if (this.globalMetrics.avgLatency > this.config.latencyThreshold) {
+      recommendations.push({
+        type: 'warning',
+        category: 'latency',
+        message: `High average latency detected (${this.globalMetrics.avgLatency.toFixed(0)}ms). Consider using closer servers or checking network conditions.`,
+        priority: 'high'
+      })
+    }
+    
+    if (this.globalMetrics.avgPacketLoss > this.config.packetLossThreshold) {
+      recommendations.push({
+        type: 'error',
+        category: 'packet_loss',
+        message: `High packet loss detected (${(this.globalMetrics.avgPacketLoss * 100).toFixed(1)}%). Check network stability.`,
+        priority: 'critical'
+      })
+    }
+    
+    if (this.globalMetrics.connectionStability < 0.9) {
+      recommendations.push({
+        type: 'warning',
+        category: 'stability',
+        message: 'Connection instability detected. Monitor for frequent disconnections.',
+        priority: 'medium'
+      })
+    }
+    
+    // Per-peer recommendations
+    peers.forEach(peer => {
+      if (peer.quality.overall === 'poor') {
+        recommendations.push({
+          type: 'warning',
+          category: 'peer_quality',
+          message: `Poor connection quality with peer ${peer.peerId}. Consider connection optimization.`,
+          priority: 'medium',
+          peerId: peer.peerId
+        })
+      }
+      
+      if (peer.packetLoss.consecutiveLoss > 5) {
+        recommendations.push({
+          type: 'error',
+          category: 'peer_packet_loss',
+          message: `Consecutive packet loss with peer ${peer.peerId}. Connection may be failing.`,
+          priority: 'high',
+          peerId: peer.peerId
+        })
+      }
+    })
+    
+    return recommendations.sort((a, b) => {
+      const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 }
+      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+    })
+  }
+  
+  /**
+   * Export diagnostics data
+   */
+  exportDiagnosticsData(format = 'json') {
+    const data = {
+      exportTime: new Date().toISOString(),
+      diagnosticsReport: this.getDiagnosticsReport(),
+      recommendations: this.getNetworkRecommendations(),
+      fullHistory: {
+        measurements: this.history.measurements,
+        events: this.history.events
+      }
+    }
+    
+    switch (format) {
+      case 'json':
+        return JSON.stringify(data, null, 2)
+        
+      case 'csv':
+        // Convert to CSV format (simplified)
+        const csvRows = ['timestamp,peerId,latency,packetLoss,bandwidth,quality']
+        data.diagnosticsReport.peers.forEach(peer => {
+          csvRows.push(`${data.exportTime},${peer.peerId},${peer.latency.avg},${peer.packetLoss.lossRate},${peer.bandwidth.avgDownload},${peer.quality.overall}`)
+        })
+        return csvRows.join('\n')
+        
+      default:
+        return data
+    }
+  }
+  
+  /**
+   * Reset all metrics and history
+   */
+  reset() {
+    // Stop all testing
+    this.stopAutomaticTesting()
+    
+    // Clear all metrics
+    this.peerMetrics.clear()
+    
+    // Reset global metrics
+    this.globalMetrics = {
+      overallQuality: 'unknown',
+      avgLatency: 0,
+      avgPacketLoss: 0,
+      avgJitter: 0,
+      avgBandwidth: 0,
+      connectionStability: 1.0,
+      networkCondition: 'stable'
+    }
+    
+    // Clear history
+    this.history.measurements = []
+    this.history.events = []
+    
+    this.logger.info('Network diagnostics system reset')
+  }
+  
+  /**
+   * Shutdown the diagnostics system
+   */
+  shutdown() {
+    this.stopAutomaticTesting()
+    this.reset()
+    
+    this.logger.info('Network diagnostics system shutdown')
+  }
+}
+
+export default NetworkDiagnostics

@@ -1,4 +1,4 @@
-/* Mobile Controls */
+/* Mobile Controls - Fixed z-index and positioning */
 .mobile-controls {
     position: fixed;
     bottom: 0;
@@ -6,8 +6,12 @@
     right: 0;
     height: 200px;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    pointer-events: none;
+    z-index: var(--z-hud);
+}
+
+.mobile-controls > * {
     pointer-events: auto;
-    z-index: 300;
 }
 
 /* Joystick */

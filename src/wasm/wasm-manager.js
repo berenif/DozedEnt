@@ -959,7 +959,9 @@ export class WasmManager {
    * @returns {number} Choice tags
    */
   getChoiceTags(index) {
-    if (!this.isLoaded || typeof this.exports.get_choice_tags !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_choice_tags !== 'function') {
+      return 0;
+    }
     return this.exports.get_choice_tags(index);
   }
 
@@ -968,7 +970,9 @@ export class WasmManager {
    * @param {number} choiceId - Selected choice ID
    */
   commitChoice(choiceId) {
-    if (!this.isLoaded || typeof this.exports.commit_choice !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.commit_choice !== 'function') {
+      return;
+    }
     this.exports.commit_choice(choiceId);
   }
 
@@ -976,7 +980,9 @@ export class WasmManager {
    * Generate new choices
    */
   generateChoices() {
-    if (!this.isLoaded || typeof this.exports.generate_choices !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.generate_choices !== 'function') {
+      return;
+    }
     this.exports.generate_choices();
   }
 
@@ -987,7 +993,9 @@ export class WasmManager {
    * @returns {number} Curse count
    */
   getCurseCount() {
-    if (!this.isLoaded || typeof this.exports.get_curse_count !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_curse_count !== 'function') {
+      return 0;
+    }
     return this.exports.get_curse_count();
   }
 
@@ -997,7 +1005,9 @@ export class WasmManager {
    * @returns {number} Curse type
    */
   getCurseType(index) {
-    if (!this.isLoaded || typeof this.exports.get_curse_type !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_curse_type !== 'function') {
+      return 0;
+    }
     
     // Validate index bounds
     const curseCount = this.getCurseCount();
@@ -1017,7 +1027,9 @@ export class WasmManager {
    * @returns {number} Curse intensity (0-1)
    */
   getCurseIntensity(index) {
-    if (!this.isLoaded || typeof this.exports.get_curse_intensity !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_curse_intensity !== 'function') {
+      return 0;
+    }
     
     // Validate index bounds
     const curseCount = this.getCurseCount();
@@ -1036,7 +1048,9 @@ export class WasmManager {
    * @returns {number} Risk multiplier
    */
   getRiskMultiplier() {
-    if (!this.isLoaded || typeof this.exports.get_risk_multiplier !== 'function') {\n      return 1.0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_risk_multiplier !== 'function') {
+      return 1.0;
+    }
     return this.exports.get_risk_multiplier();
   }
 
@@ -1045,7 +1059,9 @@ export class WasmManager {
    * @returns {boolean} Elite active status
    */
   getEliteActive() {
-    if (!this.isLoaded || typeof this.exports.get_elite_active !== 'function') {\n      return false;\n    }
+    if (!this.isLoaded || typeof this.exports.get_elite_active !== 'function') {
+      return false;
+    }
     return this.exports.get_elite_active() === 1;
   }
 
@@ -1053,7 +1069,9 @@ export class WasmManager {
    * Escape risk phase
    */
   escapeRisk() {
-    if (!this.isLoaded || typeof this.exports.escape_risk !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.escape_risk !== 'function') {
+      return;
+    }
     this.exports.escape_risk();
   }
 
@@ -1064,7 +1082,9 @@ export class WasmManager {
    * @returns {number} Escalation level
    */
   getEscalationLevel() {
-    if (!this.isLoaded || typeof this.exports.get_escalation_level !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_escalation_level !== 'function') {
+      return 0;
+    }
     return this.exports.get_escalation_level();
   }
 
@@ -1073,7 +1093,9 @@ export class WasmManager {
    * @returns {number} Spawn rate multiplier
    */
   getSpawnRateModifier() {
-    if (!this.isLoaded || typeof this.exports.get_spawn_rate_modifier !== 'function') {\n      return 1.0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_spawn_rate_modifier !== 'function') {
+      return 1.0;
+    }
     return this.exports.get_spawn_rate_modifier();
   }
 
@@ -1082,7 +1104,9 @@ export class WasmManager {
    * @returns {boolean} Miniboss active status
    */
   getMinibossActive() {
-    if (!this.isLoaded || typeof this.exports.get_miniboss_active !== 'function') {\n      return false;\n    }
+    if (!this.isLoaded || typeof this.exports.get_miniboss_active !== 'function') {
+      return false;
+    }
     return this.exports.get_miniboss_active() === 1;
   }
 
@@ -1091,7 +1115,9 @@ export class WasmManager {
    * @returns {number} Miniboss X position
    */
   getMinibossX() {
-    if (!this.isLoaded || typeof this.exports.get_miniboss_x !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_miniboss_x !== 'function') {
+      return 0;
+    }
     return this.exports.get_miniboss_x();
   }
 
@@ -1100,7 +1126,9 @@ export class WasmManager {
    * @returns {number} Miniboss Y position
    */
   getMinibossY() {
-    if (!this.isLoaded || typeof this.exports.get_miniboss_y !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_miniboss_y !== 'function') {
+      return 0;
+    }
     return this.exports.get_miniboss_y();
   }
 
@@ -1109,7 +1137,9 @@ export class WasmManager {
    * @param {number} amount - Damage amount
    */
   damageMiniboss(amount) {
-    if (!this.isLoaded || typeof this.exports.damage_miniboss !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.damage_miniboss !== 'function') {
+      return;
+    }
     this.exports.damage_miniboss(amount);
   }
 
@@ -1120,7 +1150,9 @@ export class WasmManager {
    * @returns {number} Gold amount
    */
   getGold() {
-    if (!this.isLoaded || typeof this.exports.get_gold !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_gold !== 'function') {
+      return 0;
+    }
     return this.exports.get_gold();
   }
 
@@ -1129,7 +1161,9 @@ export class WasmManager {
    * @returns {number} Essence amount
    */
   getEssence() {
-    if (!this.isLoaded || typeof this.exports.get_essence !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_essence !== 'function') {
+      return 0;
+    }
     return this.exports.get_essence();
   }
 
@@ -1138,7 +1172,9 @@ export class WasmManager {
    * @returns {number} Shop item count
    */
   getShopItemCount() {
-    if (!this.isLoaded || typeof this.exports.get_shop_item_count !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_shop_item_count !== 'function') {
+      return 0;
+    }
     return this.exports.get_shop_item_count();
   }
 
@@ -1147,7 +1183,9 @@ export class WasmManager {
    * @param {number} index - Item index
    */
   buyShopItem(index) {
-    if (!this.isLoaded || typeof this.exports.buy_shop_item !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.buy_shop_item !== 'function') {
+      return;
+    }
     this.exports.buy_shop_item(index);
   }
 
@@ -1155,7 +1193,9 @@ export class WasmManager {
    * Buy full heal
    */
   buyHeal() {
-    if (!this.isLoaded || typeof this.exports.buy_heal !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.buy_heal !== 'function') {
+      return;
+    }
     this.exports.buy_heal();
   }
 
@@ -1163,7 +1203,9 @@ export class WasmManager {
    * Reroll shop items
    */
   rerollShopItems() {
-    if (!this.isLoaded || typeof this.exports.reroll_shop_items !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.reroll_shop_items !== 'function') {
+      return;
+    }
     this.exports.reroll_shop_items();
   }
 
@@ -1171,7 +1213,9 @@ export class WasmManager {
    * Exit cashout phase
    */
   exitCashout() {
-    if (!this.isLoaded || typeof this.exports.exit_cashout !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.exit_cashout !== 'function') {
+      return;
+    }
     this.exports.exit_cashout();
   }
 
@@ -1182,7 +1226,9 @@ export class WasmManager {
    * @returns {number} Health (0-1)
    */
   getHP() {
-    if (!this.isLoaded || typeof this.exports.get_hp !== 'function') {\n      return 1;\n    }
+    if (!this.isLoaded || typeof this.exports.get_hp !== 'function') {
+      return 1;
+    }
     return this.exports.get_hp();
   }
 
@@ -1191,7 +1237,9 @@ export class WasmManager {
    * @returns {number} Max health
    */
   getMaxHP() {
-    if (!this.isLoaded || typeof this.exports.get_max_hp !== 'function') {\n      return 100;\n    }
+    if (!this.isLoaded || typeof this.exports.get_max_hp !== 'function') {
+      return 100;
+    }
     return this.exports.get_max_hp();
   }
 
@@ -1207,7 +1255,9 @@ export class WasmManager {
    * @returns {Object} Choice object with id, type, rarity, tags
    */
   getChoice(index) {
-    if (!this.isLoaded) {\n      return null;\n    }
+    if (!this.isLoaded) {
+      return null;
+    }
     
     // Validate index bounds before calling WASM functions
     const safeIndex = Number.isInteger(index) && index >= 0 ? index : 0;
@@ -1238,7 +1288,9 @@ export class WasmManager {
    * @param {bigint} newSeed - New seed value
    */
   resetRun(newSeed) {
-    if (!this.isLoaded || typeof this.exports.reset_run !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.reset_run !== 'function') {
+      return;
+    }
     this.runSeed = newSeed;
     this.exports.reset_run(newSeed);
   }
@@ -1256,7 +1308,9 @@ export class WasmManager {
    * @returns {boolean}
    */
   isRolling() {
-    if (!this.isLoaded || typeof this.exports.get_is_rolling !== 'function') {\n      return false;\n    }
+    if (!this.isLoaded || typeof this.exports.get_is_rolling !== 'function') {
+      return false;
+    }
     try {
       return this.exports.get_is_rolling() === 1;
     } catch {
@@ -1278,7 +1332,9 @@ export class WasmManager {
    * @param {number} weapon - Starting weapon id
    */
   initRun(seed, weapon = 0) {
-    if (!this.isLoaded || typeof this.exports.init_run !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.init_run !== 'function') {
+      return;
+    }
     try {
       const newSeed = typeof seed === 'bigint' ? seed : BigInt(String(seed));
       this.runSeed = newSeed;
@@ -1315,7 +1371,9 @@ export class WasmManager {
    * @param {Object} weather - Weather parameters
    */
   setWeather(weather) {
-    if (!this.isLoaded) {\n      return;\n    }
+    if (!this.isLoaded) {
+      return;
+    }
     
     if (typeof weather.rain !== "undefined" && typeof this.exports.set_weather_rain === 'function') {
       this.exports.set_weather_rain(weather.rain);
@@ -1357,7 +1415,9 @@ export class WasmManager {
    * @param {number} scale - Time scale multiplier
    */
   setTimeScale(scale) {
-    if (!this.isLoaded || typeof this.exports.set_time_scale !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.set_time_scale !== 'function') {
+      return;
+    }
     this.exports.set_time_scale(scale);
   }
 
@@ -1391,7 +1451,9 @@ export class WasmManager {
    * @param {number} intensity - Effect intensity
    */
   applyChemistryEffect(effect, x, y, radius, intensity) {
-    if (!this.isLoaded) {\n      return;\n    }
+    if (!this.isLoaded) {
+      return;
+    }
     
     switch (effect) {
       case 'fire':
@@ -1440,7 +1502,9 @@ export class WasmManager {
    * @returns {number} Body ID
    */
   createPhysicsBody(x, y, z, mass, radius) {
-    if (!this.isLoaded || typeof this.exports.create_rigid_body !== 'function') {\n      return 0xFFFFFFFF;\n    }
+    if (!this.isLoaded || typeof this.exports.create_rigid_body !== 'function') {
+      return 0xFFFFFFFF;
+    }
     return this.exports.create_rigid_body(x, y, z, mass, radius);
   }
 
@@ -1469,7 +1533,9 @@ export class WasmManager {
    * @param {number} fz - Force Z
    */
   applyForce(bodyId, fx, fy, fz) {
-    if (!this.isLoaded || typeof this.exports.apply_force_to_body !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.apply_force_to_body !== 'function') {
+      return;
+    }
     this.exports.apply_force_to_body(bodyId, fx, fy, fz);
   }
 
@@ -1522,7 +1588,9 @@ export class WasmManager {
    * @param {number} weapon - Weapon type (0-3)
    */
   setCharacterAndWeapon(character, weapon) {
-    if (!this.isLoaded || typeof this.exports.set_character_and_weapon !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.set_character_and_weapon !== 'function') {
+      return;
+    }
     this.exports.set_character_and_weapon(character, weapon);
   }
 
@@ -1556,7 +1624,9 @@ export class WasmManager {
    * @returns {number} Explosion ID
    */
   createExplosion(x, y, z, radius, force, speed = 10) {
-    if (!this.isLoaded || typeof this.exports.create_explosion_at !== 'function') {\n      return 0xFFFFFFFF;\n    }
+    if (!this.isLoaded || typeof this.exports.create_explosion_at !== 'function') {
+      return 0xFFFFFFFF;
+    }
     return this.exports.create_explosion_at(x, y, z, radius, force, speed);
   }
 
@@ -1565,7 +1635,9 @@ export class WasmManager {
    * @returns {Array} Array of explosion data
    */
   getExplosions() {
-    if (!this.isLoaded || typeof this.exports.get_explosion_count !== 'function') {\n      return [];\n    }
+    if (!this.isLoaded || typeof this.exports.get_explosion_count !== 'function') {
+      return [];
+    }
     
     const count = this.exports.get_explosion_count();
     const explosions = [];
@@ -1595,7 +1667,9 @@ export class WasmManager {
    * @returns {number} Heat source ID
    */
   createHeatSource(x, y, z, temperature, radius) {
-    if (!this.isLoaded || typeof this.exports.create_heat_source !== 'function') {\n      return 0xFFFFFFFF;\n    }
+    if (!this.isLoaded || typeof this.exports.create_heat_source !== 'function') {
+      return 0xFFFFFFFF;
+    }
     return this.exports.create_heat_source(x, y, z, temperature, radius);
   }
 
@@ -1608,7 +1682,9 @@ export class WasmManager {
    * @param {number} frequency - Sound frequency
    */
   emitSound(x, y, z, volume, frequency = 1000) {
-    if (!this.isLoaded || typeof this.exports.emit_sound !== 'function') {\n      return;\n    }
+    if (!this.isLoaded || typeof this.exports.emit_sound !== 'function') {
+      return;
+    }
     this.exports.emit_sound(x, y, z, volume, frequency);
   }
 
@@ -1617,7 +1693,9 @@ export class WasmManager {
    * @returns {Array} Array of sound event data
    */
   getSoundEvents() {
-    if (!this.isLoaded || typeof this.exports.get_sound_event_count !== 'function') {\n      return [];\n    }
+    if (!this.isLoaded || typeof this.exports.get_sound_event_count !== 'function') {
+      return [];
+    }
     
     const count = this.exports.get_sound_event_count();
     const sounds = [];
@@ -1638,7 +1716,9 @@ export class WasmManager {
    * @returns {Array} Array of hazard data
    */
   getHazards() {
-    if (!this.isLoaded || typeof this.exports.get_hazard_count !== 'function') {\n      return [];\n    }
+    if (!this.isLoaded || typeof this.exports.get_hazard_count !== 'function') {
+      return [];
+    }
     
     try {
       const count = this.exports.get_hazard_count();
@@ -1674,7 +1754,9 @@ export class WasmManager {
    * @returns {number} Number of wolves
    */
   getWolfCount() {
-    if (!this.isLoaded || typeof this.exports.get_enemy_count !== 'function') {\n      return 0;\n    }
+    if (!this.isLoaded || typeof this.exports.get_enemy_count !== 'function') {
+      return 0;
+    }
     return this.exports.get_enemy_count();
   }
 
@@ -1870,7 +1952,7 @@ export class WasmManager {
         fallbackState.lastUpdate = performance.now();
       },
       
-      set_player_input: (inputX, inputY, isRolling, isJumping, lightAttack, heavyAttack, isBlocking, special) => {
+      set_player_input: (inputX, inputY, isRolling, isJumping, lightAttack, heavyAttack, isBlocking, _special) => {
         trackCall('set_player_input');
         
         // Validate and clamp inputs
@@ -1956,7 +2038,7 @@ export class WasmManager {
         return 0; // Roll failed - not enough stamina
       },
       
-      set_blocking: (on, faceX, faceY, nowSeconds) => {
+      set_blocking: (on, _faceX, _faceY, _nowSeconds) => {
         trackCall('set_blocking');
         fallbackState.isBlocking = Boolean(on);
         return fallbackState.isBlocking ? 1 : 0;
@@ -1967,13 +2049,13 @@ export class WasmManager {
         return fallbackState.isBlocking ? 1 : 0;
       },
       
-      handle_incoming_attack: (ax, ay, dirX, dirY, nowSeconds) => {
+      handle_incoming_attack: (_ax, _ay, _dirX, _dirY, _nowSeconds) => {
         trackCall('handle_incoming_attack');
         return fallbackState.isBlocking ? 1 : 0; // Block or take damage
       },
       
       // Game loop functions with basic state management
-      init_run: (seed, startWeapon) => {
+      init_run: (seed, _startWeapon) => {
         trackCall('init_run');
         if (typeof seed !== "undefined" && seed !== null) {
           this.runSeed = BigInt(seed);
@@ -2025,22 +2107,22 @@ export class WasmManager {
         return 0; // No choices in fallback mode
       },
       
-      get_choice_id: (index) => {
+      get_choice_id: (_index) => {
         trackCall('get_choice_id');
         return 0;
       },
       
-      get_choice_type: (index) => {
+      get_choice_type: (_index) => {
         trackCall('get_choice_type');
         return 0;
       },
       
-      get_choice_rarity: (index) => {
+      get_choice_rarity: (_index) => {
         trackCall('get_choice_rarity');
         return 0;
       },
       
-      get_choice_tags: (index) => {
+      get_choice_tags: (_index) => {
         trackCall('get_choice_tags');
         return 0;
       },
@@ -2160,7 +2242,7 @@ export class WasmManager {
         trackCall('get_achievement_count');
         return 0; // No achievements in fallback mode
       },
-      get_achievement_id: (index) => {
+      get_achievement_id: (_index) => {
         trackCall('get_achievement_id');
         return 0;
       },

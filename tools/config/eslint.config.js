@@ -45,7 +45,7 @@ export default [
       'no-unneeded-ternary': 'error',
       'no-unreachable-loop': 'error',
       'no-unused-expressions': 'error',
-      'no-unused-vars': ['error', {caughtErrors: 'none'}],
+      'no-unused-vars': ['error', {caughtErrors: 'none', argsIgnorePattern: '^_'}],
       'no-use-before-define': ['error', {variables: false}],
       'no-useless-assignment': 'error',
       'no-useless-call': 'error',

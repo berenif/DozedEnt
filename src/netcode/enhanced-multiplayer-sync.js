@@ -242,4 +242,649 @@ export class EnhancedMultiplayerSync {
     }
     
     // Set up recovery handlers
-    const recoveryHandlers = {\n      onDesyncDetected: (desyncInfo) => {\n        this.handleDesyncDetected(desyncInfo)\n      },\n      onRecoveryStarted: (method, frame) => {\n        this.handleRecoveryStarted(method, frame)\n      },\n      onRecoveryCompleted: (success, method) => {\n        this.handleRecoveryCompleted(success, method)\n      },\n      requestStateResync: async (playerId, frame) => {\n        return this.requestStateResync(playerId, frame)\n      },\n      requestFullResync: async () => {\n        return this.requestFullResync()\n      }\n    }\n    \n    this.desyncDetection.initialize(validators, recoveryHandlers)\n    \n    // Connect rollback sync tests to desync detection\n    this.rollbackNetcode.onSendSyncTest = (frame, checksumData) => {\n      this.desyncDetection.recordLocalChecksums(frame)\n      this.networkIntegration.broadcastMessage({\n        type: 'sync_test',\n        frame,\n        checksums: checksumData,\n        timestamp: performance.now()\n      })\n    }\n    \n    this.rollbackNetcode.onDesyncDetected = (playerId, frame, desyncInfo) => {\n      this.desyncDetection.recordRemoteChecksums(playerId, frame, desyncInfo)\n    }\n    \n    this.logger.debug('Rollback netcode integrated with desync detection')\n  }\n  \n  /**\n   * Integrate host migration with network diagnostics\n   */\n  integrateHostMigrationWithDiagnostics() {\n    // Initialize host migration with game and network integration\n    this.hostMigration.initialize(\n      this.gameIntegration,\n      this.networkIntegration,\n      {\n        onMigrationStarted: (newHost, reason) => {\n          this.handleMigrationStarted(newHost, reason)\n        },\n        onMigrationCompleted: (success, newHost) => {\n          this.handleMigrationCompleted(success, newHost)\n        },\n        onHostChanged: (newHost, oldHost) => {\n          this.handleHostChanged(newHost, oldHost)\n        }\n      }\n    )\n    \n    // Initialize network diagnostics\n    this.networkDiagnostics.initialize(\n      this.networkIntegration,\n      {\n        onQualityChanged: (peerId, quality) => {\n          this.handlePeerQualityChanged(peerId, quality)\n        },\n        onNetworkConditionChanged: (condition) => {\n          this.handleNetworkConditionChanged(condition)\n        }\n      }\n    )\n    \n    // Connect quality updates to host migration\n    this.networkDiagnostics.eventHandlers.onQualityChanged = (peerId, quality) => {\n      this.hostMigration.updatePlayer(peerId, { connectionQuality: quality })\n    }\n    \n    this.logger.debug('Host migration integrated with network diagnostics')\n  }\n  \n  /**\n   * Integrate performance optimizer with network diagnostics\n   */\n  integrateOptimizerWithDiagnostics() {\n    // Connect network quality to optimizer\n    this.networkDiagnostics.eventHandlers.onNetworkConditionChanged = (condition) => {\n      this.performanceOptimizer.updateNetworkQuality(condition)\n    }\n    \n    this.logger.debug('Performance optimizer integrated with network diagnostics')\n  }\n  \n  /**\n   * Set up event coordination across all systems\n   */\n  setupEventCoordination() {\n    // Coordinate network events\n    const originalOnPeerConnected = this.networkIntegration.onPeerConnected\n    this.networkIntegration.onPeerConnected = (peerId) => {\n      this.handlePeerConnected(peerId)\n      if (originalOnPeerConnected) originalOnPeerConnected(peerId)\n    }\n    \n    const originalOnPeerDisconnected = this.networkIntegration.onPeerDisconnected\n    this.networkIntegration.onPeerDisconnected = (peerId) => {\n      this.handlePeerDisconnected(peerId)\n      if (originalOnPeerDisconnected) originalOnPeerDisconnected(peerId)\n    }\n  }\n  \n  /**\n   * Initialize individual systems\n   */\n  async initializeIndividualSystems() {\n    // Initialize rollback netcode\n    if (this.rollbackNetcode) {\n      this.rollbackNetcode.initialize(\n        this.gameIntegration,\n        this.sessionState.localPlayerId,\n        this.gameIntegration.wasmModule\n      )\n    }\n    \n    // Add local player to all systems\n    if (this.sessionState.localPlayerId) {\n      this.addPlayerToAllSystems(this.sessionState.localPlayerId, { local: true })\n    }\n  }\n  \n  /**\n   * Start a multiplayer session as host\n   */\n  async startAsHost(localPlayerId, gameConfig = {}) {\n    this.sessionState.localPlayerId = localPlayerId\n    this.sessionState.isHost = true\n    this.sessionState.gameState = 'connecting'\n    \n    this.logger.info('Starting multiplayer session as host', { localPlayerId })\n    \n    // Initialize as host in all systems\n    if (this.hostMigration) {\n      this.hostMigration.becomeHost(localPlayerId, this.sessionState.players)\n    }\n    \n    if (this.rollbackNetcode) {\n      this.rollbackNetcode.initialize(\n        this.gameIntegration,\n        localPlayerId,\n        this.gameIntegration.wasmModule\n      )\n      this.rollbackNetcode.start()\n    }\n    \n    this.addPlayerToAllSystems(localPlayerId, { local: true, isHost: true })\n    \n    this.sessionState.gameState = 'connected'\n    this.stats.sessionsStarted++\n    \n    this.notifyEvent('onSyncStateChanged', 'host_ready')\n  }\n  \n  /**\n   * Join a multiplayer session as client\n   */\n  async joinAsClient(localPlayerId, hostId) {\n    this.sessionState.localPlayerId = localPlayerId\n    this.sessionState.isHost = false\n    this.sessionState.gameState = 'connecting'\n    \n    this.logger.info('Joining multiplayer session as client', { localPlayerId, hostId })\n    \n    // Initialize as client in all systems\n    if (this.hostMigration) {\n      this.hostMigration.joinAsPlayer(localPlayerId, hostId, this.sessionState.players)\n    }\n    \n    if (this.rollbackNetcode) {\n      this.rollbackNetcode.initialize(\n        this.gameIntegration,\n        localPlayerId,\n        this.gameIntegration.wasmModule\n      )\n      this.rollbackNetcode.start()\n    }\n    \n    this.addPlayerToAllSystems(localPlayerId, { local: true, isHost: false })\n    this.addPlayerToAllSystems(hostId, { local: false, isHost: true })\n    \n    this.sessionState.gameState = 'connected'\n    \n    this.notifyEvent('onSyncStateChanged', 'client_connected')\n  }\n  \n  /**\n   * Add a player to all systems\n   */\n  addPlayerToAllSystems(playerId, playerInfo = {}) {\n    const player = {\n      id: playerId,\n      local: false,\n      isHost: false,\n      connectionQuality: 'unknown',\n      latency: 0,\n      lastSeen: performance.now(),\n      ...playerInfo\n    }\n    \n    this.sessionState.players.set(playerId, player)\n    \n    // Add to rollback netcode\n    if (this.rollbackNetcode && !player.local) {\n      this.rollbackNetcode.addPlayer(playerId)\n    }\n    \n    // Add to desync detection\n    if (this.desyncDetection) {\n      this.desyncDetection.addPlayer(playerId)\n    }\n    \n    // Add to host migration\n    if (this.hostMigration) {\n      this.hostMigration.addPlayer(playerId, player)\n    }\n    \n    // Add to network diagnostics\n    if (this.networkDiagnostics) {\n      this.networkDiagnostics.addPeer(playerId, player)\n    }\n    \n    this.logger.info('Player added to all systems', { playerId, playerInfo: player })\n    this.notifyEvent('onPlayerJoined', playerId)\n  }\n  \n  /**\n   * Remove a player from all systems\n   */\n  removePlayerFromAllSystems(playerId) {\n    const player = this.sessionState.players.get(playerId)\n    if (!player) return\n    \n    this.sessionState.players.delete(playerId)\n    \n    // Remove from all systems\n    if (this.rollbackNetcode) {\n      this.rollbackNetcode.removePlayer(playerId)\n    }\n    \n    if (this.desyncDetection) {\n      this.desyncDetection.removePlayer(playerId)\n    }\n    \n    if (this.hostMigration) {\n      this.hostMigration.removePlayer(playerId)\n    }\n    \n    if (this.networkDiagnostics) {\n      this.networkDiagnostics.removePeer(playerId)\n    }\n    \n    this.logger.info('Player removed from all systems', { playerId })\n    this.notifyEvent('onPlayerLeft', playerId)\n  }\n  \n  /**\n   * Handle network message\n   */\n  handleMessage(message, senderId) {\n    // Route message to appropriate system\n    switch (message.type) {\n      case 'sync_test':\n        if (this.desyncDetection) {\n          this.desyncDetection.recordRemoteChecksums(senderId, message.frame, message.checksums)\n        }\n        break\n        \n      case 'rollback_input':\n        if (this.rollbackNetcode) {\n          this.rollbackNetcode.receiveRemoteInput(senderId, message.frame, message.input)\n        }\n        break\n        \n      case 'host_migration':\n      case 'host_ready':\n      case 'state_request':\n      case 'state_response':\n        if (this.hostMigration) {\n          this.hostMigration.handleMessage(message, senderId)\n        }\n        break\n        \n      case 'network_ping':\n      case 'network_pong':\n      case 'bandwidth_test':\n      case 'bandwidth_ack':\n        if (this.networkDiagnostics) {\n          this.networkDiagnostics.handleMessage(message, senderId)\n        }\n        break\n        \n      default:\n        this.logger.debug('Unknown message type', { type: message.type, senderId })\n    }\n  }\n  \n  /**\n   * Send local input\n   */\n  sendInput(input) {\n    if (!this.rollbackNetcode) return\n    \n    let processedInput = input\n    \n    // Apply performance optimization to input\n    if (this.performanceOptimizer) {\n      const optimization = this.performanceOptimizer.optimizeInputBatching(input, this.rollbackNetcode.currentFrame)\n      if (!optimization.immediate) {\n        return // Input was batched\n      }\n      processedInput = optimization.inputs[0] || input\n    }\n    \n    // Send through rollback netcode\n    this.rollbackNetcode.addInput(\n      this.sessionState.localPlayerId,\n      this.rollbackNetcode.currentFrame + this.rollbackNetcode.config.inputDelayFrames,\n      processedInput\n    )\n  }\n  \n  /**\n   * Event handlers\n   */\n  \n  handlePeerConnected(peerId) {\n    this.logger.info('Peer connected', { peerId })\n    // Peer will be added when we receive their join message\n  }\n  \n  handlePeerDisconnected(peerId) {\n    this.logger.info('Peer disconnected', { peerId })\n    this.removePlayerFromAllSystems(peerId)\n  }\n  \n  handleDesyncDetected(desyncInfo) {\n    this.logger.warn('Desync detected', desyncInfo)\n    this.stats.totalDesyncs++\n    \n    if (this.config.autoRecovery && this.rollbackNetcode) {\n      // Attempt rollback recovery\n      const goodFrame = this.rollbackNetcode.findSavedState(desyncInfo.frame - 5)\n      if (goodFrame) {\n        this.rollbackNetcode.rollback(goodFrame.frame)\n        this.logger.info('Attempted rollback recovery', { toFrame: goodFrame.frame })\n      }\n    }\n    \n    this.notifyEvent('onDesyncDetected', desyncInfo)\n  }\n  \n  handleRecoveryStarted(method, frame) {\n    this.logger.info('Recovery started', { method, frame })\n    \n    if (this.gameIntegration.pauseGame) {\n      this.gameIntegration.pauseGame()\n    }\n    \n    this.sessionState.gameState = 'recovering'\n  }\n  \n  handleRecoveryCompleted(success, method) {\n    this.logger.info('Recovery completed', { success, method })\n    this.stats.totalRecoveries++\n    \n    if (this.gameIntegration.resumeGame) {\n      this.gameIntegration.resumeGame()\n    }\n    \n    this.sessionState.gameState = 'playing'\n    this.notifyEvent('onRecoveryCompleted', success)\n  }\n  \n  handleMigrationStarted(newHost, reason) {\n    this.logger.info('Host migration started', { newHost, reason })\n    this.sessionState.gameState = 'migrating'\n  }\n  \n  handleMigrationCompleted(success, newHost) {\n    this.logger.info('Host migration completed', { success, newHost })\n    this.stats.totalHostMigrations++\n    \n    if (success) {\n      this.sessionState.gameState = 'playing'\n    } else {\n      this.sessionState.gameState = 'disconnected'\n    }\n  }\n  \n  handleHostChanged(newHost, oldHost) {\n    this.logger.info('Host changed', { newHost, oldHost })\n    \n    // Update local state\n    this.sessionState.isHost = (newHost === this.sessionState.localPlayerId)\n    \n    // Update player info\n    if (this.sessionState.players.has(oldHost)) {\n      this.sessionState.players.get(oldHost).isHost = false\n    }\n    if (this.sessionState.players.has(newHost)) {\n      this.sessionState.players.get(newHost).isHost = true\n    }\n    \n    this.notifyEvent('onHostChanged', newHost)\n  }\n  \n  handlePeerQualityChanged(peerId, quality) {\n    const player = this.sessionState.players.get(peerId)\n    if (player) {\n      player.connectionQuality = quality\n    }\n  }\n  \n  handleNetworkConditionChanged(condition) {\n    this.sessionState.networkQuality = condition\n    this.notifyEvent('onNetworkQualityChanged', condition)\n  }\n  \n  /**\n   * Request state resync from a player\n   */\n  async requestStateResync(playerId, frame) {\n    return new Promise((resolve, reject) => {\n      const timeout = setTimeout(() => {\n        reject(new Error('State resync timeout'))\n      }, 5000)\n      \n      const requestId = `resync_${Date.now()}`\n      \n      // Set up response handler\n      const handleResponse = (message) => {\n        if (message.type === 'state_response' && message.requestId === requestId) {\n          clearTimeout(timeout)\n          resolve(message.state)\n        }\n      }\n      \n      // Send request\n      this.networkIntegration.sendToPeer(playerId, {\n        type: 'state_request',\n        requestId,\n        frame,\n        timestamp: performance.now()\n      })\n    })\n  }\n  \n  /**\n   * Request full resync from all players\n   */\n  async requestFullResync() {\n    const players = Array.from(this.sessionState.players.keys())\n      .filter(id => id !== this.sessionState.localPlayerId)\n    \n    for (const playerId of players) {\n      try {\n        const state = await this.requestStateResync(playerId, this.rollbackNetcode?.currentFrame || 0)\n        if (state) {\n          return state // Return first successful state\n        }\n      } catch (error) {\n        this.logger.debug('Failed to get state from player', { playerId, error: error.message })\n      }\n    }\n    \n    throw new Error('No players could provide state for resync')\n  }\n  \n  /**\n   * Get comprehensive system status\n   */\n  getSystemStatus() {\n    const status = {\n      session: {\n        localPlayerId: this.sessionState.localPlayerId,\n        isHost: this.sessionState.isHost,\n        gameState: this.sessionState.gameState,\n        networkQuality: this.sessionState.networkQuality,\n        playerCount: this.sessionState.players.size\n      },\n      \n      systems: {\n        rollback: this.rollbackNetcode ? {\n          enabled: true,\n          running: this.rollbackNetcode.running,\n          currentFrame: this.rollbackNetcode.currentFrame,\n          metrics: this.rollbackNetcode.getMetrics()\n        } : { enabled: false },\n        \n        desyncDetection: this.desyncDetection ? {\n          enabled: true,\n          stats: this.desyncDetection.getStats()\n        } : { enabled: false },\n        \n        hostMigration: this.hostMigration ? {\n          enabled: true,\n          stats: this.hostMigration.getStats()\n        } : { enabled: false },\n        \n        networkDiagnostics: this.networkDiagnostics ? {\n          enabled: true,\n          report: this.networkDiagnostics.getDiagnosticsReport()\n        } : { enabled: false },\n        \n        performanceOptimizer: this.performanceOptimizer ? {\n          enabled: true,\n          stats: this.performanceOptimizer.getPerformanceStats()\n        } : { enabled: false }\n      },\n      \n      players: Array.from(this.sessionState.players.values()),\n      \n      globalStats: {\n        ...this.stats,\n        uptime: performance.now() - (this.stats.lastStatsUpdate || performance.now())\n      }\n    }\n    \n    return status\n  }\n  \n  /**\n   * Get system recommendations\n   */\n  getSystemRecommendations() {\n    const recommendations = []\n    \n    // Network diagnostics recommendations\n    if (this.networkDiagnostics) {\n      recommendations.push(...this.networkDiagnostics.getNetworkRecommendations())\n    }\n    \n    // Performance recommendations\n    if (this.performanceOptimizer) {\n      const perfStats = this.performanceOptimizer.getPerformanceStats()\n      \n      if (perfStats.compression.compressionRatio > 0.8) {\n        recommendations.push({\n          type: 'info',\n          category: 'performance',\n          message: 'State compression is not very effective. Consider optimizing state structure.',\n          priority: 'low'\n        })\n      }\n      \n      if (perfStats.frameProcessing.frameSkipRate > 0.1) {\n        recommendations.push({\n          type: 'warning',\n          category: 'performance',\n          message: 'High frame skip rate detected. Consider reducing game complexity or improving hardware.',\n          priority: 'medium'\n        })\n      }\n    }\n    \n    // Desync recommendations\n    if (this.desyncDetection) {\n      const stats = this.desyncDetection.getStats()\n      \n      if (stats.global.successRate < 0.8) {\n        recommendations.push({\n          type: 'error',\n          category: 'sync',\n          message: 'Low desync recovery success rate. Check network stability and game determinism.',\n          priority: 'high'\n        })\n      }\n    }\n    \n    return recommendations.sort((a, b) => {\n      const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 }\n      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)\n    })\n  }\n  \n  /**\n   * Export comprehensive diagnostics data\n   */\n  exportDiagnosticsData() {\n    return {\n      timestamp: new Date().toISOString(),\n      systemStatus: this.getSystemStatus(),\n      recommendations: this.getSystemRecommendations(),\n      detailedMetrics: {\n        rollback: this.rollbackNetcode?.getMetrics(),\n        desync: this.desyncDetection?.getStats(),\n        hostMigration: this.hostMigration?.getStats(),\n        networkDiagnostics: this.networkDiagnostics?.getDiagnosticsReport(),\n        performance: this.performanceOptimizer?.getPerformanceStats()\n      }\n    }\n  }\n  \n  /**\n   * Notify event handlers\n   */\n  notifyEvent(eventName, data) {\n    if (this.eventHandlers[eventName]) {\n      try {\n        this.eventHandlers[eventName](data)\n      } catch (error) {\n        this.logger.error('Event handler error', { eventName, error: error.message })\n      }\n    }\n  }\n  \n  /**\n   * Shutdown all systems\n   */\n  shutdown() {\n    this.logger.info('Shutting down enhanced multiplayer sync')\n    \n    if (this.rollbackNetcode) {\n      this.rollbackNetcode.stop()\n    }\n    \n    if (this.desyncDetection) {\n      this.desyncDetection.reset()\n    }\n    \n    if (this.hostMigration) {\n      this.hostMigration.shutdown()\n    }\n    \n    if (this.networkDiagnostics) {\n      this.networkDiagnostics.shutdown()\n    }\n    \n    if (this.performanceOptimizer) {\n      this.performanceOptimizer.shutdown()\n    }\n    \n    this.sessionState.gameState = 'disconnected'\n    this.sessionState.players.clear()\n  }\n}\n\nexport default EnhancedMultiplayerSync
+    const recoveryHandlers = {
+      onDesyncDetected: (desyncInfo) => {
+        this.handleDesyncDetected(desyncInfo)
+      },
+      onRecoveryStarted: (method, frame) => {
+        this.handleRecoveryStarted(method, frame)
+      },
+      onRecoveryCompleted: (success, method) => {
+        this.handleRecoveryCompleted(success, method)
+      },
+      requestStateResync: async (playerId, frame) => {
+        return this.requestStateResync(playerId, frame)
+      },
+      requestFullResync: async () => {
+        return this.requestFullResync()
+      }
+    }
+    
+    this.desyncDetection.initialize(validators, recoveryHandlers)
+    
+    // Connect rollback sync tests to desync detection
+    this.rollbackNetcode.onSendSyncTest = (frame, checksumData) => {
+      this.desyncDetection.recordLocalChecksums(frame)
+      this.networkIntegration.broadcastMessage({
+        type: 'sync_test',
+        frame,
+        checksums: checksumData,
+        timestamp: performance.now()
+      })
+    }
+    
+    this.rollbackNetcode.onDesyncDetected = (playerId, frame, desyncInfo) => {
+      this.desyncDetection.recordRemoteChecksums(playerId, frame, desyncInfo)
+    }
+    
+    this.logger.debug('Rollback netcode integrated with desync detection')
+  }
+  
+  /**
+   * Integrate host migration with network diagnostics
+   */
+  integrateHostMigrationWithDiagnostics() {
+    // Initialize host migration with game and network integration
+    this.hostMigration.initialize(
+      this.gameIntegration,
+      this.networkIntegration,
+      {
+        onMigrationStarted: (newHost, reason) => {
+          this.handleMigrationStarted(newHost, reason)
+        },
+        onMigrationCompleted: (success, newHost) => {
+          this.handleMigrationCompleted(success, newHost)
+        },
+        onHostChanged: (newHost, oldHost) => {
+          this.handleHostChanged(newHost, oldHost)
+        }
+      }
+    )
+    
+    // Initialize network diagnostics
+    this.networkDiagnostics.initialize(
+      this.networkIntegration,
+      {
+        onQualityChanged: (peerId, quality) => {
+          this.handlePeerQualityChanged(peerId, quality)
+        },
+        onNetworkConditionChanged: (condition) => {
+          this.handleNetworkConditionChanged(condition)
+        }
+      }
+    )
+    
+    // Connect quality updates to host migration
+    this.networkDiagnostics.eventHandlers.onQualityChanged = (peerId, quality) => {
+      this.hostMigration.updatePlayer(peerId, { connectionQuality: quality })
+    }
+    
+    this.logger.debug('Host migration integrated with network diagnostics')
+  }
+  
+  /**
+   * Integrate performance optimizer with network diagnostics
+   */
+  integrateOptimizerWithDiagnostics() {
+    // Connect network quality to optimizer
+    this.networkDiagnostics.eventHandlers.onNetworkConditionChanged = (condition) => {
+      this.performanceOptimizer.updateNetworkQuality(condition)
+    }
+    
+    this.logger.debug('Performance optimizer integrated with network diagnostics')
+  }
+  
+  /**
+   * Set up event coordination across all systems
+   */
+  setupEventCoordination() {
+    // Coordinate network events
+    const originalOnPeerConnected = this.networkIntegration.onPeerConnected
+    this.networkIntegration.onPeerConnected = (peerId) => {
+      this.handlePeerConnected(peerId)
+      if (originalOnPeerConnected) originalOnPeerConnected(peerId)
+    }
+    
+    const originalOnPeerDisconnected = this.networkIntegration.onPeerDisconnected
+    this.networkIntegration.onPeerDisconnected = (peerId) => {
+      this.handlePeerDisconnected(peerId)
+      if (originalOnPeerDisconnected) originalOnPeerDisconnected(peerId)
+    }
+  }
+  
+  /**
+   * Initialize individual systems
+   */
+  async initializeIndividualSystems() {
+    // Initialize rollback netcode
+    if (this.rollbackNetcode) {
+      this.rollbackNetcode.initialize(
+        this.gameIntegration,
+        this.sessionState.localPlayerId,
+        this.gameIntegration.wasmModule
+      )
+    }
+    
+    // Add local player to all systems
+    if (this.sessionState.localPlayerId) {
+      this.addPlayerToAllSystems(this.sessionState.localPlayerId, { local: true })
+    }
+  }
+  
+  /**
+   * Start a multiplayer session as host
+   */
+  async startAsHost(localPlayerId, gameConfig = {}) {
+    this.sessionState.localPlayerId = localPlayerId
+    this.sessionState.isHost = true
+    this.sessionState.gameState = 'connecting'
+    
+    this.logger.info('Starting multiplayer session as host', { localPlayerId })
+    
+    // Initialize as host in all systems
+    if (this.hostMigration) {
+      this.hostMigration.becomeHost(localPlayerId, this.sessionState.players)
+    }
+    
+    if (this.rollbackNetcode) {
+      this.rollbackNetcode.initialize(
+        this.gameIntegration,
+        localPlayerId,
+        this.gameIntegration.wasmModule
+      )
+      this.rollbackNetcode.start()
+    }
+    
+    this.addPlayerToAllSystems(localPlayerId, { local: true, isHost: true })
+    
+    this.sessionState.gameState = 'connected'
+    this.stats.sessionsStarted++
+    
+    this.notifyEvent('onSyncStateChanged', 'host_ready')
+  }
+  
+  /**
+   * Join a multiplayer session as client
+   */
+  async joinAsClient(localPlayerId, hostId) {
+    this.sessionState.localPlayerId = localPlayerId
+    this.sessionState.isHost = false
+    this.sessionState.gameState = 'connecting'
+    
+    this.logger.info('Joining multiplayer session as client', { localPlayerId, hostId })
+    
+    // Initialize as client in all systems
+    if (this.hostMigration) {
+      this.hostMigration.joinAsPlayer(localPlayerId, hostId, this.sessionState.players)
+    }
+    
+    if (this.rollbackNetcode) {
+      this.rollbackNetcode.initialize(
+        this.gameIntegration,
+        localPlayerId,
+        this.gameIntegration.wasmModule
+      )
+      this.rollbackNetcode.start()
+    }
+    
+    this.addPlayerToAllSystems(localPlayerId, { local: true, isHost: false })
+    this.addPlayerToAllSystems(hostId, { local: false, isHost: true })
+    
+    this.sessionState.gameState = 'connected'
+    
+    this.notifyEvent('onSyncStateChanged', 'client_connected')
+  }
+  
+  /**
+   * Add a player to all systems
+   */
+  addPlayerToAllSystems(playerId, playerInfo = {}) {
+    const player = {
+      id: playerId,
+      local: false,
+      isHost: false,
+      connectionQuality: 'unknown',
+      latency: 0,
+      lastSeen: performance.now(),
+      ...playerInfo
+    }
+    
+    this.sessionState.players.set(playerId, player)
+    
+    // Add to rollback netcode
+    if (this.rollbackNetcode && !player.local) {
+      this.rollbackNetcode.addPlayer(playerId)
+    }
+    
+    // Add to desync detection
+    if (this.desyncDetection) {
+      this.desyncDetection.addPlayer(playerId)
+    }
+    
+    // Add to host migration
+    if (this.hostMigration) {
+      this.hostMigration.addPlayer(playerId, player)
+    }
+    
+    // Add to network diagnostics
+    if (this.networkDiagnostics) {
+      this.networkDiagnostics.addPeer(playerId, player)
+    }
+    
+    this.logger.info('Player added to all systems', { playerId, playerInfo: player })
+    this.notifyEvent('onPlayerJoined', playerId)
+  }
+  
+  /**
+   * Remove a player from all systems
+   */
+  removePlayerFromAllSystems(playerId) {
+    const player = this.sessionState.players.get(playerId)
+    if (!player) return
+    
+    this.sessionState.players.delete(playerId)
+    
+    // Remove from all systems
+    if (this.rollbackNetcode) {
+      this.rollbackNetcode.removePlayer(playerId)
+    }
+    
+    if (this.desyncDetection) {
+      this.desyncDetection.removePlayer(playerId)
+    }
+    
+    if (this.hostMigration) {
+      this.hostMigration.removePlayer(playerId)
+    }
+    
+    if (this.networkDiagnostics) {
+      this.networkDiagnostics.removePeer(playerId)
+    }
+    
+    this.logger.info('Player removed from all systems', { playerId })
+    this.notifyEvent('onPlayerLeft', playerId)
+  }
+  
+  /**
+   * Handle network message
+   */
+  handleMessage(message, senderId) {
+    // Route message to appropriate system
+    switch (message.type) {
+      case 'sync_test':
+        if (this.desyncDetection) {
+          this.desyncDetection.recordRemoteChecksums(senderId, message.frame, message.checksums)
+        }
+        break
+        
+      case 'rollback_input':
+        if (this.rollbackNetcode) {
+          this.rollbackNetcode.receiveRemoteInput(senderId, message.frame, message.input)
+        }
+        break
+        
+      case 'host_migration':
+      case 'host_ready':
+      case 'state_request':
+      case 'state_response':
+        if (this.hostMigration) {
+          this.hostMigration.handleMessage(message, senderId)
+        }
+        break
+        
+      case 'network_ping':
+      case 'network_pong':
+      case 'bandwidth_test':
+      case 'bandwidth_ack':
+        if (this.networkDiagnostics) {
+          this.networkDiagnostics.handleMessage(message, senderId)
+        }
+        break
+        
+      default:
+        this.logger.debug('Unknown message type', { type: message.type, senderId })
+    }
+  }
+  
+  /**
+   * Send local input
+   */
+  sendInput(input) {
+    if (!this.rollbackNetcode) return
+    
+    let processedInput = input
+    
+    // Apply performance optimization to input
+    if (this.performanceOptimizer) {
+      const optimization = this.performanceOptimizer.optimizeInputBatching(input, this.rollbackNetcode.currentFrame)
+      if (!optimization.immediate) {
+        return // Input was batched
+      }
+      processedInput = optimization.inputs[0] || input
+    }
+    
+    // Send through rollback netcode
+    this.rollbackNetcode.addInput(
+      this.sessionState.localPlayerId,
+      this.rollbackNetcode.currentFrame + this.rollbackNetcode.config.inputDelayFrames,
+      processedInput
+    )
+  }
+  
+  /**
+   * Event handlers
+   */
+  
+  handlePeerConnected(peerId) {
+    this.logger.info('Peer connected', { peerId })
+    // Peer will be added when we receive their join message
+  }
+  
+  handlePeerDisconnected(peerId) {
+    this.logger.info('Peer disconnected', { peerId })
+    this.removePlayerFromAllSystems(peerId)
+  }
+  
+  handleDesyncDetected(desyncInfo) {
+    this.logger.warn('Desync detected', desyncInfo)
+    this.stats.totalDesyncs++
+    
+    if (this.config.autoRecovery && this.rollbackNetcode) {
+      // Attempt rollback recovery
+      const goodFrame = this.rollbackNetcode.findSavedState(desyncInfo.frame - 5)
+      if (goodFrame) {
+        this.rollbackNetcode.rollback(goodFrame.frame)
+        this.logger.info('Attempted rollback recovery', { toFrame: goodFrame.frame })
+      }
+    }
+    
+    this.notifyEvent('onDesyncDetected', desyncInfo)
+  }
+  
+  handleRecoveryStarted(method, frame) {
+    this.logger.info('Recovery started', { method, frame })
+    
+    if (this.gameIntegration.pauseGame) {
+      this.gameIntegration.pauseGame()
+    }
+    
+    this.sessionState.gameState = 'recovering'
+  }
+  
+  handleRecoveryCompleted(success, method) {
+    this.logger.info('Recovery completed', { success, method })
+    this.stats.totalRecoveries++
+    
+    if (this.gameIntegration.resumeGame) {
+      this.gameIntegration.resumeGame()
+    }
+    
+    this.sessionState.gameState = 'playing'
+    this.notifyEvent('onRecoveryCompleted', success)
+  }
+  
+  handleMigrationStarted(newHost, reason) {
+    this.logger.info('Host migration started', { newHost, reason })
+    this.sessionState.gameState = 'migrating'
+  }
+  
+  handleMigrationCompleted(success, newHost) {
+    this.logger.info('Host migration completed', { success, newHost })
+    this.stats.totalHostMigrations++
+    
+    if (success) {
+      this.sessionState.gameState = 'playing'
+    } else {
+      this.sessionState.gameState = 'disconnected'
+    }
+  }
+  
+  handleHostChanged(newHost, oldHost) {
+    this.logger.info('Host changed', { newHost, oldHost })
+    
+    // Update local state
+    this.sessionState.isHost = (newHost === this.sessionState.localPlayerId)
+    
+    // Update player info
+    if (this.sessionState.players.has(oldHost)) {
+      this.sessionState.players.get(oldHost).isHost = false
+    }
+    if (this.sessionState.players.has(newHost)) {
+      this.sessionState.players.get(newHost).isHost = true
+    }
+    
+    this.notifyEvent('onHostChanged', newHost)
+  }
+  
+  handlePeerQualityChanged(peerId, quality) {
+    const player = this.sessionState.players.get(peerId)
+    if (player) {
+      player.connectionQuality = quality
+    }
+  }
+  
+  handleNetworkConditionChanged(condition) {
+    this.sessionState.networkQuality = condition
+    this.notifyEvent('onNetworkQualityChanged', condition)
+  }
+  
+  /**
+   * Request state resync from a player
+   */
+  async requestStateResync(playerId, frame) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('State resync timeout'))
+      }, 5000)
+      
+      const requestId = `resync_${Date.now()}`
+      
+      // Set up response handler
+      const handleResponse = (message) => {
+        if (message.type === 'state_response' && message.requestId === requestId) {
+          clearTimeout(timeout)
+          resolve(message.state)
+        }
+      }
+      
+      // Send request
+      this.networkIntegration.sendToPeer(playerId, {
+        type: 'state_request',
+        requestId,
+        frame,
+        timestamp: performance.now()
+      })
+    })
+  }
+  
+  /**
+   * Request full resync from all players
+   */
+  async requestFullResync() {
+    const players = Array.from(this.sessionState.players.keys())
+      .filter(id => id !== this.sessionState.localPlayerId)
+    
+    for (const playerId of players) {
+      try {
+        const state = await this.requestStateResync(playerId, this.rollbackNetcode?.currentFrame || 0)
+        if (state) {
+          return state // Return first successful state
+        }
+      } catch (error) {
+        this.logger.debug('Failed to get state from player', { playerId, error: error.message })
+      }
+    }
+    
+    throw new Error('No players could provide state for resync')
+  }
+  
+  /**
+   * Get comprehensive system status
+   */
+  getSystemStatus() {
+    const status = {
+      session: {
+        localPlayerId: this.sessionState.localPlayerId,
+        isHost: this.sessionState.isHost,
+        gameState: this.sessionState.gameState,
+        networkQuality: this.sessionState.networkQuality,
+        playerCount: this.sessionState.players.size
+      },
+      
+      systems: {
+        rollback: this.rollbackNetcode ? {
+          enabled: true,
+          running: this.rollbackNetcode.running,
+          currentFrame: this.rollbackNetcode.currentFrame,
+          metrics: this.rollbackNetcode.getMetrics()
+        } : { enabled: false },
+        
+        desyncDetection: this.desyncDetection ? {
+          enabled: true,
+          stats: this.desyncDetection.getStats()
+        } : { enabled: false },
+        
+        hostMigration: this.hostMigration ? {
+          enabled: true,
+          stats: this.hostMigration.getStats()
+        } : { enabled: false },
+        
+        networkDiagnostics: this.networkDiagnostics ? {
+          enabled: true,
+          report: this.networkDiagnostics.getDiagnosticsReport()
+        } : { enabled: false },
+        
+        performanceOptimizer: this.performanceOptimizer ? {
+          enabled: true,
+          stats: this.performanceOptimizer.getPerformanceStats()
+        } : { enabled: false }
+      },
+      
+      players: Array.from(this.sessionState.players.values()),
+      
+      globalStats: {
+        ...this.stats,
+        uptime: performance.now() - (this.stats.lastStatsUpdate || performance.now())
+      }
+    }
+    
+    return status
+  }
+  
+  /**
+   * Get system recommendations
+   */
+  getSystemRecommendations() {
+    const recommendations = []
+    
+    // Network diagnostics recommendations
+    if (this.networkDiagnostics) {
+      recommendations.push(...this.networkDiagnostics.getNetworkRecommendations())
+    }
+    
+    // Performance recommendations
+    if (this.performanceOptimizer) {
+      const perfStats = this.performanceOptimizer.getPerformanceStats()
+      
+      if (perfStats.compression.compressionRatio > 0.8) {
+        recommendations.push({
+          type: 'info',
+          category: 'performance',
+          message: 'State compression is not very effective. Consider optimizing state structure.',
+          priority: 'low'
+        })
+      }
+      
+      if (perfStats.frameProcessing.frameSkipRate > 0.1) {
+        recommendations.push({
+          type: 'warning',
+          category: 'performance',
+          message: 'High frame skip rate detected. Consider reducing game complexity or improving hardware.',
+          priority: 'medium'
+        })
+      }
+    }
+    
+    // Desync recommendations
+    if (this.desyncDetection) {
+      const stats = this.desyncDetection.getStats()
+      
+      if (stats.global.successRate < 0.8) {
+        recommendations.push({
+          type: 'error',
+          category: 'sync',
+          message: 'Low desync recovery success rate. Check network stability and game determinism.',
+          priority: 'high'
+        })
+      }
+    }
+    
+    return recommendations.sort((a, b) => {
+      const priorityOrder = { critical: 3, high: 2, medium: 1, low: 0 }
+      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+    })
+  }
+  
+  /**
+   * Export comprehensive diagnostics data
+   */
+  exportDiagnosticsData() {
+    return {
+      timestamp: new Date().toISOString(),
+      systemStatus: this.getSystemStatus(),
+      recommendations: this.getSystemRecommendations(),
+      detailedMetrics: {
+        rollback: this.rollbackNetcode?.getMetrics(),
+        desync: this.desyncDetection?.getStats(),
+        hostMigration: this.hostMigration?.getStats(),
+        networkDiagnostics: this.networkDiagnostics?.getDiagnosticsReport(),
+        performance: this.performanceOptimizer?.getPerformanceStats()
+      }
+    }
+  }
+  
+  /**
+   * Notify event handlers
+   */
+  notifyEvent(eventName, data) {
+    if (this.eventHandlers[eventName]) {
+      try {
+        this.eventHandlers[eventName](data)
+      } catch (error) {
+        this.logger.error('Event handler error', { eventName, error: error.message })
+      }
+    }
+  }
+  
+  /**
+   * Shutdown all systems
+   */
+  shutdown() {
+    this.logger.info('Shutting down enhanced multiplayer sync')
+    
+    if (this.rollbackNetcode) {
+      this.rollbackNetcode.stop()
+    }
+    
+    if (this.desyncDetection) {
+      this.desyncDetection.reset()
+    }
+    
+    if (this.hostMigration) {
+      this.hostMigration.shutdown()
+    }
+    
+    if (this.networkDiagnostics) {
+      this.networkDiagnostics.shutdown()
+    }
+    
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.shutdown()
+    }
+    
+    this.sessionState.gameState = 'disconnected'
+    this.sessionState.players.clear()
+  }
+}
+
+export default EnhancedMultiplayerSync
