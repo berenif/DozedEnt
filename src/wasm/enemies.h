@@ -3,6 +3,9 @@
 
 #include "internal_core.h"
 #include "wolf_anim_data.h"
+#include "wolf_vocalization.h"
+#include "alpha_wolf.h"
+#include "scent_tracking.h"
 
 enum class EnemyType : unsigned char { Wolf = 0, Dummy = 1 };
 enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass = 3, Recover = 4, Ambush = 5, Flank = 6, Retreat = 7, Prowl = 8, Howl = 9 };
@@ -896,6 +899,11 @@ static void broadcast_pack_message(PackMessage msg, float senderX, float senderY
 static inline void enemy_tick_all(float dtSeconds) {
   // Update pack controller first
   update_pack_controller();
+  
+  // Update new AI systems
+  update_vocalization_system(dtSeconds);
+  update_alpha_wolf(dtSeconds);
+  update_scent_tracking(dtSeconds);
   
   // Check for coordinated actions
   static float lastCoordCheck = -1.0f;
