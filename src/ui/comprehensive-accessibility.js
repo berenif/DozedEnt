@@ -988,12 +988,10 @@ export class ComprehensiveAccessibility {
         ].join(', ');
         
         return Array.from(container.querySelectorAll(selectors))
-            .filter(element => {
-                return element.offsetWidth > 0 && 
+            .filter(element => element.offsetWidth > 0 && 
                        element.offsetHeight > 0 && 
                        !element.closest('.hidden') &&
-                       getComputedStyle(element).visibility !== 'hidden';
-            });
+                       getComputedStyle(element).visibility !== 'hidden');
     }
 
     /**

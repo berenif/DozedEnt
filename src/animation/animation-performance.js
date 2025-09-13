@@ -55,7 +55,7 @@ export class AnimationPerformanceMonitor {
 
     // Start frame timing
     startFrame() {
-        if (!this.enabled) return
+        if (!this.enabled) {return}
         
         this.frameStartTime = performance.now()
         const deltaTime = this.frameStartTime - this.lastFrameTime
@@ -77,7 +77,7 @@ export class AnimationPerformanceMonitor {
 
     // End frame timing
     endFrame() {
-        if (!this.enabled || !this.frameStartTime) return
+        if (!this.enabled || !this.frameStartTime) {return}
         
         const frameTime = performance.now() - this.frameStartTime
         
@@ -94,13 +94,13 @@ export class AnimationPerformanceMonitor {
 
     // Start update timing
     startUpdate() {
-        if (!this.enabled) return
+        if (!this.enabled) {return}
         this.updateStartTime = performance.now()
     }
 
     // End update timing
     endUpdate(animationCount = 0) {
-        if (!this.enabled || !this.updateStartTime) return
+        if (!this.enabled || !this.updateStartTime) {return}
         
         const updateTime = performance.now() - this.updateStartTime
         this.recordMetric('updateTime', updateTime)
@@ -111,13 +111,13 @@ export class AnimationPerformanceMonitor {
 
     // Start render timing
     startRender() {
-        if (!this.enabled) return
+        if (!this.enabled) {return}
         this.renderStartTime = performance.now()
     }
 
     // End render timing
     endRender(particleCount = 0) {
-        if (!this.enabled || !this.renderStartTime) return
+        if (!this.enabled || !this.renderStartTime) {return}
         
         const renderTime = performance.now() - this.renderStartTime
         this.recordMetric('renderTime', renderTime)
@@ -143,7 +143,7 @@ export class AnimationPerformanceMonitor {
     // Calculate average of a metric
     calculateAverage(metricName) {
         const values = this.metrics[metricName]
-        if (!values || values.length === 0) return 0
+        if (!values || values.length === 0) {return 0}
         
         const sum = values.reduce((a, b) => a + b, 0)
         return sum / values.length
@@ -152,7 +152,7 @@ export class AnimationPerformanceMonitor {
     // Calculate percentile of a metric
     calculatePercentile(metricName, percentile) {
         const values = [...this.metrics[metricName]].sort((a, b) => a - b)
-        if (values.length === 0) return 0
+        if (values.length === 0) {return 0}
         
         const index = Math.ceil((percentile / 100) * values.length) - 1
         return values[Math.max(0, index)]
@@ -298,7 +298,7 @@ export class AnimationPerformanceMonitor {
 
     // Render performance overlay
     renderOverlay(ctx, x = 10, y = 10) {
-        if (!this.enabled) return
+        if (!this.enabled) {return}
         
         const status = this.getStatus()
         const metrics = this.getDetailedMetrics()
@@ -355,7 +355,7 @@ export class AnimationPerformanceMonitor {
     // Render performance graph
     renderPerformanceGraph(ctx, x, y, width, height) {
         const frameTimeData = this.metrics.frameTime
-        if (frameTimeData.length < 2) return
+        if (frameTimeData.length < 2) {return}
         
         ctx.save()
         
@@ -437,7 +437,7 @@ export class PerformanceAwareAnimation {
         // Skip frames if needed
         if (optimizations.skipFrames) {
             this.frameSkip++
-            if (this.frameSkip < 2) return
+            if (this.frameSkip < 2) {return}
             this.frameSkip = 0
         }
         

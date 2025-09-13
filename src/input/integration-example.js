@@ -77,7 +77,7 @@ export class GameInputIntegration {
     /**
      * Handle canvas resize for input coordinate mapping
      */
-    handleCanvasResize(canvas) {
+    handleCanvasResize(_canvas) {
         // Update input manager with new canvas dimensions
         if (this.inputManager) {
             // The input manager will automatically adapt to the new canvas size

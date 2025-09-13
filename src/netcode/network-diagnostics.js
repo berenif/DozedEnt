@@ -99,7 +99,7 @@ export class NetworkDiagnostics {
    * Add a peer to monitoring
    */
   addPeer(peerId, initialInfo = {}) {
-    if (this.peerMetrics.has(peerId)) return
+    if (this.peerMetrics.has(peerId)) {return}
     
     const peerMetrics = {
       peerId,
@@ -195,7 +195,7 @@ export class NetworkDiagnostics {
    * Start automatic testing for all peers
    */
   startAutomaticTesting() {
-    if (this.testing.isRunning) return
+    if (this.testing.isRunning) {return}
     
     this.testing.isRunning = true
     
@@ -216,7 +216,7 @@ export class NetworkDiagnostics {
    * Stop automatic testing
    */
   stopAutomaticTesting() {
-    if (!this.testing.isRunning) return
+    if (!this.testing.isRunning) {return}
     
     this.testing.isRunning = false
     
@@ -277,7 +277,7 @@ export class NetworkDiagnostics {
    */
   sendPing(peerId) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     const pingId = `ping_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const timestamp = performance.now()
@@ -307,7 +307,7 @@ export class NetworkDiagnostics {
    */
   handlePingResponse(peerId, message) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     const now = performance.now()
     const latency = now - message.timestamp
@@ -351,9 +351,9 @@ export class NetworkDiagnostics {
   /**
    * Check for ping timeout (packet loss)
    */
-  checkPingTimeout(peerId, pingId) {
+  checkPingTimeout(peerId, _pingId) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     // If we haven't received a response, count as packet loss
     const timeSinceLastSeen = performance.now() - metrics.lastSeen
@@ -388,9 +388,7 @@ export class NetworkDiagnostics {
     metrics.latency.avg = metrics.latency.samples.reduce((a, b) => a + b, 0) / metrics.latency.samples.length
     
     // Calculate jitter (standard deviation)
-    const variance = metrics.latency.samples.reduce((acc, val) => {
-      return acc + Math.pow(val - metrics.latency.avg, 2)
-    }, 0) / metrics.latency.samples.length
+    const variance = metrics.latency.samples.reduce((acc, val) => acc + (val - metrics.latency.avg)**2, 0) / metrics.latency.samples.length
     
     metrics.latency.jitter = Math.sqrt(variance)
     
@@ -415,7 +413,7 @@ export class NetworkDiagnostics {
    */
   startBandwidthTest(peerId) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     const testId = `bandwidth_${Date.now()}`
     const testData = new ArrayBuffer(1024) // 1KB test packet
@@ -490,10 +488,10 @@ export class NetworkDiagnostics {
    */
   completeBandwidthTest(peerId) {
     const bandwidthTest = this.testing.bandwidthTests.get(peerId)
-    if (!bandwidthTest) return
+    if (!bandwidthTest) {return}
     
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     const testDuration = (performance.now() - bandwidthTest.startTime) / 1000 // seconds
     
@@ -556,7 +554,7 @@ export class NetworkDiagnostics {
    */
   updateWebRTCMetrics(peerId, connection) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics || !connection) return
+    if (!metrics || !connection) {return}
     
     // Update connection states
     metrics.webrtc.iceConnectionState = connection.iceConnectionState
@@ -588,7 +586,7 @@ export class NetworkDiagnostics {
    */
   updatePeerQuality(peerId) {
     const metrics = this.peerMetrics.get(peerId)
-    if (!metrics) return
+    if (!metrics) {return}
     
     const oldQuality = metrics.quality.overall
     

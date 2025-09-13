@@ -480,7 +480,7 @@ export class WolfAnimationSystem {
         if (!this.wasmModule) { return }
 
         // Get procedural animation data from WASM with safety checks
-        const anim_data = {
+        const animData = {
             active: typeof this.wasmModule.get_wolf_anim_active === 'function' ? 
                 this.wasmModule.get_wolf_anim_active(wolfIndex) : false,
             leg_x: [
@@ -526,15 +526,15 @@ export class WolfAnimationSystem {
         };
 
         // Update wolf object with WASM data
-        wolf.legPositions = anim_data.leg_x.map((x, i) => ({ x, y: anim_data.leg_y[i] }));
-        wolf.spineBend = anim_data.spine_bend;
-        wolf.tailPosition = anim_data.tail_angle; // Using existing property for now
-        wolf.headPitch = anim_data.head_pitch;
-        wolf.headYaw = anim_data.head_yaw;
-        wolf.earRotation = anim_data.ear_rotation[0]; // Using one ear rotation for simplicity
-        wolf.bodyStretch = anim_data.body_stretch;
-        wolf.bodyBob = anim_data.body_offset_y; // Using existing property for now
-        wolf.furMovement = { ripple: anim_data.fur_ruffle, flow: 0, ruffled: anim_data.fur_ruffle > 0.05 }; // Map to existing furMovement structure
+        wolf.legPositions = animData.leg_x.map((x, i) => ({ x, y: animData.leg_y[i] }));
+        wolf.spineBend = animData.spine_bend;
+        wolf.tailPosition = animData.tail_angle; // Using existing property for now
+        wolf.headPitch = animData.head_pitch;
+        wolf.headYaw = animData.head_yaw;
+        wolf.earRotation = animData.ear_rotation[0]; // Using one ear rotation for simplicity
+        wolf.bodyStretch = animData.body_stretch;
+        wolf.bodyBob = animData.body_offset_y; // Using existing property for now
+        wolf.furMovement = { ripple: animData.fur_ruffle, flow: 0, ruffled: animData.fur_ruffle > 0.05 }; // Map to existing furMovement structure
 
         // The old procedural animations are now driven by WASM, so these can be removed/modified
         // Apply breathing (still JS-driven for now)
@@ -557,7 +557,7 @@ export class WolfAnimationSystem {
         wolf.isBlinking = wolf.blinkTime && time - wolf.blinkTime < wolf.blinkDuration
     }
     
-    applyLocomotionAnimation(wolf, animation, time) {
+    applyLocomotionAnimation(wolf, animation, _time) {
         // Leg animation is now driven by WASM `wolf.legPositions`
         // Body bobbing (can be driven by WASM body_offset_y)
         this._smoothProp(wolf, 'bodyBob', wolf.bodyBob || 0, 10); // Use WASM data
@@ -586,7 +586,7 @@ export class WolfAnimationSystem {
         // Careful leg placement is now driven by WASM `wolf.legPositions`
     }
     
-    applyLungingAnimation(wolf, animation, time) {
+    applyLungingAnimation(wolf, animation, _time) {
         // Body stretch effect is now driven by WASM `wolf.bodyStretch`
         this._smoothProp(wolf, 'bodyStretch', wolf.bodyStretch || 1, 14); // Use WASM data
         

@@ -1927,7 +1927,7 @@ export class GameRenderer {
         this.ctx.restore();
     }
     
-    drawCharacter(x, y, width, height, color, facing, state, frame) {
+    drawCharacter(x, y, width, height, color, facing, state, _frame) {
         // Fallback to simple character drawing for compatibility
         this.drawEnhancedCharacter(x, y, width, height, color, facing, state, 0, {
             isGrounded: true,

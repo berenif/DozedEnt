@@ -324,7 +324,7 @@ export class RealisticWolfPhysics {
     }
     
     // Apply spine muscle forces
-    applySpineMuscleForces(body, spineTarget, dt) {
+    applySpineMuscleForces(body, spineTarget, _dt) {
         const spineJoint = body.joints.pelvisToTorso
         const targetBend = Math.max(-WolfPhysicsConstants.maxSpineBend, 
                                    Math.min(WolfPhysicsConstants.maxSpineBend, spineTarget.bend))
@@ -348,7 +348,7 @@ export class RealisticWolfPhysics {
     }
     
     // Apply neck muscle forces
-    applyNeckMuscleForces(body, neckTarget, headTarget, dt) {
+    applyNeckMuscleForces(body, neckTarget, headTarget, _dt) {
         const neckJoint = body.joints.torsoToNeck
         const headJoint = body.joints.neckToHead
         
@@ -398,7 +398,7 @@ export class RealisticWolfPhysics {
     }
     
     // Apply leg muscle forces with IK
-    applyLegMuscleForces(body, legIndex, legTarget, dt) {
+    applyLegMuscleForces(body, legIndex, legTarget, _dt) {
         const legJoint = body.joints.legs[legIndex]
         const legSegment = body.segments.legs[legIndex]
         
@@ -460,7 +460,7 @@ export class RealisticWolfPhysics {
     }
     
     // Apply external forces (gravity, drag, etc.)
-    applyExternalForces(body, dt) {
+    applyExternalForces(body, _dt) {
         // Gravity
         body.segments.torso.forces.y += body.mass * this.gravity.y
         
@@ -515,7 +515,7 @@ export class RealisticWolfPhysics {
     }
     
     // Apply contact forces from ground interaction
-    applyContactForces(body, dt) {
+    applyContactForces(body, _dt) {
         for (let i = 0; i < 4; i++) {
             const contact = body.contacts[i]
             if (!contact.isActive) {continue}
@@ -675,7 +675,7 @@ export class RealisticWolfPhysics {
     }
     
     // Solve individual joint constraint
-    solveJointConstraint(joint, dt) {
+    solveJointConstraint(joint, _dt) {
         let maxError = 0
         
         for (let i = 0; i < joint.degreesOfFreedom; i++) {
@@ -699,7 +699,7 @@ export class RealisticWolfPhysics {
     }
     
     // Interpolate states for smooth rendering
-    interpolateStates(alpha) {
+    interpolateStates(_alpha) {
         // For now, just use current states
         // In a full implementation, we'd store previous states and interpolate
     }

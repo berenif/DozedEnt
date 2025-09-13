@@ -67,7 +67,7 @@ export class DeterministicIdGenerator {
       const bytes = new Uint8Array(length);
       this.crypto.getRandomValues(bytes);
       return Array.from(bytes, byte => chars[byte % chars.length]).join('');
-    } else {
+    } 
       // Fallback to deterministic generation
       let result = '';
       for (let i = 0; i < length; i++) {
@@ -75,7 +75,7 @@ export class DeterministicIdGenerator {
         result += chars[index];
       }
       return result;
-    }
+    
   }
 
   /**

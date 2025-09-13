@@ -268,7 +268,7 @@ export class PerformanceBenchmark {
     const max = sorted[sorted.length - 1];
     
     // Calculate variance and standard deviation
-    const squaredDiffs = results.map(val => Math.pow(val - mean, 2));
+    const squaredDiffs = results.map(val => (val - mean)**2);
     const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / results.length;
     const deviation = Math.sqrt(variance);
     
@@ -331,9 +331,7 @@ export class PerformanceBenchmark {
     }
     
     // Find fastest benchmark
-    const fastest = benchmarks.reduce((prev, curr) => {
-      return curr[1].mean < prev[1].mean ? curr : prev;
-    });
+    const fastest = benchmarks.reduce((prev, curr) => curr[1].mean < prev[1].mean ? curr : prev);
     
     // Calculate relative performance
     const comparison = benchmarks.map(([name, stats]) => {

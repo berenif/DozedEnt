@@ -188,7 +188,7 @@ export class AnimationParticleIntegration {
     // Trigger particle effect based on animation event
     triggerEffect(effectName, position, direction = { x: 1, y: 0 }, options = {}) {
         const config = this.effectConfigs[effectName]
-        if (!config || !this.particleSystem) return null
+        if (!config || !this.particleSystem) {return null}
 
         const effectId = `${effectName}_${Date.now()}`
         const effect = this.createParticleEffect(config, position, direction, options)
@@ -262,12 +262,12 @@ export class AnimationParticleIntegration {
         } else if (config.spread >= 360) {
             // Full circle burst
             return (index / total) * Math.PI * 2
-        } else {
+        } 
             // Cone spread
             const spreadRad = (config.spread * Math.PI) / 180
             const offset = (Math.random() - 0.5) * spreadRad
             return baseAngle + offset
-        }
+        
     }
 
     calculateParticleSpeed(config, options) {
@@ -284,7 +284,7 @@ export class AnimationParticleIntegration {
     }
 
     updateEffect(effect, deltaTime) {
-        if (!effect.particles) return
+        if (!effect.particles) {return}
 
         effect.particles.forEach(particle => {
             // Update age
@@ -344,7 +344,7 @@ export class AnimationParticleIntegration {
 
     // Link animation events to particle effects
     linkAnimationEvents(animator, characterType = 'player') {
-        if (!animator) return
+        if (!animator) {return}
 
         const eventMap = this.getEventMapForCharacter(characterType)
         
@@ -418,7 +418,7 @@ export class AnimationParticleIntegration {
 
     // Render debug information
     renderDebug(ctx) {
-        if (this.activeEffects.size === 0) return
+        if (this.activeEffects.size === 0) {return}
 
         ctx.save()
         ctx.font = '10px monospace'

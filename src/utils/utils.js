@@ -26,9 +26,9 @@ export const genId = n => {
     const bytes = new Uint8Array(n)
     crypto.getRandomValues(bytes)
     return Array.from(bytes, byte => charSet[byte % charSet.length]).join('')
-  } else {
+  } 
     // Fallback to deterministic generation based on current time and counter
-    let counter = genId.counter || 0
+    const counter = genId.counter || 0
     genId.counter = (counter + 1) % 1000000
     const seed = Date.now() + counter
     
@@ -36,7 +36,7 @@ export const genId = n => {
       const value = (seed + i * 1664525 + 1013904223) % charSet.length
       return charSet[Math.abs(value) % charSet.length]
     }).join('')
-  }
+  
 }
 
 export const selfId = genId(20)

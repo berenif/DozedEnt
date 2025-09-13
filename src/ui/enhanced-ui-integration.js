@@ -186,7 +186,7 @@ export class EnhancedUIIntegration {
         const results = await Promise.allSettled(initPromises);
         
         // Log results
-        results.forEach((result, index) => {
+        results.forEach((result, _index) => {
             if (result.status === 'fulfilled') {
                 console.log(`✅ ${result.value} initialized`);
             } else {
@@ -628,7 +628,7 @@ export class EnhancedUIIntegration {
     setupPerformanceMonitoring() {
         let frameCount = 0;
         let lastTime = performance.now();
-        let fpsHistory = [];
+        const fpsHistory = [];
         
         const monitorFrame = () => {
             const currentTime = performance.now();

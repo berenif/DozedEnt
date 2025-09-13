@@ -557,7 +557,7 @@ export class AnimatedPlayer {
         }
     }
     
-    respawn(x, y) {
+    respawn(_x, _y) {
         // Visual and audio effects only - respawn logic handled by WASM
         if (this.particleSystem) {
             this.particleSystem.createRespawnEffect(this.x, this.y)
@@ -758,7 +758,7 @@ export class AnimatedPlayer {
         ctx.restore()
     }
 
-    computePoseOverlay(input) {
+    computePoseOverlay(_input) {
         // Simple procedural layers approximation for readability and responsiveness
         // This can still be done in JS as it's purely visual
         const t = this.getNormalizedTime() // This needs to be driven by WASM state timings

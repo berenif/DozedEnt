@@ -73,7 +73,7 @@ export class EnhancedLobbyUI {
    * Inject CSS styles
    */
   injectStyles() {
-    if (document.getElementById('enhanced-lobby-styles')) return
+    if (document.getElementById('enhanced-lobby-styles')) {return}
     
     const style = document.createElement('style')
     style.id = 'enhanced-lobby-styles'
@@ -971,7 +971,7 @@ export class EnhancedLobbyUI {
     const rooms = this.roomManager.getRoomList()
     const grid = this.elements.roomGrid
     
-    if (!grid) return
+    if (!grid) {return}
     
     grid.innerHTML = ''
     
@@ -1150,7 +1150,7 @@ export class EnhancedLobbyUI {
    * Update analytics
    */
   updateAnalytics() {
-    if (!this.config.enableAnalytics || !this.elements.analyticsContent) return
+    if (!this.config.enableAnalytics || !this.elements.analyticsContent) {return}
     
     const analytics = this.roomManager.getAnalytics()
     const report = analytics.getDetailedReport()
@@ -1195,7 +1195,7 @@ export class EnhancedLobbyUI {
    */
   sendChatMessage() {
     const input = this.elements.chatInput
-    if (!input || !input.value.trim()) return
+    if (!input || !input.value.trim()) {return}
     
     const message = input.value.trim()
     
@@ -1213,7 +1213,7 @@ export class EnhancedLobbyUI {
    * Display chat message
    */
   displayChatMessage(message) {
-    if (!this.elements.chatMessages) return
+    if (!this.elements.chatMessages) {return}
     
     const messageEl = document.createElement('div')
     messageEl.className = 'chat-message'

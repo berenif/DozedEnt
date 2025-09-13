@@ -115,7 +115,7 @@ export class RealisticProceduralAnimator {
         return transform;
     }
     
-    getWasmAnimationData(wasmData) {
+    getWasmAnimationData(_wasmData) {
         // Extract enhanced animation data from WASM exports
         const exports = globalThis.wasmExports || {};
         
@@ -169,7 +169,7 @@ export class RealisticProceduralAnimator {
         };
     }
     
-    updateBaseTransform(wasmData, deltaTime) {
+    updateBaseTransform(wasmData, _deltaTime) {
         // Update base position and facing
         this.state.position.x = wasmData.position.x;
         this.state.position.y = wasmData.position.y;
@@ -192,7 +192,7 @@ export class RealisticProceduralAnimator {
         this.state.head.rotation = wasmData.spineCurve * 0.3; // Head follows spine curve
     }
     
-    updateSkeletalSystem(wasmData, deltaTime) {
+    updateSkeletalSystem(wasmData, _deltaTime) {
         if (!this.config.ikEnabled) {return;}
         
         // Calculate IK targets for arms based on WASM animation data
@@ -332,7 +332,7 @@ export class RealisticProceduralAnimator {
         });
     }
     
-    updateEnvironmentalResponses(wasmData, deltaTime) {
+    updateEnvironmentalResponses(wasmData, _deltaTime) {
         // Temperature response
         if (wasmData.temperatureShiver > 0) {
             this.environmentalResponses.applyShivering(this.state, wasmData.temperatureShiver);

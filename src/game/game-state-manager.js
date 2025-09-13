@@ -506,7 +506,7 @@ export class GameStateManager {
    * @param {number} direction - Dash direction (-1 for left, 1 for right)
    * @returns {boolean} Success status
    */
-  dash(direction) {
+  dash(_direction) {
     if (!this.wasmManager) {return false;}
     
     // For now, treat as roll

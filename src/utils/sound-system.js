@@ -685,7 +685,7 @@ export class SoundSystem {
     }
 
     // Music playback (would need actual music files in production)
-    playMusic(trackName) {
+    playMusic(_trackName) {
         // Placeholder for music playback
         // Playing music: ${trackName}
     }

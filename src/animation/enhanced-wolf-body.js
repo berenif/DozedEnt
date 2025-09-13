@@ -716,7 +716,7 @@ export class EnhancedWolfBody {
     }
 
     // Render nose
-    renderNose(ctx, wolf) {
+    renderNose(ctx, _wolf) {
         ctx.fillStyle = this.colors.nose
         ctx.beginPath()
         ctx.arc(this.proportions.headWidth * 0.9 + this.proportions.snoutLength, 0, 3, 0, Math.PI * 2)
@@ -731,7 +731,7 @@ export class EnhancedWolfBody {
     }
 
     // Render fur texture
-    renderFurTexture(ctx, wolf) {
+    renderFurTexture(ctx, _wolf) {
         ctx.save()
         ctx.globalAlpha = 0.4
 
@@ -758,7 +758,7 @@ export class EnhancedWolfBody {
     }
 
     // Render fur markings
-    renderFurMarkings(ctx, wolf) {
+    renderFurMarkings(ctx, _wolf) {
         this.furPattern.markings.forEach(mark => {
             ctx.save()
             ctx.globalAlpha = mark.opacity

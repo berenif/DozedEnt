@@ -232,9 +232,7 @@ export class RollbackPerformanceOptimizer {
     switch (this.config.frameSkipStrategy) {
       case FRAME_SKIP_STRATEGIES.PREDICTIVE:
         return {
-          shouldSkipFrame: (frame, networkQuality) => {
-            return networkQuality === 'poor' && frame % 2 === 0
-          },
+          shouldSkipFrame: (frame, networkQuality) => networkQuality === 'poor' && frame % 2 === 0,
           getSkipPattern: (quality) => quality === 'poor' ? 2 : 1
         }
         
@@ -340,13 +338,13 @@ export class RollbackPerformanceOptimizer {
       }
       
       return { inputs: [], immediate: false }
-    } else {
+    } 
       // Batch is full, flush it and start new batch
       const batchedInputs = this.flushBatch()
       this.addToBatch(input, frame)
       
       return { inputs: batchedInputs, immediate: false }
-    }
+    
   }
   
   /**
@@ -363,7 +361,7 @@ export class RollbackPerformanceOptimizer {
       this.adaptiveSettings.cpuUsage
     )
     
-    let optimizationStrategy = {
+    const optimizationStrategy = {
       useFrameSkipping: shouldSkipFrames,
       skipInterval: shouldSkipFrames ? this.strategies.frameSkipping.getSkipPattern(this.adaptiveSettings.networkQuality) : 1,
       useDeltaStates: this.config.enableDeltaCompression,
@@ -411,11 +409,11 @@ export class RollbackPerformanceOptimizer {
       
       this.deltaStates.set(frame, deltaState)
       return deltaState
-    } else {
+    } 
       // Delta not worth it, store full state
       this.deltaStates.set(frame, currentState)
       return currentState
-    }
+    
   }
   
   /**
@@ -476,9 +474,7 @@ export class RollbackPerformanceOptimizer {
       const jsonString = JSON.stringify(data)
       
       // Simple run-length encoding for repeated characters
-      let compressed = jsonString.replace(/(.)\\1{2,}/g, (match, char) => {
-        return `${char}${match.length}`
-      })
+      let compressed = jsonString.replace(/(.)\\1{2,}/g, (match, char) => `${char}${match.length}`)
       
       // Remove common JSON patterns
       compressed = compressed
@@ -510,9 +506,7 @@ export class RollbackPerformanceOptimizer {
       
       // Reverse compression steps
       decompressed = decompressed.replace(/(\\w+):/g, '\"$1\":') // Add quotes back
-      decompressed = decompressed.replace(/(.)([0-9]+)/g, (match, char, count) => {
-        return char.repeat(parseInt(count))
-      })
+      decompressed = decompressed.replace(/(.)([0-9]+)/g, (match, char, count) => char.repeat(parseInt(count)))
       
       return JSON.parse(decompressed)
     } catch (error) {
@@ -561,7 +555,7 @@ export class RollbackPerformanceOptimizer {
     if (this.statePool.has(stateKey)) {
       this.metrics.memory.statePoolHits++
       return this.statePool.get(stateKey)
-    } else {
+    } 
       this.metrics.memory.statePoolMisses++
       this.statePool.set(stateKey, state)
       
@@ -572,7 +566,7 @@ export class RollbackPerformanceOptimizer {
       }
       
       return state
-    }
+    
   }
   
   /**
@@ -631,7 +625,7 @@ export class RollbackPerformanceOptimizer {
    * Get data size in bytes
    */
   getDataSize(data) {
-    if (!data) return 0
+    if (!data) {return 0}
     
     if (data.byteLength !== undefined) {
       return data.byteLength
@@ -687,9 +681,9 @@ export class RollbackPerformanceOptimizer {
    * Get skip interval based on quality
    */
   getSkipInterval(qualityScore) {
-    if (qualityScore > 0.8) return 1 // No skipping
-    if (qualityScore > 0.6) return 2 // Skip every other frame
-    if (qualityScore > 0.4) return 3 // Skip 2 out of 3 frames
+    if (qualityScore > 0.8) {return 1} // No skipping
+    if (qualityScore > 0.6) {return 2} // Skip every other frame
+    if (qualityScore > 0.4) {return 3} // Skip 2 out of 3 frames
     return Math.min(this.config.maxFrameSkip, 4) // Skip more aggressively
   }
   

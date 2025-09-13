@@ -422,7 +422,7 @@ export class EnhancedUIManager {
    */
   updateThreatIndicators() {
     const threatContainer = document.getElementById('threat-indicators-enhanced');
-    if (!threatContainer) return;
+    if (!threatContainer) {return;}
 
     // Clear existing threats
     threatContainer.innerHTML = '';
@@ -454,7 +454,7 @@ export class EnhancedUIManager {
    */
   updateStatusEffects() {
     const statusContainer = document.getElementById('status-effects-enhanced');
-    if (!statusContainer) return;
+    if (!statusContainer) {return;}
 
     // TODO: Get status effects from WASM
     const statusEffects = []; // TODO: Get from WASM exports
@@ -597,7 +597,7 @@ export class EnhancedUIManager {
    */
   showDamageNumber(damage, x, y, type = 'damage') {
     const container = document.getElementById('damage-numbers-enhanced');
-    if (!container) return;
+    if (!container) {return;}
 
     const damageElement = document.createElement('div');
     damageElement.className = `stable-damage-number ${type}`;
@@ -634,7 +634,7 @@ export class EnhancedUIManager {
    */
   showNotification(message, type = 'info', duration = 3000) {
     const container = document.getElementById('notifications-enhanced');
-    if (!container) return;
+    if (!container) {return;}
 
     const notification = document.createElement('div');
     notification.className = `simple-notification ${type}`;
