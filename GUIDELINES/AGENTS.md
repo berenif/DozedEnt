@@ -29,6 +29,7 @@ This repository implements a **WebAssembly-first multiplayer game architecture**
 2. **UI reads state snapshots** - JS only visualizes WASM-exported data
 3. **Inputs flow through WASM** - All player actions processed by WASM first
 4. **Deterministic by design** - Same seed + inputs = same outcome everywhere
+5. **Code Quality Standards** - Always follow ESLint rules and maintain clean code
 
 ## Guideline Cross-Reference Index
 
@@ -247,6 +248,53 @@ npm run wasm:build:all    # build both modules
 - `-s ALLOW_MEMORY_GROWTH=1`: Dynamic memory allocation support
 
 ## Best Practices
+
+### 📝 Code Quality and ESLint Compliance
+
+#### ESLint Rules - MANDATORY
+- **Always use curly braces** for if/else statements, even single-line ones
+- **Remove unused variables** and imports - clean up dead code
+- **Split multiple declarations** - use separate `let`/`const` statements
+- **Handle Unicode properly** - avoid bare `catch (_)` blocks, use descriptive error handling
+- **Use semicolons consistently** - maintain consistent code style
+
+```javascript
+// ❌ WRONG - Missing braces
+if (condition) doSomething();
+
+// ✅ CORRECT - Always use braces
+if (condition) {
+  doSomething();
+}
+
+// ❌ WRONG - Multiple declarations
+let a = 1, b = 2;
+
+// ✅ CORRECT - Separate declarations
+let a = 1;
+let b = 2;
+
+// ❌ WRONG - Unused variable
+let fps = 60; // Never used
+
+// ✅ CORRECT - Remove unused or use it
+// Remove the line entirely if not needed
+
+// ❌ WRONG - Silent error handling
+catch (_) {}
+
+// ✅ CORRECT - Descriptive error handling
+catch (error) {
+  // Handle specific error or log appropriately
+}
+```
+
+#### Pre-commit Checklist
+- [ ] Run ESLint and fix all errors
+- [ ] Remove console.log statements in production code
+- [ ] Check for unused imports and variables
+- [ ] Ensure all if/else statements have braces
+- [ ] Verify Unicode escapes are properly formatted
 
 ### 🎲 Determinism Rules
 

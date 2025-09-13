@@ -130,7 +130,9 @@ export class WasmManager {
             candidatePaths.push(`${repo}/dist/game.wasm`);
           }
         }
-      } catch (_) {\n        // Ignore URL construction errors\n      }
+      } catch (error) {
+        // Ignore errors when parsing URL parameters
+      }
 
       const wasmUrls = candidatePaths.map(resolveUrl);
 

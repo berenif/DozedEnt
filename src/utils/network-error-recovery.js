@@ -713,9 +713,15 @@ export class NetworkErrorRecovery {
    * Assess connection quality based on ping times
    */
   assessConnectionQuality(pingTime) {
-    if (pingTime < 100) {return 'excellent';}
-    if (pingTime < 300) {return 'good';}
-    if (pingTime < 1000) {return 'poor';}
+    if (pingTime < 100) {
+      return 'excellent';
+    }
+    if (pingTime < 300) {
+      return 'good';
+    }
+    if (pingTime < 1000) {
+      return 'poor';
+    }
     return 'critical';
   }
 

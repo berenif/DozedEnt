@@ -640,8 +640,10 @@ export class PersistenceUI {
   /**
    * Import save data
    */
-  async importSaveData(file) {
-    if (!file) {return;}
+  async   importSaveData(file) {
+    if (!file) {
+      return;
+    }
     
     try {
       const text = await file.text();
@@ -689,7 +691,9 @@ export class PersistenceUI {
    * Update achievements display
    */
   updateAchievementsDisplay() {
-    if (!this.wasmManager?.exports) {return;}
+    if (!this.wasmManager?.exports) {
+      return;
+    }
     
     const achievementsGrid = this.container.querySelector('#achievementsGrid');
     const progressSpan = this.container.querySelector('#achievementProgress');
@@ -727,8 +731,10 @@ export class PersistenceUI {
         const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
         const achievement = JSON.parse(infoJson);
         
-        // Apply filters
-        if (!this.shouldShowAchievement(achievement)) {continue;}
+      // Apply filters
+      if (!this.shouldShowAchievement(achievement)) {
+        continue;
+      }
         
         const achievementElement = this.createAchievementElement(achievement);
         achievementsGrid.appendChild(achievementElement);
@@ -824,21 +830,31 @@ export class PersistenceUI {
       };
       
       const achievementCategory = categoryMap[achievement.type] || 'other';
-      if (achievementCategory !== filters.category) {return false;}
+      if (achievementCategory !== filters.category) {
+        return false;
+      }
     }
     
     // Rarity filter
     if (filters.rarity !== 'all') {
       const rarityNames = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
       const achievementRarity = rarityNames[achievement.rarityLevel] || 'common';
-      if (achievementRarity !== filters.rarity) {return false;}
+      if (achievementRarity !== filters.rarity) {
+        return false;
+      }
     }
     
     // Status filter
     if (filters.status !== 'all') {
-      if (filters.status === 'unlocked' && !achievement.unlocked) {return false;}
-      if (filters.status === 'locked' && achievement.unlocked) {return false;}
-      if (filters.status === 'progress' && (achievement.unlocked || achievement.progress === 0)) {return false;}
+      if (filters.status === 'unlocked' && !achievement.unlocked) {
+        return false;
+      }
+      if (filters.status === 'locked' && achievement.unlocked) {
+        return false;
+      }
+      if (filters.status === 'progress' && (achievement.unlocked || achievement.progress === 0)) {
+        return false;
+      }
     }
     
     return true;
@@ -1012,7 +1028,9 @@ export class PersistenceUI {
    * Update statistics display
    */
   updateStatisticsDisplay(period = 'session') {
-    if (!this.wasmManager?.exports) {return;}
+    if (!this.wasmManager?.exports) {
+      return;
+    }
     
     const statisticsGrid = this.container.querySelector('#statisticsGrid');
     const sessionSummary = this.container.querySelector('#sessionSummary');
@@ -1163,7 +1181,9 @@ export class PersistenceUI {
    * Format date for display
    */
   formatDate(timestamp) {
-    if (!timestamp) {return 'Never';}
+    if (!timestamp) {
+      return 'Never';
+    }
     const date = new Date(timestamp);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
@@ -1172,7 +1192,9 @@ export class PersistenceUI {
    * Format time duration
    */
   formatTime(seconds) {
-    if (!seconds || seconds < 0) {return '0:00';}
+    if (!seconds || seconds < 0) {
+      return '0:00';
+    }
     
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -1180,8 +1202,9 @@ export class PersistenceUI {
     
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    } 
+    } else {
       return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
     
   }
   

@@ -11,11 +11,11 @@ export class GameFeelEnhancer {
 
     applyHitStop(callback, durationMs = this.settings.hitStopMs) {
         if (typeof callback === 'function') {
-            callback()
+            callback();
         }
         if (durationMs > 0) {
             // Placeholder timing; integrate with game loop if needed
-            setTimeout(() => {}, durationMs)
+            setTimeout(() => {}, durationMs);
         }
     }
 
@@ -27,6 +27,6 @@ export class GameFeelEnhancer {
     onEnemyDown() {}
 }
 
-export default GameFeelEnhancer
+export default GameFeelEnhancer;
 
 

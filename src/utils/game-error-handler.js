@@ -394,7 +394,9 @@ export class GameErrorHandler {
    * Get average update time for performance monitoring
    */
   getAverageUpdateTime() {
-    if (this.performanceMonitor.updateTimes.length === 0) {return 0;}
+    if (this.performanceMonitor.updateTimes.length === 0) {
+      return 0;
+    }
     
     const sum = this.performanceMonitor.updateTimes.reduce((a, b) => a + b, 0);
     return sum / this.performanceMonitor.updateTimes.length;

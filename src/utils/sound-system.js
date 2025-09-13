@@ -177,12 +177,16 @@ export class SoundSystem {
 
     // Compatibility alias used by tests
     init() {
-        return this.initialize()
+        return this.initialize();
     }
 
     initialize() {
-        if (this.initialized) {return}
-        if (this.initPromise) {return this.initPromise}
+        if (this.initialized) {
+            return;
+        }
+        if (this.initPromise) {
+            return this.initPromise;
+        }
         
         this.initPromise = this._doInitialize()
         return this.initPromise
@@ -464,8 +468,8 @@ export class SoundSystem {
 
     play(soundName, options = {}) {
         if (!this.initialized) {
-            this.initialize()
-            return null
+            this.initialize();
+            return null;
         }
         
         const soundDef = this.soundLibrary[soundName]
@@ -556,7 +560,9 @@ export class SoundSystem {
     }
 
     stop(playingSound, fadeOut = 0) {
-        if (!playingSound) {return}
+        if (!playingSound) {
+            return;
+        }
         
         if (fadeOut > 0) {
             playingSound.gainNode.gain.linearRampToValueAtTime(
@@ -578,8 +584,8 @@ export class SoundSystem {
     }
 
     setListenerPosition(x, y) {
-        this.listenerPosition.x = x
-        this.listenerPosition.y = y
+        this.listenerPosition.x = x;
+        this.listenerPosition.y = y;
         
         if (this.audioContext && this.audioContext.listener) {
             this.audioContext.listener.setPosition(0, 0, 0)
@@ -727,4 +733,4 @@ export function getSoundSystem() {
     return soundSystemInstance
 }
 
-export default SoundSystem
+export default SoundSystem;
