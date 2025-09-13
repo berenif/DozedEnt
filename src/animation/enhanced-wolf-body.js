@@ -449,18 +449,18 @@ export class EnhancedWolfBody {
         // Left leg
         ctx.save()
         ctx.translate(baseX - this.proportions.bodyWidth * 0.15, this.proportions.bodyWidth * 0.1)
-        this.renderSingleLeg(ctx, legData.left)
+        this.renderSingleLeg(ctx, wolf, legData.left)
         ctx.restore()
 
         // Right leg
         ctx.save()
         ctx.translate(baseX + this.proportions.bodyWidth * 0.15, this.proportions.bodyWidth * 0.1)
-        this.renderSingleLeg(ctx, legData.right)
+        this.renderSingleLeg(ctx, wolf, legData.right)
         ctx.restore()
     }
 
     // Render single leg
-    renderSingleLeg(ctx, legData) {
+    renderSingleLeg(ctx, wolf, legData) {
         // Upper leg
         ctx.fillStyle = this.colors.primary
         ctx.fillRect(-legData.upper.width/2, 0, legData.upper.width, legData.upper.height)
