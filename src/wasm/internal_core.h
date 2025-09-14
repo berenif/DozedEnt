@@ -1,6 +1,9 @@
 // Core state, constants, math helpers, stamina/block, phases, RNG, landmarks/exits, wind
 #pragma once
 
+#include <cstdint>
+#include <cmath>
+
 // Include enhanced status effect system
 #include "status_effects.h"
 

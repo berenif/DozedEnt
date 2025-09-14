@@ -2,7 +2,6 @@
 #pragma once
 
 #include "enemies.h"
-
 // Forward declarations
 enum class VocalizationType : unsigned char;
 
@@ -203,7 +202,10 @@ static void execute_alpha_ability(AlphaAbility ability) {
                     spawn_x = fmaxf(0.05f, fminf(0.95f, spawn_x));
                     spawn_y = fmaxf(0.05f, fminf(0.95f, spawn_y));
                     
-                    enemy_activate(g_enemy_count, EnemyType::Wolf, spawn_x, spawn_y);
+                    int idx = enemy_alloc_slot();
+                    if (idx >= 0) {
+                        enemy_activate(idx, EnemyType::Wolf, spawn_x, spawn_y);
+                    }
                     
                     // New wolf starts aggressive
                     if (g_enemy_count > 0) {
