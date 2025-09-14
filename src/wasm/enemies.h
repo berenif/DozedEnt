@@ -3,7 +3,6 @@
 
 #include "internal_core.h"
 #include "wolf_anim_data.h"
-#include "wolf_vocalization.h"
 #include "alpha_wolf.h"
 #include "scent_tracking.h"
 
@@ -257,6 +256,8 @@ static float g_pack_last_failure_time = -1000.f;
 static int g_pack_successful_hunts = 0;
 static int g_pack_failed_hunts = 0;
 static float g_player_skill_estimate = 0.5f; // 0-1, pack's estimate of player skill
+
+#include "wolf_vocalization.h" // Requires enemy and pack definitions
 
 // Wolf pack management system - maintain 3 active packs
 #define MAX_WOLF_PACKS 3
