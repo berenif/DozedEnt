@@ -484,6 +484,7 @@ export class WasmLazyLoader {
         wasi_snapshot_preview1: wasiImports,
         wasi_unstable: wasiImports
       };
+    }
 
     // Merge all imports: base < module-specific < user-provided
     const finalImports = {
