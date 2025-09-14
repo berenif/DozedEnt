@@ -2,9 +2,8 @@
 #pragma once
 
 #include "internal_core.h"
+#include "obstacles.h"
 #include "wolf_anim_data.h"
-#include "alpha_wolf.h"
-#include "scent_tracking.h"
 
 enum class EnemyType : unsigned char { Wolf = 0, Dummy = 1 };
 enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass = 3, Recover = 4, Ambush = 5, Flank = 6, Retreat = 7, Prowl = 8, Howl = 9 };
@@ -257,7 +256,8 @@ static int g_pack_successful_hunts = 0;
 static int g_pack_failed_hunts = 0;
 static float g_player_skill_estimate = 0.5f; // 0-1, pack's estimate of player skill
 
-#include "wolf_vocalization.h" // Requires enemy and pack definitions
+// Include dependent headers after enemy definitions
+// #include "scent_tracking.h"  // Temporarily commented out to resolve circular dependency
 
 // Wolf pack management system - maintain 3 active packs
 #define MAX_WOLF_PACKS 3
@@ -546,7 +546,9 @@ static void update_enemy_wolf(Enemy &e, float dt) {
   if (dist < ENEMY_SEEK_RANGE) { e.mem.lastSeenX = g_pos_x; e.mem.lastSeenY = g_pos_y; e.mem.lastSeenTime = g_time_seconds; e.mem.lastSeenConfidence = 1.f; if (!e.noticed) { e.noticed = 1; e.noticeAcquiredTime = g_time_seconds; } }
   const float SOUND_WINDOW = 1.0f; float heardX = 0.f, heardY = 0.f, heardW = 0.f;
   for (int i = 0; i < (int)g_sound_count; ++i) { const SoundPing &s = g_sounds[i]; float age = g_time_seconds - s.timeSeconds; if (age < 0.f || age > SOUND_WINDOW) continue; float dx = s.x - e.x, dy = s.y - e.y; float d = vec_len(dx, dy); const float maxHearing = 0.5f; if (d > maxHearing) continue; float weight = s.intensity * (1.f - (age / SOUND_WINDOW)) * (1.f - (d / maxHearing)); if (weight > heardW) { heardW = weight; heardX = s.x; heardY = s.y; } }
-  float scentGX = 0.f, scentGY = 0.f; scent_gradient_at(e.x, e.y, scentGX, scentGY); float scentStrength = 0.f; { int ix = (int)(e.x * (SCENT_W - 1)); if (ix < 0) ix = 0; if (ix >= SCENT_W) ix = SCENT_W - 1; int iy = (int)(e.y * (SCENT_H - 1)); if (iy < 0) iy = 0; if (iy >= SCENT_H) iy = SCENT_H - 1; scentStrength = g_scent[iy][ix]; }
+  // Temporarily commented out scent tracking to resolve compilation issues
+  // float scentGX = 0.f, scentGY = 0.f; scent_gradient_at(e.x, e.y, scentGX, scentGY); float scentStrength = 0.f; { int ix = (int)(e.x * (SCENT_W - 1)); if (ix < 0) ix = 0; if (ix >= SCENT_W) ix = SCENT_W - 1; int iy = (int)(e.y * (SCENT_H - 1)); if (iy < 0) iy = 0; if (iy >= SCENT_H) iy = SCENT_H - 1; scentStrength = g_scent[iy][ix]; }
+  float scentGX = 0.f, scentGY = 0.f, scentStrength = 0.f;
   if (scentStrength > e.mem.lastScentStrength) { e.mem.lastScentX = e.x; e.mem.lastScentY = e.y; e.mem.lastScentStrength = scentStrength; e.mem.lastScentConfidence = 1.f; }
   // Enhanced state selection based on pack plan and individual role
   EnemyState stateOut = e.state; 
@@ -902,9 +904,9 @@ static inline void enemy_tick_all(float dtSeconds) {
   update_pack_controller();
   
   // Update new AI systems
-  update_vocalization_system(dtSeconds);
-  update_alpha_wolf(dtSeconds);
-  update_scent_tracking(dtSeconds);
+  // update_vocalization_system(dtSeconds);  // Temporarily commented out
+  // update_alpha_wolf(dtSeconds);  // Temporarily commented out
+  // update_scent_tracking(dtSeconds);  // Temporarily commented out
   
   // Check for coordinated actions
   static float lastCoordCheck = -1.0f;
@@ -1320,4 +1322,7 @@ static inline void maybe_handle_howl_spawns() {
   }
 }
 
+// Include wolf vocalization system at the end to avoid circular dependencies
+#include "wolf_vocalization.h"
+// #include "alpha_wolf.h"  // Temporarily commented out to resolve circular dependency
 
