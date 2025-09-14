@@ -5,19 +5,6 @@
     box-sizing: border-box;
 }
 
-/* Responsive UI coordination classes */
-body.mobile .desktop-only {
-    display: none !important;
-}
-
-body.desktop .mobile-only {
-    display: none !important;
-}
-
-body.tablet .desktop-only {
-    display: none !important;
-}
-
 /* Viewport adaptations */
 @media (max-width: 1200px) {
     #controls-tip {
@@ -41,9 +28,8 @@ body.tablet .desktop-only {
 @media (max-width: 768px) {
     /* Show mobile controls on tablets */
     .mobile-controls {
-        display: flex !important;
+        display: block !important;
         height: 200px;
-        z-index: var(--z-hud);
     }
     
     #controls-tip {
@@ -102,10 +88,9 @@ body.tablet .desktop-only {
 @media (max-width: 480px) {
     /* Force mobile controls */
     .mobile-controls {
-        display: flex !important;
+        display: block !important;
         opacity: 1 !important;
         height: 220px;
-        z-index: var(--z-hud);
     }
     
     /* Hide desktop elements */

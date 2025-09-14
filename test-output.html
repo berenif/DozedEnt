@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Loading Test - DozedEnt</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #2d5a27; border: 1px solid #4caf50; }
+        .error { background: #5a2727; border: 1px solid #f44336; }
+        .info { background: #274a5a; border: 1px solid #2196f3; }
+        .warning { background: #5a5227; border: 1px solid #ff9800; }
+        pre {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #444;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>ð® DozedEnt WASM Loading Test</h1>
+    <p>This page tests the WASM module loading functionality to diagnose MIME type and path issues.</p>
+    
+    <div id="status"></div>
+    <div id="logs"></div>
+    
+    <button id="testButton">Test WASM Loading</button>
+    <button id="clearButton">Clear Logs</button>
+    
+    <h2>Environment Info</h2>
+    <pre id="envInfo"></pre>
+
+    <script>
+        let logContainer;
+        let statusContainer;
+        
+        function log(message, type = 'info') {
+            if (!logContainer) {
+                logContainer = document.getElementById('logs');
+            }
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `status ${type}`;
+            logEntry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            console.log(`[WASM Test] ${message}`);
+        }
+        
+        function setStatus(message, type = 'info') {
+            if (!statusContainer) {
+                statusContainer = document.getElementById('status');
+            }
+            statusContainer.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function clearLogs() {
+            if (logContainer) {
+                logContainer.innerHTML = '';
+            }
+            if (statusContainer) {
+                statusContainer.innerHTML = '';
+            }
+        }
+        
+        async function testWasmLoading() {
+            clearLogs();
+            setStatus('ð Testing WASM loading...', 'info');
+            
+            try {
+                log('Starting WASM helper module loading test...', 'info');
+                
+                // Test different paths that the wasm-manager tries
+                const isGitHubPages = location && /\.github\.io$/.test(location.hostname);
+                const helperModulePaths = isGitHubPages ? [
+                    './js/src/utils/wasm.js',
+                    './js/src/utils/trystero-wasm.min.js',
+                    './trystero-wasm.min.js',
+                    '../utils/wasm.js'
+                ] : [
+                    './dist/trystero-wasm.min.js',
+                    './js/src/utils/wasm.js',
+                    './src/utils/wasm.js',
+                    '../utils/wasm.js'
+                ];
+                
+                log(`Detected environment: ${isGitHubPages ? 'GitHub Pages' : 'Local/Other'}`, 'info');
+                log(`Testing ${helperModulePaths.length} fallback paths...`, 'info');
+                
+                let wasmHelperModule = null;
+                let successfulPath = null;
+                
+                for (const modulePath of helperModulePaths) {
+                    try {
+                        const baseUrl = new URL(document.baseURI);
+                        const wasmModulePath = new URL(modulePath, baseUrl).href;
+                        log(`Attempting: ${wasmModulePath}`, 'info');
+                        
+                        wasmHelperModule = await import(wasmModulePath);
+                        successfulPath = wasmModulePath;
+                        log(`â Successfully loaded WASM helper from: ${wasmModulePath}`, 'success');
+                        break;
+                    } catch (error) {
+                        if (modulePath.includes('trystero-wasm.min.js')) {
+                            log(`â¹ï¸ Minified WASM helper not available (${error.message})`, 'warning');
+                        } else {
+                            log(`â Failed to load from ${modulePath}: ${error.message}`, 'error');
+                        }
+                    }
+                }
+                
+                if (!wasmHelperModule) {
+                    throw new Error('All WASM helper module paths failed');
+                }
+                
+                // Test the loadWasm function
+                const { loadWasm } = wasmHelperModule;
+                if (typeof loadWasm !== 'function') {
+                    throw new Error('loadWasm function not found in helper module');
+                }
+                
+                log('â WASM helper module loaded successfully', 'success');
+                log(`â loadWasm function available: ${typeof loadWasm}`, 'success');
+                
+                // Test with a minimal WASM module (just header + version)
+                const emptyWasmBytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]);
+                log('Testing loadWasm with minimal WASM module...', 'info');
+                
+                const wasmResult = await loadWasm(emptyWasmBytes);
+                log(`â WASM instantiation successful`, 'success');
+                log(`- Instance: ${!!wasmResult.instance}`, 'success');
+                log(`- Module: ${!!wasmResult.module}`, 'success');
+                log(`- Memory: ${wasmResult.memory instanceof WebAssembly.Memory}`, 'success');
+                log(`- Exports: ${!!wasmResult.exports}`, 'success');
+                
+                setStatus('â All WASM loading tests passed!', 'success');
+                
+            } catch (error) {
+                log(`â WASM loading test failed: ${error.message}`, 'error');
+                setStatus(`â WASM loading failed: ${error.message}`, 'error');
+                console.error('WASM loading test error:', error);
+            }
+        };
+        
+        // Display environment information
+        document.addEventListener('DOMContentLoaded', () => {
+            const envInfo = document.getElementById('envInfo');
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Location': location.href,
+                'Base URI': document.baseURI,
+                'Is GitHub Pages': location && /\.github\.io$/.test(location.hostname),
+                'WebAssembly Support': typeof WebAssembly !== 'undefined',
+                'ES Modules Support': typeof import !== 'undefined'
+            };
+            
+            envInfo.textContent = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('\n');
+        });
+        
+        // Set up event listeners for SES compatibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const testButton = document.getElementById('testButton');
+            const clearButton = document.getElementById('clearButton');
+            
+            if (testButton) {
+                testButton.addEventListener('click', testWasmLoading);
+            }
+            if (clearButton) {
+                clearButton.addEventListener('click', clearLogs);
+            }
+        });
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testWasmLoading, 1000);
+        });
+    </script>
+</body>
+</html>
+

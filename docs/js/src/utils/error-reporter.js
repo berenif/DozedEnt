@@ -3,6 +3,8 @@
  * Collects, analyzes, and reports errors across all game systems
  */
 
+/* global gc */
+
 import { createLogger } from './logger.js';
 import { gameErrorHandler } from './game-error-handler.js';
 import { networkErrorRecovery } from './network-error-recovery.js';
@@ -93,7 +95,12 @@ export class ErrorReporter {
         
         perfObserver.observe({ entryTypes: ['longtask'] });
       } catch (error) {
-        this.logger.warn('Performance observer not supported:', error);
+        // Check if it's specifically an unsupported entry type error
+        if (error.message.includes('entryTypes') || error.message.includes('not supported')) {
+          this.logger.info('entryTypes longtask not supported, skipping performance observer');
+        } else {
+          this.logger.warn('Performance observer initialization failed:', error.message);
+        }
       }
     }
     
@@ -511,7 +518,7 @@ export class ErrorReporter {
       webRTC: !!window.RTCPeerConnection,
       gamepad: !!navigator.getGamepads,
       fullscreen: !!(document.fullscreenEnabled || document.webkitFullscreenEnabled),
-      pointerLock: !!(document.pointerLockElement !== undefined),
+      pointerLock: !!(typeof document.pointerLockElement !== "undefined"),
       localStorage: !!window.localStorage,
       sessionStorage: !!window.sessionStorage,
       indexedDB: !!window.indexedDB,
@@ -815,14 +822,14 @@ export class ErrorReporter {
         '0123456789abcdefghijklmnopqrstuvwxyz'[byte % 36]
       ).join('')
       return `err_${Date.now()}_${randomSuffix}`
-    } else {
+    } 
       // Fallback to deterministic generation
       const counter = (this.generateErrorId.counter || 0) + 1
       this.generateErrorId.counter = counter % 1000000
       const seed = Date.now() + counter
       const randomSuffix = (seed * 1664525 + 1013904223).toString(36).substr(2, 9)
       return `err_${Date.now()}_${randomSuffix}`
-    }
+    
   }
 
   /**

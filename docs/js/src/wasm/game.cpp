@@ -8,6 +8,9 @@
 #include "terrain_hazards.h"
 #include "scent.h"
 #include "enemies.h"
+#include "wolf_vocalization.h"
+#include "alpha_wolf.h"
+#include "scent_tracking.h"
 #include "choices.h"
 #include "risk.h"
 #include "escalate.h"
@@ -22,6 +25,11 @@
 
 // External reference to world simulation
 extern WorldSimulation g_world_sim;
+
+// Include achievement and statistics systems
+#include "achievement-system.h"
+#include "statistics-system.h"
+#include "adaptive_ai.h"
 
 // Player input variables - 5-button combat system
 static float g_input_x = 0.f;
@@ -121,6 +129,11 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   init_wolf_pack_system();
   // Clear wolf animation data
   reset_wolf_anim_data();
+  
+  // Initialize new AI systems
+  init_vocalization_system();
+  init_scent_tracking();
+  g_alpha_wolf.wolf_index = -1; // Reset alpha wolf
 
   // Initialize physics system
   physics_init();
@@ -136,6 +149,11 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   
   // Initialize world simulation system
   world_simulation_init();
+
+  // Initialize achievement and statistics systems
+  init_achievement_system();
+  initialize_statistics_system();
+  start_stats_session();
 
   // Randomly select a biome for the new run
   g_current_biome = (BiomeType)(rng_u32() % (unsigned int)BiomeType::Count);
@@ -455,7 +473,10 @@ void update(float dtSeconds) {
     g_input_y = g_roll_direction_y * 0.5f;
   }
   
-  const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier;
+  // Apply status effect modifiers to movement
+  float status_speed_modifier = g_player_status_effects.get_movement_modifier();
+  
+  const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier * status_speed_modifier;
   const float acceleration = PLAYER_ACCEL * dtSeconds;
   const float friction = PLAYER_FRICTION * dtSeconds * friction_multiplier;
 
@@ -477,6 +498,64 @@ void update(float dtSeconds) {
   // Update stun state
   if (g_is_stunned && g_time_seconds >= g_stun_end_time) {
     g_is_stunned = 0;
+  }
+  
+  // Update hyperarmor state
+  if (g_has_hyperarmor && g_time_seconds >= g_hyperarmor_end_time) {
+    g_has_hyperarmor = 0;
+  }
+  
+  // Update counter window
+  if (g_can_counter && g_time_seconds >= g_counter_window_end) {
+    g_can_counter = 0;
+  }
+  
+  // Update combo window
+  if (g_combo_count > 0 && g_time_seconds >= g_combo_window_end) {
+    g_combo_count = 0;  // Reset combo if window expired
+  }
+  
+  // Update status effects
+  g_player_status_effects.update(dtSeconds, g_time_seconds);
+  
+  // Check if stunned by status effects
+  if (g_player_status_effects.is_stunned()) {
+    g_input_x = 0.f;
+    g_input_y = 0.f;
+    g_input_is_rolling = 0;
+    g_input_light_attack = 0;
+    g_input_heavy_attack = 0;
+    g_input_is_blocking = 0;
+    g_input_special = 0;
+  }
+  
+  // Environmental detection (simplified - check boundaries)
+  const float WALL_DETECTION_DISTANCE = 0.05f;
+  const float LEDGE_DETECTION_DISTANCE = 0.1f;
+  
+  // Check for walls (arena boundaries)
+  g_near_wall = 0;
+  g_wall_distance = 999.0f;
+  
+  if (g_pos_x < WALL_DETECTION_DISTANCE || g_pos_x > (1.0f - WALL_DETECTION_DISTANCE)) {
+    g_near_wall = 1;
+    g_wall_distance = (g_pos_x < 0.5f) ? g_pos_x : (1.0f - g_pos_x);
+  }
+  if (g_pos_y < WALL_DETECTION_DISTANCE || g_pos_y > (1.0f - WALL_DETECTION_DISTANCE)) {
+    g_near_wall = 1;
+    float y_dist = (g_pos_y < 0.5f) ? g_pos_y : (1.0f - g_pos_y);
+    if (y_dist < g_wall_distance) g_wall_distance = y_dist;
+  }
+  
+  // Check for ledges (simplified - could be enhanced with terrain data)
+  g_near_ledge = 0;
+  g_ledge_distance = 999.0f;
+  // This would normally check terrain data for actual ledges
+  // For now, we'll consider extreme boundaries as potential ledges
+  if (g_pos_x < LEDGE_DETECTION_DISTANCE || g_pos_x > (1.0f - LEDGE_DETECTION_DISTANCE) ||
+      g_pos_y < LEDGE_DETECTION_DISTANCE || g_pos_y > (1.0f - LEDGE_DETECTION_DISTANCE)) {
+    g_near_ledge = 1;
+    g_ledge_distance = g_wall_distance;  // Use wall distance as approximation
   }
   
   // Cache rolling flag for combat checks - only true during i-frame period
@@ -736,7 +815,7 @@ void update(float dtSeconds) {
       }
     } else if (g_attack_state == AttackState::Active) {
       // During active, evaluate hits each frame; allow multi-hit across different enemies
-      for (int i = 0; i < (int)g_enemy_count; ++i) {
+      for (int i = 0; i < MAX_ENEMIES; ++i) {
         Enemy &e = g_enemies[i];
         if (!e.active) continue;
         if (e.health <= 0.f) continue;
@@ -1024,17 +1103,21 @@ void update(float dtSeconds) {
   // Update physics system
   physics_step(dtSeconds);
   
-  // Update force propagation system
+  // PERFORMANCE FIX: Temporarily disable heavy systems that cause browser freeze
+  // These systems process 64x64 grids (4096+ operations per frame) which is too expensive
+  // TODO: Optimize these systems or make them run at lower frequency
+  
+  // Update force propagation system (lightweight)
   force_propagation_update(dtSeconds);
   
-  // Update constraint system
-  constraint_system_update(dtSeconds);
+  // DISABLED: Update constraint system (can be expensive with many constraints)
+  // constraint_system_update(dtSeconds);
   
-  // Update chemistry system
-  chemistry_system_update(dtSeconds);
+  // DISABLED: Update chemistry system (64x64 grid = 4096 nodes per frame, causes freeze)
+  // chemistry_system_update(dtSeconds);
   
-  // Update world simulation system
-  world_simulation_update(dtSeconds);
+  // DISABLED: Update world simulation system (can be expensive with weather/heat)
+  // world_simulation_update(dtSeconds);
 
   // Update UI animation overlay values last so they're coherent with current frame state
   update_anim_overlay_internal();
@@ -1193,6 +1276,103 @@ unsigned int get_roll_state() { return (unsigned int)g_roll_state; }
 __attribute__((export_name("get_is_roll_sliding")))
 unsigned int get_is_roll_sliding() { return (g_roll_state == RollState::Sliding) ? 1u : 0u; }
 
+// Combo system exports
+__attribute__((export_name("get_combo_count")))
+int get_combo_count() { return g_combo_count; }
+
+__attribute__((export_name("get_combo_window_remaining")))
+float get_combo_window_remaining() { 
+  return (g_time_seconds < g_combo_window_end) ? (g_combo_window_end - g_time_seconds) : 0.0f;
+}
+
+// Counter system exports
+__attribute__((export_name("get_can_counter")))
+int get_can_counter() { return g_can_counter; }
+
+__attribute__((export_name("get_counter_window_remaining")))
+float get_counter_window_remaining() {
+  return (g_can_counter && g_time_seconds < g_counter_window_end) ? 
+         (g_counter_window_end - g_time_seconds) : 0.0f;
+}
+
+// Armor system exports
+__attribute__((export_name("get_has_hyperarmor")))
+int get_has_hyperarmor() { return g_has_hyperarmor; }
+
+__attribute__((export_name("get_armor_value")))
+float get_armor_value() { return g_armor_value; }
+
+__attribute__((export_name("set_armor_value")))
+void set_armor_value(float value) { g_armor_value = value; }
+
+// Environmental interaction exports
+__attribute__((export_name("get_near_wall")))
+int get_near_wall() { return g_near_wall; }
+
+__attribute__((export_name("get_wall_distance")))
+float get_wall_distance() { return g_wall_distance; }
+
+__attribute__((export_name("get_near_ledge")))
+int get_near_ledge() { return g_near_ledge; }
+
+__attribute__((export_name("get_ledge_distance")))
+float get_ledge_distance() { return g_ledge_distance; }
+
+// Status effect exports
+__attribute__((export_name("apply_burning")))
+int apply_burning(float duration, float intensity) {
+  StatusEffect effect = create_burning_effect(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_stun")))
+int apply_stun(float duration) {
+  StatusEffect effect = create_stun_effect(duration);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_slow")))
+int apply_slow(float duration, float intensity) {
+  StatusEffect effect = create_slow_effect(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("apply_damage_boost")))
+int apply_damage_boost(float duration, float intensity) {
+  StatusEffect effect = create_damage_boost(duration, intensity);
+  return g_player_status_effects.apply_effect(effect) ? 1 : 0;
+}
+
+__attribute__((export_name("get_status_effect_count")))
+int get_status_effect_count() {
+  return g_player_status_effects.get_active_effect_count();
+}
+
+__attribute__((export_name("has_status_effect")))
+int has_status_effect(int effect_type) {
+  return g_player_status_effects.has_effect((StatusEffectType)effect_type) ? 1 : 0;
+}
+
+__attribute__((export_name("remove_status_effect")))
+void remove_status_effect(int effect_type) {
+  g_player_status_effects.remove_effect((StatusEffectType)effect_type);
+}
+
+__attribute__((export_name("get_status_movement_modifier")))
+float get_status_movement_modifier() {
+  return g_player_status_effects.get_movement_modifier();
+}
+
+__attribute__((export_name("get_status_damage_modifier")))
+float get_status_damage_modifier() {
+  return g_player_status_effects.get_damage_modifier();
+}
+
+__attribute__((export_name("get_status_defense_modifier")))
+float get_status_defense_modifier() {
+  return g_player_status_effects.get_defense_modifier();
+}
+
 __attribute__((export_name("get_roll_time")))
 float get_roll_time() { 
   if (g_roll_state == RollState::Idle) return 0.f;
@@ -1211,8 +1391,8 @@ float get_stun_remaining() {
 }
 
 // Apply stun to player (for enemy attacks that cause stun)
-__attribute__((export_name("apply_stun")))
-void apply_stun(float duration) {
+__attribute__((export_name("apply_player_stun")))
+void apply_player_stun(float duration) {
   g_is_stunned = 1;
   g_stun_end_time = g_time_seconds + duration;
 }
@@ -1253,16 +1433,27 @@ int on_parry() {
 // Light Attack (A1) - Fast, can combo
 __attribute__((export_name("on_light_attack")))
 int on_light_attack() {
-  // Apply weapon speed modifier to cooldown
-  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (reduced for combos)
+  float combo_modifier = (g_combo_count > 0 && g_time_seconds < g_combo_window_end) ? 0.7f : 1.0f;
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (reduced for combos)
+  float stamina_modifier = (g_combo_count > 0) ? 0.8f : 1.0f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system
+  if (g_time_seconds < g_combo_window_end && g_combo_count < MAX_COMBO_COUNT) {
+    g_combo_count++;
+  } else {
+    g_combo_count = 1;  // Start new combo chain
+  }
+  g_combo_window_end = g_time_seconds + COMBO_WINDOW_DURATION;
+  g_last_attack_type = AttackType::Light;
   
   // Start light attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1279,16 +1470,27 @@ int on_light_attack() {
 // Heavy Attack (A2) - Slower, more damage, can feint during windup
 __attribute__((export_name("on_heavy_attack")))
 int on_heavy_attack() {
-  // Apply weapon speed modifier to cooldown
-  float weapon_cooldown = ATTACK_COOLDOWN_SEC / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (can combo from light)
+  float combo_modifier = (g_combo_count > 0 && g_last_attack_type == AttackType::Light && g_time_seconds < g_combo_window_end) ? 0.8f : 1.0f;
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier (heavy costs more)
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * 1.5f * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (heavy costs more, reduced in combos)
+  float stamina_modifier = (g_combo_count > 0) ? 1.2f : 1.5f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system (heavy can chain from light)
+  if (g_time_seconds < g_combo_window_end && g_last_attack_type == AttackType::Light && g_combo_count < MAX_COMBO_COUNT) {
+    g_combo_count++;
+  } else {
+    g_combo_count = 1;  // Start new combo chain
+  }
+  g_combo_window_end = g_time_seconds + COMBO_WINDOW_DURATION;
+  g_last_attack_type = AttackType::Heavy;
   
   // Start heavy attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1298,6 +1500,12 @@ int on_heavy_attack() {
     normalize(g_attack_dir_x, g_attack_dir_y);
     g_attack_state = AttackState::Windup;
     g_attack_state_time = g_time_seconds;
+    
+    // Grant hyperarmor for Raider weapon during heavy attacks
+    if (weapon_has_tag(WEAPON_TAG_HYPERARMOR)) {
+      g_has_hyperarmor = 1;
+      g_hyperarmor_end_time = g_time_seconds + HEAVY_WINDUP_SEC + HEAVY_ACTIVE_SEC;
+    }
   }
   return 1;
 }
@@ -1305,16 +1513,28 @@ int on_heavy_attack() {
 // Special Attack - Hero move, unique per character
 __attribute__((export_name("on_special_attack")))
 int on_special_attack() {
-  // Apply weapon speed modifier to cooldown (special has longer base cooldown)
-  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * 2.0f) / get_weapon_speed_multiplier();
+  // Apply weapon speed modifier to cooldown (special can finish combos)
+  float combo_modifier = (g_combo_count >= 3) ? 0.6f : 1.0f;  // Faster if used as combo finisher
+  float weapon_cooldown = (ATTACK_COOLDOWN_SEC * 2.0f * combo_modifier) / get_weapon_speed_multiplier();
   if ((g_time_seconds - g_last_attack_time) < weapon_cooldown) { return 0; }
   
-  // Apply weapon stamina cost modifier (special costs more)
-  float weapon_stamina_cost = STAMINA_ATTACK_COST * 2.0f * get_weapon_stamina_cost_multiplier();
+  // Apply weapon stamina cost modifier (special costs more, reduced as combo finisher)
+  float stamina_modifier = (g_combo_count >= 3) ? 1.5f : 2.0f;
+  float weapon_stamina_cost = STAMINA_ATTACK_COST * stamina_modifier * get_weapon_stamina_cost_multiplier();
   if (g_stamina < weapon_stamina_cost) { return 0; }
   g_stamina -= weapon_stamina_cost;
   if (g_stamina < 0.f) g_stamina = 0.f;
   g_last_attack_time = g_time_seconds;
+  
+  // Update combo system (special as combo finisher)
+  if (g_time_seconds < g_combo_window_end && g_combo_count > 0) {
+    g_combo_count++;  // Count the special as part of combo
+    // Reset combo after special (it's a finisher)
+    g_combo_window_end = g_time_seconds - 1.0f;  // End combo window
+  } else {
+    g_combo_count = 0;  // Special outside combo resets count
+  }
+  g_last_attack_type = AttackType::Special;
   
   // Start special attack state machine
   if (g_attack_state == AttackState::Idle || g_attack_state == AttackState::Recovery) {
@@ -1422,6 +1642,12 @@ int get_block_state() { return g_blocking ? 1 : 0; }
 //   2 => PERFECT PARRY
 __attribute__((export_name("handle_incoming_attack")))
 int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, float attackDirY) {
+  // Check hyperarmor first (cannot be interrupted)
+  if (g_has_hyperarmor && g_time_seconds < g_hyperarmor_end_time) {
+    // Take damage but don't interrupt the attack
+    return -1;
+  }
+  
   // i-frames while rolling
   if (g_is_rolling) return -1;
 
@@ -1440,8 +1666,10 @@ int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, f
     if (facingOk) {
       const float dt = g_time_seconds - g_block_start_time;
       if (dt >= 0.f && dt <= PARRY_WINDOW) {
-        // Perfect parry: fully restore player stamina and stun attacker
+        // Perfect parry: fully restore player stamina, stun attacker, and enable counter
         g_stamina = 1.0f;
+        g_can_counter = 1;
+        g_counter_window_end = g_time_seconds + COUNTER_WINDOW_DURATION;
         
         // Apply 300ms stun to the attacker (this would be handled by enemy system)
         // For now, we signal that a parry stun should be applied
@@ -1718,6 +1946,155 @@ __attribute__((export_name("get_wolf_anim_fur_ruffle")))
 float get_wolf_anim_fur_ruffle(unsigned int wolf_idx) { return (wolf_idx < g_enemy_count && g_enemies[wolf_idx].active) ? g_enemies[wolf_idx].anim_data.fur_ruffle : 0.f; }
 
 // ============================================================================
+// Enhanced AI System Exports
+// ============================================================================
+
+// Vocalization System
+__attribute__((export_name("get_vocalization_count")))
+int get_vocalization_count() { return (int)g_vocalization_count; }
+
+__attribute__((export_name("get_vocalization_type")))
+int get_vocalization_type(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? (int)g_vocalizations[idx].type : 0; 
+}
+
+__attribute__((export_name("get_vocalization_x")))
+float get_vocalization_x(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].x : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_y")))
+float get_vocalization_y(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].y : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_intensity")))
+float get_vocalization_intensity(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? g_vocalizations[idx].intensity : 0.f; 
+}
+
+__attribute__((export_name("get_vocalization_wolf_index")))
+int get_vocalization_wolf_index(unsigned int idx) { 
+  return (idx < g_vocalization_count) ? (int)g_vocalizations[idx].wolf_index : -1; 
+}
+
+// Alpha Wolf System
+__attribute__((export_name("get_alpha_wolf_index")))
+int get_alpha_wolf_index() { return g_alpha_wolf.wolf_index; }
+
+__attribute__((export_name("get_alpha_ability")))
+int get_alpha_ability() { 
+  return (g_alpha_wolf.wolf_index >= 0) ? (int)g_alpha_wolf.current_ability : 0; 
+}
+
+__attribute__((export_name("get_alpha_is_enraged")))
+int get_alpha_is_enraged() { 
+  return (g_alpha_wolf.wolf_index >= 0 && g_alpha_wolf.is_enraged) ? 1 : 0; 
+}
+
+__attribute__((export_name("get_alpha_leadership_bonus")))
+float get_alpha_leadership_bonus() { 
+  return (g_alpha_wolf.wolf_index >= 0) ? g_alpha_wolf.leadership_bonus : 0.f; 
+}
+
+// Territory System
+__attribute__((export_name("get_territory_count")))
+int get_territory_count() { return (int)g_territory_count; }
+
+__attribute__((export_name("get_territory_x")))
+float get_territory_x(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].center_x : 0.f; 
+}
+
+__attribute__((export_name("get_territory_y")))
+float get_territory_y(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].center_y : 0.f; 
+}
+
+__attribute__((export_name("get_territory_radius")))
+float get_territory_radius(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].radius : 0.f; 
+}
+
+__attribute__((export_name("get_territory_strength")))
+float get_territory_strength(unsigned int idx) { 
+  return (idx < g_territory_count) ? g_territories[idx].strength : 0.f; 
+}
+
+// Scent System
+__attribute__((export_name("get_scent_strength_at")))
+float get_scent_strength_at_export(float x, float y) { 
+  return get_scent_strength_at(x, y); 
+}
+
+__attribute__((export_name("get_scent_marker_count")))
+int get_scent_marker_count() { return (int)g_scent_marker_count; }
+
+__attribute__((export_name("get_scent_marker_x")))
+float get_scent_marker_x(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].x : 0.f; 
+}
+
+__attribute__((export_name("get_scent_marker_y")))
+float get_scent_marker_y(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].y : 0.f; 
+}
+
+__attribute__((export_name("get_scent_marker_strength")))
+float get_scent_marker_strength(unsigned int idx) { 
+  return (idx < g_scent_marker_count) ? g_scent_markers[idx].strength : 0.f; 
+}
+
+// Enemy Emotional State
+__attribute__((export_name("get_enemy_emotion")))
+int get_enemy_emotion(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? (int)g_enemies[idx].emotion : 0; 
+}
+
+__attribute__((export_name("get_enemy_emotion_intensity")))
+float get_enemy_emotion_intensity(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].emotionIntensity : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_aggression")))
+float get_enemy_aggression(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].aggression : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_intelligence")))
+float get_enemy_intelligence(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].intelligence : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_coordination")))
+float get_enemy_coordination(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].coordination : 0.f; 
+}
+
+__attribute__((export_name("get_enemy_morale")))
+float get_enemy_morale(unsigned int idx) { 
+  return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].morale : 0.f; 
+}
+
+// Pack Information (duplicates removed - already defined above)
+
+__attribute__((export_name("get_pack_sync_timer")))
+float get_pack_sync_timer() { return g_pack_sync_timer; }
+
+// Adaptive AI Information
+__attribute__((export_name("get_player_skill_estimate")))
+float get_player_skill_estimate() { return g_player_skill_estimate; }
+
+__attribute__((export_name("get_difficulty_wolf_speed")))
+float get_difficulty_wolf_speed() { return g_difficulty.wolfSpeed; }
+
+__attribute__((export_name("get_difficulty_wolf_aggression")))
+float get_difficulty_wolf_aggression() { return g_difficulty.wolfAggression; }
+
+__attribute__((export_name("get_difficulty_wolf_intelligence")))
+float get_difficulty_wolf_intelligence() { return g_difficulty.wolfIntelligence; }
+
+// ============================================================================
 // Weapon System Exports
 // ============================================================================
 
@@ -1887,6 +2264,16 @@ float get_terrain_temperature(float world_x, float world_y) {
   }
   
   return g_world_sim.terrain[grid_x][grid_y].temperature;
+}
+
+__attribute__((export_name("set_terrain_elevation")))
+void set_terrain_elevation(float x, float y, float elevation) {
+  int grid_x = (int)(x * TERRAIN_GRID_SIZE);
+  int grid_y = (int)(y * TERRAIN_GRID_SIZE);
+  if (grid_x < 0 || grid_x >= TERRAIN_GRID_SIZE || grid_y < 0 || grid_y >= TERRAIN_GRID_SIZE) {
+    return;
+  }
+  g_world_sim.terrain[grid_x][grid_y].elevation = elevation;
 }
 
 

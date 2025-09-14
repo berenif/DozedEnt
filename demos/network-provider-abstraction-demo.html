@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Provider Abstraction Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+            50% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .demo-content {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 5px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.primary {
+            background: rgba(0, 255, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .provider-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .provider-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .provider-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .provider-status {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .provider-status.loaded {
+            color: #00ff00;
+        }
+        
+        .provider-status.not-loaded {
+            color: #ff0000;
+        }
+        
+        .log-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid rgba(0, 255, 0, 0.5);
+            padding-left: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .log-entry.error {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+        
+        .log-entry.success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        
+        .log-entry.info {
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+        
+        .timestamp {
+            opacity: 0.5;
+            margin-right: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .highlight {
+            color: #ffff00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <h1>🔌 NETWORK PROVIDER ABSTRACTION</h1>
+        <div class="subtitle">Unified Interface for Multiple Network Providers</div>
+    </div>
+    
+    <div class="demo-content">
+        <div class="section">
+            <h3>📋 Available Providers</h3>
+            <div class="provider-list" id="provider-list">
+                <!-- Providers will be populated by JavaScript -->
+            </div>
+            <button class="btn primary" onclick="refreshProviders()">Refresh Provider List</button>
+        </div>
+        
+        <div class="section">
+            <h3>⚙️ Provider Operations</h3>
+            <button class="btn" onclick="testProviderInitialization()">Test Provider Initialization</button>
+            <button class="btn" onclick="testRoomCreation()">Test Room Creation</button>
+            <button class="btn" onclick="testStatistics()">Test Statistics</button>
+            <button class="btn" onclick="testEventHandling()">Test Event Handling</button>
+        </div>
+        
+        <div class="section">
+            <h3>📊 Statistics</h3>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Current Provider</div>
+                    <div class="stat-value" id="current-provider">None</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Messages Sent</div>
+                    <div class="stat-value" id="messages-sent">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Messages Received</div>
+                    <div class="stat-value" id="messages-received">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Connections</div>
+                    <div class="stat-value" id="connections">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Errors</div>
+                    <div class="stat-value" id="errors">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>💡 Usage Example</h3>
+            <div class="code-block">
+<span class="highlight">// Before: Direct provider imports</span>
+switch (provider) {
+  case 'firebase':
+    trysteroModule = await import('../dist/trystero-firebase.min.js')
+    break
+  case 'ipfs':
+    trysteroModule = await import('../dist/trystero-ipfs.min.js')
+    break
+  // ... more cases
+}
+
+<span class="highlight">// After: Abstraction layer</span>
+const networkManager = new NetworkProviderManager()
+await networkManager.initializeProvider('firebase')
+const room = await networkManager.createRoom('my-room')
+            </div>
+        </div>
+    </div>
+    
+    <div class="log-panel">
+        <h3>📝 Event Log</h3>
+        <div id="event-log"></div>
+    </div>
+    
+    <script type="module">
+        import NetworkProviderManager from '../src/netcode/network-provider-manager.js'
+        
+        // Global variables
+        let networkManager = null
+        
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('event-log')
+            const entry = document.createElement('div')
+            entry.className = `log-entry ${type}`
+            const time = new Date().toLocaleTimeString()
+            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`
+            log.insertBefore(entry, log.firstChild)
+            
+            // Keep only last 50 entries
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild)
+            }
+        }
+        
+        // Initialize network manager
+        function initializeNetworkManager() {
+            if (!networkManager) {
+                networkManager = new NetworkProviderManager()
+                
+                // Set up event handlers
+                networkManager.on('onProviderChanged', (providerId) => {
+                    addLog(`Provider changed to: ${providerId}`, 'info')
+                    updateStats()
+                })
+                
+                networkManager.on('onRoomCreated', (roomId, providerId) => {
+                    addLog(`Room created: ${roomId} with ${providerId}`, 'success')
+                    updateStats()
+                })
+                
+                networkManager.on('onRoomJoined', (roomId, providerId) => {
+                    addLog(`Joined room: ${roomId} with ${providerId}`, 'success')
+                    updateStats()
+                })
+                
+                networkManager.on('onError', (error) => {
+                    addLog(`Error: ${error.message}`, 'error')
+                    updateStats()
+                })
+                
+                addLog('Network Provider Manager initialized', 'success')
+            }
+            return networkManager
+        }
+        
+        // Refresh provider list
+        window.refreshProviders = function() {
+            const networkManager = initializeNetworkManager()
+            const providers = networkManager.getAvailableProviders()
+            const providerList = document.getElementById('provider-list')
+            
+            providerList.innerHTML = providers.map(provider => `
+                <div class="provider-item">
+                    <div class="provider-name">${provider.name}</div>
+                    <div class="provider-status ${provider.isLoaded ? 'loaded' : 'not-loaded'}">
+                        ${provider.isLoaded ? 'Loaded' : 'Not Loaded'}
+                    </div>
+                </div>
+            `).join('')
+            
+            addLog(`Refreshed provider list: ${providers.length} providers available`, 'info')
+        }
+        
+        // Test provider initialization
+        window.testProviderInitialization = async function() {
+            const networkManager = initializeNetworkManager()
+            
+            try {
+                addLog('Testing provider initialization...', 'info')
+                
+                // Test with a valid provider
+                const success = await networkManager.initializeProvider('torrent')
+                if (success) {
+                    addLog('Provider initialization test passed', 'success')
+                } else {
+                    addLog('Provider initialization test failed', 'error')
+                }
+                
+                // Test with invalid provider
+                const invalidSuccess = await networkManager.initializeProvider('invalid-provider')
+                if (!invalidSuccess) {
+                    addLog('Invalid provider test passed (correctly failed)', 'success')
+                } else {
+                    addLog('Invalid provider test failed (should have failed)', 'error')
+                }
+                
+            } catch (error) {
+                addLog(`Provider initialization test error: ${error.message}`, 'error')
+            }
+        }
+        
+        // Test room creation
+        window.testRoomCreation = async function() {
+            const networkManager = initializeNetworkManager()
+            
+            try {
+                addLog('Testing room creation...', 'info')
+                
+                // Initialize a provider first
+                await networkManager.initializeProvider('torrent')
+                
+                // Test room creation
+                const room = await networkManager.createRoom('test-room')
+                if (room) {
+                    addLog('Room creation test passed', 'success')
+                    
+                    // Test leaving room
+                    networkManager.leaveRoom()
+                    addLog('Room leave test passed', 'success')
+                } else {
+                    addLog('Room creation test failed', 'error')
+                }
+                
+            } catch (error) {
+                addLog(`Room creation test error: ${error.message}`, 'error')
+            }
+        }
+        
+        // Test statistics
+        window.testStatistics = function() {
+            const networkManager = initializeNetworkManager()
+            
+            addLog('Testing statistics...', 'info')
+            
+            // Test message stats
+            networkManager.updateMessageStats('sent')
+            networkManager.updateMessageStats('received')
+            networkManager.updateMessageStats('sent')
+            
+            const stats = networkManager.getStats()
+            if (stats.messagesSent === 2 && stats.messagesReceived === 1) {
+                addLog('Message statistics test passed', 'success')
+            } else {
+                addLog('Message statistics test failed', 'error')
+            }
+            
+            // Test reset
+            networkManager.resetStats()
+            const resetStats = networkManager.getStats()
+            if (resetStats.messagesSent === 0 && resetStats.messagesReceived === 0) {
+                addLog('Statistics reset test passed', 'success')
+            } else {
+                addLog('Statistics reset test failed', 'error')
+            }
+            
+            updateStats()
+        }
+        
+        // Test event handling
+        window.testEventHandling = function() {
+            const networkManager = initializeNetworkManager()
+            
+            addLog('Testing event handling...', 'info')
+            
+            let eventFired = false
+            networkManager.on('onProviderChanged', () => {
+                eventFired = true
+            })
+            
+            // Simulate event
+            if (networkManager.eventHandlers.onProviderChanged) {
+                networkManager.eventHandlers.onProviderChanged('test-provider')
+            }
+            
+            if (eventFired) {
+                addLog('Event handling test passed', 'success')
+            } else {
+                addLog('Event handling test failed', 'error')
+            }
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            if (!networkManager) {
+                return
+            }
+            
+            const stats = networkManager.getStats()
+            const currentProvider = networkManager.getCurrentProvider()
+            
+            document.getElementById('current-provider').textContent = 
+                currentProvider ? currentProvider.name : 'None'
+            document.getElementById('messages-sent').textContent = stats.messagesSent
+            document.getElementById('messages-received').textContent = stats.messagesReceived
+            document.getElementById('connections').textContent = stats.connectionsEstablished
+            document.getElementById('errors').textContent = stats.errors
+        }
+        
+        // Initialize demo
+        addLog('Network Provider Abstraction Demo initialized', 'success')
+        addLog('Click "Refresh Provider List" to see available providers', 'info')
+        
+        // Auto-refresh stats
+        setInterval(updateStats, 1000)
+    </script>
+</body>
+</html>

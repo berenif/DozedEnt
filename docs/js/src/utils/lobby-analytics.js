@@ -418,6 +418,96 @@ export class LobbyAnalytics {
   }
   
   /**
+   * Generic event tracking method
+   */
+  trackEvent(eventType, eventData = {}) {
+    // Route to specific tracking methods based on event type
+    switch (eventType) {
+      case 'room_created':
+        if (eventData.roomId) {
+          // Create a minimal room object for the specific tracker
+          const room = {
+            id: eventData.roomId,
+            type: eventData.type || 'public',
+            settings: { gameMode: eventData.gameMode || 'default' },
+            metadata: { region: eventData.region || 'auto' },
+            maxPlayers: eventData.maxPlayers || 4
+          }
+          this.trackRoomCreated(room)
+        }
+        break
+        
+      case 'player_joined':
+        if (eventData.playerId && eventData.roomId) {
+          const player = {
+            id: eventData.playerId,
+            role: eventData.role || 'player',
+            region: eventData.region,
+            stats: { rating: eventData.rating || 1000 }
+          }
+          const room = { id: eventData.roomId }
+          this.trackPlayerJoined(player, room)
+        }
+        break
+        
+      case 'player_left':
+        if (eventData.playerId) {
+          const player = { id: eventData.playerId }
+          const sessionDuration = eventData.sessionDuration || 0
+          this.trackPlayerLeft(player, sessionDuration)
+        }
+        break
+        
+      case 'chat_message':
+        if (eventData.message || eventData.content) {
+          const message = eventData.message || eventData.content || ''
+          this.trackChatMessage(message)
+        }
+        break
+        
+      case 'matchmaking_started':
+      case 'matchmaking_complete':
+        const success = eventType === 'matchmaking_complete'
+        const criteria = {
+          gameMode: eventData.gameMode,
+          region: eventData.region,
+          rating: eventData.rating
+        }
+        const timeToMatch = eventData.waitTime || eventData.timeToMatch || 0
+        this.trackMatchmaking(success, criteria, timeToMatch)
+        break
+        
+      case 'game_started':
+        if (eventData.roomId) {
+          const room = {
+            id: eventData.roomId,
+            settings: { gameMode: eventData.gameMode || 'default' },
+            players: new Array(eventData.playerCount || 2)
+          }
+          const queueTime = eventData.queueTime || 0
+          this.trackMatchStarted(room, queueTime)
+        }
+        break
+        
+      case 'room_settings_updated':
+      case 'host_migrated':
+      case 'room_deleted':
+      case 'spectator_joined':
+        // These are informational events, just log them
+        this.logEvent(eventType, eventData)
+        break
+        
+      default:
+        // For unknown event types, just log them
+        this.logEvent(eventType, eventData)
+        break
+    }
+    
+    // Always log the original event for debugging
+    this.logEvent(eventType, eventData)
+  }
+
+  /**
    * Track feature usage
    */
   trackFeatureUsage(feature) {

@@ -24,6 +24,7 @@ extern "C" {
 
 // Deterministic game state - tick counter instead of timestamps
 static unsigned int g_game_tick = 0;
+static float g_game_time = 0.0f; // Game time in seconds for standalone builds
 static unsigned int g_rng_seed = 12345;
 
 // Deterministic LCG random number generator - seeded and managed internally

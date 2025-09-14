@@ -1,0 +1,507 @@
+/* Reduced Cognitive Load - Simplified information density and clear hierarchy */
+
+/* Core principle: Group related information, use consistent patterns, minimize mental processing */
+
+/* INFORMATION GROUPING - Related elements clustered together */
+.info-cluster {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+.info-cluster-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  padding-bottom: 4px;
+}
+
+/* SURVIVAL CLUSTER - Health, stamina, immediate threats */
+.survival-cluster {
+  border-left: 4px solid #ff4444;
+}
+
+.survival-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.survival-icon {
+  width: 20px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.survival-label {
+  flex: 1;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.survival-value {
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* COMBAT CLUSTER - Abilities, cooldowns, resources for combat */
+.combat-cluster {
+  border-left: 4px solid #ffc107;
+}
+
+.combat-abilities {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.combat-ability {
+  flex: 1;
+  text-align: center;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.combat-ability.ready {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.combat-ability.cooldown {
+  border-color: #6c757d;
+  background: rgba(108, 117, 125, 0.1);
+  opacity: 0.6;
+}
+
+.ability-icon-simple {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ability-key-simple {
+  font-size: 10px;
+  color: #aaaaaa;
+  font-weight: 600;
+}
+
+.ability-cooldown-simple {
+  font-size: 11px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* STATUS CLUSTER - Buffs, debuffs, conditions */
+.status-cluster {
+  border-left: 4px solid #17a2b8;
+}
+
+.status-list-simple {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.status-item-simple {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-item-simple.buff {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.status-item-simple.debuff {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.status-item-simple.neutral {
+  background: rgba(74, 144, 226, 0.2);
+  color: #4a90e2;
+}
+
+.status-icon-simple {
+  font-size: 12px;
+}
+
+.status-duration-simple {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* PROGRESS CLUSTER - XP, level, objectives */
+.progress-cluster {
+  border-left: 4px solid #6f42c1;
+}
+
+.progress-item {
+  margin-bottom: 6px;
+}
+
+.progress-bar-simple {
+  width: 100%;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-fill-simple {
+  height: 100%;
+  background: linear-gradient(90deg, #6f42c1 0%, #8a63d2 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-text-simple {
+  font-size: 11px;
+  color: #cccccc;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+/* SIMPLIFIED ICONOGRAPHY - Consistent, recognizable symbols */
+.icon-health::before { content: "❤️"; }
+.icon-stamina::before { content: "⚡"; }
+.icon-shield::before { content: "🛡️"; }
+.icon-attack::before { content: "⚔️"; }
+.icon-special::before { content: "✨"; }
+.icon-roll::before { content: "🌀"; }
+.icon-block::before { content: "🛡️"; }
+.icon-gold::before { content: "🔶"; }
+.icon-essence::before { content: "🔷"; }
+.icon-xp::before { content: "⭐"; }
+.icon-level::before { content: "📊"; }
+.icon-objective::before { content: "🎯"; }
+.icon-warning::before { content: "⚠️"; }
+.icon-critical::before { content: "🔥"; }
+.icon-buff::before { content: "↗️"; }
+.icon-debuff::before { content: "↘️"; }
+
+/* COLOR CODING SYSTEM - Consistent meaning across UI */
+.color-health { color: #ff4444; }
+.color-stamina { color: #28a745; }
+.color-mana { color: #007bff; }
+.color-gold { color: #ffd700; }
+.color-essence { color: #17a2b8; }
+.color-xp { color: #6f42c1; }
+.color-buff { color: #28a745; }
+.color-debuff { color: #dc3545; }
+.color-neutral { color: #6c757d; }
+.color-warning { color: #ffc107; }
+.color-critical { color: #ff0000; }
+.color-safe { color: #20c997; }
+
+/* PROGRESSIVE DISCLOSURE - Show more detail on hover/focus */
+.detail-on-hover {
+  position: relative;
+}
+
+.detail-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.detail-on-hover:hover .detail-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* SIMPLIFIED MENUS - Reduced options, clear categories */
+.simple-menu {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 300px;
+}
+
+.simple-menu-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 16px;
+  text-align: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.simple-menu-section {
+  margin-bottom: 16px;
+}
+
+.simple-menu-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.simple-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.simple-menu-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.simple-menu-option-icon {
+  width: 20px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.simple-menu-option-text {
+  flex: 1;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.simple-menu-option-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* CHOICE SIMPLIFICATION - Clear risk/reward indicators */
+.simple-choice-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.simple-choice {
+  flex: 1;
+  max-width: 200px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.simple-choice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.simple-choice.safe {
+  border-color: #28a745;
+}
+
+.simple-choice.risky {
+  border-color: #ffc107;
+}
+
+.simple-choice.dangerous {
+  border-color: #dc3545;
+}
+
+.choice-risk-indicator {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.choice-title-simple {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.choice-description-simple {
+  font-size: 12px;
+  color: #cccccc;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.choice-effect-simple {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.choice-effect-simple.positive {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.choice-effect-simple.negative {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.choice-effect-simple.neutral {
+  background: rgba(74, 144, 226, 0.2);
+  color: #4a90e2;
+}
+
+/* NOTIFICATION SIMPLIFICATION - Clear, actionable messages */
+.simple-notification {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 4px solid;
+  max-width: 300px;
+}
+
+.simple-notification.info {
+  border-color: #17a2b8;
+}
+
+.simple-notification.success {
+  border-color: #28a745;
+}
+
+.simple-notification.warning {
+  border-color: #ffc107;
+}
+
+.simple-notification.error {
+  border-color: #dc3545;
+}
+
+.notification-icon-simple {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+.notification-text-simple {
+  flex: 1;
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* RESPONSIVE SIMPLIFICATION */
+@media (max-width: 768px) {
+  .info-cluster {
+    padding: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .info-cluster-title {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  
+  .survival-item,
+  .simple-menu-option {
+    font-size: 12px;
+  }
+  
+  .combat-abilities {
+    gap: 4px;
+  }
+  
+  .combat-ability {
+    padding: 4px;
+  }
+  
+  .ability-icon-simple {
+    font-size: 16px;
+  }
+  
+  .simple-choice-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .simple-choice {
+    max-width: none;
+  }
+}
+
+/* ACCESSIBILITY - High contrast and clear focus states */
+@media (prefers-contrast: high) {
+  .info-cluster {
+    border-width: 2px;
+    background: rgba(0, 0, 0, 0.95);
+  }
+  
+  .survival-value,
+  .notification-text-simple,
+  .choice-title-simple {
+    color: #ffffff;
+    font-weight: 800;
+  }
+  
+  .color-health { color: #ff6666; }
+  .color-stamina { color: #44dd44; }
+  .color-warning { color: #ffdd44; }
+  .color-critical { color: #ff4444; }
+}
+
+/* FOCUS MANAGEMENT - Clear focus indicators for keyboard navigation */
+.focusable {
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.focusable:focus {
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);
+  border-color: #4a90e2;
+}
+
+/* REDUCED MOTION - Respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

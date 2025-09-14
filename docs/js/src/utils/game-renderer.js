@@ -369,7 +369,7 @@ export class GameRenderer {
 
         try {
             // Use provided seed or derive deterministically (callers pass seed from run seed)
-            const environmentSeed = (seed != null) ? seed : 0;
+            const environmentSeed = (seed !== null) ? seed : 0;
             
             // Generate environment in WASM
             wasmModule.generate_environment(biomeType, environmentSeed);
@@ -565,9 +565,9 @@ export class GameRenderer {
     
     // Update camera to follow target
     updateCamera(targetX, targetY, deltaTime) {
-        // Set target position
-        this.camera.targetX = targetX
-        this.camera.targetY = targetY
+        // Set target position - center camera on target
+        this.camera.targetX = targetX - this.camera.width / 2
+        this.camera.targetY = targetY - this.camera.height / 2
         
         // Clamp target to bounds
         this.camera.targetX = Math.max(this.camera.bounds.minX, 
@@ -579,10 +579,22 @@ export class GameRenderer {
         const smoothing = 1 - (1 - this.camera.smoothing)**(deltaTime * 60)
         this.camera.x += (this.camera.targetX - this.camera.x) * smoothing
         this.camera.y += (this.camera.targetY - this.camera.y) * smoothing
+        
+        // Ensure camera reaches target within reasonable precision
+        if (Math.abs(this.camera.x - this.camera.targetX) < 0.1) {
+            this.camera.x = this.camera.targetX
+        }
+        if (Math.abs(this.camera.y - this.camera.targetY) < 0.1) {
+            this.camera.y = this.camera.targetY
+        }
+        
+        // Ensure camera stays within bounds (fix floating point precision issues)
+        this.camera.x = Math.max(this.camera.bounds.minX, Math.min(this.camera.bounds.maxX, this.camera.x));
+        this.camera.y = Math.max(this.camera.bounds.minY, Math.min(this.camera.bounds.maxY, this.camera.y));
     }
     
-    // Main render method
-    render(followPlayer = true) {
+    // Legacy render method with camera following
+    renderWithCameraFollow(followPlayer = true) {
         // Update camera to follow player if enabled
         if (followPlayer) {
             this.updateCamera(this.player.x, this.player.y, 1/60)
@@ -1025,11 +1037,11 @@ export class GameRenderer {
             const lodInfo = this.lodSystem.calculateEntityLOD(deco, this.camera);
             
             // Skip rendering if LOD system says to cull
-            if (!lodInfo.shouldRender) return;
+            if (!lodInfo.shouldRender) {return;}
             
             // Get optimized rendering parameters
             const renderParams = this.lodSystem.getOptimizedRenderParams(lodInfo);
-            if (renderParams.skipAll) return;
+            if (renderParams.skipAll) {return;}
             
             this.ctx.save()
             
@@ -1927,7 +1939,7 @@ export class GameRenderer {
         this.ctx.restore();
     }
     
-    drawCharacter(x, y, width, height, color, facing, state, frame) {
+    drawCharacter(x, y, width, height, color, facing, state, _frame) {
         // Fallback to simple character drawing for compatibility
         this.drawEnhancedCharacter(x, y, width, height, color, facing, state, 0, {
             isGrounded: true,

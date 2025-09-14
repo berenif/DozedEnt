@@ -727,17 +727,63 @@ export class PersistenceUI {
       const achievementCount = this.wasmManager.exports.get_achievement_count();
       
       for (let i = 0; i < achievementCount; i++) {
-        const achievementId = this.wasmManager.exports.get_achievement_id(i);
-        const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
-        const achievement = JSON.parse(infoJson);
-        
-      // Apply filters
-      if (!this.shouldShowAchievement(achievement)) {
-        continue;
-      }
-        
-        const achievementElement = this.createAchievementElement(achievement);
-        achievementsGrid.appendChild(achievementElement);
+        try {
+          const achievementId = this.wasmManager.exports.get_achievement_id(i);
+          const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
+          
+          // Check if infoJson is a valid string or if it's a memory address
+          let achievement;
+          if (typeof infoJson === 'string' && infoJson.startsWith('{')) {
+            achievement = JSON.parse(infoJson);
+          } else {
+            // If it's a memory address (number), create a default achievement object
+            console.warn(`Achievement ${i} returned invalid data, creating default object`);
+            achievement = {
+              id: achievementId,
+              name: `Achievement ${i + 1}`,
+              description: 'Default achievement description',
+              rarity: 'Common',
+              unlocked: false,
+              progress: 0,
+              target: 1,
+              points: 10,
+              category: 'General'
+            };
+          }
+          
+          // Ensure achievement has all required properties
+          if (!achievement.rarity) achievement.rarity = 'Common';
+          if (!achievement.name) achievement.name = `Achievement ${i + 1}`;
+          if (!achievement.description) achievement.description = 'Default achievement description';
+          if (typeof achievement.unlocked !== 'boolean') achievement.unlocked = false;
+          if (typeof achievement.progress !== 'number') achievement.progress = 0;
+          if (typeof achievement.target !== 'number') achievement.target = 1;
+          if (typeof achievement.points !== 'number') achievement.points = 10;
+          
+          // Apply filters
+          if (!this.shouldShowAchievement(achievement)) {
+            continue;
+          }
+            
+          const achievementElement = this.createAchievementElement(achievement);
+          achievementsGrid.appendChild(achievementElement);
+        } catch (error) {
+          console.warn(`Failed to process achievement ${i}:`, error);
+          // Create a fallback achievement element
+          const fallbackAchievement = {
+            id: i,
+            name: `Achievement ${i + 1}`,
+            description: 'Achievement data unavailable',
+            rarity: 'Common',
+            unlocked: false,
+            progress: 0,
+            target: 1,
+            points: 10,
+            category: 'General'
+          };
+          const achievementElement = this.createAchievementElement(fallbackAchievement);
+          achievementsGrid.appendChild(achievementElement);
+        }
       }
       
     } catch (error) {
@@ -1050,27 +1096,27 @@ export class PersistenceUI {
       sessionSummary.innerHTML = `
         <div class="session-stat">
           <span class="stat-label">Duration:</span>
-          <span class="stat-value">${this.formatTime(sessionData.duration)}</span>
+          <span class="stat-value">${this.formatTime(sessionData.duration || 0)}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Enemies Killed:</span>
-          <span class="stat-value">${sessionData.enemiesKilled}</span>
+          <span class="stat-value">${sessionData.enemiesKilled || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Rooms Cleared:</span>
-          <span class="stat-value">${sessionData.roomsCleared}</span>
+          <span class="stat-value">${sessionData.roomsCleared || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Damage Dealt:</span>
-          <span class="stat-value">${sessionData.damageDealt}</span>
+          <span class="stat-value">${sessionData.damageDealt || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Accuracy:</span>
-          <span class="stat-value">${sessionData.accuracy.toFixed(1)}%</span>
+          <span class="stat-value">${(sessionData.accuracy || 0).toFixed(1)}%</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Efficiency:</span>
-          <span class="stat-value">${sessionData.efficiency.toFixed(2)} K/min</span>
+          <span class="stat-value">${(sessionData.efficiency || 0).toFixed(2)} K/min</span>
         </div>
       `;
       
@@ -1087,11 +1133,55 @@ export class PersistenceUI {
       const statCount = this.wasmManager.exports.get_statistic_count();
       
       for (let i = 0; i < statCount; i++) {
-        const statInfo = this.wasmManager.exports.get_statistic_info(i);
-        const stat = JSON.parse(statInfo);
-        
-        const statElement = this.createStatisticElement(stat, period);
-        statisticsGrid.appendChild(statElement);
+        try {
+          const statInfo = this.wasmManager.exports.get_statistic_info(i);
+          
+          // Check if statInfo is a valid string or if it's a memory address
+          let stat;
+          if (typeof statInfo === 'string' && statInfo.startsWith('{')) {
+            stat = JSON.parse(statInfo);
+          } else {
+            // If it's a memory address (number), create a default statistic object
+            console.warn(`Statistic ${i} returned invalid data, creating default object`);
+            stat = {
+              id: i,
+              name: `Statistic ${i + 1}`,
+              description: 'Default statistic description',
+              category: 0,
+              type: 0,
+              session: 0,
+              total: 0,
+              maximum: 0
+            };
+          }
+          
+          // Ensure stat has all required properties
+          if (!stat.name) stat.name = `Statistic ${i + 1}`;
+          if (!stat.description) stat.description = 'Default statistic description';
+          if (typeof stat.category !== 'number') stat.category = 0;
+          if (typeof stat.type !== 'number') stat.type = 0;
+          if (typeof stat.session !== 'number') stat.session = 0;
+          if (typeof stat.total !== 'number') stat.total = 0;
+          if (typeof stat.maximum !== 'number') stat.maximum = 0;
+          
+          const statElement = this.createStatisticElement(stat, period);
+          statisticsGrid.appendChild(statElement);
+        } catch (error) {
+          console.warn(`Failed to process statistic ${i}:`, error);
+          // Create a fallback statistic element
+          const fallbackStat = {
+            id: i,
+            name: `Statistic ${i + 1}`,
+            description: 'Statistic data unavailable',
+            category: 0,
+            type: 0,
+            session: 0,
+            total: 0,
+            maximum: 0
+          };
+          const statElement = this.createStatisticElement(fallbackStat, period);
+          statisticsGrid.appendChild(statElement);
+        }
       }
       
     } catch (error) {

@@ -19,7 +19,8 @@ const baseConfig = {
   output: {
     compact: true,
     format: 'es',
-    inlineDynamicImports: true
+    inlineDynamicImports: true,
+    sourcemap: false  // Disable source maps for production builds
   },
   plugins: [
     resolve({browser: true, preferBuiltins: false}),

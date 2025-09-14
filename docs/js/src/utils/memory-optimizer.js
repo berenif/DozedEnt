@@ -3,6 +3,8 @@
  * Implements object pooling, garbage collection monitoring, and memory leak detection
  */
 
+/* global global */
+
 export class MemoryOptimizer {
   constructor() {
     // Object pools for frequently created/destroyed objects
@@ -243,7 +245,7 @@ export class MemoryOptimizer {
    */
   startMonitoring() {
     if (!performance.memory) {
-      console.warn('Memory monitoring not available in this environment');
+      console.debug('Memory monitoring not available in this environment (performance.memory API not supported)');
       return;
     }
     
@@ -269,7 +271,7 @@ export class MemoryOptimizer {
    * @private
    */
   updateMemoryStats() {
-    if (!performance.memory) return;
+    if (!performance.memory) {return;}
     
     const memory = performance.memory;
     const now = performance.now();
@@ -307,9 +309,16 @@ export class MemoryOptimizer {
       console.warn(`🚨 Potential memory leak detected: ${(this.memoryStats.used / 1024 / 1024).toFixed(1)}MB used`);
       
       // Force garbage collection if available
-      if (global.gc) {
-        console.log('🗑️ Forcing garbage collection');
-        global.gc();
+      try {
+        const globalObj = typeof globalThis !== 'undefined' ? globalThis : 
+                         typeof global !== 'undefined' ? global : 
+                         typeof window !== 'undefined' ? window : {};
+        if (globalObj.gc && typeof globalObj.gc === 'function') {
+          console.log('🗑️ Forcing garbage collection');
+          globalObj.gc();
+        }
+      } catch (e) {
+        console.warn('Could not access global gc function:', e.message);
       }
     }
     
@@ -329,7 +338,7 @@ export class MemoryOptimizer {
    * @private
    */
   autoOptimize() {
-    if (!this.config.autoOptimize) return;
+    if (!this.config.autoOptimize) {return;}
     
     const usageMB = this.memoryStats.used / 1024 / 1024;
     
@@ -379,8 +388,15 @@ export class MemoryOptimizer {
     });
     
     // Force garbage collection if available
-    if (global.gc) {
-      global.gc();
+    try {
+      const globalObj = typeof globalThis !== 'undefined' ? globalThis : 
+                       typeof global !== 'undefined' ? global : 
+                       typeof window !== 'undefined' ? window : {};
+      if (globalObj.gc && typeof globalObj.gc === 'function') {
+        globalObj.gc();
+      }
+    } catch (e) {
+      console.warn('Could not access global gc function:', e.message);
     }
     
     console.log('🚨 Applied aggressive memory optimization');
@@ -407,13 +423,19 @@ export class MemoryOptimizer {
     const originalSetInterval = setInterval;
     let intervalCount = 0;
     
-    global.setInterval = function(...args) {
-      intervalCount++;
-      if (intervalCount > 50) {
-        console.warn('🚨 High number of intervals detected:', intervalCount);
-      }
-      return originalSetInterval.apply(this, args);
-    };
+    const globalObj = typeof globalThis !== 'undefined' ? globalThis : 
+                     typeof global !== 'undefined' ? global : 
+                     typeof window !== 'undefined' ? window : {};
+    
+    if (globalObj.setInterval) {
+      globalObj.setInterval = function(...args) {
+        intervalCount++;
+        if (intervalCount > 50) {
+          console.warn('🚨 High number of intervals detected:', intervalCount);
+        }
+        return originalSetInterval.apply(this, args);
+      };
+    }
   }
 
   /**
@@ -455,14 +477,21 @@ export class MemoryOptimizer {
    * Manual garbage collection trigger
    */
   forceGarbageCollection() {
-    if (global.gc) {
-      console.log('🗑️ Manually triggering garbage collection');
-      global.gc();
-      return true;
-    } else {
-      console.warn('Garbage collection not available');
-      return false;
+    try {
+      const globalObj = typeof globalThis !== 'undefined' ? globalThis : 
+                       typeof global !== 'undefined' ? global : 
+                       typeof window !== 'undefined' ? window : {};
+      if (globalObj.gc && typeof globalObj.gc === 'function') {
+        console.log('🗑️ Manually triggering garbage collection');
+        globalObj.gc();
+        return true;
+      }
+    } catch (e) {
+      console.warn('Could not access global gc function:', e.message);
     }
+    
+    console.warn('Garbage collection not available');
+    return false;
   }
 
   /**

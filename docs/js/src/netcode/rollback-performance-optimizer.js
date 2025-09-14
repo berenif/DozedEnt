@@ -137,4 +137,897 @@ export class RollbackPerformanceOptimizer {
   
   /**
    * Initialize optimization strategies
-   */\n  initializeStrategies() {\n    // Initialize compression strategy\n    this.strategies.compression = this.createCompressionStrategy()\n    \n    // Initialize batching strategy\n    this.strategies.batching = this.createBatchingStrategy()\n    \n    // Initialize frame skipping strategy\n    this.strategies.frameSkipping = this.createFrameSkippingStrategy()\n    \n    this.logger.info('Performance optimization strategies initialized', {\n      compression: this.config.compressionAlgorithm,\n      batching: this.config.batchStrategy,\n      frameSkipping: this.config.frameSkipStrategy\n    })\n  }\n  \n  /**\n   * Create compression strategy\n   */\n  createCompressionStrategy() {\n    switch (this.config.compressionAlgorithm) {\n      case COMPRESSION_ALGORITHMS.LZ4:\n        return {\n          compress: this.compressLZ4.bind(this),\n          decompress: this.decompressLZ4.bind(this),\n          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold\n        }\n        \n      case COMPRESSION_ALGORITHMS.GZIP:\n        return {\n          compress: this.compressGzip.bind(this),\n          decompress: this.decompressGzip.bind(this),\n          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold\n        }\n        \n      case COMPRESSION_ALGORITHMS.CUSTOM:\n        return {\n          compress: this.compressCustom.bind(this),\n          decompress: this.decompressCustom.bind(this),\n          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold\n        }\n        \n      default:\n        return {\n          compress: (data) => data,\n          decompress: (data) => data,\n          shouldCompress: () => false\n        }\n    }\n  }\n  \n  /**\n   * Create batching strategy\n   */\n  createBatchingStrategy() {\n    switch (this.config.batchStrategy) {\n      case BATCH_STRATEGIES.TIME_BASED:\n        return {\n          shouldBatch: () => true,\n          getBatchTimeout: () => this.config.maxBatchTime,\n          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.config.maxBatchSize\n        }\n        \n      case BATCH_STRATEGIES.SIZE_BASED:\n        return {\n          shouldBatch: () => true,\n          getBatchTimeout: () => this.config.maxBatchTime * 2,\n          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.config.maxBatchSize\n        }\n        \n      case BATCH_STRATEGIES.ADAPTIVE:\n        return {\n          shouldBatch: () => this.adaptiveSettings.networkQuality !== 'excellent',\n          getBatchTimeout: () => this.getAdaptiveBatchTimeout(),\n          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.getAdaptiveBatchSize()\n        }\n        \n      default:\n        return {\n          shouldBatch: () => false,\n          getBatchTimeout: () => 0,\n          canAddToBatch: () => false\n        }\n    }\n  }\n  \n  /**\n   * Create frame skipping strategy\n   */\n  createFrameSkippingStrategy() {\n    switch (this.config.frameSkipStrategy) {\n      case FRAME_SKIP_STRATEGIES.PREDICTIVE:\n        return {\n          shouldSkipFrame: (frame, networkQuality) => {\n            return networkQuality === 'poor' && frame % 2 === 0\n          },\n          getSkipPattern: (quality) => quality === 'poor' ? 2 : 1\n        }\n        \n      case FRAME_SKIP_STRATEGIES.QUALITY_BASED:\n        return {\n          shouldSkipFrame: (frame, networkQuality, cpuUsage) => {\n            const qualityScore = this.calculateQualityScore(networkQuality, cpuUsage)\n            return qualityScore < this.config.qualityThreshold && frame % this.getSkipInterval(qualityScore) === 0\n          },\n          getSkipPattern: (quality) => this.getSkipInterval(this.calculateQualityScore(quality))\n        }\n        \n      default:\n        return {\n          shouldSkipFrame: () => false,\n          getSkipPattern: () => 1\n        }\n    }\n  }\n  \n  /**\n   * Optimize game state before saving\n   */\n  optimizeStateForSaving(state, frame) {\n    const startTime = performance.now()\n    let optimizedState = state\n    \n    try {\n      // Apply delta compression if enabled\n      if (this.config.enableDeltaCompression) {\n        optimizedState = this.applyDeltaCompression(state, frame)\n      }\n      \n      // Apply state compression if needed\n      if (this.strategies.compression.shouldCompress(optimizedState)) {\n        optimizedState = this.strategies.compression.compress(optimizedState)\n        this.updateCompressionMetrics(state, optimizedState, performance.now() - startTime)\n      }\n      \n      // Use state pooling if enabled\n      if (this.config.enableStatePooling) {\n        optimizedState = this.poolState(optimizedState)\n      }\n      \n      this.metrics.frameProcessing.totalFrames++\n      this.updateFrameProcessingMetrics(performance.now() - startTime)\n      \n      return optimizedState\n      \n    } catch (error) {\n      this.logger.error('State optimization failed', error)\n      return state // Return original state on error\n    }\n  }\n  \n  /**\n   * Optimize state for loading\n   */\n  optimizeStateForLoading(state, frame) {\n    const startTime = performance.now()\n    let optimizedState = state\n    \n    try {\n      // Decompress if needed\n      if (this.isCompressedState(state)) {\n        optimizedState = this.strategies.compression.decompress(state)\n        this.updateDecompressionMetrics(performance.now() - startTime)\n      }\n      \n      // Apply delta decompression if needed\n      if (this.config.enableDeltaCompression && this.isDeltaState(optimizedState)) {\n        optimizedState = this.applyDeltaDecompression(optimizedState, frame)\n      }\n      \n      return optimizedState\n      \n    } catch (error) {\n      this.logger.error('State loading optimization failed', error)\n      return state\n    }\n  }\n  \n  /**\n   * Optimize input batching\n   */\n  optimizeInputBatching(input, frame) {\n    if (!this.strategies.batching.shouldBatch()) {\n      return { inputs: [input], immediate: true }\n    }\n    \n    const inputSize = this.getDataSize(input)\n    const currentBatchSize = this.getCurrentBatchSize()\n    \n    if (this.strategies.batching.canAddToBatch(currentBatchSize, inputSize)) {\n      this.addToBatch(input, frame)\n      \n      // Set batch timer if not already set\n      if (!this.batchTimer) {\n        const timeout = this.strategies.batching.getBatchTimeout()\n        this.batchTimer = setTimeout(() => {\n          this.flushBatch()\n        }, timeout)\n      }\n      \n      return { inputs: [], immediate: false }\n    } else {\n      // Batch is full, flush it and start new batch\n      const batchedInputs = this.flushBatch()\n      this.addToBatch(input, frame)\n      \n      return { inputs: batchedInputs, immediate: false }\n    }\n  }\n  \n  /**\n   * Optimize rollback operation\n   */\n  optimizeRollback(targetFrame, currentFrame) {\n    const startTime = performance.now()\n    const rollbackFrames = currentFrame - targetFrame\n    \n    // Determine if we should use frame skipping during rollback\n    const shouldSkipFrames = this.strategies.frameSkipping.shouldSkipFrame(\n      rollbackFrames,\n      this.adaptiveSettings.networkQuality,\n      this.adaptiveSettings.cpuUsage\n    )\n    \n    let optimizationStrategy = {\n      useFrameSkipping: shouldSkipFrames,\n      skipInterval: shouldSkipFrames ? this.strategies.frameSkipping.getSkipPattern(this.adaptiveSettings.networkQuality) : 1,\n      useDeltaStates: this.config.enableDeltaCompression,\n      batchUpdates: rollbackFrames > 5\n    }\n    \n    // Track rollback metrics\n    this.metrics.frameProcessing.rollbacks++\n    this.metrics.frameProcessing.rollbackTime.push(performance.now() - startTime)\n    \n    if (this.metrics.frameProcessing.rollbackTime.length > 100) {\n      this.metrics.frameProcessing.rollbackTime.shift()\n    }\n    \n    return optimizationStrategy\n  }\n  \n  /**\n   * Apply delta compression to state\n   */\n  applyDeltaCompression(currentState, frame) {\n    const previousFrame = frame - 1\n    const previousState = this.deltaStates.get(previousFrame)\n    \n    if (!previousState) {\n      // No previous state, store full state\n      this.deltaStates.set(frame, currentState)\n      return currentState\n    }\n    \n    // Calculate delta\n    const delta = this.calculateStateDelta(previousState, currentState)\n    \n    // Store delta if it's smaller than full state\n    const deltaSize = this.getDataSize(delta)\n    const fullSize = this.getDataSize(currentState)\n    \n    if (deltaSize < fullSize * 0.7) {\n      const deltaState = {\n        type: 'delta',\n        baseFrame: previousFrame,\n        delta: delta,\n        frame: frame\n      }\n      \n      this.deltaStates.set(frame, deltaState)\n      return deltaState\n    } else {\n      // Delta not worth it, store full state\n      this.deltaStates.set(frame, currentState)\n      return currentState\n    }\n  }\n  \n  /**\n   * Apply delta decompression to state\n   */\n  applyDeltaDecompression(deltaState, frame) {\n    if (!this.isDeltaState(deltaState)) {\n      return deltaState\n    }\n    \n    const baseState = this.deltaStates.get(deltaState.baseFrame)\n    if (!baseState) {\n      this.logger.warn('Base state not found for delta decompression', {\n        frame,\n        baseFrame: deltaState.baseFrame\n      })\n      return deltaState\n    }\n    \n    return this.applyDeltaToState(baseState, deltaState.delta)\n  }\n  \n  /**\n   * Calculate delta between two states\n   */\n  calculateStateDelta(oldState, newState) {\n    const delta = {}\n    \n    // Simple delta calculation - in a real implementation,\n    // this would be more sophisticated\n    for (const key in newState) {\n      if (newState[key] !== oldState[key]) {\n        delta[key] = newState[key]\n      }\n    }\n    \n    return delta\n  }\n  \n  /**\n   * Apply delta to base state\n   */\n  applyDeltaToState(baseState, delta) {\n    const newState = { ...baseState }\n    \n    for (const key in delta) {\n      newState[key] = delta[key]\n    }\n    \n    return newState\n  }\n  \n  /**\n   * Custom compression implementation\n   */\n  compressCustom(data) {\n    try {\n      const jsonString = JSON.stringify(data)\n      \n      // Simple run-length encoding for repeated characters\n      let compressed = jsonString.replace(/(.)\\1{2,}/g, (match, char) => {\n        return `${char}${match.length}`\n      })\n      \n      // Remove common JSON patterns\n      compressed = compressed\n        .replace(/\"(\\w+)\":/g, '$1:') // Remove quotes from keys\n        .replace(/\\s+/g, '') // Remove whitespace\n      \n      return {\n        type: 'custom_compressed',\n        data: compressed,\n        originalSize: jsonString.length,\n        compressedSize: compressed.length\n      }\n    } catch (error) {\n      this.logger.error('Custom compression failed', error)\n      return data\n    }\n  }\n  \n  /**\n   * Custom decompression implementation\n   */\n  decompressCustom(compressedData) {\n    try {\n      if (!compressedData || compressedData.type !== 'custom_compressed') {\n        return compressedData\n      }\n      \n      let decompressed = compressedData.data\n      \n      // Reverse compression steps\n      decompressed = decompressed.replace(/(\\w+):/g, '\"$1\":') // Add quotes back\n      decompressed = decompressed.replace(/(.)([0-9]+)/g, (match, char, count) => {\n        return char.repeat(parseInt(count))\n      })\n      \n      return JSON.parse(decompressed)\n    } catch (error) {\n      this.logger.error('Custom decompression failed', error)\n      return compressedData\n    }\n  }\n  \n  /**\n   * LZ4 compression (simplified implementation)\n   */\n  compressLZ4(data) {\n    // This is a placeholder - in a real implementation,\n    // you would use a proper LZ4 library\n    return this.compressCustom(data)\n  }\n  \n  /**\n   * LZ4 decompression\n   */\n  decompressLZ4(data) {\n    return this.decompressCustom(data)\n  }\n  \n  /**\n   * GZIP compression\n   */\n  compressGzip(data) {\n    // This would use a GZIP library in a real implementation\n    return this.compressCustom(data)\n  }\n  \n  /**\n   * GZIP decompression\n   */\n  decompressGzip(data) {\n    return this.decompressCustom(data)\n  }\n  \n  /**\n   * Pool state objects for reuse\n   */\n  poolState(state) {\n    const stateKey = this.generateStateKey(state)\n    \n    if (this.statePool.has(stateKey)) {\n      this.metrics.memory.statePoolHits++\n      return this.statePool.get(stateKey)\n    } else {\n      this.metrics.memory.statePoolMisses++\n      this.statePool.set(stateKey, state)\n      \n      // Limit pool size\n      if (this.statePool.size > 1000) {\n        const oldestKey = this.statePool.keys().next().value\n        this.statePool.delete(oldestKey)\n      }\n      \n      return state\n    }\n  }\n  \n  /**\n   * Generate key for state pooling\n   */\n  generateStateKey(state) {\n    // Simple hash of state - in a real implementation,\n    // this would be more sophisticated\n    return JSON.stringify(state).split('').reduce((hash, char) => {\n      hash = ((hash << 5) - hash) + char.charCodeAt(0)\n      return hash & hash\n    }, 0).toString()\n  }\n  \n  /**\n   * Add input to current batch\n   */\n  addToBatch(input, frame) {\n    this.batchQueue.push({ input, frame, timestamp: performance.now() })\n  }\n  \n  /**\n   * Flush current batch\n   */\n  flushBatch() {\n    if (this.batchQueue.length === 0) {\n      return []\n    }\n    \n    const batchStartTime = performance.now()\n    const batch = [...this.batchQueue]\n    this.batchQueue = []\n    \n    if (this.batchTimer) {\n      clearTimeout(this.batchTimer)\n      this.batchTimer = null\n    }\n    \n    // Update batching metrics\n    const batchTime = performance.now() - batchStartTime\n    const batchSize = batch.reduce((size, item) => size + this.getDataSize(item.input), 0)\n    \n    this.updateBatchingMetrics(batchSize, batchTime)\n    \n    return batch.map(item => item.input)\n  }\n  \n  /**\n   * Get current batch size\n   */\n  getCurrentBatchSize() {\n    return this.batchQueue.reduce((size, item) => size + this.getDataSize(item.input), 0)\n  }\n  \n  /**\n   * Get data size in bytes\n   */\n  getDataSize(data) {\n    if (!data) return 0\n    \n    if (data.byteLength !== undefined) {\n      return data.byteLength\n    }\n    \n    if (data.compressedSize !== undefined) {\n      return data.compressedSize\n    }\n    \n    // Estimate size from JSON string\n    try {\n      return JSON.stringify(data).length * 2 // Rough estimate for UTF-16\n    } catch {\n      return 1024 // Default estimate\n    }\n  }\n  \n  /**\n   * Check if state is compressed\n   */\n  isCompressedState(state) {\n    return state && (state.type === 'custom_compressed' || state.compressed === true)\n  }\n  \n  /**\n   * Check if state is delta-compressed\n   */\n  isDeltaState(state) {\n    return state && state.type === 'delta'\n  }\n  \n  /**\n   * Calculate quality score\n   */\n  calculateQualityScore(networkQuality, cpuUsage = 0) {\n    let score = 1.0\n    \n    switch (networkQuality) {\n      case 'excellent': score *= 1.0; break\n      case 'good': score *= 0.8; break\n      case 'fair': score *= 0.6; break\n      case 'poor': score *= 0.3; break\n      default: score *= 0.5\n    }\n    \n    // Factor in CPU usage\n    score *= Math.max(0.1, 1.0 - (cpuUsage / 100))\n    \n    return score\n  }\n  \n  /**\n   * Get skip interval based on quality\n   */\n  getSkipInterval(qualityScore) {\n    if (qualityScore > 0.8) return 1 // No skipping\n    if (qualityScore > 0.6) return 2 // Skip every other frame\n    if (qualityScore > 0.4) return 3 // Skip 2 out of 3 frames\n    return Math.min(this.config.maxFrameSkip, 4) // Skip more aggressively\n  }\n  \n  /**\n   * Get adaptive batch timeout\n   */\n  getAdaptiveBatchTimeout() {\n    const baseTimeout = this.config.maxBatchTime\n    \n    switch (this.adaptiveSettings.networkQuality) {\n      case 'excellent': return baseTimeout * 0.5\n      case 'good': return baseTimeout\n      case 'fair': return baseTimeout * 1.5\n      case 'poor': return baseTimeout * 2\n      default: return baseTimeout\n    }\n  }\n  \n  /**\n   * Get adaptive batch size\n   */\n  getAdaptiveBatchSize() {\n    const baseSize = this.config.maxBatchSize\n    \n    switch (this.adaptiveSettings.networkQuality) {\n      case 'excellent': return baseSize * 0.5\n      case 'good': return baseSize\n      case 'fair': return baseSize * 1.2\n      case 'poor': return baseSize * 1.5\n      default: return baseSize\n    }\n  }\n  \n  /**\n   * Start adaptive optimization\n   */\n  startAdaptiveOptimization() {\n    setInterval(() => {\n      this.adaptOptimizationSettings()\n    }, this.config.adaptationInterval)\n    \n    this.logger.info('Adaptive optimization started')\n  }\n  \n  /**\n   * Adapt optimization settings based on current conditions\n   */\n  adaptOptimizationSettings() {\n    const now = performance.now()\n    \n    // Update current conditions\n    this.updateCurrentConditions()\n    \n    // Adapt compression settings\n    this.adaptCompressionSettings()\n    \n    // Adapt batching settings\n    this.adaptBatchingSettings()\n    \n    // Adapt frame processing settings\n    this.adaptFrameProcessingSettings()\n    \n    this.adaptiveSettings.lastAdaptation = now\n    \n    this.logger.debug('Optimization settings adapted', {\n      networkQuality: this.adaptiveSettings.networkQuality,\n      currentFPS: this.adaptiveSettings.currentFPS,\n      cpuUsage: this.adaptiveSettings.cpuUsage\n    })\n  }\n  \n  /**\n   * Update current system conditions\n   */\n  updateCurrentConditions() {\n    // Calculate current FPS\n    const recentFrameTimes = this.metrics.frameProcessing.frameTimes.slice(-60)\n    if (recentFrameTimes.length > 0) {\n      const avgFrameTime = recentFrameTimes.reduce((a, b) => a + b, 0) / recentFrameTimes.length\n      this.adaptiveSettings.currentFPS = 1000 / avgFrameTime\n    }\n    \n    // Estimate CPU usage based on frame processing times\n    if (recentFrameTimes.length > 0) {\n      const maxFrameTime = Math.max(...recentFrameTimes)\n      this.adaptiveSettings.cpuUsage = Math.min(100, (maxFrameTime / 16.67) * 100) // 16.67ms = 60fps\n    }\n    \n    // Update memory pressure\n    this.adaptiveSettings.memoryPressure = this.estimateMemoryPressure()\n  }\n  \n  /**\n   * Adapt compression settings\n   */\n  adaptCompressionSettings() {\n    // Increase compression if network quality is poor\n    if (this.adaptiveSettings.networkQuality === 'poor') {\n      this.config.compressionThreshold = Math.max(512, this.config.compressionThreshold * 0.8)\n    } else if (this.adaptiveSettings.networkQuality === 'excellent') {\n      this.config.compressionThreshold = Math.min(2048, this.config.compressionThreshold * 1.2)\n    }\n  }\n  \n  /**\n   * Adapt batching settings\n   */\n  adaptBatchingSettings() {\n    // Adjust batch size based on network conditions\n    if (this.adaptiveSettings.networkQuality === 'poor') {\n      this.config.maxBatchSize = Math.min(16384, this.config.maxBatchSize * 1.2)\n      this.config.maxBatchTime = Math.min(50, this.config.maxBatchTime * 1.5)\n    } else if (this.adaptiveSettings.networkQuality === 'excellent') {\n      this.config.maxBatchSize = Math.max(4096, this.config.maxBatchSize * 0.8)\n      this.config.maxBatchTime = Math.max(8, this.config.maxBatchTime * 0.8)\n    }\n  }\n  \n  /**\n   * Adapt frame processing settings\n   */\n  adaptFrameProcessingSettings() {\n    // Adjust frame skipping based on performance\n    if (this.adaptiveSettings.currentFPS < this.adaptiveSettings.targetFPS * 0.9) {\n      // Performance is below target, enable more aggressive optimizations\n      this.config.maxFrameSkip = Math.min(5, this.config.maxFrameSkip + 1)\n    } else if (this.adaptiveSettings.currentFPS > this.adaptiveSettings.targetFPS * 1.1) {\n      // Performance is above target, reduce optimizations\n      this.config.maxFrameSkip = Math.max(1, this.config.maxFrameSkip - 1)\n    }\n  }\n  \n  /**\n   * Estimate memory pressure\n   */\n  estimateMemoryPressure() {\n    // Simple estimation based on pool sizes and GC frequency\n    const poolPressure = this.statePool.size / 1000\n    const cachePressure = this.compressionCache.size / 500\n    const deltaPressure = this.deltaStates.size / 200\n    \n    return Math.min(1.0, poolPressure + cachePressure + deltaPressure)\n  }\n  \n  /**\n   * Update compression metrics\n   */\n  updateCompressionMetrics(originalState, compressedState, compressionTime) {\n    this.metrics.compression.totalStates++\n    this.metrics.compression.compressedStates++\n    \n    const originalSize = this.getDataSize(originalState)\n    const compressedSize = this.getDataSize(compressedState)\n    \n    this.metrics.compression.originalBytes += originalSize\n    this.metrics.compression.compressedBytes += compressedSize\n    \n    if (this.metrics.compression.originalBytes > 0) {\n      this.metrics.compression.compressionRatio = this.metrics.compression.compressedBytes / this.metrics.compression.originalBytes\n    }\n    \n    this.metrics.compression.compressionTime.push(compressionTime)\n    if (this.metrics.compression.compressionTime.length > 100) {\n      this.metrics.compression.compressionTime.shift()\n    }\n    \n    // Track bytes saved\n    this.metrics.network.bytesSaved += Math.max(0, originalSize - compressedSize)\n  }\n  \n  /**\n   * Update decompression metrics\n   */\n  updateDecompressionMetrics(decompressionTime) {\n    this.metrics.compression.decompressionTime.push(decompressionTime)\n    if (this.metrics.compression.decompressionTime.length > 100) {\n      this.metrics.compression.decompressionTime.shift()\n    }\n  }\n  \n  /**\n   * Update batching metrics\n   */\n  updateBatchingMetrics(batchSize, batchTime) {\n    this.metrics.batching.totalBatches++\n    \n    this.metrics.batching.batchSizes.push(batchSize)\n    this.metrics.batching.batchTimes.push(batchTime)\n    \n    if (this.metrics.batching.batchSizes.length > 100) {\n      this.metrics.batching.batchSizes.shift()\n      this.metrics.batching.batchTimes.shift()\n    }\n    \n    // Update averages\n    this.metrics.batching.avgBatchSize = this.metrics.batching.batchSizes.reduce((a, b) => a + b, 0) / this.metrics.batching.batchSizes.length\n    this.metrics.batching.avgBatchTime = this.metrics.batching.batchTimes.reduce((a, b) => a + b, 0) / this.metrics.batching.batchTimes.length\n  }\n  \n  /**\n   * Update frame processing metrics\n   */\n  updateFrameProcessingMetrics(frameTime) {\n    this.metrics.frameProcessing.frameTimes.push(frameTime)\n    \n    if (this.metrics.frameProcessing.frameTimes.length > 100) {\n      this.metrics.frameProcessing.frameTimes.shift()\n    }\n    \n    this.metrics.frameProcessing.avgFrameTime = this.metrics.frameProcessing.frameTimes.reduce((a, b) => a + b, 0) / this.metrics.frameProcessing.frameTimes.length\n  }\n  \n  /**\n   * Update network quality\n   */\n  updateNetworkQuality(quality) {\n    this.adaptiveSettings.networkQuality = quality\n  }\n  \n  /**\n   * Get performance statistics\n   */\n  getPerformanceStats() {\n    const avgCompressionTime = this.metrics.compression.compressionTime.length > 0\n      ? this.metrics.compression.compressionTime.reduce((a, b) => a + b, 0) / this.metrics.compression.compressionTime.length\n      : 0\n    \n    const avgDecompressionTime = this.metrics.compression.decompressionTime.length > 0\n      ? this.metrics.compression.decompressionTime.reduce((a, b) => a + b, 0) / this.metrics.compression.decompressionTime.length\n      : 0\n    \n    const avgRollbackTime = this.metrics.frameProcessing.rollbackTime.length > 0\n      ? this.metrics.frameProcessing.rollbackTime.reduce((a, b) => a + b, 0) / this.metrics.frameProcessing.rollbackTime.length\n      : 0\n    \n    return {\n      compression: {\n        ...this.metrics.compression,\n        avgCompressionTime,\n        avgDecompressionTime,\n        compressionEfficiency: this.metrics.compression.compressionRatio\n      },\n      \n      batching: {\n        ...this.metrics.batching,\n        batchingEfficiency: this.metrics.batching.totalBatches > 0 \n          ? this.metrics.batching.avgBatchSize / this.config.maxBatchSize \n          : 0\n      },\n      \n      frameProcessing: {\n        ...this.metrics.frameProcessing,\n        avgRollbackTime,\n        frameSkipRate: this.metrics.frameProcessing.totalFrames > 0\n          ? this.metrics.frameProcessing.skippedFrames / this.metrics.frameProcessing.totalFrames\n          : 0\n      },\n      \n      memory: {\n        ...this.metrics.memory,\n        poolHitRate: (this.metrics.memory.statePoolHits + this.metrics.memory.statePoolMisses) > 0\n          ? this.metrics.memory.statePoolHits / (this.metrics.memory.statePoolHits + this.metrics.memory.statePoolMisses)\n          : 0\n      },\n      \n      network: {\n        ...this.metrics.network,\n        bandwidthSaved: this.metrics.network.bytesSaved\n      },\n      \n      adaptive: {\n        ...this.adaptiveSettings\n      }\n    }\n  }\n  \n  /**\n   * Reset all metrics\n   */\n  resetMetrics() {\n    this.metrics = {\n      compression: {\n        totalStates: 0,\n        compressedStates: 0,\n        originalBytes: 0,\n        compressedBytes: 0,\n        compressionRatio: 0,\n        compressionTime: [],\n        decompressionTime: []\n      },\n      \n      batching: {\n        totalBatches: 0,\n        avgBatchSize: 0,\n        avgBatchTime: 0,\n        batchSizes: [],\n        batchTimes: []\n      },\n      \n      frameProcessing: {\n        totalFrames: 0,\n        skippedFrames: 0,\n        avgFrameTime: 0,\n        frameTimes: [],\n        rollbacks: 0,\n        rollbackTime: []\n      },\n      \n      memory: {\n        statePoolSize: 0,\n        statePoolHits: 0,\n        statePoolMisses: 0,\n        memoryUsage: 0,\n        gcCollections: 0\n      },\n      \n      network: {\n        bytesSaved: 0,\n        latencyReduction: 0,\n        qualityScore: 0\n      }\n    }\n    \n    this.logger.info('Performance metrics reset')\n  }\n  \n  /**\n   * Cleanup and shutdown\n   */\n  shutdown() {\n    // Clear batch timer\n    if (this.batchTimer) {\n      clearTimeout(this.batchTimer)\n      this.batchTimer = null\n    }\n    \n    // Clear pools and caches\n    this.statePool.clear()\n    this.compressionCache.clear()\n    this.deltaStates.clear()\n    this.batchQueue = []\n    \n    this.logger.info('Rollback performance optimizer shutdown')\n  }\n}\n\nexport default RollbackPerformanceOptimizer
+   */
+  initializeStrategies() {
+    // Initialize compression strategy
+    this.strategies.compression = this.createCompressionStrategy()
+    
+    // Initialize batching strategy
+    this.strategies.batching = this.createBatchingStrategy()
+    
+    // Initialize frame skipping strategy
+    this.strategies.frameSkipping = this.createFrameSkippingStrategy()
+    
+    this.logger.info('Performance optimization strategies initialized', {
+      compression: this.config.compressionAlgorithm,
+      batching: this.config.batchStrategy,
+      frameSkipping: this.config.frameSkipStrategy
+    })
+  }
+  
+  /**
+   * Create compression strategy
+   */
+  createCompressionStrategy() {
+    switch (this.config.compressionAlgorithm) {
+      case COMPRESSION_ALGORITHMS.LZ4:
+        return {
+          compress: this.compressLZ4.bind(this),
+          decompress: this.decompressLZ4.bind(this),
+          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold
+        }
+        
+      case COMPRESSION_ALGORITHMS.GZIP:
+        return {
+          compress: this.compressGzip.bind(this),
+          decompress: this.decompressGzip.bind(this),
+          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold
+        }
+        
+      case COMPRESSION_ALGORITHMS.CUSTOM:
+        return {
+          compress: this.compressCustom.bind(this),
+          decompress: this.decompressCustom.bind(this),
+          shouldCompress: (data) => this.getDataSize(data) > this.config.compressionThreshold
+        }
+        
+      default:
+        return {
+          compress: (data) => data,
+          decompress: (data) => data,
+          shouldCompress: () => false
+        }
+    }
+  }
+  
+  /**
+   * Create batching strategy
+   */
+  createBatchingStrategy() {
+    switch (this.config.batchStrategy) {
+      case BATCH_STRATEGIES.TIME_BASED:
+        return {
+          shouldBatch: () => true,
+          getBatchTimeout: () => this.config.maxBatchTime,
+          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.config.maxBatchSize
+        }
+        
+      case BATCH_STRATEGIES.SIZE_BASED:
+        return {
+          shouldBatch: () => true,
+          getBatchTimeout: () => this.config.maxBatchTime * 2,
+          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.config.maxBatchSize
+        }
+        
+      case BATCH_STRATEGIES.ADAPTIVE:
+        return {
+          shouldBatch: () => this.adaptiveSettings.networkQuality !== 'excellent',
+          getBatchTimeout: () => this.getAdaptiveBatchTimeout(),
+          canAddToBatch: (batchSize, itemSize) => batchSize + itemSize <= this.getAdaptiveBatchSize()
+        }
+        
+      default:
+        return {
+          shouldBatch: () => false,
+          getBatchTimeout: () => 0,
+          canAddToBatch: () => false
+        }
+    }
+  }
+  
+  /**
+   * Create frame skipping strategy
+   */
+  createFrameSkippingStrategy() {
+    switch (this.config.frameSkipStrategy) {
+      case FRAME_SKIP_STRATEGIES.PREDICTIVE:
+        return {
+          shouldSkipFrame: (frame, networkQuality) => networkQuality === 'poor' && frame % 2 === 0,
+          getSkipPattern: (quality) => quality === 'poor' ? 2 : 1
+        }
+        
+      case FRAME_SKIP_STRATEGIES.QUALITY_BASED:
+        return {
+          shouldSkipFrame: (frame, networkQuality, cpuUsage) => {
+            const qualityScore = this.calculateQualityScore(networkQuality, cpuUsage)
+            return qualityScore < this.config.qualityThreshold && frame % this.getSkipInterval(qualityScore) === 0
+          },
+          getSkipPattern: (quality) => this.getSkipInterval(this.calculateQualityScore(quality))
+        }
+        
+      default:
+        return {
+          shouldSkipFrame: () => false,
+          getSkipPattern: () => 1
+        }
+    }
+  }
+  
+  /**
+   * Optimize game state before saving
+   */
+  optimizeStateForSaving(state, frame) {
+    const startTime = performance.now()
+    let optimizedState = state
+    
+    try {
+      // Apply delta compression if enabled
+      if (this.config.enableDeltaCompression) {
+        optimizedState = this.applyDeltaCompression(state, frame)
+      }
+      
+      // Apply state compression if needed
+      if (this.strategies.compression.shouldCompress(optimizedState)) {
+        optimizedState = this.strategies.compression.compress(optimizedState)
+        this.updateCompressionMetrics(state, optimizedState, performance.now() - startTime)
+      }
+      
+      // Use state pooling if enabled
+      if (this.config.enableStatePooling) {
+        optimizedState = this.poolState(optimizedState)
+      }
+      
+      this.metrics.frameProcessing.totalFrames++
+      this.updateFrameProcessingMetrics(performance.now() - startTime)
+      
+      return optimizedState
+      
+    } catch (error) {
+      this.logger.error('State optimization failed', error)
+      return state // Return original state on error
+    }
+  }
+  
+  /**
+   * Optimize state for loading
+   */
+  optimizeStateForLoading(state, frame) {
+    const startTime = performance.now()
+    let optimizedState = state
+    
+    try {
+      // Decompress if needed
+      if (this.isCompressedState(state)) {
+        optimizedState = this.strategies.compression.decompress(state)
+        this.updateDecompressionMetrics(performance.now() - startTime)
+      }
+      
+      // Apply delta decompression if needed
+      if (this.config.enableDeltaCompression && this.isDeltaState(optimizedState)) {
+        optimizedState = this.applyDeltaDecompression(optimizedState, frame)
+      }
+      
+      return optimizedState
+      
+    } catch (error) {
+      this.logger.error('State loading optimization failed', error)
+      return state
+    }
+  }
+  
+  /**
+   * Optimize input batching
+   */
+  optimizeInputBatching(input, frame) {
+    if (!this.strategies.batching.shouldBatch()) {
+      return { inputs: [input], immediate: true }
+    }
+    
+    const inputSize = this.getDataSize(input)
+    const currentBatchSize = this.getCurrentBatchSize()
+    
+    if (this.strategies.batching.canAddToBatch(currentBatchSize, inputSize)) {
+      this.addToBatch(input, frame)
+      
+      // Set batch timer if not already set
+      if (!this.batchTimer) {
+        const timeout = this.strategies.batching.getBatchTimeout()
+        this.batchTimer = setTimeout(() => {
+          this.flushBatch()
+        }, timeout)
+      }
+      
+      return { inputs: [], immediate: false }
+    } 
+      // Batch is full, flush it and start new batch
+      const batchedInputs = this.flushBatch()
+      this.addToBatch(input, frame)
+      
+      return { inputs: batchedInputs, immediate: false }
+    
+  }
+  
+  /**
+   * Optimize rollback operation
+   */
+  optimizeRollback(targetFrame, currentFrame) {
+    const startTime = performance.now()
+    const rollbackFrames = currentFrame - targetFrame
+    
+    // Determine if we should use frame skipping during rollback
+    const shouldSkipFrames = this.strategies.frameSkipping.shouldSkipFrame(
+      rollbackFrames,
+      this.adaptiveSettings.networkQuality,
+      this.adaptiveSettings.cpuUsage
+    )
+    
+    const optimizationStrategy = {
+      useFrameSkipping: shouldSkipFrames,
+      skipInterval: shouldSkipFrames ? this.strategies.frameSkipping.getSkipPattern(this.adaptiveSettings.networkQuality) : 1,
+      useDeltaStates: this.config.enableDeltaCompression,
+      batchUpdates: rollbackFrames > 5
+    }
+    
+    // Track rollback metrics
+    this.metrics.frameProcessing.rollbacks++
+    this.metrics.frameProcessing.rollbackTime.push(performance.now() - startTime)
+    
+    if (this.metrics.frameProcessing.rollbackTime.length > 100) {
+      this.metrics.frameProcessing.rollbackTime.shift()
+    }
+    
+    return optimizationStrategy
+  }
+  
+  /**
+   * Apply delta compression to state
+   */
+  applyDeltaCompression(currentState, frame) {
+    const previousFrame = frame - 1
+    const previousState = this.deltaStates.get(previousFrame)
+    
+    if (!previousState) {
+      // No previous state, store full state
+      this.deltaStates.set(frame, currentState)
+      return currentState
+    }
+    
+    // Calculate delta
+    const delta = this.calculateStateDelta(previousState, currentState)
+    
+    // Store delta if it's smaller than full state
+    const deltaSize = this.getDataSize(delta)
+    const fullSize = this.getDataSize(currentState)
+    
+    if (deltaSize < fullSize * 0.7) {
+      const deltaState = {
+        type: 'delta',
+        baseFrame: previousFrame,
+        delta: delta,
+        frame: frame
+      }
+      
+      this.deltaStates.set(frame, deltaState)
+      return deltaState
+    } 
+      // Delta not worth it, store full state
+      this.deltaStates.set(frame, currentState)
+      return currentState
+    
+  }
+  
+  /**
+   * Apply delta decompression to state
+   */
+  applyDeltaDecompression(deltaState, frame) {
+    if (!this.isDeltaState(deltaState)) {
+      return deltaState
+    }
+    
+    const baseState = this.deltaStates.get(deltaState.baseFrame)
+    if (!baseState) {
+      this.logger.warn('Base state not found for delta decompression', {
+        frame,
+        baseFrame: deltaState.baseFrame
+      })
+      return deltaState
+    }
+    
+    return this.applyDeltaToState(baseState, deltaState.delta)
+  }
+  
+  /**
+   * Calculate delta between two states
+   */
+  calculateStateDelta(oldState, newState) {
+    const delta = {}
+    
+    // Simple delta calculation - in a real implementation,
+    // this would be more sophisticated
+    for (const key in newState) {
+      if (newState[key] !== oldState[key]) {
+        delta[key] = newState[key]
+      }
+    }
+    
+    return delta
+  }
+  
+  /**
+   * Apply delta to base state
+   */
+  applyDeltaToState(baseState, delta) {
+    const newState = { ...baseState }
+    
+    for (const key in delta) {
+      newState[key] = delta[key]
+    }
+    
+    return newState
+  }
+  
+  /**
+   * Custom compression implementation
+   */
+  compressCustom(data) {
+    try {
+      const jsonString = JSON.stringify(data)
+      
+      // Simple run-length encoding for repeated characters
+      let compressed = jsonString.replace(/(.)\\1{2,}/g, (match, char) => `${char}${match.length}`)
+      
+      // Remove common JSON patterns
+      compressed = compressed
+        .replace(/\"(\\w+)\":/g, '$1:') // Remove quotes from keys
+        .replace(/\\s+/g, '') // Remove whitespace
+      
+      return {
+        type: 'custom_compressed',
+        data: compressed,
+        originalSize: jsonString.length,
+        compressedSize: compressed.length
+      }
+    } catch (error) {
+      this.logger.error('Custom compression failed', error)
+      return data
+    }
+  }
+  
+  /**
+   * Custom decompression implementation
+   */
+  decompressCustom(compressedData) {
+    try {
+      if (!compressedData || compressedData.type !== 'custom_compressed') {
+        return compressedData
+      }
+      
+      let decompressed = compressedData.data
+      
+      // Reverse compression steps
+      decompressed = decompressed.replace(/(\\w+):/g, '\"$1\":') // Add quotes back
+      decompressed = decompressed.replace(/(.)([0-9]+)/g, (match, char, count) => char.repeat(parseInt(count)))
+      
+      return JSON.parse(decompressed)
+    } catch (error) {
+      this.logger.error('Custom decompression failed', error)
+      return compressedData
+    }
+  }
+  
+  /**
+   * LZ4 compression (simplified implementation)
+   */
+  compressLZ4(data) {
+    // This is a placeholder - in a real implementation,
+    // you would use a proper LZ4 library
+    return this.compressCustom(data)
+  }
+  
+  /**
+   * LZ4 decompression
+   */
+  decompressLZ4(data) {
+    return this.decompressCustom(data)
+  }
+  
+  /**
+   * GZIP compression
+   */
+  compressGzip(data) {
+    // This would use a GZIP library in a real implementation
+    return this.compressCustom(data)
+  }
+  
+  /**
+   * GZIP decompression
+   */
+  decompressGzip(data) {
+    return this.decompressCustom(data)
+  }
+  
+  /**
+   * Pool state objects for reuse
+   */
+  poolState(state) {
+    const stateKey = this.generateStateKey(state)
+    
+    if (this.statePool.has(stateKey)) {
+      this.metrics.memory.statePoolHits++
+      return this.statePool.get(stateKey)
+    } 
+      this.metrics.memory.statePoolMisses++
+      this.statePool.set(stateKey, state)
+      
+      // Limit pool size
+      if (this.statePool.size > 1000) {
+        const oldestKey = this.statePool.keys().next().value
+        this.statePool.delete(oldestKey)
+      }
+      
+      return state
+    
+  }
+  
+  /**
+   * Generate key for state pooling
+   */
+  generateStateKey(state) {
+    // Simple hash of state - in a real implementation,
+    // this would be more sophisticated
+    return JSON.stringify(state).split('').reduce((hash, char) => {
+      hash = ((hash << 5) - hash) + char.charCodeAt(0)
+      return hash & hash
+    }, 0).toString()
+  }
+  
+  /**
+   * Add input to current batch
+   */
+  addToBatch(input, frame) {
+    this.batchQueue.push({ input, frame, timestamp: performance.now() })
+  }
+  
+  /**
+   * Flush current batch
+   */
+  flushBatch() {
+    if (this.batchQueue.length === 0) {
+      return []
+    }
+    
+    const batchStartTime = performance.now()
+    const batch = [...this.batchQueue]
+    this.batchQueue = []
+    
+    if (this.batchTimer) {
+      clearTimeout(this.batchTimer)
+      this.batchTimer = null
+    }
+    
+    // Update batching metrics
+    const batchTime = performance.now() - batchStartTime
+    const batchSize = batch.reduce((size, item) => size + this.getDataSize(item.input), 0)
+    
+    this.updateBatchingMetrics(batchSize, batchTime)
+    
+    return batch.map(item => item.input)
+  }
+  
+  /**
+   * Get current batch size
+   */
+  getCurrentBatchSize() {
+    return this.batchQueue.reduce((size, item) => size + this.getDataSize(item.input), 0)
+  }
+  
+  /**
+   * Get data size in bytes
+   */
+  getDataSize(data) {
+    if (!data) {return 0}
+    
+    if (data.byteLength !== undefined) {
+      return data.byteLength
+    }
+    
+    if (data.compressedSize !== undefined) {
+      return data.compressedSize
+    }
+    
+    // Estimate size from JSON string
+    try {
+      return JSON.stringify(data).length * 2 // Rough estimate for UTF-16
+    } catch {
+      return 1024 // Default estimate
+    }
+  }
+  
+  /**
+   * Check if state is compressed
+   */
+  isCompressedState(state) {
+    return state && (state.type === 'custom_compressed' || state.compressed === true)
+  }
+  
+  /**
+   * Check if state is delta-compressed
+   */
+  isDeltaState(state) {
+    return state && state.type === 'delta'
+  }
+  
+  /**
+   * Calculate quality score
+   */
+  calculateQualityScore(networkQuality, cpuUsage = 0) {
+    let score = 1.0
+    
+    switch (networkQuality) {
+      case 'excellent': score *= 1.0; break
+      case 'good': score *= 0.8; break
+      case 'fair': score *= 0.6; break
+      case 'poor': score *= 0.3; break
+      default: score *= 0.5
+    }
+    
+    // Factor in CPU usage
+    score *= Math.max(0.1, 1.0 - (cpuUsage / 100))
+    
+    return score
+  }
+  
+  /**
+   * Get skip interval based on quality
+   */
+  getSkipInterval(qualityScore) {
+    if (qualityScore > 0.8) {return 1} // No skipping
+    if (qualityScore > 0.6) {return 2} // Skip every other frame
+    if (qualityScore > 0.4) {return 3} // Skip 2 out of 3 frames
+    return Math.min(this.config.maxFrameSkip, 4) // Skip more aggressively
+  }
+  
+  /**
+   * Get adaptive batch timeout
+   */
+  getAdaptiveBatchTimeout() {
+    const baseTimeout = this.config.maxBatchTime
+    
+    switch (this.adaptiveSettings.networkQuality) {
+      case 'excellent': return baseTimeout * 0.5
+      case 'good': return baseTimeout
+      case 'fair': return baseTimeout * 1.5
+      case 'poor': return baseTimeout * 2
+      default: return baseTimeout
+    }
+  }
+  
+  /**
+   * Get adaptive batch size
+   */
+  getAdaptiveBatchSize() {
+    const baseSize = this.config.maxBatchSize
+    
+    switch (this.adaptiveSettings.networkQuality) {
+      case 'excellent': return baseSize * 0.5
+      case 'good': return baseSize
+      case 'fair': return baseSize * 1.2
+      case 'poor': return baseSize * 1.5
+      default: return baseSize
+    }
+  }
+  
+  /**
+   * Start adaptive optimization
+   */
+  startAdaptiveOptimization() {
+    setInterval(() => {
+      this.adaptOptimizationSettings()
+    }, this.config.adaptationInterval)
+    
+    this.logger.info('Adaptive optimization started')
+  }
+  
+  /**
+   * Adapt optimization settings based on current conditions
+   */
+  adaptOptimizationSettings() {
+    const now = performance.now()
+    
+    // Update current conditions
+    this.updateCurrentConditions()
+    
+    // Adapt compression settings
+    this.adaptCompressionSettings()
+    
+    // Adapt batching settings
+    this.adaptBatchingSettings()
+    
+    // Adapt frame processing settings
+    this.adaptFrameProcessingSettings()
+    
+    this.adaptiveSettings.lastAdaptation = now
+    
+    this.logger.debug('Optimization settings adapted', {
+      networkQuality: this.adaptiveSettings.networkQuality,
+      currentFPS: this.adaptiveSettings.currentFPS,
+      cpuUsage: this.adaptiveSettings.cpuUsage
+    })
+  }
+  
+  /**
+   * Update current system conditions
+   */
+  updateCurrentConditions() {
+    // Calculate current FPS
+    const recentFrameTimes = this.metrics.frameProcessing.frameTimes.slice(-60)
+    if (recentFrameTimes.length > 0) {
+      const avgFrameTime = recentFrameTimes.reduce((a, b) => a + b, 0) / recentFrameTimes.length
+      this.adaptiveSettings.currentFPS = 1000 / avgFrameTime
+    }
+    
+    // Estimate CPU usage based on frame processing times
+    if (recentFrameTimes.length > 0) {
+      const maxFrameTime = Math.max(...recentFrameTimes)
+      this.adaptiveSettings.cpuUsage = Math.min(100, (maxFrameTime / 16.67) * 100) // 16.67ms = 60fps
+    }
+    
+    // Update memory pressure
+    this.adaptiveSettings.memoryPressure = this.estimateMemoryPressure()
+  }
+  
+  /**
+   * Adapt compression settings
+   */
+  adaptCompressionSettings() {
+    // Increase compression if network quality is poor
+    if (this.adaptiveSettings.networkQuality === 'poor') {
+      this.config.compressionThreshold = Math.max(512, this.config.compressionThreshold * 0.8)
+    } else if (this.adaptiveSettings.networkQuality === 'excellent') {
+      this.config.compressionThreshold = Math.min(2048, this.config.compressionThreshold * 1.2)
+    }
+  }
+  
+  /**
+   * Adapt batching settings
+   */
+  adaptBatchingSettings() {
+    // Adjust batch size based on network conditions
+    if (this.adaptiveSettings.networkQuality === 'poor') {
+      this.config.maxBatchSize = Math.min(16384, this.config.maxBatchSize * 1.2)
+      this.config.maxBatchTime = Math.min(50, this.config.maxBatchTime * 1.5)
+    } else if (this.adaptiveSettings.networkQuality === 'excellent') {
+      this.config.maxBatchSize = Math.max(4096, this.config.maxBatchSize * 0.8)
+      this.config.maxBatchTime = Math.max(8, this.config.maxBatchTime * 0.8)
+    }
+  }
+  
+  /**
+   * Adapt frame processing settings
+   */
+  adaptFrameProcessingSettings() {
+    // Adjust frame skipping based on performance
+    if (this.adaptiveSettings.currentFPS < this.adaptiveSettings.targetFPS * 0.9) {
+      // Performance is below target, enable more aggressive optimizations
+      this.config.maxFrameSkip = Math.min(5, this.config.maxFrameSkip + 1)
+    } else if (this.adaptiveSettings.currentFPS > this.adaptiveSettings.targetFPS * 1.1) {
+      // Performance is above target, reduce optimizations
+      this.config.maxFrameSkip = Math.max(1, this.config.maxFrameSkip - 1)
+    }
+  }
+  
+  /**
+   * Estimate memory pressure
+   */
+  estimateMemoryPressure() {
+    // Simple estimation based on pool sizes and GC frequency
+    const poolPressure = this.statePool.size / 1000
+    const cachePressure = this.compressionCache.size / 500
+    const deltaPressure = this.deltaStates.size / 200
+    
+    return Math.min(1.0, poolPressure + cachePressure + deltaPressure)
+  }
+  
+  /**
+   * Update compression metrics
+   */
+  updateCompressionMetrics(originalState, compressedState, compressionTime) {
+    this.metrics.compression.totalStates++
+    this.metrics.compression.compressedStates++
+    
+    const originalSize = this.getDataSize(originalState)
+    const compressedSize = this.getDataSize(compressedState)
+    
+    this.metrics.compression.originalBytes += originalSize
+    this.metrics.compression.compressedBytes += compressedSize
+    
+    if (this.metrics.compression.originalBytes > 0) {
+      this.metrics.compression.compressionRatio = this.metrics.compression.compressedBytes / this.metrics.compression.originalBytes
+    }
+    
+    this.metrics.compression.compressionTime.push(compressionTime)
+    if (this.metrics.compression.compressionTime.length > 100) {
+      this.metrics.compression.compressionTime.shift()
+    }
+    
+    // Track bytes saved
+    this.metrics.network.bytesSaved += Math.max(0, originalSize - compressedSize)
+  }
+  
+  /**
+   * Update decompression metrics
+   */
+  updateDecompressionMetrics(decompressionTime) {
+    this.metrics.compression.decompressionTime.push(decompressionTime)
+    if (this.metrics.compression.decompressionTime.length > 100) {
+      this.metrics.compression.decompressionTime.shift()
+    }
+  }
+  
+  /**
+   * Update batching metrics
+   */
+  updateBatchingMetrics(batchSize, batchTime) {
+    this.metrics.batching.totalBatches++
+    
+    this.metrics.batching.batchSizes.push(batchSize)
+    this.metrics.batching.batchTimes.push(batchTime)
+    
+    if (this.metrics.batching.batchSizes.length > 100) {
+      this.metrics.batching.batchSizes.shift()
+      this.metrics.batching.batchTimes.shift()
+    }
+    
+    // Update averages
+    this.metrics.batching.avgBatchSize = this.metrics.batching.batchSizes.reduce((a, b) => a + b, 0) / this.metrics.batching.batchSizes.length
+    this.metrics.batching.avgBatchTime = this.metrics.batching.batchTimes.reduce((a, b) => a + b, 0) / this.metrics.batching.batchTimes.length
+  }
+  
+  /**
+   * Update frame processing metrics
+   */
+  updateFrameProcessingMetrics(frameTime) {
+    this.metrics.frameProcessing.frameTimes.push(frameTime)
+    
+    if (this.metrics.frameProcessing.frameTimes.length > 100) {
+      this.metrics.frameProcessing.frameTimes.shift()
+    }
+    
+    this.metrics.frameProcessing.avgFrameTime = this.metrics.frameProcessing.frameTimes.reduce((a, b) => a + b, 0) / this.metrics.frameProcessing.frameTimes.length
+  }
+  
+  /**
+   * Update network quality
+   */
+  updateNetworkQuality(quality) {
+    this.adaptiveSettings.networkQuality = quality
+  }
+  
+  /**
+   * Get performance statistics
+   */
+  getPerformanceStats() {
+    const avgCompressionTime = this.metrics.compression.compressionTime.length > 0
+      ? this.metrics.compression.compressionTime.reduce((a, b) => a + b, 0) / this.metrics.compression.compressionTime.length
+      : 0
+    
+    const avgDecompressionTime = this.metrics.compression.decompressionTime.length > 0
+      ? this.metrics.compression.decompressionTime.reduce((a, b) => a + b, 0) / this.metrics.compression.decompressionTime.length
+      : 0
+    
+    const avgRollbackTime = this.metrics.frameProcessing.rollbackTime.length > 0
+      ? this.metrics.frameProcessing.rollbackTime.reduce((a, b) => a + b, 0) / this.metrics.frameProcessing.rollbackTime.length
+      : 0
+    
+    return {
+      compression: {
+        ...this.metrics.compression,
+        avgCompressionTime,
+        avgDecompressionTime,
+        compressionEfficiency: this.metrics.compression.compressionRatio
+      },
+      
+      batching: {
+        ...this.metrics.batching,
+        batchingEfficiency: this.metrics.batching.totalBatches > 0 
+          ? this.metrics.batching.avgBatchSize / this.config.maxBatchSize 
+          : 0
+      },
+      
+      frameProcessing: {
+        ...this.metrics.frameProcessing,
+        avgRollbackTime,
+        frameSkipRate: this.metrics.frameProcessing.totalFrames > 0
+          ? this.metrics.frameProcessing.skippedFrames / this.metrics.frameProcessing.totalFrames
+          : 0
+      },
+      
+      memory: {
+        ...this.metrics.memory,
+        poolHitRate: (this.metrics.memory.statePoolHits + this.metrics.memory.statePoolMisses) > 0
+          ? this.metrics.memory.statePoolHits / (this.metrics.memory.statePoolHits + this.metrics.memory.statePoolMisses)
+          : 0
+      },
+      
+      network: {
+        ...this.metrics.network,
+        bandwidthSaved: this.metrics.network.bytesSaved
+      },
+      
+      adaptive: {
+        ...this.adaptiveSettings
+      }
+    }
+  }
+  
+  /**
+   * Reset all metrics
+   */
+  resetMetrics() {
+    this.metrics = {
+      compression: {
+        totalStates: 0,
+        compressedStates: 0,
+        originalBytes: 0,
+        compressedBytes: 0,
+        compressionRatio: 0,
+        compressionTime: [],
+        decompressionTime: []
+      },
+      
+      batching: {
+        totalBatches: 0,
+        avgBatchSize: 0,
+        avgBatchTime: 0,
+        batchSizes: [],
+        batchTimes: []
+      },
+      
+      frameProcessing: {
+        totalFrames: 0,
+        skippedFrames: 0,
+        avgFrameTime: 0,
+        frameTimes: [],
+        rollbacks: 0,
+        rollbackTime: []
+      },
+      
+      memory: {
+        statePoolSize: 0,
+        statePoolHits: 0,
+        statePoolMisses: 0,
+        memoryUsage: 0,
+        gcCollections: 0
+      },
+      
+      network: {
+        bytesSaved: 0,
+        latencyReduction: 0,
+        qualityScore: 0
+      }
+    }
+    
+    this.logger.info('Performance metrics reset')
+  }
+  
+  /**
+   * Cleanup and shutdown
+   */
+  shutdown() {
+    // Clear batch timer
+    if (this.batchTimer) {
+      clearTimeout(this.batchTimer)
+      this.batchTimer = null
+    }
+    
+    // Clear pools and caches
+    this.statePool.clear()
+    this.compressionCache.clear()
+    this.deltaStates.clear()
+    this.batchQueue = []
+    
+    this.logger.info('Rollback performance optimizer shutdown')
+  }
+}
+
+export default RollbackPerformanceOptimizer

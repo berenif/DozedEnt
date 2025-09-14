@@ -57,8 +57,7 @@ struct ForgeOption {
 #define MAX_SHOP_ITEMS 6
 #define MAX_FORGE_OPTIONS 4
 
-static float g_gold = 100.0f;
-static float g_essence = 10.0f;
+// g_gold and g_essence are defined in internal_core.h
 static ShopItem g_shop_items[MAX_SHOP_ITEMS];
 static unsigned char g_shop_item_count = 0;
 static ForgeOption g_forge_options[MAX_FORGE_OPTIONS];

@@ -292,8 +292,9 @@ export class CameraEffects {
     }
 
     followTarget(x, y, speed = 0.1) {
-        this.targetPosition.x = x
-        this.targetPosition.y = y
+        // Center the camera on the target by offsetting by half the canvas size
+        this.targetPosition.x = x - this.canvas.width / 2
+        this.targetPosition.y = y - this.canvas.height / 2
         this.followSpeed = speed
     }
 

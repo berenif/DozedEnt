@@ -293,7 +293,13 @@ static float g_howl_cooldown_until = -1000.f;
 static void update_pack_controller() {
   float sumDist = 0.f; int count = 0; int healthyCount = 0;
   float avgFatigue = 0.f; float avgHealth = 0.f;
-  for (int i = 0; i < (int)g_enemy_count; ++i) {
+  // Add bounds checking to prevent index out of bounds errors
+  int safe_enemy_count = (int)g_enemy_count;
+  if (safe_enemy_count > MAX_ENEMIES) {
+    safe_enemy_count = MAX_ENEMIES;
+    g_enemy_count = MAX_ENEMIES; // Fix the count to prevent future issues
+  }
+  for (int i = 0; i < safe_enemy_count; ++i) {
     if (!g_enemies[i].active) continue;
     float dx = g_pos_x - g_enemies[i].x; float dy = g_pos_y - g_enemies[i].y;
     sumDist += vec_len(dx, dy); 
@@ -343,7 +349,7 @@ static void update_pack_controller() {
   if (next != g_pack_plan) { g_pack_plan = next; g_pack_plan_time = g_time_seconds; }
 
   int idxs[MAX_ENEMIES]; float dists[MAX_ENEMIES]; int n = 0;
-  for (int i = 0; i < (int)g_enemy_count; ++i) if (g_enemies[i].active) { idxs[n] = i; float dx = g_pos_x - g_enemies[i].x; float dy = g_pos_y - g_enemies[i].y; dists[n] = dx*dx + dy*dy; n++; }
+  for (int i = 0; i < safe_enemy_count; ++i) if (g_enemies[i].active) { idxs[n] = i; float dx = g_pos_x - g_enemies[i].x; float dy = g_pos_y - g_enemies[i].y; dists[n] = dx*dx + dy*dy; n++; }
   
   // Dynamic role assignment based on pack plan
   for (int i = 0; i < n; ++i) g_enemy_roles[idxs[i]] = (unsigned char)PackRole::Harasser;
@@ -434,7 +440,7 @@ static inline void resolve_player_enemy_collisions(float prevX, float prevY, flo
   nx = clamp01(nx); ny = clamp01(ny);
   const float rr = PLAYER_RADIUS + ENEMY_RADIUS; const float r2 = rr * rr;
   for (int iter = 0; iter < 2; ++iter) {
-    for (int i = 0; i < (int)g_enemy_count; ++i) {
+    for (int i = 0; i < MAX_ENEMIES; ++i) {
       const Enemy &e = g_enemies[i]; if (!e.active) continue;
       float dx = nx - e.x; float dy = ny - e.y; float d2 = dx * dx + dy * dy;
       if (d2 < r2) {
@@ -558,7 +564,7 @@ static void update_enemy_wolf(Enemy &e, float dt) {
   // Enhanced state selection based on pack plan and individual role
   EnemyState stateOut = e.state; 
   unsigned char role = (unsigned char)PackRole::None; 
-  for (int i = 0; i < (int)g_enemy_count; ++i) if (&g_enemies[i] == &e) { role = g_enemy_roles[i]; break; }
+  for (int i = 0; i < MAX_ENEMIES; ++i) if (&g_enemies[i] == &e) { role = g_enemy_roles[i]; break; }
   
   switch (g_pack_plan) { 
     case PackPlan::Stalk: stateOut = EnemyState::Seek; break; 
@@ -662,7 +668,7 @@ static void update_enemy_wolf(Enemy &e, float dt) {
     normalize(desiredDirX, desiredDirY);
     e.retreatUntilTime = g_time_seconds + 3.0f; // Retreat for 3 seconds
   }
-  float sepX = 0.f, sepY = 0.f; for (int i = 0; i < (int)g_enemy_count; ++i) { if (!g_enemies[i].active) continue; if (&g_enemies[i] == &e) continue; float dx = e.x - g_enemies[i].x; float dy = e.y - g_enemies[i].y; float d2 = dx*dx + dy*dy; const float sepRadius = 0.03f; if (d2 < sepRadius*sepRadius && d2 > 0.f) { float inv = 1.f / d2; sepX += dx * inv; sepY += dy * inv; } }
+  float sepX = 0.f, sepY = 0.f; for (int i = 0; i < MAX_ENEMIES; ++i) { if (!g_enemies[i].active) continue; if (&g_enemies[i] == &e) continue; float dx = e.x - g_enemies[i].x; float dy = e.y - g_enemies[i].y; float d2 = dx*dx + dy*dy; const float sepRadius = 0.03f; if (d2 < sepRadius*sepRadius && d2 > 0.f) { float inv = 1.f / d2; sepX += dx * inv; sepY += dy * inv; } }
   desiredDirX += sepX * 0.6f; desiredDirY += sepY * 0.6f; normalize(desiredDirX, desiredDirY);
   // Avoid danger zones and player's facing cone
   float avoidX = 0.f, avoidY = 0.f;
@@ -716,7 +722,7 @@ static void update_enemy_wolf(Enemy &e, float dt) {
     if (shouldAttack && g_pack_plan == PackPlan::Commit) {
       // Check if other wolves are attacking for synchronized assault
       int attackingCount = 0;
-      for (int i = 0; i < (int)g_enemy_count; ++i) {
+      for (int i = 0; i < MAX_ENEMIES; ++i) {
         if (g_enemies[i].active && (g_enemies[i].lungeEndTime > g_time_seconds)) attackingCount++;
       }
       if (attackingCount == 0 && role == (unsigned char)PackRole::Lead) shouldAttack = true; // Lead initiates
@@ -775,7 +781,7 @@ static void update_enemy_wolf(Enemy &e, float dt) {
       if (result == 0 && !g_player_latched) {
         float toPlayerDirX = (dist2 > 0.f) ? (toPlayerX2 / dist2) : e.lungeDirX; float toPlayerDirY = (dist2 > 0.f) ? (toPlayerY2 / dist2) : e.lungeDirY;
         float facingDot = g_face_x * toPlayerDirX + g_face_y * toPlayerDirY;
-        if (facingDot < -0.5f) { g_player_latched = 1; g_latch_end_time = g_time_seconds + LATCH_DURATION; for (int i = 0; i < (int)g_enemy_count; ++i) if (&g_enemies[i] == &e) { g_latch_enemy_idx = i; break; } }
+        if (facingDot < -0.5f) { g_player_latched = 1; g_latch_end_time = g_time_seconds + LATCH_DURATION; for (int i = 0; i < MAX_ENEMIES; ++i) if (&g_enemies[i] == &e) { g_latch_enemy_idx = i; break; } }
       }
     }
   }
@@ -874,7 +880,7 @@ static void update_enemy(Enemy &e, float dt) {
 // Pack communication system
 static void broadcast_pack_message(PackMessage msg, float senderX, float senderY) {
   const float COMM_RANGE = 0.4f; // Communication range
-  for (int i = 0; i < (int)g_enemy_count; ++i) {
+  for (int i = 0; i < MAX_ENEMIES; ++i) {
     if (!g_enemies[i].active) continue;
     float dx = g_enemies[i].x - senderX, dy = g_enemies[i].y - senderY;
     float dist = vec_len(dx, dy);
@@ -920,7 +926,7 @@ static inline void enemy_tick_all(float dtSeconds) {
     
     // Count ready wolves for coordinated attack
     int readyCount = 0;
-    for (int i = 0; i < (int)g_enemy_count; ++i) {
+    for (int i = 0; i < MAX_ENEMIES; ++i) {
       if (!g_enemies[i].active) continue;
       float dx = g_pos_x - g_enemies[i].x, dy = g_pos_y - g_enemies[i].y;
       float dist = vec_len(dx, dy);
@@ -929,7 +935,7 @@ static inline void enemy_tick_all(float dtSeconds) {
     
     // Trigger coordinated attack if enough wolves ready
     if (readyCount >= 3 && g_pack_plan == PackPlan::Commit) {
-      for (int i = 0; i < (int)g_enemy_count; ++i) {
+      for (int i = 0; i < MAX_ENEMIES; ++i) {
         if (!g_enemies[i].active) continue;
         if (g_enemy_roles[i] == (unsigned char)PackRole::Lead) {
           broadcast_pack_message(PackMessage::AttackNow, g_enemies[i].x, g_enemies[i].y);
@@ -940,7 +946,7 @@ static inline void enemy_tick_all(float dtSeconds) {
   }
   
   // Update individual wolves
-  for (int i = 0; i < (int)g_enemy_count; ++i) { 
+  for (int i = 0; i < MAX_ENEMIES; ++i) { 
     if (!g_enemies[i].active) continue; 
     if (g_enemies[i].health <= 0.f) { 
       g_enemies[i].active = 0; 
@@ -951,9 +957,18 @@ static inline void enemy_tick_all(float dtSeconds) {
   }
 }
 
-static int enemy_alloc_slot() { for (int i = 0; i < MAX_ENEMIES; ++i) { if (!g_enemies[i].active) return i; } return -1; }
+static int enemy_alloc_slot() { 
+  for (int i = 0; i < MAX_ENEMIES; ++i) { 
+    if (!g_enemies[i].active) return i; 
+  } 
+  return -1; // No available slots
+}
 
 static void enemy_activate(int idx, EnemyType type, float x, float y) {
+  // Bounds check to prevent index out of bounds
+  if (idx < 0 || idx >= MAX_ENEMIES) {
+    return; // Invalid index, skip activation
+  }
   Enemy &e = g_enemies[idx]; 
   e.active = 1; e.type = type; e.state = EnemyState::Idle; 
   e.x = clamp01(x); e.y = clamp01(y); e.vx = 0.f; e.vy = 0.f; 
@@ -977,7 +992,10 @@ static void enemy_activate(int idx, EnemyType type, float x, float y) {
   e.lastDamageTime = -1000.f;
   e.successfulAttacks = 0;
   e.failedAttacks = 0;
-  if ((unsigned char)(idx + 1) > g_enemy_count) g_enemy_count = (unsigned char)(idx + 1);
+  // Update enemy count safely - ensure we don't exceed MAX_ENEMIES
+  if ((unsigned char)(idx + 1) > g_enemy_count && idx < MAX_ENEMIES) {
+    g_enemy_count = (unsigned char)(idx + 1);
+  }
 
   // Biome-specific attribute adjustments
   switch (g_current_biome) {
@@ -1144,8 +1162,8 @@ static inline unsigned int create_tracked_wolf_pack(unsigned int packSize) {
     // Track which enemies belong to this pack
     // Find the most recently spawned wolves
     int wolves_found = 0;
-    for (int i = (int)g_enemy_count - 1; i >= 0 && wolves_found < (int)spawned; --i) {
-      if (i < MAX_ENEMIES && g_enemies[i].active && g_enemies[i].type == EnemyType::Wolf) {
+    for (int i = MAX_ENEMIES - 1; i >= 0 && wolves_found < (int)spawned; --i) {
+      if (g_enemies[i].active && g_enemies[i].type == EnemyType::Wolf) {
         if (pack.member_count < 6) { // Ensure we don't exceed member array bounds
           pack.member_indices[pack.member_count] = i;
           pack.member_count++;
@@ -1231,8 +1249,8 @@ static inline void update_wolf_pack_system(float dtSeconds) {
           
           // Track the new wolves
           int wolves_found = 0;
-          for (int j = (int)g_enemy_count - 1; j >= 0 && wolves_found < (int)spawned; --j) {
-            if (j < MAX_ENEMIES && g_enemies[j].active && g_enemies[j].type == EnemyType::Wolf) {
+          for (int j = MAX_ENEMIES - 1; j >= 0 && wolves_found < (int)spawned; --j) {
+            if (g_enemies[j].active && g_enemies[j].type == EnemyType::Wolf) {
               // Check if this wolf is already tracked by another pack
               unsigned char already_tracked = 0;
               for (int k = 0; k < MAX_WOLF_PACKS; ++k) {
@@ -1275,11 +1293,11 @@ static inline void update_wolf_pack_system(float dtSeconds) {
 // Update pack morale and track casualties/den bonuses
 static inline void update_pack_morale_and_peak(float dtSeconds) {
   unsigned int alive = 0u;
-  for (int i = 0; i < (int)g_enemy_count; ++i) if (g_enemies[i].active) alive++;
+  for (int i = 0; i < MAX_ENEMIES; ++i) if (g_enemies[i].active) alive++;
   if (alive > g_pack_peak_wolves) g_pack_peak_wolves = (unsigned char)alive;
   float casualty = (g_pack_peak_wolves > 0) ? (1.f - ((float)alive / (float)g_pack_peak_wolves)) : 0.f;
   float hazard = 0.f; unsigned int sensed = 0u;
-  for (int ei = 0; ei < (int)g_enemy_count; ++ei) {
+  for (int ei = 0; ei < MAX_ENEMIES; ++ei) {
     if (!g_enemies[ei].active) continue;
     float local = 0.f;
     for (int di = 0; di < (int)g_danger_count; ++di) {

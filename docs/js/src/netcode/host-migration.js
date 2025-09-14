@@ -265,9 +265,9 @@ export class HostMigrationSystem {
       if (success) {
         this.completeMigration(true, newHost.id)
         return true
-      } else {
+      } 
         throw new Error('Migration failed')
-      }
+      
       
     } catch (error) {
       this.logger.error('Host migration failed', { 
@@ -282,10 +282,10 @@ export class HostMigrationSystem {
           this.triggerHostMigration(reason, oldHostId)
         }, 1000 * this.sessionState.migrationAttempts)
         return false
-      } else {
+      } 
         this.completeMigration(false, null)
         return false
-      }
+      
     }
   }
   
@@ -409,17 +409,17 @@ export class HostMigrationSystem {
     if (newHostId === this.sessionState.localPlayerId) {
       const success = await this.handleBecomeNewHost()
       return success
-    } else {
+    } 
       // Step 3: Wait for new host to be ready
       const success = await this.waitForNewHost(newHostId)
       return success
-    }
+    
   }
   
   /**
    * Announce migration to all players
    */
-  async announceMigration(newHostId, reason) {
+  announceMigration(newHostId, reason) {
     const message = {
       type: 'host_migration',
       newHostId,
@@ -506,7 +506,7 @@ export class HostMigrationSystem {
   /**
    * Request state from a specific player
    */
-  async requestStateFromPlayer(playerId) {
+  requestStateFromPlayer(playerId) {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('State request timeout'))
@@ -545,7 +545,7 @@ export class HostMigrationSystem {
   /**
    * Announce that the new host is ready
    */
-  async announceHostReady() {
+  announceHostReady() {
     const message = {
       type: 'host_ready',
       hostId: this.sessionState.localPlayerId,
@@ -563,7 +563,7 @@ export class HostMigrationSystem {
   /**
    * Wait for new host to be ready
    */
-  async waitForNewHost(newHostId) {
+  waitForNewHost(newHostId) {
     this.logger.info('Waiting for new host', { newHostId })
     
     return new Promise((resolve) => {
@@ -649,7 +649,7 @@ export class HostMigrationSystem {
    * Start monitoring the host
    */
   startHostMonitoring() {
-    if (this.sessionState.isHost) return
+    if (this.sessionState.isHost) {return}
     
     this.stopHostMonitoring() // Clean up existing monitoring
     
@@ -693,7 +693,7 @@ export class HostMigrationSystem {
    * Start sending host heartbeats
    */
   startHostHeartbeat() {
-    if (!this.sessionState.isHost) return
+    if (!this.sessionState.isHost) {return}
     
     this.stopHostHeartbeat() // Clean up existing heartbeat
     

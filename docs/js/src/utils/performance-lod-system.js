@@ -58,7 +58,7 @@ export class PerformanceLODSystem {
    * @private
    */
   adjustQualityLevel() {
-    if (this.frameTimeHistory.length < 30) return; // Need enough samples
+    if (this.frameTimeHistory.length < 30) {return;} // Need enough samples
 
     const avgFrameTime = this.frameTimeHistory.reduce((a, b) => a + b) / this.frameTimeHistory.length;
     const p95FrameTime = this.frameTimeHistory.sort((a, b) => a - b)[Math.floor(this.frameTimeHistory.length * 0.95)];
@@ -96,7 +96,7 @@ export class PerformanceLODSystem {
       CULLED: this.LOD_THRESHOLDS.CULLED * qualityMultiplier
     };
 
-    let lodLevel, shouldRender, updateFrequency, renderDetail;
+    let lodLevel; let shouldRender; let updateFrequency; let renderDetail;
 
     if (distance < adjustedThresholds.FULL_DETAIL) {
       lodLevel = 'FULL_DETAIL';

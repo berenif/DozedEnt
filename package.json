@@ -70,6 +70,7 @@
     "build:animations": "rollup -c tools/config/rollup.config.animations.js",
     "build:wolf": "rollup -c tools/config/rollup.config.wolf.js",
     "build:docs": "node tools/scripts/build-docs.js",
+    "copy:docs": "node tools/scripts/copy-to-docs.js",
     "build:all": "npm run build && npm run build:animations && npm run build:wolf",
     "build:check": "node tools/scripts/pre-build-check.js",
     "validate:github-pages": "node tools/scripts/validate-github-pages.js",
@@ -103,7 +104,10 @@
     "test:github-pages": "mocha 'test/unit/github-pages-deployment.test.js'",
     "test:all": "npm run test:unit && npm run test:coverage:check",
     "dev": "node tools/scripts/server.js",
-    "serve": "npm run dev"
+    "serve": "npm run dev",
+    "serve:docs": "node serve-dev.js",
+    "serve:simple": "cd docs && python -m http.server 8080",
+    "serve:http": "npx http-server docs -p 8080 -c-1 --cors"
   },
   "keywords": [
     "webrtc",

@@ -216,7 +216,7 @@ export class WolfBodyPhysics {
     }
 
     // Get segment angle
-    getSegmentAngle(segmentName, wolf) {
+    getSegmentAngle(segmentName, _wolf) {
         // Base angles for different segments
         const baseAngles = {
             head: 0,
@@ -233,7 +233,7 @@ export class WolfBodyPhysics {
     }
 
     // Initialize joints
-    initializeJoints(physicsState, anatomyData) {
+    initializeJoints(physicsState, _anatomyData) {
         const joints = physicsState.joints
 
         // Define joint connections
@@ -330,7 +330,7 @@ export class WolfBodyPhysics {
     }
 
     // Apply environmental forces
-    applyEnvironmentalForces(physicsState, environment, wolf) {
+    applyEnvironmentalForces(physicsState, environment, _wolf) {
         const segments = physicsState.segments
 
         // Gravity
@@ -449,7 +449,7 @@ export class WolfBodyPhysics {
     }
 
     // Apply hurt forces
-    applyHurtForces(segments, joints, wolf) {
+    applyHurtForces(segments, _joints, _wolf) {
         // Deterministic flinch forces (visuals only)
         const base = Number((globalThis.runSeedForVisuals ?? 1n) % 997n) / 997
         let n = base
@@ -711,7 +711,7 @@ export class WolfBodyPhysics {
         }
 
         // Update tail position
-        if (wolf.tailPosition !== undefined) {
+        if (typeof wolf.tailPosition !== "undefined") {
             wolf.tailPosition = segments.tail.angle
         }
     }

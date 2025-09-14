@@ -3,12 +3,14 @@
  * Handles complex game interaction errors, WASM failures, and recovery strategies
  */
 
+/* global validatedAttack */
+
 import { inputValidator } from './input-validator.js';
 import { createLogger } from './logger.js';
 
 export class GameErrorHandler {
   constructor() {
-    this.logger = createLogger('GameErrorHandler');
+    this.logger = createLogger({ prefix: 'GameErrorHandler' });
     
     // Error tracking and recovery state
     this.errorState = {
@@ -126,7 +128,7 @@ export class GameErrorHandler {
   /**
    * Handle WASM state reading errors
    */
-  handleWasmStateError(error, context) {
+  handleWasmStateError(error, _context) {
     this.logger.error('WASM state reading failed:', error);
     
     // If we can't read state, we might need to reset
@@ -140,7 +142,7 @@ export class GameErrorHandler {
   /**
    * Handle generic WASM errors
    */
-  handleGenericWasmError(error, context) {
+  handleGenericWasmError(error, _context) {
     this.logger.error('Generic WASM error:', error);
     
     // If too many errors, suggest recovery
@@ -392,7 +394,9 @@ export class GameErrorHandler {
    * Get average update time for performance monitoring
    */
   getAverageUpdateTime() {
-    if (this.performanceMonitor.updateTimes.length === 0) return 0;
+    if (this.performanceMonitor.updateTimes.length === 0) {
+      return 0;
+    }
     
     const sum = this.performanceMonitor.updateTimes.reduce((a, b) => a + b, 0);
     return sum / this.performanceMonitor.updateTimes.length;

@@ -291,7 +291,7 @@ export class SpectatorSystem {
   /**
    * Update follow camera
    */
-  updateFollowCamera(deltaTime) {
+  updateFollowCamera(_deltaTime) {
     if (!this.targetPlayerId) {return;}
     
     const playerState = this.playerStates.get(this.targetPlayerId);
@@ -312,7 +312,7 @@ export class SpectatorSystem {
   /**
    * Update free camera
    */
-  updateFreeCamera(deltaTime) {
+  updateFreeCamera(_deltaTime) {
     // Free camera movement is handled by input events
     // Just apply bounds checking here
     this.camera.x = Math.max(this.camera.bounds.minX, 
@@ -324,7 +324,7 @@ export class SpectatorSystem {
   /**
    * Update overview camera
    */
-  updateOverviewCamera(deltaTime) {
+  updateOverviewCamera(_deltaTime) {
     // Calculate center point of all players
     const players = Array.from(this.playerStates.values());
     if (players.length === 0) {return;}
@@ -359,7 +359,7 @@ export class SpectatorSystem {
   /**
    * Update cinematic camera
    */
-  updateCinematicCamera(deltaTime) {
+  updateCinematicCamera(_deltaTime) {
     // Implement cinematic camera movements
     const time = performance.now() * 0.001; // Convert to seconds
     
@@ -380,7 +380,7 @@ export class SpectatorSystem {
   /**
    * Apply camera smoothing
    */
-  applyCameraSmoothing(deltaTime) {
+  applyCameraSmoothing(_deltaTime) {
     // Smooth zoom
     const zoomDiff = this.camera.targetZoom - this.camera.zoom;
     this.camera.zoom += zoomDiff * this.settings.cameraSmoothing;
@@ -575,7 +575,7 @@ export class SpectatorSystem {
     });
     
     // Update spectator count if this is spectator data
-    if (state.isSpectating !== undefined) {
+    if (typeof state.isSpectating !== "undefined") {
       this.updateSpectatorCount();
     }
   }
@@ -583,7 +583,7 @@ export class SpectatorSystem {
   /**
    * Update player tracking
    */
-  updatePlayerTracking(deltaTime) {
+  updatePlayerTracking(_deltaTime) {
     const now = performance.now();
     
     // Remove stale player states (no update for 5 seconds)

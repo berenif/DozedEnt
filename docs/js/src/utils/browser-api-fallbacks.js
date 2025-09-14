@@ -3,6 +3,8 @@
  * Handles failures of Web Audio, Canvas, WebRTC, and other browser APIs
  */
 
+/* global GamepadList */
+
 export class BrowserAPIFallbacks {
   constructor() {
     this.capabilities = {
@@ -85,7 +87,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check Canvas API availability
    */
-  async checkCanvasAPI() {
+  checkCanvasAPI() {
     try {
       const canvas = document.createElement('canvas');
       if (!canvas.getContext) {
@@ -120,7 +122,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check WebRTC API availability
    */
-  async checkWebRTCAPI() {
+  checkWebRTCAPI() {
     try {
       if (!window.RTCPeerConnection) {
         throw new Error('RTCPeerConnection not available');
@@ -152,7 +154,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check Gamepad API availability
    */
-  async checkGamepadAPI() {
+  checkGamepadAPI() {
     try {
       if (!navigator.getGamepads) {
         throw new Error('Gamepad API not available');
@@ -178,7 +180,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check Fullscreen API availability
    */
-  async checkFullscreenAPI() {
+  checkFullscreenAPI() {
     try {
       const element = document.documentElement;
       const requestFullscreen = element.requestFullscreen || 
@@ -204,7 +206,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check Pointer Lock API availability
    */
-  async checkPointerLockAPI() {
+  checkPointerLockAPI() {
     try {
       const element = document.documentElement;
       const requestPointerLock = element.requestPointerLock || 
@@ -229,7 +231,7 @@ export class BrowserAPIFallbacks {
   /**
    * Check WebGL API availability
    */
-  async checkWebGLAPI() {
+  checkWebGLAPI() {
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');

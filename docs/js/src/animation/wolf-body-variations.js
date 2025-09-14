@@ -205,7 +205,7 @@ export class WolfBodyVariations {
     }
 
     // Generate anatomical variations
-    generateAnatomicalVariations(wolfType) {
+    generateAnatomicalVariations(_wolfType) {
         const proportions = this.variationParameters.proportions
 
         return {
@@ -487,17 +487,17 @@ export class WolfBodyVariations {
         return array[Math.floor(this.seededRandom() * array.length)]
     }
 
-    lightenColor(color, amount) {
+    lightenColor(color, _amount) {
         // Simple color lightening - in practice use proper color manipulation
         return color // Placeholder
     }
 
-    darkenColor(color, amount) {
+    darkenColor(color, _amount) {
         // Simple color darkening - in practice use proper color manipulation
         return color // Placeholder
     }
 
-    adjustSaturation(color, amount) {
+    adjustSaturation(color, _amount) {
         // Simple saturation adjustment - in practice use proper color manipulation
         return color // Placeholder
     }

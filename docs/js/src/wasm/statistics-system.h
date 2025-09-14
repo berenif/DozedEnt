@@ -118,6 +118,10 @@ static bool g_session_active = false;
 // Statistics Initialization
 // ============================================================================
 
+// Forward declarations
+void add_statistic(uint32_t id, StatisticType type, StatisticCategory category, const char* name);
+void end_statistics_session();
+
 void initialize_statistics_system() {
     g_statistic_count = 0;
     g_session_count = 0;
@@ -222,7 +226,7 @@ void start_statistics_session() {
     }
     
     memset(&g_current_session, 0, sizeof(SessionStats));
-    g_current_session.startTime = (uint64_t)(g_game_time * 1000);
+    g_current_session.startTime = (uint64_t)(g_time_seconds * 1000);
     g_session_active = true;
     
     // Reset session values for all statistics
@@ -234,7 +238,7 @@ void start_statistics_session() {
 void end_statistics_session() {
     if (!g_session_active) return;
     
-    g_current_session.endTime = (uint64_t)(g_game_time * 1000);
+    g_current_session.endTime = (uint64_t)(g_time_seconds * 1000);
     g_current_session.duration = (g_current_session.endTime - g_current_session.startTime) / 1000.0;
     
     // Calculate session performance metrics
@@ -280,7 +284,7 @@ void record_statistic(uint32_t id, double value) {
     GameStatistic* stat = find_statistic_by_id(id);
     if (!stat) return;
     
-    uint64_t currentTime = (uint64_t)(g_game_time * 1000);
+    uint64_t currentTime = (uint64_t)(g_time_seconds * 1000);
     
     if (stat->firstRecorded == 0) {
         stat->firstRecorded = currentTime;
@@ -359,7 +363,7 @@ void record_percentage_statistic(uint32_t id, bool success) {
         stat->totalValue = stat->currentValue;
     }
     
-    stat->lastUpdated = (uint64_t)(g_game_time * 1000);
+    stat->lastUpdated = (uint64_t)(g_time_seconds * 1000);
 }
 
 // ============================================================================
@@ -572,7 +576,7 @@ const char* get_session_stats() {
         return sessionBuffer;
     }
     
-    double currentDuration = (g_game_time * 1000 - g_current_session.startTime) / 1000.0;
+    double currentDuration = (g_time_seconds * 1000 - g_current_session.startTime) / 1000.0;
     
     snprintf(sessionBuffer, sizeof(sessionBuffer),
         "{"

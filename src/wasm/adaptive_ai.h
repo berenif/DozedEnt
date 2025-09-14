@@ -106,7 +106,7 @@ static void adapt_difficulty() {
     g_difficulty.hearingRange += (targetHearing - g_difficulty.hearingRange) * ADAPT_RATE;
     
     // Apply difficulty to existing wolves
-    for (int i = 0; i < (int)g_enemy_count; ++i) {
+    for (int i = 0; i < MAX_ENEMIES; ++i) {
         if (!g_enemies[i].active) continue;
         
         // Update wolf attributes based on difficulty

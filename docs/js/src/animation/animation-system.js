@@ -110,7 +110,7 @@ export class Animation {
     }
 
     getProgress() {
-        if (this.frames.length === 0) {return 0}
+        if (this.frames.length <= 1) {return 0}
         return this.currentFrame / (this.frames.length - 1)
     }
 
@@ -222,9 +222,7 @@ export class ProceduralAnimator {
             baseScale = 1.0,
             intensity = 0.015,
             speed = 2.0,
-            depthVariation = 0.3, // Reserved for future depth-based breathing
-            asymmetry = 0.2,
-            heartRateSync = true // Reserved for future heart rate synchronization
+            asymmetry = 0.2
         } = options
 
         return {
@@ -234,6 +232,14 @@ export class ProceduralAnimator {
             currentIntensity: intensity,
             depthMod: 1.0,
             asymmetryOffset: 0,
+            _buf: {
+                scaleX: baseScale,
+                scaleY: baseScale,
+                offsetY: 0,
+                chestExpansion: 0,
+                phase: 0,
+                intensity: 0
+            },
 
             // State-based modulation
             modulateForState(state) {
@@ -265,13 +271,16 @@ export class ProceduralAnimator {
             },
 
             update(deltaTime) {
+                const res = this._buf
+
                 if (this.breathRate <= 0) {
-                    return {
-                        scaleX: baseScale,
-                        scaleY: baseScale,
-                        offsetY: 0,
-                        chestExpansion: 0
-                    }
+                    res.scaleX = baseScale
+                    res.scaleY = baseScale
+                    res.offsetY = 0
+                    res.chestExpansion = 0
+                    res.phase = 0
+                    res.intensity = 0
+                    return res
                 }
 
                 this.time += deltaTime * this.breathRate
@@ -293,14 +302,13 @@ export class ProceduralAnimator {
                 const smoothFactor = 1 - Math.exp(-deltaTime * 5)
                 this.currentIntensity = this.currentIntensity + (currentIntensity - this.currentIntensity) * smoothFactor
 
-                return {
-                    scaleX: finalScaleX,
-                    scaleY: breathScaleY,
-                    offsetY: -chestExpansion * 0.5,
-                    chestExpansion: chestExpansion,
-                    phase: this.phase,
-                    intensity: currentIntensity
-                }
+                res.scaleX = finalScaleX
+                res.scaleY = breathScaleY
+                res.offsetY = -chestExpansion * 0.5
+                res.chestExpansion = chestExpansion
+                res.phase = this.phase
+                res.intensity = currentIntensity
+                return res
             }
         }
     }
@@ -309,12 +317,13 @@ export class ProceduralAnimator {
     createBobbingAnimation(amplitude = 5, speed = 2) {
         return {
             time: 0,
+            _buf: { offsetY: 0, rotation: 0 },
             update(deltaTime) {
                 this.time += deltaTime * speed
-                return {
-                    offsetY: Math.sin(this.time) * amplitude,
-                    rotation: Math.sin(this.time * 0.5) * 0.05
-                }
+                const res = this._buf
+                res.offsetY = Math.sin(this.time) * amplitude
+                res.rotation = Math.sin(this.time * 0.5) * 0.05
+                return res
             }
         }
     }
@@ -324,34 +333,42 @@ export class ProceduralAnimator {
         return {
             time: 0,
             active: false,
+            _buf: { scaleX: 1, scaleY: 1 },
             trigger() {
                 this.time = 0
                 this.active = true
             },
             update(deltaTime) {
-                if (!this.active) {return { scaleX: 1, scaleY: 1 }}
-                
+                const res = this._buf
+
+                if (!this.active) {
+                    res.scaleX = 1
+                    res.scaleY = 1
+                    return res
+                }
+
                 this.time += deltaTime
                 const progress = Math.min(this.time / duration, 1)
-                
+
                 if (progress >= 1) {
                     this.active = false
-                    return { scaleX: 1, scaleY: 1 }
+                    res.scaleX = 1
+                    res.scaleY = 1
+                    return res
                 }
-                
+
                 // Elastic easing
                 const t = progress
                 const p = 0.3
                 const s = p / 4
                 const postFix = 2**(-10 * t) * Math.sin((t - s) * (2 * Math.PI) / p) + 1
-                
+
                 const squash = 1 - postFix * intensity
                 const stretch = 1 + postFix * intensity * 0.5
-                
-                return {
-                    scaleX: progress < 0.5 ? stretch : squash,
-                    scaleY: progress < 0.5 ? squash : stretch
-                }
+
+                res.scaleX = progress < 0.5 ? stretch : squash
+                res.scaleY = progress < 0.5 ? squash : stretch
+                return res
             }
         }
     }
@@ -361,19 +378,20 @@ export class ProceduralAnimator {
         return {
             velocity: 0,
             displacement: 0,
+            _buf: { scaleX: 1, scaleY: 1, rotation: 0 },
             update(deltaTime, force = 0) {
                 // Spring physics
                 const springForce = -frequency * this.displacement
                 const dampingForce = -damping * this.velocity
-                
+
                 this.velocity += (springForce + dampingForce + force) * deltaTime
                 this.displacement += this.velocity * deltaTime
-                
-                return {
-                    scaleX: 1 + this.displacement * intensity,
-                    scaleY: 1 - this.displacement * intensity * 0.5,
-                    rotation: this.displacement * 0.1
-                }
+
+                const res = this._buf
+                res.scaleX = 1 + this.displacement * intensity
+                res.scaleY = 1 - this.displacement * intensity * 0.5
+                res.rotation = this.displacement * 0.1
+                return res
             },
             impulse(force) {
                 this.velocity += force
@@ -387,61 +405,68 @@ export class ProceduralAnimator {
             time: 0,
             active: false,
             phase: 'idle', // idle, anticipation, action, recovery
+            _buf: { scaleX: 1, scaleY: 1, offsetX: 0 },
             trigger() {
                 this.time = 0
                 this.active = true
                 this.phase = 'anticipation'
             },
             update(deltaTime) {
-                if (!this.active) {return { scaleX: 1, scaleY: 1, offsetX: 0 }}
-                
+                const res = this._buf
+                if (!this.active) {
+                    res.scaleX = 1
+                    res.scaleY = 1
+                    res.offsetX = 0
+                    return res
+                }
+
                 this.time += deltaTime
-                
+
                 if (this.phase === 'anticipation') {
                     const progress = Math.min(this.time / (duration * 0.4), 1)
                     const eased = 1 - Math.cos(progress * Math.PI * 0.5)
-                    
+
                     if (progress >= 1) {
                         this.phase = 'action'
                         this.time = 0
                     }
-                    
-                    return {
-                        scaleX: 1 - eased * intensity,
-                        scaleY: 1 + eased * intensity * 0.5,
-                        offsetX: -eased * 10
-                    }
+
+                    res.scaleX = 1 - eased * intensity
+                    res.scaleY = 1 + eased * intensity * 0.5
+                    res.offsetX = -eased * 10
+                    return res
                 } else if (this.phase === 'action') {
                     const progress = Math.min(this.time / (duration * 0.2), 1)
                     const eased = Math.sin(progress * Math.PI * 0.5)
-                    
+
                     if (progress >= 1) {
                         this.phase = 'recovery'
                         this.time = 0
                     }
-                    
-                    return {
-                        scaleX: 1 + eased * intensity * 2,
-                        scaleY: 1 - eased * intensity,
-                        offsetX: eased * 20
-                    }
+
+                    res.scaleX = 1 + eased * intensity * 2
+                    res.scaleY = 1 - eased * intensity
+                    res.offsetX = eased * 20
+                    return res
                 } else if (this.phase === 'recovery') {
                     const progress = Math.min(this.time / (duration * 0.4), 1)
                     const eased = 1 - (1 - progress)**3
-                    
+
                     if (progress >= 1) {
                         this.active = false
                         this.phase = 'idle'
                     }
-                    
-                    return {
-                        scaleX: 1 + (1 - eased) * intensity * 0.5,
-                        scaleY: 1 - (1 - eased) * intensity * 0.25,
-                        offsetX: (1 - eased) * 10
-                    }
+
+                    res.scaleX = 1 + (1 - eased) * intensity * 0.5
+                    res.scaleY = 1 - (1 - eased) * intensity * 0.25
+                    res.offsetX = (1 - eased) * 10
+                    return res
                 }
-                
-                return { scaleX: 1, scaleY: 1, offsetX: 0 }
+
+                res.scaleX = 1
+                res.scaleY = 1
+                res.offsetX = 0
+                return res
             }
         }
     }
@@ -462,6 +487,14 @@ export class ProceduralAnimator {
             hand: { x: 0, y: 0 },
             target: { x: 0, y: 0 },
             targetVelocity: { x: 0, y: 0 },
+            _buf: {
+                shoulder: { x: 0, y: 0 },
+                elbow: { x: 0, y: 0 },
+                hand: { x: 0, y: 0 },
+                target: { x: 0, y: 0 },
+                reach: 0,
+                stiffness: 0
+            },
 
             // Two-bone IK solver (CCD - Cyclic Coordinate Descent)
             solveIK(targetX, targetY, shoulderX, shoulderY) {
@@ -497,13 +530,17 @@ export class ProceduralAnimator {
                 this.hand.x = this.elbow.x + Math.cos(shoulderAngle + elbowAngle * 0.5) * forearmLength
                 this.hand.y = this.elbow.y + Math.sin(shoulderAngle + elbowAngle * 0.5) * forearmLength
 
-                return {
-                    shoulder: { ...this.shoulder },
-                    elbow: { ...this.elbow },
-                    hand: { ...this.hand },
-                    target: { x: clampedTargetX, y: clampedTargetY },
-                    reach: clampedDistance / totalLength
-                }
+                const res = this._buf
+                res.shoulder.x = this.shoulder.x
+                res.shoulder.y = this.shoulder.y
+                res.elbow.x = this.elbow.x
+                res.elbow.y = this.elbow.y
+                res.hand.x = this.hand.x
+                res.hand.y = this.hand.y
+                res.target.x = clampedTargetX
+                res.target.y = clampedTargetY
+                res.reach = clampedDistance / totalLength
+                return res
             },
 
             // Smooth IK with velocity prediction
@@ -522,10 +559,18 @@ export class ProceduralAnimator {
                 // Apply stiffness damping to joints
                 const stiffnessFactor = 1 - Math.exp(-stiffness * deltaTime)
 
-                return {
-                    ...solution,
-                    stiffness: stiffnessFactor
-                }
+                const res = this._buf
+                res.shoulder.x = solution.shoulder.x
+                res.shoulder.y = solution.shoulder.y
+                res.elbow.x = solution.elbow.x
+                res.elbow.y = solution.elbow.y
+                res.hand.x = solution.hand.x
+                res.hand.y = solution.hand.y
+                res.target.x = solution.target.x
+                res.target.y = solution.target.y
+                res.reach = solution.reach
+                res.stiffness = stiffnessFactor
+                return res
             }
         }
     }
@@ -536,7 +581,6 @@ export class ProceduralAnimator {
             segments = 5,
             length = 15,
             damping = 0.85,
-            stiffness = 0.3, // Reserved for future spring stiffness calculations
             gravity = 0.5,
             windStrength = 0.1
         } = options
@@ -545,6 +589,7 @@ export class ProceduralAnimator {
             segments: [],
             anchorPoint: { x: 0, y: 0 },
             windTime: 0,
+            _segBuf: [],
 
             initialize(anchorX, anchorY) {
                 this.anchorPoint = { x: anchorX, y: anchorY }
@@ -611,7 +656,13 @@ export class ProceduralAnimator {
                     segment.vy *= damping
                 }
 
-                return [...this.segments]
+                if (!this._segBuf || this._segBuf.length !== this.segments.length) {
+                    this._segBuf = new Array(this.segments.length)
+                }
+                for (let i = 0; i < this.segments.length; i++) {
+                    this._segBuf[i] = this.segments[i]
+                }
+                return this._segBuf
             },
 
             applyForce(forceX, forceY, segmentIndex = -1) {
@@ -642,6 +693,13 @@ export class ProceduralAnimator {
             momentum: { x: 0, y: 0 },
             smoothedDirection: { x: 0, y: 0 },
             lastVelocity: { x: 0, y: 0 },
+            _buf: {
+                momentum: { x: 0, y: 0 },
+                smoothedDirection: { x: 0, y: 0 },
+                leanAngle: 0,
+                bounceFactor: 0,
+                stretchFactor: 0
+            },
 
             update(deltaTime, velocityX, velocityY, isGrounded = true) {
                 // Calculate velocity change
@@ -685,13 +743,15 @@ export class ProceduralAnimator {
                     this.smoothedDirection.y = this.smoothedDirection.y * (1 - directionSmoothing) + normalizedDir.y * directionSmoothing
                 }
 
-                return {
-                    momentum: { ...this.momentum },
-                    smoothedDirection: { ...this.smoothedDirection },
-                    leanAngle: isGrounded ? Math.atan2(this.momentum.x, Math.abs(this.momentum.y) + 1) * 0.3 : 0,
-                    bounceFactor: momentumMagnitude * 0.1,
-                    stretchFactor: Math.max(0, momentumMagnitude * 0.05)
-                }
+                const res = this._buf
+                res.momentum.x = this.momentum.x
+                res.momentum.y = this.momentum.y
+                res.smoothedDirection.x = this.smoothedDirection.x
+                res.smoothedDirection.y = this.smoothedDirection.y
+                res.leanAngle = isGrounded ? Math.atan2(this.momentum.x, Math.abs(this.momentum.y) + 1) * 0.3 : 0
+                res.bounceFactor = momentumMagnitude * 0.1
+                res.stretchFactor = Math.max(0, momentumMagnitude * 0.05)
+                return res
             },
 
             addImpulse(impulseX, impulseY) {
@@ -1261,8 +1321,7 @@ export class WolfAnimator {
         }
     }
 
-    update(deltaTime, position, velocity = {x: 0, y: 0}, isGrounded = true) {
-        // velocity and isGrounded parameters reserved for future physics integration
+    update(deltaTime) {
         this.controller.update(deltaTime);
         
         const breathing = this.sniffing.update(deltaTime);

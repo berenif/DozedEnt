@@ -466,7 +466,7 @@ export class PersistenceUI {
   /**
    * Perform quick save
    */
-  async performQuickSave() {
+  performQuickSave() {
     try {
       if (this.wasmManager?.exports?.quick_save) {
         const result = this.wasmManager.exports.quick_save();
@@ -486,7 +486,7 @@ export class PersistenceUI {
   /**
    * Save to specific slot
    */
-  async saveTo(slotId) {
+  saveTo(slotId) {
     try {
       if (this.wasmManager?.exports?.create_save_data) {
         // Get save data from WASM
@@ -522,7 +522,7 @@ export class PersistenceUI {
   /**
    * Load from specific slot
    */
-  async loadSave(slotId) {
+  loadSave(slotId) {
     try {
       const saveData = this.getSaveData(slotId);
       if (!saveData) {
@@ -640,8 +640,10 @@ export class PersistenceUI {
   /**
    * Import save data
    */
-  async importSaveData(file) {
-    if (!file) return;
+  async   importSaveData(file) {
+    if (!file) {
+      return;
+    }
     
     try {
       const text = await file.text();
@@ -689,16 +691,24 @@ export class PersistenceUI {
    * Update achievements display
    */
   updateAchievementsDisplay() {
-    if (!this.wasmManager?.exports) return;
+    if (!this.wasmManager?.exports) {
+      return;
+    }
     
     const achievementsGrid = this.container.querySelector('#achievementsGrid');
     const progressSpan = this.container.querySelector('#achievementProgress');
     const scoreSpan = this.container.querySelector('#achievementScore');
     
     try {
-      // Get achievement summary
-      const summaryJson = this.wasmManager.exports.get_achievements_summary_json();
-      const summary = JSON.parse(summaryJson);
+      // Get achievement summary (create from individual functions if get_achievements_summary_json doesn't exist)
+      let summary;
+      if (typeof this.wasmManager.exports.get_achievements_summary_json === 'function') {
+        const summaryJson = this.wasmManager.exports.get_achievements_summary_json();
+        summary = JSON.parse(summaryJson);
+      } else {
+        // Create summary from individual achievement functions
+        summary = this.createAchievementSummary();
+      }
       
       // Update header stats
       progressSpan.textContent = `${summary.unlockedAchievements} / ${summary.totalAchievements} Unlocked`;
@@ -707,24 +717,143 @@ export class PersistenceUI {
       // Clear and rebuild grid
       achievementsGrid.innerHTML = '';
       
+      // Check if the achievement functions exist
+      if (typeof this.wasmManager.exports.get_achievement_count !== 'function') {
+        console.warn('Achievement functions not available in WASM module');
+        achievementsGrid.innerHTML = '<p class="warning">Achievement system not available</p>';
+        return;
+      }
+      
       const achievementCount = this.wasmManager.exports.get_achievement_count();
       
       for (let i = 0; i < achievementCount; i++) {
-        const achievementId = this.wasmManager.exports.get_achievement_id(i);
-        const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
-        const achievement = JSON.parse(infoJson);
-        
-        // Apply filters
-        if (!this.shouldShowAchievement(achievement)) continue;
-        
-        const achievementElement = this.createAchievementElement(achievement);
-        achievementsGrid.appendChild(achievementElement);
+        try {
+          const achievementId = this.wasmManager.exports.get_achievement_id(i);
+          const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
+          
+          // Check if infoJson is a valid string or if it's a memory address
+          let achievement;
+          if (typeof infoJson === 'string' && infoJson.startsWith('{')) {
+            achievement = JSON.parse(infoJson);
+          } else {
+            // If it's a memory address (number), create a default achievement object
+            console.warn(`Achievement ${i} returned invalid data, creating default object`);
+            achievement = {
+              id: achievementId,
+              name: `Achievement ${i + 1}`,
+              description: 'Default achievement description',
+              rarity: 'Common',
+              unlocked: false,
+              progress: 0,
+              target: 1,
+              points: 10,
+              category: 'General'
+            };
+          }
+          
+          // Ensure achievement has all required properties
+          if (!achievement.rarity) achievement.rarity = 'Common';
+          if (!achievement.name) achievement.name = `Achievement ${i + 1}`;
+          if (!achievement.description) achievement.description = 'Default achievement description';
+          if (typeof achievement.unlocked !== 'boolean') achievement.unlocked = false;
+          if (typeof achievement.progress !== 'number') achievement.progress = 0;
+          if (typeof achievement.target !== 'number') achievement.target = 1;
+          if (typeof achievement.points !== 'number') achievement.points = 10;
+          
+          // Apply filters
+          if (!this.shouldShowAchievement(achievement)) {
+            continue;
+          }
+            
+          const achievementElement = this.createAchievementElement(achievement);
+          achievementsGrid.appendChild(achievementElement);
+        } catch (error) {
+          console.warn(`Failed to process achievement ${i}:`, error);
+          // Create a fallback achievement element
+          const fallbackAchievement = {
+            id: i,
+            name: `Achievement ${i + 1}`,
+            description: 'Achievement data unavailable',
+            rarity: 'Common',
+            unlocked: false,
+            progress: 0,
+            target: 1,
+            points: 10,
+            category: 'General'
+          };
+          const achievementElement = this.createAchievementElement(fallbackAchievement);
+          achievementsGrid.appendChild(achievementElement);
+        }
       }
       
     } catch (error) {
       console.error('Failed to update achievements display:', error);
       achievementsGrid.innerHTML = '<p class="error">Failed to load achievements</p>';
     }
+  }
+  
+  /**
+   * Create achievement summary from individual WASM functions
+   */
+  createAchievementSummary() {
+    let totalAchievements = 0;
+    let unlockedAchievements = 0;
+    let totalScore = 0;
+    
+    try {
+      // Get total achievements count
+      if (typeof this.wasmManager.exports.get_achievement_count === 'function') {
+        totalAchievements = this.wasmManager.exports.get_achievement_count();
+      }
+      
+      // Count unlocked achievements and calculate score
+      for (let i = 0; i < totalAchievements; i++) {
+        try {
+          const achievementId = this.wasmManager.exports.get_achievement_id(i);
+          if (typeof this.wasmManager.exports.is_achievement_unlocked === 'function' && 
+              this.wasmManager.exports.is_achievement_unlocked(achievementId)) {
+            unlockedAchievements++;
+          }
+        } catch (error) {
+          console.warn(`Error checking achievement ${i}:`, error);
+        }
+      }
+      
+      // Get total score if available
+      if (typeof this.wasmManager.exports.get_total_achievement_score === 'function') {
+        totalScore = this.wasmManager.exports.get_total_achievement_score();
+      }
+      
+    } catch (error) {
+      console.warn('Error creating achievement summary:', error);
+    }
+    
+    return {
+      totalAchievements,
+      unlockedAchievements,
+      totalScore
+    };
+  }
+  
+  /**
+   * Create fallback session statistics when WASM function is not available
+   */
+  createFallbackSessionStats() {
+    return {
+      duration: 0,
+      enemiesKilled: 0,
+      roomsCleared: 0,
+      damageDealt: 0,
+      damageTaken: 0,
+      goldEarned: 0,
+      experienceGained: 0,
+      achievementsUnlocked: 0,
+      accuracy: 0,
+      efficiency: 0,
+      perfectActions: 0,
+      totalActions: 0,
+      deathCount: 0
+    };
   }
   
   /**
@@ -747,21 +876,31 @@ export class PersistenceUI {
       };
       
       const achievementCategory = categoryMap[achievement.type] || 'other';
-      if (achievementCategory !== filters.category) return false;
+      if (achievementCategory !== filters.category) {
+        return false;
+      }
     }
     
     // Rarity filter
     if (filters.rarity !== 'all') {
       const rarityNames = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
       const achievementRarity = rarityNames[achievement.rarityLevel] || 'common';
-      if (achievementRarity !== filters.rarity) return false;
+      if (achievementRarity !== filters.rarity) {
+        return false;
+      }
     }
     
     // Status filter
     if (filters.status !== 'all') {
-      if (filters.status === 'unlocked' && !achievement.unlocked) return false;
-      if (filters.status === 'locked' && achievement.unlocked) return false;
-      if (filters.status === 'progress' && (achievement.unlocked || achievement.progress === 0)) return false;
+      if (filters.status === 'unlocked' && !achievement.unlocked) {
+        return false;
+      }
+      if (filters.status === 'locked' && achievement.unlocked) {
+        return false;
+      }
+      if (filters.status === 'progress' && (achievement.unlocked || achievement.progress === 0)) {
+        return false;
+      }
     }
     
     return true;
@@ -935,55 +1074,114 @@ export class PersistenceUI {
    * Update statistics display
    */
   updateStatisticsDisplay(period = 'session') {
-    if (!this.wasmManager?.exports) return;
+    if (!this.wasmManager?.exports) {
+      return;
+    }
     
     const statisticsGrid = this.container.querySelector('#statisticsGrid');
     const sessionSummary = this.container.querySelector('#sessionSummary');
     
     try {
       // Get statistics data from WASM
-      const sessionStats = this.wasmManager.exports.get_session_stats();
-      const sessionData = JSON.parse(sessionStats);
+      let sessionData;
+      if (typeof this.wasmManager.exports.get_session_stats === 'function') {
+        const sessionStats = this.wasmManager.exports.get_session_stats();
+        sessionData = JSON.parse(sessionStats);
+      } else {
+        // Create fallback session data
+        sessionData = this.createFallbackSessionStats();
+      }
       
       // Update session summary
       sessionSummary.innerHTML = `
         <div class="session-stat">
           <span class="stat-label">Duration:</span>
-          <span class="stat-value">${this.formatTime(sessionData.duration)}</span>
+          <span class="stat-value">${this.formatTime(sessionData.duration || 0)}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Enemies Killed:</span>
-          <span class="stat-value">${sessionData.enemiesKilled}</span>
+          <span class="stat-value">${sessionData.enemiesKilled || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Rooms Cleared:</span>
-          <span class="stat-value">${sessionData.roomsCleared}</span>
+          <span class="stat-value">${sessionData.roomsCleared || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Damage Dealt:</span>
-          <span class="stat-value">${sessionData.damageDealt}</span>
+          <span class="stat-value">${sessionData.damageDealt || 0}</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Accuracy:</span>
-          <span class="stat-value">${sessionData.accuracy.toFixed(1)}%</span>
+          <span class="stat-value">${(sessionData.accuracy || 0).toFixed(1)}%</span>
         </div>
         <div class="session-stat">
           <span class="stat-label">Efficiency:</span>
-          <span class="stat-value">${sessionData.efficiency.toFixed(2)} K/min</span>
+          <span class="stat-value">${(sessionData.efficiency || 0).toFixed(2)} K/min</span>
         </div>
       `;
       
       // Update statistics grid
       statisticsGrid.innerHTML = '';
       
+      // Check if the statistics functions exist
+      if (typeof this.wasmManager.exports.get_statistic_count !== 'function') {
+        console.warn('Statistics functions not available in WASM module');
+        statisticsGrid.innerHTML = '<p class="warning">Statistics system not available</p>';
+        return;
+      }
+      
       const statCount = this.wasmManager.exports.get_statistic_count();
       
       for (let i = 0; i < statCount; i++) {
-        const statInfo = this.wasmManager.exports.get_statistic_info(i);
-        const stat = JSON.parse(statInfo);
-        
-        const statElement = this.createStatisticElement(stat, period);
-        statisticsGrid.appendChild(statElement);
+        try {
+          const statInfo = this.wasmManager.exports.get_statistic_info(i);
+          
+          // Check if statInfo is a valid string or if it's a memory address
+          let stat;
+          if (typeof statInfo === 'string' && statInfo.startsWith('{')) {
+            stat = JSON.parse(statInfo);
+          } else {
+            // If it's a memory address (number), create a default statistic object
+            console.warn(`Statistic ${i} returned invalid data, creating default object`);
+            stat = {
+              id: i,
+              name: `Statistic ${i + 1}`,
+              description: 'Default statistic description',
+              category: 0,
+              type: 0,
+              session: 0,
+              total: 0,
+              maximum: 0
+            };
+          }
+          
+          // Ensure stat has all required properties
+          if (!stat.name) stat.name = `Statistic ${i + 1}`;
+          if (!stat.description) stat.description = 'Default statistic description';
+          if (typeof stat.category !== 'number') stat.category = 0;
+          if (typeof stat.type !== 'number') stat.type = 0;
+          if (typeof stat.session !== 'number') stat.session = 0;
+          if (typeof stat.total !== 'number') stat.total = 0;
+          if (typeof stat.maximum !== 'number') stat.maximum = 0;
+          
+          const statElement = this.createStatisticElement(stat, period);
+          statisticsGrid.appendChild(statElement);
+        } catch (error) {
+          console.warn(`Failed to process statistic ${i}:`, error);
+          // Create a fallback statistic element
+          const fallbackStat = {
+            id: i,
+            name: `Statistic ${i + 1}`,
+            description: 'Statistic data unavailable',
+            category: 0,
+            type: 0,
+            session: 0,
+            total: 0,
+            maximum: 0
+          };
+          const statElement = this.createStatisticElement(fallbackStat, period);
+          statisticsGrid.appendChild(statElement);
+        }
       }
       
     } catch (error) {
@@ -1073,7 +1271,9 @@ export class PersistenceUI {
    * Format date for display
    */
   formatDate(timestamp) {
-    if (!timestamp) return 'Never';
+    if (!timestamp) {
+      return 'Never';
+    }
     const date = new Date(timestamp);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
@@ -1082,7 +1282,9 @@ export class PersistenceUI {
    * Format time duration
    */
   formatTime(seconds) {
-    if (!seconds || seconds < 0) return '0:00';
+    if (!seconds || seconds < 0) {
+      return '0:00';
+    }
     
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -1090,9 +1292,10 @@ export class PersistenceUI {
     
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    } else {
+    } 
       return `${minutes}:${secs.toString().padStart(2, '0')}`;
-    }
+    
+    
   }
   
   /**
@@ -1133,7 +1336,7 @@ export class PersistenceUI {
   /**
    * Import achievement data
    */
-  importAchievementData(data) {
+  importAchievementData(_data) {
     // Achievement data is managed by WASM, so we'd need to
     // restore it through the save system
     console.log('Achievement data import not yet implemented');
@@ -1151,7 +1354,7 @@ export class PersistenceUI {
   /**
    * Import statistics data
    */
-  importStatisticsData(data) {
+  importStatisticsData(_data) {
     // Statistics data is managed by WASM
     console.log('Statistics data import not yet implemented');
   }

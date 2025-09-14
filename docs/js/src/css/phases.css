@@ -1,4 +1,4 @@
-/* Phase Overlays - Roguelike Style - Fixed z-index */
+/* Phase Overlays - Roguelike Style */
 .phase-overlay {
     position: fixed;
     top: 0;
@@ -10,7 +10,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: var(--z-overlays);
+    z-index: 500;
     pointer-events: auto;
     backdrop-filter: blur(8px);
     

@@ -82,29 +82,53 @@ export class PerformanceProfiler {
    */
   initializePerformanceObservers() {
     if (this.hasPerformanceObserver) {
-      try {
-        // Monitor long tasks (>50ms)
-        const longTaskObserver = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.duration > 50) {
-              this.addAlert('LONG_TASK', `Long task detected: ${entry.duration.toFixed(1)}ms`, entry);
-            }
+      // Try to observe long tasks
+      this.tryObserveEntryType('longtask', (list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.duration > 50) {
+            this.addAlert('LONG_TASK', `Long task detected: ${entry.duration.toFixed(1)}ms`, entry);
           }
-        });
-        longTaskObserver.observe({ entryTypes: ['longtask'] });
+        }
+      });
 
-        // Monitor layout shifts
-        const layoutShiftObserver = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.value > 0.1) {
-              this.addAlert('LAYOUT_SHIFT', `Large layout shift: ${entry.value.toFixed(3)}`, entry);
-            }
+      // Try to observe layout shifts
+      this.tryObserveEntryType('layout-shift', (list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.value > 0.1) {
+            this.addAlert('LAYOUT_SHIFT', `Large layout shift: ${entry.value.toFixed(3)}`, entry);
           }
-        });
-        layoutShiftObserver.observe({ entryTypes: ['layout-shift'] });
+        }
+      });
+    }
+  }
 
-      } catch (error) {
-        console.warn('Performance observers not fully supported:', error);
+  /**
+   * Safely try to observe a specific entry type
+   * @param {string} entryType - Performance entry type to observe
+   * @param {Function} callback - Callback function for entries
+   * @private
+   */
+  tryObserveEntryType(entryType, callback) {
+    try {
+      // Check if the entry type is supported before attempting to observe
+      if (!PerformanceObserver.supportedEntryTypes || 
+          !PerformanceObserver.supportedEntryTypes.includes(entryType)) {
+        console.debug(`Performance observer for '${entryType}' not supported in this browser`);
+        return;
+      }
+      
+      const observer = new PerformanceObserver(callback);
+      observer.observe({ entryTypes: [entryType] });
+      console.log(`✅ Performance observer for '${entryType}' initialized`);
+    } catch (error) {
+      // Check if it's specifically an unsupported entry type error
+      if (error.message.includes('entryTypes') || error.message.includes('not supported') || 
+          error.message.includes('not valid') || error.message.includes('ignored') ||
+          error.message.includes('Aucun entryType valide')) {
+        // Silently skip unsupported entry types to reduce console noise
+        console.debug(`Performance observer for '${entryType}' not supported in this browser`);
+      } else {
+        console.warn(`⚠️ Failed to initialize performance observer for '${entryType}':`, error.message);
       }
     }
   }
@@ -113,7 +137,7 @@ export class PerformanceProfiler {
    * Start performance profiling
    */
   start() {
-    if (this.isEnabled) return;
+    if (this.isEnabled) {return;}
     
     this.isEnabled = true;
     this.startTime = performance.now();
@@ -132,7 +156,7 @@ export class PerformanceProfiler {
    * Stop performance profiling
    */
   stop() {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {return;}
     
     this.isEnabled = false;
     
@@ -149,7 +173,7 @@ export class PerformanceProfiler {
    * Mark the beginning of a frame
    */
   beginFrame() {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {return;}
     
     this.frameStartTime = performance.now();
     this.frameCount++;
@@ -168,7 +192,7 @@ export class PerformanceProfiler {
    * Mark the end of a frame
    */
   endFrame() {
-    if (!this.isEnabled || !this.frameStartTime) return;
+    if (!this.isEnabled || !this.frameStartTime) {return;}
     
     const frameTime = performance.now() - this.frameStartTime;
     this.updateFrameMetrics(frameTime);
@@ -191,7 +215,7 @@ export class PerformanceProfiler {
    * @param {string} functionName - Name of the WASM function
    */
   beginWasmCall(functionName = 'unknown') {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {return;}
     
     this.wasmCallStart = {
       time: performance.now(),
@@ -211,7 +235,7 @@ export class PerformanceProfiler {
    * Mark the end of a WASM call
    */
   endWasmCall() {
-    if (!this.isEnabled || !this.wasmCallStart) return;
+    if (!this.isEnabled || !this.wasmCallStart) {return;}
     
     const callTime = performance.now() - this.wasmCallStart.time;
     this.updateWasmMetrics(callTime, this.wasmCallStart.name);
@@ -231,7 +255,7 @@ export class PerformanceProfiler {
    * Mark the beginning of rendering
    */
   beginRender() {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {return;}
     
     this.renderStartTime = performance.now();
     this.renderStartDrawCalls = this.metrics.rendering.drawCalls;
@@ -249,7 +273,7 @@ export class PerformanceProfiler {
    * Mark the end of rendering
    */
   endRender() {
-    if (!this.isEnabled || !this.renderStartTime) return;
+    if (!this.isEnabled || !this.renderStartTime) {return;}
     
     const renderTime = performance.now() - this.renderStartTime;
     const drawCalls = this.metrics.rendering.drawCalls - this.renderStartDrawCalls;
@@ -442,7 +466,7 @@ export class PerformanceProfiler {
    * @private
    */
   getPercentile(arr, percentile) {
-    if (arr.length === 0) return 0;
+    if (arr.length === 0) {return 0;}
     
     const sorted = [...arr].sort((a, b) => a - b);
     const index = Math.floor(sorted.length * percentile);

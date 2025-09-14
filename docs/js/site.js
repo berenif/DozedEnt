@@ -4,33 +4,33 @@
  */
 
 // Core imports
-import { setGlobalSeed } from './src/utils/rng.js'
-import GameRenderer from './src/utils/game-renderer.js'
-import CameraEffects from './src/utils/camera-effects.js'
-import { WolfCharacter } from './src/gameentity/wolf-character.js'
-import { EnhancedWolfAISystem } from './src/ai/wolf-ai.js'
-import AnimatedPlayer from './src/animation/player-animator.js'
+import { setGlobalSeed } from './src/utils/rng.js';
+import GameRenderer from './src/utils/game-renderer.js';
+import CameraEffects from './src/utils/camera-effects.js';
+import { WolfCharacter } from './src/gameentity/wolf-character.js';
+import { EnhancedWolfAISystem } from './src/ai/wolf-ai.js';
+import AnimatedPlayer from './src/animation/player-animator.js';
 
 // New modular imports
-import { WasmManager } from './src/wasm/wasm-manager.js'
-import { RoomManager } from './src/lobby/room-manager.js'
-import { AudioManager } from './src/audio/audio-manager.js'
-import { GameStateManager } from './src/game/game-state-manager.js'
-import { UIEventHandlers } from './src/ui/ui-event-handlers.js'
-import { RoguelikeHUD } from './src/ui/roguelike-hud.js'
-import { InputManager } from './src/input/input-manager.js'
-import { EnhancedMobileControls } from './src/input/mobile-controls.js'
+import { WasmManager } from './src/wasm/wasm-manager.js';
+import { RoomManager } from './src/lobby/room-manager.js';
+import { AudioManager } from './src/audio/audio-manager.js';
+import { GameStateManager } from './src/game/game-state-manager.js';
+import { UIEventHandlers } from './src/ui/ui-event-handlers.js';
+import { RoguelikeHUD } from './src/ui/roguelike-hud.js';
+import { InputManager } from './src/input/input-manager.js';
+import { EnhancedMobileControls } from './src/input/mobile-controls.js';
 
 // Enhanced UI Systems
-import { EnhancedUIIntegration } from './src/ui/enhanced-ui-integration.js'
-import { uiCoordinator } from './src/ui/ui-coordinator.js'
-import { PhaseOverlayManager } from './src/ui/phase-overlay-manager.js'
-import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js'
+import { EnhancedUIIntegration } from './src/ui/enhanced-ui-integration.js';
+import { uiCoordinator } from './src/ui/ui-coordinator.js';
+import { PhaseOverlayManager } from './src/ui/phase-overlay-manager.js';
+import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js';
 
 // Performance optimization systems
-import { globalFrameTimeOptimizer } from './src/utils/frame-time-optimizer.js'
-import { globalWillChangeOptimizer } from './src/utils/will-change-optimizer.js'
-import { globalPerformanceIntegration } from './src/utils/performance-integration.js'
+import { globalFrameTimeOptimizer } from './src/utils/frame-time-optimizer.js';
+import { globalWillChangeOptimizer } from './src/utils/will-change-optimizer.js';
+import { globalPerformanceIntegration } from './src/utils/performance-integration.js';
 
 /**
  * Main Game Application Class
@@ -668,6 +668,13 @@ class GameApplication {
       this.animatedPlayer.x = posX;
       this.animatedPlayer.y = posY;
       console.log(`Player spawned at WASM position: (${posX.toFixed(0)}, ${posY.toFixed(0)}) from normalized (${wasmPos.x.toFixed(3)}, ${wasmPos.y.toFixed(3)})`);
+      
+      // Debug: Check if position is valid
+      if (posX < 0 || posX > this.WORLD_WIDTH || posY < 0 || posY > this.WORLD_HEIGHT) {
+        console.warn('Player spawned at invalid position, using center fallback');
+        this.animatedPlayer.x = this.WORLD_WIDTH / 2;
+        this.animatedPlayer.y = this.WORLD_HEIGHT / 2;
+      }
     } else {
       // Fallback to center of world
       const posX = this.WORLD_WIDTH / 2;
@@ -677,6 +684,14 @@ class GameApplication {
       this.animatedPlayer.y = posY;
       console.log(`Player spawned at center: (${posX.toFixed(0)}, ${posY.toFixed(0)})`);
     }
+    
+    // Debug: Log final player position
+    console.log('Final player position:', {
+      x: this.animatedPlayer.x,
+      y: this.animatedPlayer.y,
+      worldWidth: this.WORLD_WIDTH,
+      worldHeight: this.WORLD_HEIGHT
+    });
   }
 
   /**
@@ -754,6 +769,11 @@ class GameApplication {
     try {
       // Get input state from input manager (with null check)
       const inputState = this.inputManager?.getInputState() || {};
+      
+      // Debug input state retrieval
+      if (this.frameCount % 60 === 0) { // Log every second at 60fps
+        console.log(`🎮 Input manager status: ${!!this.inputManager}, input state:`, inputState);
+      }
 
       // Update game state with individual error handling
       try {
@@ -836,7 +856,7 @@ class GameApplication {
 
       // Render frame
       try {
-        this.render();
+        this.render(deltaTime);
       } catch (renderError) {
         console.error('Error rendering frame:', renderError);
       }
@@ -874,8 +894,9 @@ class GameApplication {
   /**
    * Render game frame
    * @private
+   * @param {number} deltaTime - Time elapsed since last frame in seconds
    */
-  render() {
+  render(deltaTime) {
     if (!this.gameRenderer || !this.cameraEffects) return;
 
     try {
@@ -889,10 +910,20 @@ class GameApplication {
         this.gameRenderer.player.x = this.animatedPlayer.x;
         this.gameRenderer.player.y = this.animatedPlayer.y;
         
+        // Update GameRenderer camera to follow player
+        this.gameRenderer.updateCamera(this.animatedPlayer.x, this.animatedPlayer.y, deltaTime);
+        
         // Apply camera effects to follow player
         this.cameraEffects.followTarget(this.animatedPlayer.x, this.animatedPlayer.y);
+        
+        // Update game renderer's camera with camera effects position
+        this.gameRenderer.camera.x = this.cameraEffects.position.x;
+        this.gameRenderer.camera.y = this.cameraEffects.position.y;
       }
 
+      // Update camera effects
+      this.cameraEffects.update(deltaTime);
+      
       // Apply camera shake if needed
       const cameraState = this.gameStateManager.cameraState;
       this.cameraEffects.shake(cameraState.shakeStrength);
@@ -908,7 +939,17 @@ class GameApplication {
 
       // Render player
       if (this.animatedPlayer) {
+        // Debug: Log player rendering
+        if (this.frameCount % 60 === 0) {
+          console.log('Rendering player at:', {
+            x: this.animatedPlayer.x,
+            y: this.animatedPlayer.y,
+            camera: camera
+          });
+        }
         this.animatedPlayer.render(ctx, camera);
+      } else {
+        console.warn('No animatedPlayer to render');
       }
 
       // Render UI overlays
@@ -926,6 +967,16 @@ class GameApplication {
   renderUI() {
     this.updateDebugHUD();
     this.updatePlayerHUD();
+    
+    // Debug: Log player position every 60 frames
+    if (this.frameCount % 60 === 0 && this.animatedPlayer) {
+      console.log('Player position:', {
+        animatedPlayer: { x: this.animatedPlayer.x, y: this.animatedPlayer.y },
+        gameState: this.gameStateManager.playerState?.position,
+        camera: this.gameRenderer?.camera,
+        wasmPos: this.wasmManager?.getPlayerPosition?.()
+      });
+    }
   }
 
   /**

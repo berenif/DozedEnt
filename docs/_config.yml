@@ -80,6 +80,11 @@ defaults:
       layout: null
       sitemap: false
   - scope:
+      path: "**/*.map"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
       path: "assets/**/*"
     values:
       layout: null
@@ -92,6 +97,7 @@ webrick:
     'Access-Control-Allow-Methods': 'GET'
   mime_types:
     wasm: application/wasm
+    map: application/json
 
 # GitHub Pages specific settings
 github: [metadata]

@@ -1,6 +1,12 @@
 // Core state, constants, math helpers, stamina/block, phases, RNG, landmarks/exits, wind
 #pragma once
 
+#include <cstdint>
+#include <cmath>
+
+// Include enhanced status effect system
+#include "status_effects.h"
+
 // ---------------- Module globals: player/core ----------------
 static float g_pos_x = 0.5f;
 static float g_pos_y = 0.5f;
@@ -37,6 +43,9 @@ static float g_stamina = 1.0f;
 static float g_max_stamina = 1.0f;
 static float g_stamina_regen_mult = 1.0f;
 static float g_hp = 1.0f;
+static uint32_t g_gold = 0;         // Gold currency
+static uint32_t g_essence = 0;      // Essence currency
+static uint32_t g_experience = 0;   // Experience points
 
 // Combat multipliers
 static float g_attack_damage_mult = 1.0f;
@@ -78,6 +87,29 @@ static float g_roll_direction_y = 0.f;
 static int g_is_stunned = 0;
 static float g_stun_end_time = -1000.f;
 static int g_parry_stun_target = -1;  // Enemy index that got stunned by parry
+
+// Combo system
+static int g_combo_count = 0;
+static float g_combo_window_end = -1000.f;
+static AttackType g_last_attack_type = AttackType::Light;
+static const float COMBO_WINDOW_DURATION = 0.5f;  // 500ms to chain attacks
+static const int MAX_COMBO_COUNT = 5;
+
+// Counter-attack system
+static int g_can_counter = 0;
+static float g_counter_window_end = -1000.f;
+static const float COUNTER_WINDOW_DURATION = 0.2f;  // 200ms counter window
+
+// Armor system
+static float g_armor_value = 0.0f;
+static int g_has_hyperarmor = 0;
+static float g_hyperarmor_end_time = -1000.f;
+
+// Environmental interaction flags
+static int g_near_wall = 0;
+static int g_near_ledge = 0;
+static float g_wall_distance = 999.0f;
+static float g_ledge_distance = 999.0f;
 
 // Tunables
 #include "generated/balance_data.h"

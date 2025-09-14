@@ -129,20 +129,22 @@ export class AnimatedPlayer {
             if (options.wasmModule && !globalThis.wasmExports) {
                 globalThis.wasmExports = options.wasmModule
             }
-        } catch {}
+        } catch {
+            // Ignore WASM module loading errors - fallback handling elsewhere
+        }
     }
 
     loadSpriteSheet() {
         // Try to load sprite sheet
         this.sprite = new Image()
-        this.sprite.src = './js/src/images/player-sprites.png'
+        this.sprite.src = './src/images/player-sprites.png'
 
         this.sprite.onload = () => {
             console.log('Player sprite sheet loaded successfully')
         }
 
         this.sprite.onerror = () => {
-            console.warn('Player sprite sheet not found at ./js/src/images/player-sprites.png, using fallback rendering')
+            console.warn('Player sprite sheet not found at ./src/images/player-sprites.png, using fallback rendering')
             console.log('To fix this: Run "node scripts/generate-sprite-sheet.js" or use create-sprite-sheet.html')
             this.sprite = null
         }
@@ -295,7 +297,7 @@ export class AnimatedPlayer {
     getNormalizedTime() {
         try {
             // If WASM provides an explicit attack state machine, derive normalized phase
-            const get = (fn) => (typeof globalThis.wasmExports?.[fn] === 'function') ? globalThis.wasmExports[fn]() : undefined
+            const get = (fn) => (typeof globalThis.wasmExports?.[fn] === 'function') ? globalThis.wasmExports[fn]() : void 0
             const attackState = get('get_attack_state') // 0 Idle, 1 Windup, 2 Active, 3 Recovery
             const stateStartTime = get('get_attack_state_time')
             const now = get('get_time_seconds')
@@ -336,7 +338,9 @@ export class AnimatedPlayer {
                     return Math.max(0, Math.min(1, playerStateTimer / duration))
                 }
             }
-        } catch {}
+        } catch {
+            // Ignore WASM timing errors - fallback to animation controller
+        }
 
         // Fallback: use current animation controller progress
         try {
@@ -346,7 +350,9 @@ export class AnimatedPlayer {
                 const coarse = anim.currentFrame / (anim.frames.length - 1)
                 return Math.max(0, Math.min(1, coarse))
             }
-        } catch {}
+        } catch {
+            // Ignore animation controller errors - return default
+        }
 
         return 0
     }
@@ -551,7 +557,7 @@ export class AnimatedPlayer {
         }
     }
     
-    respawn(x, y) {
+    respawn(_x, _y) {
         // Visual and audio effects only - respawn logic handled by WASM
         if (this.particleSystem) {
             this.particleSystem.createRespawnEffect(this.x, this.y)
@@ -612,6 +618,18 @@ export class AnimatedPlayer {
         let screenY = 0
         const camX = camera?.x || 0
         const camY = camera?.y || 0
+        
+        // Debug logging for position tracking
+        const debugPositions = false; // Set to true for debugging
+        if (debugPositions && Math.random() < 0.01) { // Log occasionally to avoid spam
+            console.log('AnimatedPlayer.render:', {
+                playerPos: { x: this.x, y: this.y },
+                camera: { x: camX, y: camY },
+                hasGameRenderer: !!globalThis.gameRenderer,
+                hasWasmToWorld: !!(globalThis.gameRenderer?.wasmToWorld)
+            });
+        }
+        
         if (globalThis.gameRenderer && typeof globalThis.gameRenderer.wasmToWorld === 'function') {
             const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0.5, this.y || 0.5)
             screenX = pos.x - camX
@@ -664,8 +682,8 @@ export class AnimatedPlayer {
             
             ctx.restore()
         } else {
-            // Fallback to colored rectangle
-            ctx.fillStyle = this.color
+            // Fallback to colored rectangle - ensure it's always visible
+            ctx.fillStyle = this.color || '#4a90e2' // Default blue color
             
             // Apply state-based visual effects
             if (this.state === 'hurt') {
@@ -676,12 +694,32 @@ export class AnimatedPlayer {
                 ctx.fillStyle = '#ffff44'
             }
             
+            // Draw a more visible rectangle
+            const rectWidth = this.width || 32;
+            const rectHeight = this.height || 32;
+            
             ctx.fillRect(
-                screenX - this.width/2,
-                screenY - this.height/2,
-                this.width,
-                this.height
-            )
+                screenX - rectWidth/2,
+                screenY - rectHeight/2,
+                rectWidth,
+                rectHeight
+            );
+            
+            // Add a border to make it more visible
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+                screenX - rectWidth/2,
+                screenY - rectHeight/2,
+                rectWidth,
+                rectHeight
+            );
+            
+            // Add a center dot to show exact position
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+            ctx.fill();
         }
         
         // Draw health bar
@@ -720,7 +758,7 @@ export class AnimatedPlayer {
         ctx.restore()
     }
 
-    computePoseOverlay(input) {
+    computePoseOverlay(_input) {
         // Simple procedural layers approximation for readability and responsiveness
         // This can still be done in JS as it's purely visual
         const t = this.getNormalizedTime() // This needs to be driven by WASM state timings
@@ -1000,7 +1038,7 @@ export class AnimatedPlayer {
         ]
         
         joints.forEach(joint => {
-            if (joint && joint.x !== undefined && joint.y !== undefined) {
+            if (joint && typeof joint.x !== "undefined" && typeof joint.y !== "undefined") {
                 ctx.beginPath()
                 ctx.arc(joint.x, joint.y, 2, 0, Math.PI * 2)
                 ctx.fill()
@@ -1012,7 +1050,7 @@ export class AnimatedPlayer {
     
     // Helper method to draw bones
     drawBone(ctx, start, end) {
-        if (!start || !end || start.x === undefined || end.x === undefined) {return}
+        if (!start || !end || typeof start.x === "undefined" || typeof end.x === "undefined") {return}
         
         ctx.beginPath()
         ctx.moveTo(start.x, start.y)
@@ -1073,5 +1111,7 @@ AnimatedPlayer.attachDebugToggle = function(playerInstance, key = 'F3') {
     try {
         addEventListener('keydown', handler)
         playerInstance.__debugToggleAttached = true
-    } catch {}
+    } catch {
+        // Ignore debug handler attachment errors
+    }
 }

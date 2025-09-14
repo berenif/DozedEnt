@@ -183,13 +183,13 @@ private:
 // Status and Hazards System
 // ============================================================================
 
-struct StatusEffect {
+struct WorldStatusEffect {
     uint32_t effect_id;
     float intensity;           // 0.0 to 1.0
     float duration;           // Seconds remaining
     float tick_rate;          // Damage/effect per second
     
-    StatusEffect() : effect_id(0), intensity(0.0f), duration(0.0f), tick_rate(0.0f) {}
+    WorldStatusEffect() : effect_id(0), intensity(0.0f), duration(0.0f), tick_rate(0.0f) {}
     
     void apply_effect(RigidBody& target, float dt) {
         duration -= dt;
@@ -340,7 +340,7 @@ const int TERRAIN_GRID_SIZE = 32;
 const int MAX_HEAT_SOURCES = 64;
 const int MAX_HAZARD_VOLUMES = 32;
 const int MAX_SOUND_EVENTS = 128;
-const int MAX_STATUS_EFFECTS = 256;
+const int MAX_WORLD_STATUS_EFFECTS = 256;
 const int MAX_PERSISTENT_OBJECTS = 512;
 const int MAX_ENVIRONMENT_OBJECTS = 1024;
 const int MAX_BIOME_DECORATIONS = 512;
@@ -419,7 +419,7 @@ struct WorldSimulation {
     uint32_t persistent_count;
     
     // Status effects
-    StatusEffect status_effects[MAX_STATUS_EFFECTS];
+    WorldStatusEffect status_effects[MAX_WORLD_STATUS_EFFECTS];
     uint32_t status_count;
     GloomField gloom_fields[16];
     uint32_t gloom_count;
@@ -887,11 +887,13 @@ extern "C" {
         g_world_sim.weather.rain_intensity = intensity;
     }
     
+    __attribute__((export_name("set_weather_wind")))
     void set_weather_wind(float speed, float dir_x, float dir_y, float dir_z) {
         g_world_sim.weather.wind_speed = speed;
         g_world_sim.weather.wind_direction = Vector3(dir_x, dir_y, dir_z).normalized();
     }
-    
+
+    __attribute__((export_name("set_weather_temperature")))
     void set_weather_temperature(float temp) {
         g_world_sim.weather.temperature = temp;
     }
@@ -901,8 +903,13 @@ extern "C" {
     }
     
     float get_weather_rain() { return g_world_sim.weather.rain_intensity; }
+
+    __attribute__((export_name("get_weather_wind_speed")))
     float get_weather_wind_speed() { return g_world_sim.weather.wind_speed; }
+
+    __attribute__((export_name("get_weather_temperature")))
     float get_weather_temperature() { return g_world_sim.weather.temperature; }
+
     int get_weather_lightning() { return g_world_sim.weather.lightning_active ? 1 : 0; }
     
     // Time system

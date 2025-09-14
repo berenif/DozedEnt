@@ -1,29 +1,34 @@
-# MIME type configuration for GitHub Pages
-# Fix MIME type issues for JavaScript modules and WebAssembly files
+# Apache configuration for proper MIME types
+# This file helps ensure JavaScript modules are served with correct MIME type
 
-# Ensure JavaScript files are served with correct MIME type
+# Enable CORS for all files
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type"
+
+# Set proper MIME types
 AddType application/javascript .js
 AddType application/javascript .mjs
-AddType text/javascript .js
-
-# Ensure WebAssembly files are served with correct MIME type
 AddType application/wasm .wasm
+AddType text/css .css
 
-# Enable CORS for WebAssembly and JavaScript modules
-<FilesMatch "\.(js|mjs|wasm)$">
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type"
+# Ensure JavaScript modules are served as modules
+<FilesMatch "\.(js|mjs)$">
+    Header set Content-Type "application/javascript; charset=utf-8"
 </FilesMatch>
 
-# Prevent caching issues during development
-<FilesMatch "\.(js|mjs|wasm)$">
+# Ensure WASM files are served correctly
+<FilesMatch "\.wasm$">
+    Header set Content-Type "application/wasm"
+</FilesMatch>
+
+# Disable caching for development
+<IfModule mod_expires.c>
+    ExpiresActive Off
+</IfModule>
+
+<IfModule mod_headers.c>
     Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"
-</FilesMatch>
-
-# Security headers
-Header always set X-Content-Type-Options "nosniff"
-Header always set X-Frame-Options "DENY"
-Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

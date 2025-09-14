@@ -104,7 +104,7 @@ function createSimpleSpriteSheet() {
     console.log('Creating a simple placeholder sprite sheet...');
 
     // Create output path
-    const outputPath = path.join(__dirname, '..', 'src', 'images', 'player-sprites.png');
+    const outputPath = path.join(__dirname, '..', '..', 'src', 'images', 'player-sprites.png');
 
     // Since creating a proper PNG is complex, let's create a simple text file
     // that explains the issue and provides instructions
@@ -139,7 +139,7 @@ This will provide proper sprite animations for the player character.
     // Actually, let's try to create a very basic image
     // For now, let's just copy an existing image if available
     try {
-        const sourceImage = path.join(__dirname, '..', 'src', 'images', 'favicon.png');
+        const sourceImage = path.join(__dirname, '..', '..', 'src', 'images', 'favicon.png');
         if (fs.existsSync(sourceImage)) {
             fs.copyFileSync(sourceImage, outputPath);
             console.log('Copied favicon.png as placeholder sprite sheet');

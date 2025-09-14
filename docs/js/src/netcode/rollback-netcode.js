@@ -88,6 +88,7 @@ class RollbackNetcode {
       bandwidth: 0,
       connectionQuality: 'unknown'
     }
+    this.networkMonitorId = null
     
     // WASM integration
     this.wasmIntegration = {
@@ -151,8 +152,9 @@ class RollbackNetcode {
     
     // Save initial state
     this.saveFrameState(0)
-    
+
     // Initialize network quality monitoring
+    this.stopNetworkMonitoring()
     this.startNetworkMonitoring()
     
     this.logger.info('Enhanced rollback netcode initialized', {
@@ -227,6 +229,7 @@ class RollbackNetcode {
    */
   stop() {
     this.running = false
+    this.stopNetworkMonitoring()
   }
   
   /**
@@ -890,18 +893,25 @@ class RollbackNetcode {
       return 'fair'
     } else if (avgLatency > 50) {
       return 'good'
-    } else {
+    } 
       return 'excellent'
-    }
+    
   }
   
   /**
    * Start network quality monitoring
    */
   startNetworkMonitoring() {
-    setInterval(() => {
+    this.networkMonitorId = setInterval(() => {
       this.updateNetworkQuality()
     }, 5000) // Update every 5 seconds
+  }
+
+  stopNetworkMonitoring() {
+    if (this.networkMonitorId) {
+      clearInterval(this.networkMonitorId)
+      this.networkMonitorId = null
+    }
   }
   
   /**

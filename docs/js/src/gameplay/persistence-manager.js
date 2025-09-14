@@ -205,7 +205,7 @@ export class PersistenceManager {
    * Process queued events
    */
   async processEventQueue() {
-    if (this.processingEvents || this.eventQueue.length === 0) return;
+    if (this.processingEvents || this.eventQueue.length === 0) {return;}
     
     this.processingEvents = true;
     
@@ -224,7 +224,7 @@ export class PersistenceManager {
   /**
    * Process individual event
    */
-  async processEvent(event) {
+  processEvent(event) {
     try {
       // Update statistics
       this.updateStatistics(event);
@@ -246,7 +246,7 @@ export class PersistenceManager {
    * Update statistics for event
    */
   updateStatistics(event) {
-    if (!this.wasmManager?.exports) return;
+    if (!this.wasmManager?.exports) {return;}
     
     try {
       switch (event.type) {
@@ -313,7 +313,7 @@ export class PersistenceManager {
    * Update achievements for event
    */
   updateAchievements(event) {
-    if (!this.wasmManager?.exports?.trigger_achievement_event) return;
+    if (!this.wasmManager?.exports?.trigger_achievement_event) {return;}
     
     try {
       const eventTypeMap = {
@@ -345,7 +345,7 @@ export class PersistenceManager {
    * Check for newly unlocked achievements
    */
   checkNewlyUnlockedAchievements() {
-    if (!this.wasmManager?.exports) return;
+    if (!this.wasmManager?.exports) {return;}
     
     try {
       const newlyUnlockedCount = this.wasmManager.exports.get_newly_unlocked_count();
@@ -458,7 +458,7 @@ export class PersistenceManager {
    * Check if auto-save should be performed
    */
   shouldAutoSave(state) {
-    if (!this.autoSaveEnabled) return false;
+    if (!this.autoSaveEnabled) {return false;}
     
     const now = Date.now();
     const timeSinceLastSave = now - this.lastAutoSave;
@@ -492,19 +492,25 @@ export class PersistenceManager {
   /**
    * Perform auto-save
    */
-  async performAutoSave() {
-    if (!this.autoSaveEnabled || !this.wasmManager?.exports) return;
+  performAutoSave() {
+    if (!this.autoSaveEnabled || !this.wasmManager?.exports) {return;}
     
     try {
-      const result = this.wasmManager.exports.auto_save_check();
-      if (result) {
-        this.lastAutoSave = Date.now();
-        console.log('Auto-save completed');
-        
-        // Dispatch auto-save event
-        window.dispatchEvent(new CustomEvent('autoSaveCompleted', {
-          detail: { timestamp: this.lastAutoSave }
-        }));
+      // Check if the auto_save_check function exists
+      if (typeof this.wasmManager.exports.auto_save_check === 'function') {
+        const result = this.wasmManager.exports.auto_save_check();
+        if (result) {
+          this.lastAutoSave = Date.now();
+          console.log('Auto-save completed');
+          
+          // Dispatch auto-save event
+          window.dispatchEvent(new CustomEvent('autoSaveCompleted', {
+            detail: { timestamp: this.lastAutoSave }
+          }));
+        }
+      } else {
+        // Auto-save function not available - this is expected in fallback mode
+        console.info('Auto-save function not available in WASM module (fallback mode)');
       }
     } catch (error) {
       console.error('Auto-save failed:', error);
@@ -626,8 +632,8 @@ export class PersistenceManager {
   /**
    * Perform quick save
    */
-  async performQuickSave() {
-    if (!this.wasmManager?.exports?.quick_save) return;
+  performQuickSave() {
+    if (!this.wasmManager?.exports?.quick_save) {return;}
     
     try {
       const result = this.wasmManager.exports.quick_save();
@@ -799,7 +805,7 @@ export class PersistenceManager {
   /**
    * Export all persistence data
    */
-  async exportAllData() {
+  exportAllData() {
     const data = {
       saves: {},
       achievements: null,
@@ -855,7 +861,7 @@ export class PersistenceManager {
   /**
    * Import all persistence data
    */
-  async importAllData(data) {
+  importAllData(data) {
     try {
       // Import saves
       if (data.saves) {

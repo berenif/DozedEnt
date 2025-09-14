@@ -69,7 +69,7 @@ build_game_wasm() {
             ;;
     esac
     
-    local cmd="em++ src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
+    local cmd="em++ src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -s SOURCE_MAP_BASE_URL= -o ./game.wasm"
     echo -e "${GRAY}Command: $cmd${NC}"
     
     if eval "$cmd"; then
@@ -92,7 +92,7 @@ build_game_wasm() {
 build_host_wasm() {
     echo -e "${CYAN}Building game-host.wasm...${NC}"
     
-    local cmd='em++ src/wasm/game-host.cpp -O3 -s STANDALONE_WASM=1 -s EXPORTED_FUNCTIONS="[\"_game_init\",\"_game_create_state\",\"_game_update\",\"_game_handle_input\",\"_game_get_state\",\"_game_get_state_size\",\"_game_apply_state\",\"_game_destroy\",\"_malloc\",\"_free\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\"]" -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT=1 -o ./game-host.wasm'
+    local cmd='em++ src/wasm/game-host.cpp -O3 -s STANDALONE_WASM=1 -s EXPORTED_FUNCTIONS="[\"_game_init\",\"_game_create_state\",\"_game_update\",\"_game_handle_input\",\"_game_get_state\",\"_game_get_state_size\",\"_game_apply_state\",\"_game_destroy\",\"_malloc\",\"_free\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\"]" -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT=1 -s SOURCE_MAP_BASE_URL= -o ./game-host.wasm'
     echo -e "${GRAY}Command: $cmd${NC}"
     
     if eval "$cmd"; then

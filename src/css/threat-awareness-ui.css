@@ -182,9 +182,6 @@
   transition: opacity 0.3s ease;
 }
 
-.threat-legend:hover {
-  opacity: 1;
-}
 
 .legend-title {
   color: white;
@@ -451,8 +448,10 @@
   }
 }
 
-/* Performance Optimizations */
-.threat-awareness-overlay * {
+/* Performance Optimizations - Only apply to specific elements that need it */
+.threat-awareness-overlay .directional-indicator,
+.threat-awareness-overlay .telegraph-warning,
+.threat-awareness-overlay .damage-indicator {
   will-change: transform, opacity;
   backface-visibility: hidden;
   perspective: 1000px;

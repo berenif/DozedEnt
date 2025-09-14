@@ -110,13 +110,21 @@ export class PerformanceProfiler {
    */
   tryObserveEntryType(entryType, callback) {
     try {
+      // Check if the entry type is supported before attempting to observe
+      if (!PerformanceObserver.supportedEntryTypes || 
+          !PerformanceObserver.supportedEntryTypes.includes(entryType)) {
+        console.debug(`Performance observer for '${entryType}' not supported in this browser`);
+        return;
+      }
+      
       const observer = new PerformanceObserver(callback);
       observer.observe({ entryTypes: [entryType] });
       console.log(`✅ Performance observer for '${entryType}' initialized`);
     } catch (error) {
       // Check if it's specifically an unsupported entry type error
       if (error.message.includes('entryTypes') || error.message.includes('not supported') || 
-          error.message.includes('not valid') || error.message.includes('ignored')) {
+          error.message.includes('not valid') || error.message.includes('ignored') ||
+          error.message.includes('Aucun entryType valide')) {
         // Silently skip unsupported entry types to reduce console noise
         console.debug(`Performance observer for '${entryType}' not supported in this browser`);
       } else {

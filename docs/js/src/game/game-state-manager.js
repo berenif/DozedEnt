@@ -174,17 +174,22 @@ export class GameStateManager {
         special: Boolean(inputState?.special)
       };
       
-      // Use WasmManager's update method which handles input setting and WASM update properly
-      this.wasmManager.update(
-        safeInputState.direction.x,
-        safeInputState.direction.y,
-        safeInputState.roll,
-        deltaTime,
-        safeInputState.lightAttack,
-        safeInputState.heavyAttack,
-        safeInputState.block,
-        safeInputState.special
-      );
+      // Send all input to WASM before update
+      if (this.wasmManager.exports?.set_player_input) {
+        this.wasmManager.exports.set_player_input(
+          safeInputState.direction.x,
+          safeInputState.direction.y,
+          safeInputState.roll ? 1 : 0,
+          0, // jump (unused)
+          safeInputState.lightAttack ? 1 : 0,
+          safeInputState.heavyAttack ? 1 : 0,
+          safeInputState.block ? 1 : 0,
+          safeInputState.special ? 1 : 0
+        );
+      }
+      
+      // Now update WASM with just deltaTime
+      this.wasmManager.exports?.update?.(deltaTime);
 
       // Read updated state from WASM using batched calls
       this.updateStateFromWasm();
@@ -212,39 +217,27 @@ export class GameStateManager {
   updateStateFromWasm() {
     if (!this.wasmManager || !this.wasmManager.isLoaded) {return;}
 
-    try {
-      // Get all state in one batched call
-      const playerState = this.wasmManager.getPlayerState();
-      
-      // Validate playerState before using it
-      if (!playerState || typeof playerState !== 'object') {
-        console.warn('Invalid player state received from WASM:', playerState);
-        return;
-      }
-      
-      // Update player state with safe fallbacks
-      this.playerState.x = Number.isFinite(playerState.x) ? playerState.x : this.playerState.x || 0.5;
-      this.playerState.y = Number.isFinite(playerState.y) ? playerState.y : this.playerState.y || 0.5;
-      this.playerState.stamina = Number.isFinite(playerState.stamina) ? playerState.stamina : this.playerState.stamina || 1.0;
-      this.playerState.health = Number.isFinite(playerState.health) ? playerState.health : this.playerState.health || 1.0;
-      this.playerState.gold = Number.isFinite(playerState.gold) ? playerState.gold : this.playerState.gold || 0;
-      this.playerState.essence = Number.isFinite(playerState.essence) ? playerState.essence : this.playerState.essence || 0;
-      this.playerState.velX = Number.isFinite(playerState.velX) ? playerState.velX : 0;
-      this.playerState.velY = Number.isFinite(playerState.velY) ? playerState.velY : 0;
-      this.playerState.isRolling = Boolean(playerState.isRolling);
-      this.playerState.isBlocking = Boolean(playerState.isBlocking);
-      this.playerState.animState = Number.isFinite(playerState.animState) ? playerState.animState : 0;
-      
-      // Update game phase with validation
-      const newPhase = Number.isFinite(playerState.phase) ? Math.max(0, Math.min(7, playerState.phase)) : 0;
-      this.currentPhase = newPhase;
-      
-      // Update camera to follow player
-      this.updateCameraState();
-    } catch (error) {
-      console.error('Error updating state from WASM:', error);
-      // Don't propagate the error - just log it and continue with existing state
-    }
+    // Get all state in one batched call
+    const playerState = this.wasmManager.getPlayerState();
+    
+    // Update player state
+    this.playerState.x = playerState.x;
+    this.playerState.y = playerState.y;
+    this.playerState.stamina = playerState.stamina;
+    this.playerState.health = playerState.health;
+    this.playerState.gold = playerState.gold;
+    this.playerState.essence = playerState.essence;
+    this.playerState.velX = playerState.velX;
+    this.playerState.velY = playerState.velY;
+    this.playerState.isRolling = Boolean(playerState.isRolling);
+    this.playerState.isBlocking = Boolean(playerState.isBlocking);
+    this.playerState.animState = playerState.animState;
+    
+    // Update game phase
+    this.currentPhase = playerState.phase;
+    
+    // Update camera to follow player
+    this.updateCameraState();
   }
 
   /**
@@ -513,7 +506,7 @@ export class GameStateManager {
    * @param {number} direction - Dash direction (-1 for left, 1 for right)
    * @returns {boolean} Success status
    */
-  dash(direction) {
+  dash(_direction) {
     if (!this.wasmManager) {return false;}
     
     // For now, treat as roll
@@ -713,10 +706,10 @@ export class GameStateManager {
   quickSave() {
     if (this.persistenceManager) {
       return this.persistenceManager.performQuickSave();
-    } else {
+    } 
       console.warn('Persistence manager not initialized');
       return Promise.resolve(false);
-    }
+    
   }
   
   /**
@@ -725,13 +718,13 @@ export class GameStateManager {
   getPersistenceStatus() {
     if (this.persistenceManager) {
       return this.persistenceManager.getStatus();
-    } else {
+    } 
       return {
         autoSaveEnabled: false,
         sessionActive: false,
         error: 'Persistence manager not initialized'
       };
-    }
+    
   }
   
   /**
@@ -740,10 +733,10 @@ export class GameStateManager {
   async exportPersistenceData() {
     if (this.persistenceManager) {
       return await this.persistenceManager.exportAllData();
-    } else {
+    } 
       console.warn('Persistence manager not initialized');
       return null;
-    }
+    
   }
   
   /**
@@ -752,9 +745,9 @@ export class GameStateManager {
   async importPersistenceData(data) {
     if (this.persistenceManager) {
       return await this.persistenceManager.importAllData(data);
-    } else {
+    } 
       console.warn('Persistence manager not initialized');
       return false;
-    }
+    
   }
 }

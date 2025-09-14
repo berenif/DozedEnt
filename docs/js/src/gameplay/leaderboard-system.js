@@ -141,6 +141,20 @@ export class LeaderboardSystem {
   }
   
   /**
+   * Initialize performance metrics
+   */
+  initializePerformanceMetrics() {
+    // Initialize with default values
+    this.performanceMetrics = {
+      accuracy: 0,
+      efficiency: 0,
+      consistency: 0,
+      adaptability: 0,
+      mastery: 0
+    };
+  }
+
+  /**
    * Setup event listeners for game events
    */
   setupEventListeners() {
@@ -376,7 +390,7 @@ export class LeaderboardSystem {
   /**
    * Submit scores to global leaderboards
    */
-  async submitToGlobalLeaderboards(gameResult) {
+  submitToGlobalLeaderboards(gameResult) {
     // In a real implementation, this would submit to a server
     // For now, we'll simulate local global leaderboards
     
@@ -494,11 +508,11 @@ export class LeaderboardSystem {
    * Process queued sync operations
    */
   async processQueuedSync() {
-    if (!navigator.onLine || !this.cloudSyncEnabled) return;
+    if (!navigator.onLine || !this.cloudSyncEnabled) {return;}
     
     try {
       const queue = JSON.parse(localStorage.getItem('leaderboardSyncQueue') || '[]');
-      if (queue.length === 0) return;
+      if (queue.length === 0) {return;}
       
       const processed = [];
       const batchSize = 5; // Process in batches to avoid overwhelming server
@@ -697,77 +711,6 @@ export class LeaderboardSystem {
     });
   }
   
-  /**
-   * Initialize performance metrics
-   */
-  initializePerformanceMetrics() {
-    this.performanceMetrics = {
-      accuracy: 0,
-      efficiency: 0,
-      consistency: 0,
-      adaptability: 0,
-      mastery: 0
-    };
-    
-    console.log('📊 Performance metrics initialized');
-  }
-  
-  /**
-   * Calculate performance metrics (called from init)
-   */
-  calculatePerformanceMetrics() {
-    // Initialize with default values if no data exists
-    if (!this.performanceMetrics) {
-      this.initializePerformanceMetrics();
-      return;
-    }
-    
-    // Calculate metrics based on existing data
-    const recentResults = this.getRecentGameResults(20);
-    if (recentResults.length === 0) {
-      return;
-    }
-    
-    // Calculate average metrics from recent games
-    const totals = recentResults.reduce((acc, result) => {
-      acc.accuracy += result.accuracy || 0;
-      acc.efficiency += result.efficiency || 0;
-      acc.consistency += result.consistency || 0;
-      acc.adaptability += result.adaptability || 0;
-      acc.mastery += result.mastery || 0;
-      return acc;
-    }, { accuracy: 0, efficiency: 0, consistency: 0, adaptability: 0, mastery: 0 });
-    
-    const count = recentResults.length;
-    this.performanceMetrics = {
-      accuracy: totals.accuracy / count,
-      efficiency: totals.efficiency / count,
-      consistency: totals.consistency / count,
-      adaptability: totals.adaptability / count,
-      mastery: totals.mastery / count
-    };
-    
-    console.log('📊 Performance metrics calculated:', this.performanceMetrics);
-  }
-  
-  /**
-   * Get recent game results for analysis
-   */
-  getRecentGameResults(count = 20) {
-    // Return empty array if no storage manager
-    if (!this.storageManager) {
-      return [];
-    }
-    
-    try {
-      const results = this.storageManager.getItem('recentGameResults') || [];
-      return results.slice(-count);
-    } catch (error) {
-      console.warn('Error loading recent game results:', error);
-      return [];
-    }
-  }
-
   /**
    * Calculate consistency metric
    */
@@ -1126,7 +1069,7 @@ export class LeaderboardSystem {
   getCachedRankings() {
     try {
       const cached = localStorage.getItem('leaderboardRankingsCache');
-      if (!cached) return null;
+      if (!cached) {return null;}
       
       const data = JSON.parse(cached);
       const now = Date.now();
@@ -1149,8 +1092,8 @@ export class LeaderboardSystem {
    */
   enableCloudSync(apiUrl, authToken) {
     this.cloudSyncEnabled = true;
-    if (apiUrl) this.leaderboardApiUrl = apiUrl;
-    if (authToken) this.setAuthToken(authToken);
+    if (apiUrl) {this.leaderboardApiUrl = apiUrl;}
+    if (authToken) {this.setAuthToken(authToken);}
     
     // Start periodic sync processing
     this.startPeriodicSync();

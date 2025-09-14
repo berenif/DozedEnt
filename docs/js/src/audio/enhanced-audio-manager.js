@@ -280,7 +280,7 @@ export class EnhancedAudioManager {
         this.audioAssets.set(key, buffer);
       } catch (error) {
         // Use fallback procedural audio
-        console.warn(`Using fallback audio for ${key}:`, error.message);
+        console.info(`🔊 Using procedural audio for ${key} (${error.message})`);
         const fallbackBuffer = fallbackAudioFiles[key] || this.generateFallbackTone(440, 0.5);
         this.audioAssets.set(key, fallbackBuffer);
       }
@@ -300,6 +300,12 @@ export class EnhancedAudioManager {
     }
     
     const arrayBuffer = await response.arrayBuffer();
+    
+    // Check if file is too small to be valid audio (likely a placeholder)
+    if (arrayBuffer.byteLength < 1000) {
+      throw new Error(`Audio file too small (${arrayBuffer.byteLength} bytes), likely a placeholder`);
+    }
+    
     const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
     return audioBuffer;
   }
@@ -988,7 +994,7 @@ export class EnhancedAudioManager {
   /**
    * Create reverb impulse response
    */
-  async createReverbImpulse() {
+  createReverbImpulse() {
     const sampleRate = this.audioContext.sampleRate;
     const duration = 2;
     const impulse = this.audioContext.createBuffer(2, sampleRate * duration, sampleRate);

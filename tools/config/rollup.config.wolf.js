@@ -17,7 +17,8 @@ export default {
     {
       file: 'dist/wolf-animation.js',
       format: 'es',
-      sourcemap: true
+      sourcemap: true,
+      sourcemapFile: 'dist/wolf-animation.js.map'
     },
     {
       file: 'dist/wolf-animation.min.js',
@@ -47,7 +48,8 @@ export default {
       format: 'umd',
       exports: 'named',
       name: 'WolfAnimationSystem',
-      sourcemap: true
+      sourcemap: true,
+      sourcemapFile: 'dist/wolf-animation.umd.js.map'
     }
   ],
   plugins: [resolve({browser: true, preferBuiltins: false})],

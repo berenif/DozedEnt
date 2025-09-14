@@ -117,7 +117,7 @@ export class NetworkErrorRecovery {
   /**
    * Handle network timeout errors
    */
-  async handleNetworkTimeout(error, context = {}) {
+  handleNetworkTimeout(error, context = {}) {
     this.networkErrors.timeouts++;
     this.logNetworkError('timeout', error, context);
     
@@ -135,7 +135,7 @@ export class NetworkErrorRecovery {
   /**
    * Handle message send/receive failures
    */
-  async handleMessageFailure(message, error, context = {}) {
+  handleMessageFailure(message, error, context = {}) {
     this.networkErrors.messageFailures++;
     this.logNetworkError('message_failure', error, { ...context, message });
     
@@ -161,7 +161,7 @@ export class NetworkErrorRecovery {
   /**
    * Handle peer synchronization errors
    */
-  async handleSyncError(error, context = {}) {
+  handleSyncError(error, context = {}) {
     this.networkErrors.syncErrors++;
     this.syncState.syncAttempts++;
     this.logNetworkError('sync_error', error, context);
@@ -180,7 +180,7 @@ export class NetworkErrorRecovery {
   /**
    * Execute a specific recovery strategy
    */
-  async executeRecoveryStrategy(strategy, context = {}) {
+  executeRecoveryStrategy(strategy, context = {}) {
     this.logger.log(`Executing recovery strategy: ${strategy}`);
     
     switch (strategy) {
@@ -376,7 +376,7 @@ export class NetworkErrorRecovery {
   /**
    * Enter offline mode
    */
-  async enterOfflineMode() {
+  enterOfflineMode() {
     this.logger.warn('Entering offline mode');
     this.connectionState.isConnected = false;
     
@@ -389,7 +389,7 @@ export class NetworkErrorRecovery {
   /**
    * Start local simulation mode
    */
-  async startLocalSimulation() {
+  startLocalSimulation() {
     this.logger.log('Starting local simulation mode');
     
     // This would enable local-only gameplay
@@ -401,7 +401,7 @@ export class NetworkErrorRecovery {
   /**
    * Show error notification to user
    */
-  async showErrorNotification() {
+  showErrorNotification() {
     const notification = document.createElement('div');
     notification.style.cssText = `
       position: fixed;
@@ -568,7 +568,7 @@ export class NetworkErrorRecovery {
     const attempts = this.connectionState.reconnectAttempts;
     const multiplier = this.connectionState.backoffMultiplier;
     
-    return Math.min(baseDelay * Math.pow(multiplier, attempts), 30000); // Max 30 seconds
+    return Math.min(baseDelay * multiplier**attempts, 30000); // Max 30 seconds
   }
 
   /**
@@ -713,9 +713,15 @@ export class NetworkErrorRecovery {
    * Assess connection quality based on ping times
    */
   assessConnectionQuality(pingTime) {
-    if (pingTime < 100) return 'excellent';
-    if (pingTime < 300) return 'good';
-    if (pingTime < 1000) return 'poor';
+    if (pingTime < 100) {
+      return 'excellent';
+    }
+    if (pingTime < 300) {
+      return 'good';
+    }
+    if (pingTime < 1000) {
+      return 'poor';
+    }
     return 'critical';
   }
 

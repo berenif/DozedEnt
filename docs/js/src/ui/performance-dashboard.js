@@ -510,7 +510,7 @@ export class PerformanceDashboard {
    * @private
    */
   startUpdating() {
-    if (this.updateInterval) return;
+    if (this.updateInterval) {return;}
     
     this.updateInterval = setInterval(() => {
       this.updateMetrics();
@@ -536,7 +536,7 @@ export class PerformanceDashboard {
    * @private
    */
   updateMetrics() {
-    if (!this.isVisible) return;
+    if (!this.isVisible) {return;}
     
     try {
       const profilerSummary = globalProfiler.getMetricsSummary();
@@ -590,11 +590,11 @@ export class PerformanceDashboard {
    */
   updateChart(chartId, value, threshold) {
     const chart = this.element.querySelector(`#${chartId}`);
-    if (!chart) return;
+    if (!chart) {return;}
     
     // Add data point
     const dataKey = chartId.replace('-chart', '');
-    if (!this.data[dataKey]) this.data[dataKey] = [];
+    if (!this.data[dataKey]) {this.data[dataKey] = [];}
     
     this.data[dataKey].push(value);
     if (this.data[dataKey].length > this.config.chartHistorySize) {
@@ -628,7 +628,7 @@ export class PerformanceDashboard {
    */
   updateAlerts() {
     const alertsList = this.element.querySelector('#alerts-list');
-    if (!alertsList) return;
+    if (!alertsList) {return;}
     
     const report = globalProfiler.getDetailedReport();
     const recentAlerts = report.alerts.slice(-5); // Last 5 alerts
@@ -709,7 +709,7 @@ export class PerformanceDashboard {
    */
   updateStatsGrid(gridId, stats) {
     const grid = this.element.querySelector(`#${gridId}`);
-    if (!grid) return;
+    if (!grid) {return;}
     
     grid.innerHTML = '';
     

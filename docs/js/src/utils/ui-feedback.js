@@ -1,5 +1,5 @@
 // UI Feedback System for Enhanced Game Feel
-// Provides damage numbers, status indicators, and more
+// Provides damage numbers, combo counters, status indicators, and more
 
 export class DamageNumber {
     constructor(x, y, value, options = {}) {

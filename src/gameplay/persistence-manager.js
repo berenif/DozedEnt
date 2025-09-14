@@ -509,7 +509,8 @@ export class PersistenceManager {
           }));
         }
       } else {
-        console.warn('Auto-save function not available in WASM module');
+        // Auto-save function not available - this is expected in fallback mode
+        console.info('Auto-save function not available in WASM module (fallback mode)');
       }
     } catch (error) {
       console.error('Auto-save failed:', error);

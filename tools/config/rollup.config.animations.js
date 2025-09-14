@@ -17,7 +17,8 @@ export default {
     {
       file: 'dist/player-animator.js',
       format: 'es',
-      sourcemap: true
+      sourcemap: true,
+      sourcemapFile: 'dist/player-animator.js.map'
     },
     {
       file: 'dist/player-animator.min.js',
@@ -47,7 +48,8 @@ export default {
       format: 'umd',
       exports: 'named',
       name: 'AnimatedPlayer',
-      sourcemap: true
+      sourcemap: true,
+      sourcemapFile: 'dist/player-animator.umd.js.map'
     }
   ],
   plugins: [resolve({browser: true, preferBuiltins: false})],

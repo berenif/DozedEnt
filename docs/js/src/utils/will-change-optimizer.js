@@ -7,7 +7,9 @@ export class WillChangeOptimizer {
   constructor() {
     this.activeElements = new Set();
     this.transformingElements = new Map();
-    this.memoryBudget = 783360; // Browser memory budget for will-change
+    // More conservative budget - browser limit is typically 3x surface area
+    // Using 689037px as mentioned in the error, with 50% safety margin
+    this.memoryBudget = 344518; // Conservative budget for will-change
     this.currentUsage = 0;
     
     // Performance monitoring
@@ -34,8 +36,15 @@ export class WillChangeOptimizer {
     
     // Check if we're within budget
     if (this.currentUsage + memoryImpact > this.memoryBudget) {
-      console.warn('⚠️ Will-change budget exceeded, skipping optimization');
-      return;
+      console.warn('⚠️ Will-change budget exceeded, attempting cleanup');
+      // Try to free up some memory by disabling oldest elements
+      this.cleanupOldestElements();
+      
+      // Check again after cleanup
+      if (this.currentUsage + memoryImpact > this.memoryBudget) {
+        console.warn('⚠️ Will-change budget still exceeded after cleanup, skipping optimization');
+        return;
+      }
     }
     
     element.style.willChange = properties;
@@ -123,6 +132,35 @@ export class WillChangeOptimizer {
     return isMoving;
   }
   
+  /**
+   * Cleanup oldest elements to free memory
+   */
+  cleanupOldestElements() {
+    const elementsToCleanup = Math.min(3, Math.floor(this.activeElements.size / 2));
+    let cleaned = 0;
+    
+    for (const element of this.activeElements) {
+      if (cleaned >= elementsToCleanup) break;
+      
+      // Disable will-change for this element
+      if (element && element.style) {
+        element.style.willChange = 'auto';
+        this.activeElements.delete(element);
+        
+        // Calculate memory freed
+        const rect = element.getBoundingClientRect();
+        const memoryFreed = rect.width * rect.height;
+        this.currentUsage = Math.max(0, this.currentUsage - memoryFreed);
+        
+        cleaned++;
+      }
+    }
+    
+    if (cleaned > 0) {
+      console.log(`🧹 Cleaned up ${cleaned} will-change elements to free memory`);
+    }
+  }
+
   /**
    * Emergency cleanup - disable all will-change properties
    */

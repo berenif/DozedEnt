@@ -815,7 +815,7 @@ void update(float dtSeconds) {
       }
     } else if (g_attack_state == AttackState::Active) {
       // During active, evaluate hits each frame; allow multi-hit across different enemies
-      for (int i = 0; i < (int)g_enemy_count; ++i) {
+      for (int i = 0; i < MAX_ENEMIES; ++i) {
         Enemy &e = g_enemies[i];
         if (!e.active) continue;
         if (e.health <= 0.f) continue;

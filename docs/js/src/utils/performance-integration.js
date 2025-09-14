@@ -1,201 +1,415 @@
 /**
- * Performance Integration - Coordinates all performance optimization systems
- * Provides a unified interface for managing frame time, will-change, and other optimizations
+ * Performance Integration System
+ * Integrates all performance optimizations into the game engine
  */
 
-import { globalFrameTimeOptimizer } from './frame-time-optimizer.js';
-import { globalWillChangeOptimizer } from './will-change-optimizer.js';
+import { globalWasmLoader } from './wasm-lazy-loader.js';
+import { globalMemoryOptimizer } from './memory-optimizer.js';
+// import { globalDeadCodeEliminator } from './dead-code-eliminator.js'; // Not used
+import { globalProfiler } from './performance-profiler.js';
+import { globalDashboard } from '../ui/performance-dashboard.js';
 
 export class PerformanceIntegration {
   constructor() {
-    this.isEnabled = true;
-    this.optimizers = {
-      frameTime: globalFrameTimeOptimizer,
-      willChange: globalWillChangeOptimizer
+    this.isInitialized = false;
+    this.optimizationLevel = 'balanced'; // 'performance', 'balanced', 'quality'
+    
+    this.config = {
+      enableMemoryOptimization: true,
+      enableWasmLazyLoading: true,
+      enableDeadCodeElimination: true,
+      enablePerformanceProfiling: true,
+      enableDashboard: true,
+      autoOptimization: true
     };
-    
-    // Integration metrics
-    this.metrics = {
-      totalOptimizations: 0,
-      performanceGain: 0,
-      memoryReduced: 0
+
+    this.stats = {
+      initTime: 0,
+      memoryOptimized: false,
+      wasmLazyLoaded: false,
+      profilingActive: false,
+      dashboardActive: false
     };
-    
-    console.log('🚀 Performance integration system initialized');
   }
-  
+
   /**
-   * Initialize all performance systems
+   * Initialize all performance optimizations
    */
-  initialize() {
-    // Set up canvas will-change optimization
-    this.setupCanvasOptimization();
-    
-    // Set up player element optimization
-    this.setupPlayerOptimization();
-    
-    // Set up automatic cleanup
-    this.setupAutomaticCleanup();
-    
-    console.log('✅ Performance systems integrated');
-  }
-  
-  /**
-   * Setup canvas will-change optimization
-   */
-  setupCanvasOptimization() {
-    const canvas = document.getElementById('canvas');
-    if (!canvas) return;
-    
-    let isMoving = false;
-    let lastTransform = canvas.style.transform;
-    
-    // Monitor canvas transform changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const currentTransform = canvas.style.transform;
-          const nowMoving = currentTransform !== lastTransform;
-          
-          if (nowMoving !== isMoving) {
-            isMoving = nowMoving;
-            this.optimizers.willChange.optimizeCanvas(canvas, isMoving);
-          }
-          
-          lastTransform = currentTransform;
-        }
-      });
-    });
-    
-    observer.observe(canvas, {
-      attributes: true,
-      attributeFilter: ['style']
-    });
-  }
-  
-  /**
-   * Setup player element optimization
-   */
-  setupPlayerOptimization() {
-    // Monitor player elements for movement
-    const checkPlayerMovement = () => {
-      const players = document.querySelectorAll('.player');
+  async initialize() {
+    if (this.isInitialized) {return;}
+
+    const startTime = performance.now();
+    console.log('🚀 Initializing Performance Optimization System...');
+
+    try {
+      // 1. Initialize memory optimization
+      if (this.config.enableMemoryOptimization) {
+        await this.initializeMemoryOptimization();
+      }
+
+      // 2. Initialize WASM lazy loading
+      if (this.config.enableWasmLazyLoading) {
+        await this.initializeWasmLazyLoading();
+      }
+
+      // 3. Initialize performance profiling
+      if (this.config.enablePerformanceProfiling) {
+        await this.initializePerformanceProfiling();
+      }
+
+      // 4. Initialize performance dashboard
+      if (this.config.enableDashboard) {
+        await this.initializePerformanceDashboard();
+      }
+
+      // 5. Set up auto-optimization
+      if (this.config.autoOptimization) {
+        this.setupAutoOptimization();
+      }
+
+      this.isInitialized = true;
+      this.stats.initTime = performance.now() - startTime;
       
-      players.forEach(player => {
-        const currentTransform = player.style.transform;
-        const lastTransform = player.dataset.lastTransform || '';
-        const isMoving = currentTransform !== lastTransform;
+      console.log(`✅ Performance optimization system initialized in ${this.stats.initTime.toFixed(2)}ms`);
+      this.logOptimizationStatus();
+
+    } catch (error) {
+      console.error('❌ Failed to initialize performance optimization system:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize memory optimization
+   * @private
+   */
+  initializeMemoryOptimization() {
+    try {
+      if (globalMemoryOptimizer && !globalMemoryOptimizer.isMonitoring) {
+        globalMemoryOptimizer.startMonitoring();
+        this.stats.memoryOptimized = true;
+        console.log('   ✅ Memory optimization active');
+      }
+    } catch (error) {
+      console.warn('   ⚠️ Memory optimization failed:', error.message);
+    }
+  }
+
+  /**
+   * Initialize WASM lazy loading
+   * @private
+   */
+  async initializeWasmLazyLoading() {
+    try {
+      if (globalWasmLoader) {
+        // Configure lazy loader based on optimization level
+        const config = this.getWasmLoaderConfig();
+        globalWasmLoader.configure(config);
         
-        this.optimizers.willChange.optimizePlayer(player, isMoving);
-        player.dataset.lastTransform = currentTransform;
-      });
-    };
-    
-    // Check every 100ms
-    setInterval(checkPlayerMovement, 100);
+        // Preload critical modules
+        await globalWasmLoader.preloadCriticalModules();
+        
+        this.stats.wasmLazyLoaded = true;
+        console.log('   ✅ WASM lazy loading configured');
+      }
+    } catch (error) {
+      console.warn('   ⚠️ WASM lazy loading failed:', error.message);
+    }
   }
-  
+
   /**
-   * Setup automatic cleanup
+   * Initialize performance profiling
+   * @private
    */
-  setupAutomaticCleanup() {
-    // Clean up will-change properties every 5 seconds
+  initializePerformanceProfiling() {
+    try {
+      if (globalProfiler && !globalProfiler.isEnabled) {
+        globalProfiler.enable();
+        this.stats.profilingActive = true;
+        console.log('   ✅ Performance profiling active');
+      }
+    } catch (error) {
+      console.warn('   ⚠️ Performance profiling failed:', error.message);
+    }
+  }
+
+  /**
+   * Initialize performance dashboard
+   * @private
+   */
+  initializePerformanceDashboard() {
+    try {
+      if (globalDashboard) {
+        // Set up keyboard shortcut (Ctrl+Shift+P)
+        document.addEventListener('keydown', (event) => {
+          if (event.ctrlKey && event.shiftKey && event.code === 'KeyP') {
+            event.preventDefault();
+            this.togglePerformanceDashboard();
+          }
+        });
+
+        this.stats.dashboardActive = true;
+        console.log('   ✅ Performance dashboard ready (Ctrl+Shift+P to toggle)');
+      }
+    } catch (error) {
+      console.warn('   ⚠️ Performance dashboard failed:', error.message);
+    }
+  }
+
+  /**
+   * Set up automatic optimization based on performance metrics
+   * @private
+   */
+  setupAutoOptimization() {
+    // Monitor performance every 10 seconds
     setInterval(() => {
-      const metrics = this.optimizers.willChange.getMetrics();
+      this.performAutoOptimization();
+    }, 10000);
+
+    console.log('   ✅ Auto-optimization monitoring active');
+  }
+
+  /**
+   * Perform automatic optimization adjustments
+   * @private
+   */
+  performAutoOptimization() {
+    if (!globalProfiler || !globalProfiler.isEnabled) {
+      return;
+    }
+
+    const metrics = globalProfiler.getMetricsSummary();
+    
+    // Adjust optimization level based on performance
+    if (metrics.frameTime.average > 20) { // > 20ms frame time
+      if (this.optimizationLevel !== 'performance') {
+        console.log('📉 Performance degraded, switching to performance mode');
+        this.setOptimizationLevel('performance');
+      }
+    } else if (metrics.frameTime.average < 12) { // < 12ms frame time
+      if (this.optimizationLevel !== 'quality') {
+        console.log('📈 Performance headroom available, switching to quality mode');
+        this.setOptimizationLevel('quality');
+      }
+    }
+
+    // Memory optimization
+    if (globalMemoryOptimizer) {
+      const memoryStats = globalMemoryOptimizer.getMemoryStats();
       
-      // If memory usage is high, trigger cleanup
-      if (parseFloat(metrics.memoryUtilization) > 80) {
-        console.warn('🧹 High memory usage detected, cleaning up will-change properties');
-        this.optimizers.willChange.emergencyCleanup();
+      if (memoryStats.used > 80 * 1024 * 1024) { // > 80MB
+        console.log('🧹 High memory usage detected, triggering cleanup');
+        globalMemoryOptimizer.optimizeMemoryUsage();
       }
-    }, 5000);
+    }
   }
-  
+
   /**
-   * Get comprehensive performance metrics
+   * Get WASM loader configuration based on optimization level
+   * @private
    */
-  getMetrics() {
-    const frameTimeMetrics = this.optimizers.frameTime.getMetrics();
-    const willChangeMetrics = this.optimizers.willChange.getMetrics();
-    
-    return {
-      frameTime: frameTimeMetrics,
-      willChange: willChangeMetrics,
-      integration: this.metrics,
-      overall: {
-        isOptimal: frameTimeMetrics.isOptimal && parseFloat(willChangeMetrics.memoryUtilization) < 80,
-        performanceScore: this.calculatePerformanceScore(frameTimeMetrics, willChangeMetrics)
+  getWasmLoaderConfig() {
+    const configs = {
+      performance: {
+        preloadCritical: true,
+        enableCompression: true,
+        cacheModules: true,
+        loadTimeout: 15000
+      },
+      balanced: {
+        preloadCritical: true,
+        enableCompression: true,
+        cacheModules: true,
+        loadTimeout: 30000
+      },
+      quality: {
+        preloadCritical: false,
+        enableCompression: false,
+        cacheModules: true,
+        loadTimeout: 60000
       }
     };
+
+    return configs[this.optimizationLevel] || configs.balanced;
   }
-  
+
   /**
-   * Calculate overall performance score (0-100)
+   * Set optimization level
    */
-  calculatePerformanceScore(frameTimeMetrics, willChangeMetrics) {
-    let score = 100;
-    
-    // Deduct points for poor frame time
-    if (frameTimeMetrics.averageFrameTime > frameTimeMetrics.targetFrameTime) {
-      const ratio = frameTimeMetrics.averageFrameTime / frameTimeMetrics.targetFrameTime;
-      score -= Math.min(50, (ratio - 1) * 25);
+  setOptimizationLevel(level) {
+    if (!['performance', 'balanced', 'quality'].includes(level)) {
+      console.warn(`Invalid optimization level: ${level}`);
+      return;
     }
-    
-    // Deduct points for high memory usage
-    const memoryUsage = parseFloat(willChangeMetrics.memoryUtilization);
-    if (memoryUsage > 50) {
-      score -= Math.min(30, (memoryUsage - 50) * 0.6);
+
+    this.optimizationLevel = level;
+    console.log(`🎯 Optimization level set to: ${level}`);
+
+    // Reconfigure systems
+    if (globalWasmLoader) {
+      globalWasmLoader.configure(this.getWasmLoaderConfig());
     }
-    
-    return Math.max(0, Math.round(score));
+
+    // Adjust profiling frequency
+    if (globalProfiler) {
+      const frequencies = {
+        performance: 1000, // Every second
+        balanced: 5000,    // Every 5 seconds
+        quality: 10000     // Every 10 seconds
+      };
+      
+      globalProfiler.setSampleInterval(frequencies[level]);
+    }
   }
-  
+
   /**
-   * Emergency performance recovery
+   * Toggle performance dashboard
    */
-  emergencyRecovery() {
-    console.warn('🚨 Emergency performance recovery triggered');
-    
-    // Trigger all emergency optimizations
-    this.optimizers.frameTime.applyEmergencyOptimizations();
-    this.optimizers.willChange.emergencyCleanup();
-    
-    // Force garbage collection if available
-    if (window.gc) {
-      window.gc();
+  togglePerformanceDashboard() {
+    if (globalDashboard) {
+      if (globalDashboard.isVisible) {
+        globalDashboard.hide();
+        console.log('📊 Performance dashboard hidden');
+      } else {
+        globalDashboard.show();
+        console.log('📊 Performance dashboard shown');
+      }
     }
-    
-    console.log('✅ Emergency recovery completed');
   }
-  
+
   /**
-   * Reset all performance systems
+   * Run performance analysis
    */
-  reset() {
-    this.optimizers.frameTime.reset();
-    this.optimizers.willChange.emergencyCleanup();
+  runPerformanceAnalysis() {
+    console.log('🔍 Running performance analysis...');
     
-    this.metrics = {
-      totalOptimizations: 0,
-      performanceGain: 0,
-      memoryReduced: 0
+    const analysis = {
+      memory: null,
+      wasm: null,
+      profiling: null,
+      recommendations: []
     };
+
+    // Memory analysis
+    if (globalMemoryOptimizer) {
+      analysis.memory = globalMemoryOptimizer.getMemoryStats();
+      
+      if (analysis.memory.used > 100 * 1024 * 1024) {
+        analysis.recommendations.push({
+          type: 'memory',
+          message: 'High memory usage detected - consider enabling aggressive cleanup',
+          severity: 'high'
+        });
+      }
+    }
+
+    // WASM analysis
+    if (globalWasmLoader) {
+      analysis.wasm = globalWasmLoader.getStats();
+      
+      if (analysis.wasm.cacheHitRate < 0.8) {
+        analysis.recommendations.push({
+          type: 'wasm',
+          message: 'Low WASM cache hit rate - consider preloading more modules',
+          severity: 'medium'
+        });
+      }
+    }
+
+    // Profiling analysis
+    if (globalProfiler) {
+      analysis.profiling = globalProfiler.getMetricsSummary();
+      
+      if (analysis.profiling.frameTime.average > 16.67) {
+        analysis.recommendations.push({
+          type: 'performance',
+          message: 'Frame time exceeds 60 FPS target - optimization needed',
+          severity: 'high'
+        });
+      }
+    }
+
+    return analysis;
+  }
+
+  /**
+   * Log current optimization status
+   * @private
+   */
+  logOptimizationStatus() {
+    console.log('\n📊 Performance Optimization Status:');
+    console.log(`   🎯 Optimization Level: ${this.optimizationLevel}`);
+    console.log(`   🧠 Memory Optimization: ${this.stats.memoryOptimized ? '✅' : '❌'}`);
+    console.log(`   📦 WASM Lazy Loading: ${this.stats.wasmLazyLoaded ? '✅' : '❌'}`);
+    console.log(`   📈 Performance Profiling: ${this.stats.profilingActive ? '✅' : '❌'}`);
+    console.log(`   📊 Dashboard Available: ${this.stats.dashboardActive ? '✅' : '❌'}`);
     
-    console.log('🔄 Performance systems reset');
+    if (this.stats.dashboardActive) {
+      console.log('   🎮 Press Ctrl+Shift+P to toggle performance dashboard');
+    }
+  }
+
+  /**
+   * Get current performance statistics
+   */
+  getStats() {
+    const stats = {
+      ...this.stats,
+      optimizationLevel: this.optimizationLevel,
+      config: this.config
+    };
+
+    // Add sub-system stats
+    if (globalMemoryOptimizer) {
+      stats.memory = globalMemoryOptimizer.getMemoryStats();
+    }
+
+    if (globalWasmLoader) {
+      stats.wasm = globalWasmLoader.getStats();
+    }
+
+    if (globalProfiler) {
+      stats.profiling = globalProfiler.getMetricsSummary();
+    }
+
+    return stats;
+  }
+
+  /**
+   * Clean up performance systems
+   */
+  cleanup() {
+    if (globalMemoryOptimizer) {
+      globalMemoryOptimizer.stopMonitoring();
+    }
+
+    if (globalProfiler) {
+      globalProfiler.disable();
+    }
+
+    if (globalWasmLoader) {
+      globalWasmLoader.clearCache();
+    }
+
+    console.log('🧹 Performance optimization systems cleaned up');
   }
 }
 
-// Global instance
+// Global performance integration instance
 export const globalPerformanceIntegration = new PerformanceIntegration();
 
 // Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    globalPerformanceIntegration.initialize();
-  });
-} else {
-  globalPerformanceIntegration.initialize();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      globalPerformanceIntegration.initialize().catch(error => {
+        console.error('Failed to initialize performance optimizations:', error);
+      });
+    });
+  } else {
+    // DOM already loaded
+    globalPerformanceIntegration.initialize().catch(error => {
+      console.error('Failed to initialize performance optimizations:', error);
+    });
+  }
 }
-
-// Expose to global scope for debugging
-window.performanceIntegration = globalPerformanceIntegration;

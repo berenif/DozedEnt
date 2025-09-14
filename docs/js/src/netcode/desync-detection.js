@@ -90,7 +90,7 @@ export class DesyncDetectionSystem {
    * Add a player to desync tracking
    */
   addPlayer(playerId) {
-    if (this.playerDesyncs.has(playerId)) return
+    if (this.playerDesyncs.has(playerId)) {return}
     
     this.playerDesyncs.set(playerId, {
       playerId,
@@ -199,7 +199,7 @@ export class DesyncDetectionSystem {
    */
   validatePlayerChecksums(playerId, frame, checksumData) {
     const playerTracker = this.playerDesyncs.get(playerId)
-    if (!playerTracker) return
+    if (!playerTracker) {return}
     
     let hasDesync = false
     const desyncInfo = {
@@ -217,7 +217,7 @@ export class DesyncDetectionSystem {
       const localChecksum = checksumData.local[layer]
       const remoteChecksum = checksumData.remote[layer]?.[playerId]
       
-      if (localChecksum !== undefined && remoteChecksum !== undefined) {
+      if (typeof localChecksum !== "undefined" && typeof remoteChecksum !== "undefined") {
         const isMatch = this.compareChecksums(localChecksum, remoteChecksum, layer)
         
         desyncInfo.layers[layer] = {
@@ -471,7 +471,7 @@ export class DesyncDetectionSystem {
   isFrameSynced(checksumData) {
     // Check basic layer (most reliable)
     const localBasic = checksumData.local[CHECKSUM_LAYERS.BASIC]
-    if (localBasic === undefined) return false
+    if (typeof localBasic === "undefined") {return false}
     
     const remoteBasic = checksumData.remote[CHECKSUM_LAYERS.BASIC]
     for (const playerId of this.playerDesyncs.keys()) {
@@ -528,7 +528,7 @@ export class DesyncDetectionSystem {
    */
   calculateWasmChecksum(wasmData) {
     try {
-      if (!wasmData || wasmData.length === 0) return 0
+      if (!wasmData || wasmData.length === 0) {return 0}
       
       let checksum = 0
       const data = new Uint8Array(wasmData)
@@ -582,16 +582,16 @@ export class DesyncDetectionSystem {
       return 'fair'
     } else if (desyncRate > 0.005) {
       return 'good'
-    } else {
+    } 
       return 'excellent'
-    }
+    
   }
   
   /**
    * Clean up old checksum history
    */
   cleanupChecksumHistory() {
-    if (this.checksumHistory.size <= this.config.checksumHistorySize) return
+    if (this.checksumHistory.size <= this.config.checksumHistorySize) {return}
     
     const frames = Array.from(this.checksumHistory.keys()).sort((a, b) => a - b)
     const framesToDelete = frames.slice(0, frames.length - this.config.checksumHistorySize)

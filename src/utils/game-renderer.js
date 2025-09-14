@@ -565,9 +565,9 @@ export class GameRenderer {
     
     // Update camera to follow target
     updateCamera(targetX, targetY, deltaTime) {
-        // Set target position
-        this.camera.targetX = targetX
-        this.camera.targetY = targetY
+        // Set target position - center camera on target
+        this.camera.targetX = targetX - this.camera.width / 2
+        this.camera.targetY = targetY - this.camera.height / 2
         
         // Clamp target to bounds
         this.camera.targetX = Math.max(this.camera.bounds.minX, 
@@ -579,6 +579,18 @@ export class GameRenderer {
         const smoothing = 1 - (1 - this.camera.smoothing)**(deltaTime * 60)
         this.camera.x += (this.camera.targetX - this.camera.x) * smoothing
         this.camera.y += (this.camera.targetY - this.camera.y) * smoothing
+        
+        // Ensure camera reaches target within reasonable precision
+        if (Math.abs(this.camera.x - this.camera.targetX) < 0.1) {
+            this.camera.x = this.camera.targetX
+        }
+        if (Math.abs(this.camera.y - this.camera.targetY) < 0.1) {
+            this.camera.y = this.camera.targetY
+        }
+        
+        // Ensure camera stays within bounds (fix floating point precision issues)
+        this.camera.x = Math.max(this.camera.bounds.minX, Math.min(this.camera.bounds.maxX, this.camera.x));
+        this.camera.y = Math.max(this.camera.bounds.minY, Math.min(this.camera.bounds.maxY, this.camera.y));
     }
     
     // Legacy render method with camera following

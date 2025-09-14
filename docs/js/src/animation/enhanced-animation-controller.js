@@ -286,8 +286,8 @@ export class EnhancedAnimationController {
   initializeIK() {
     // Setup IK chain constraints
     Object.values(this.ikSystem.chains).forEach(chain => {
-      chain.originalPositions = chain.joints.map(joint => ({ x: 0, y: 0, z: 0 }));
-      chain.currentPositions = chain.joints.map(joint => ({ x: 0, y: 0, z: 0 }));
+      chain.originalPositions = chain.joints.map(() => ({ x: 0, y: 0, z: 0 }));
+      chain.currentPositions = chain.joints.map(() => ({ x: 0, y: 0, z: 0 }));
     });
   }
   
@@ -353,8 +353,8 @@ export class EnhancedAnimationController {
     const startTime = performance.now();
     
     // Update blend weights
-    this.blendTree.layers.forEach((layer, layerName) => {
-      layer.animations.forEach((animation, animName) => {
+    this.blendTree.layers.forEach((layer) => {
+      layer.animations.forEach((animation) => {
         // Smooth weight transitions
         const targetWeight = animation.targetWeight || 0;
         const weightDiff = targetWeight - animation.weight;
@@ -383,7 +383,7 @@ export class EnhancedAnimationController {
     this.updateIKTargets(gameState, ikConfig);
     
     // Solve IK chains
-    Object.entries(this.ikSystem.chains).forEach(([chainName, chain]) => {
+    Object.entries(this.ikSystem.chains).forEach(([, chain]) => {
       if (chain.enabled) {
         this.solveIKChain(chain);
       }
@@ -395,7 +395,7 @@ export class EnhancedAnimationController {
   /**
    * Update effects coordination
    */
-  updateEffectsCoordination(deltaTime) {
+  updateEffectsCoordination() {
     const startTime = performance.now();
     
     const currentStateData = this.animationStates[this.stateMachine.currentState];
@@ -528,7 +528,7 @@ export class EnhancedAnimationController {
    * Check for animation events at specific frames
    */
   checkAnimationEvents(stateData, deltaTime) {
-    const normalizedTime = this.stateMachine.stateTime / stateData.duration;
+    // Calculate normalized time for frame events
     
     // Define frame events for different states
     const frameEvents = {
@@ -550,7 +550,7 @@ export class EnhancedAnimationController {
     if (events) {
       events.forEach(eventData => {
         const frameTime = eventData.frame * stateData.duration;
-        const prevFrameTime = frameTime - (deltaTime || 0.016); // Approximate frame time
+        // Check if we crossed the frame time since last update
         
         if (this.stateMachine.stateTime >= frameTime && 
             this.stateMachine.stateTime - deltaTime < frameTime) {
@@ -670,7 +670,7 @@ export class EnhancedAnimationController {
   /**
    * Coordinate audio effects with animation
    */
-  coordinateAudioEffects(soundType) {
+  coordinateAudioEffects() {
     // Audio coordination is handled by the enhanced audio manager
     // This method can trigger specific timing-based audio events
   }

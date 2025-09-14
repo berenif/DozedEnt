@@ -50,13 +50,13 @@
     <div id="status"></div>
     <div id="logs"></div>
     
-    <button onclick="testWasmLoading()">Test WASM Loading</button>
-    <button onclick="clearLogs()">Clear Logs</button>
+    <button id="testButton">Test WASM Loading</button>
+    <button id="clearButton">Clear Logs</button>
     
     <h2>Environment Info</h2>
     <pre id="envInfo"></pre>
 
-    <script type="module">
+    <script>
         let logContainer;
         let statusContainer;
         
@@ -81,16 +81,16 @@
             statusContainer.innerHTML = `<div class="status ${type}">${message}</div>`;
         }
         
-        window.clearLogs = function() {
+        function clearLogs() {
             if (logContainer) {
                 logContainer.innerHTML = '';
             }
             if (statusContainer) {
                 statusContainer.innerHTML = '';
             }
-        };
+        }
         
-        window.testWasmLoading = async function() {
+        async function testWasmLoading() {
             clearLogs();
             setStatus('🔄 Testing WASM loading...', 'info');
             
@@ -184,6 +184,19 @@
             envInfo.textContent = Object.entries(info)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join('\n');
+        });
+        
+        // Set up event listeners for SES compatibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const testButton = document.getElementById('testButton');
+            const clearButton = document.getElementById('clearButton');
+            
+            if (testButton) {
+                testButton.addEventListener('click', testWasmLoading);
+            }
+            if (clearButton) {
+                clearButton.addEventListener('click', clearLogs);
+            }
         });
         
         // Auto-run test on page load

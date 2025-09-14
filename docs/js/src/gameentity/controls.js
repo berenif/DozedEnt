@@ -614,7 +614,7 @@ class MobileGameControls {
             }
         });
         
-        document.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', (_e) => {
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
@@ -647,7 +647,7 @@ class MobileGameControls {
     /**
      * Handle swipe gesture
      */
-    handleSwipe(angle, distance) {
+    handleSwipe(angle, _distance) {
         // Map swipe to actions
         if (angle > -45 && angle < 45) {
             // Right swipe - could be dodge right or special attack
@@ -808,7 +808,7 @@ class MobileGameControls {
 
     // Note: Player position is now handled by the main game (site.js)
     // This method is kept for compatibility but does nothing
-    updatePlayerPosition(direction) {
+    updatePlayerPosition(_direction) {
         // Position updates are handled by the main game through keyboard events
     }
 

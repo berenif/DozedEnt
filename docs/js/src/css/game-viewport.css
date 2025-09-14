@@ -1,4 +1,4 @@
-/* Game Viewport - Fixed z-index and background */
+/* Game Viewport */
 #viewport {
     position: fixed;
     top: 0;
@@ -7,9 +7,8 @@
     height: 100vh;
     transform: scale(var(--scale));
     transform-origin: top left;
-    background: var(--color-bg-primary);
+    background: #0a0a0a;
     overflow: hidden;
-    z-index: var(--z-game-canvas);
 }
 
 /* Game Canvas */
@@ -23,7 +22,7 @@
     transform: translate(var(--shake-x), var(--shake-y));
 }
 
-/* Game Canvas for Enhanced Rendering - Fixed z-index */
+/* Game Canvas for Enhanced Rendering */
 #gameCanvas {
     position: absolute;
     top: 0;
@@ -32,5 +31,5 @@
     height: 720px;
     background: transparent;
     pointer-events: none;
-    z-index: var(--z-game-canvas);
+    z-index: 10;
 }
