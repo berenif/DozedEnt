@@ -2,7 +2,7 @@
 // Implements howls, growls, barks for pack communication
 #pragma once
 
-#include "enemies.h"
+#include "enemies.h" // Access enemy structs and pack data
 
 // Vocalization types for wolves
 enum class VocalizationType : unsigned char {

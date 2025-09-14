@@ -37,7 +37,7 @@ Remove-Item -Path "*.wasm" -Force -ErrorAction SilentlyContinue
 # Generate balance header from data files
 Write-Host "Generating balance data header..." -ForegroundColor Yellow
 try {
-    node .\tools\scripts\generate-balance.cjs | Write-Host
+    node ./tools/scripts/generate-balance.cjs | Write-Host
     Write-Host "Balance data generated" -ForegroundColor Green
 } catch {
     Write-Host "Balance generation failed: $_" -ForegroundColor Red
