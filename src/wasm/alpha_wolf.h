@@ -2,7 +2,9 @@
 #pragma once
 
 #include "enemies.h"
-#include "wolf_vocalization.h"
+
+// Forward declarations
+enum class VocalizationType : unsigned char;
 
 // Alpha wolf abilities
 enum class AlphaAbility : unsigned char {
@@ -178,7 +180,7 @@ static void execute_alpha_ability(AlphaAbility ability) {
                 
                 if (dist < g_alpha_wolf.intimidation_aura) {
                     // Apply intimidation effect (handled in main update)
-                    g_stamina_regen_modifier = 0.3f; // 70% reduction
+                    g_stamina_regen_mult = 0.3f; // 70% reduction
                 }
             }
             
@@ -201,7 +203,7 @@ static void execute_alpha_ability(AlphaAbility ability) {
                     spawn_x = fmaxf(0.05f, fminf(0.95f, spawn_x));
                     spawn_y = fmaxf(0.05f, fminf(0.95f, spawn_y));
                     
-                    spawn_enemy(spawn_x, spawn_y, EnemyType::Wolf);
+                    enemy_activate(g_enemy_count, EnemyType::Wolf, spawn_x, spawn_y);
                     
                     // New wolf starts aggressive
                     if (g_enemy_count > 0) {

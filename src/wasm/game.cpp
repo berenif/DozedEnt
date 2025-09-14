@@ -8,6 +8,9 @@
 #include "terrain_hazards.h"
 #include "scent.h"
 #include "enemies.h"
+#include "wolf_vocalization.h"
+#include "alpha_wolf.h"
+#include "scent_tracking.h"
 #include "choices.h"
 #include "risk.h"
 #include "escalate.h"
@@ -26,6 +29,7 @@ extern WorldSimulation g_world_sim;
 // Include achievement and statistics systems
 #include "achievement-system.h"
 #include "statistics-system.h"
+#include "adaptive_ai.h"
 
 // Player input variables - 5-button combat system
 static float g_input_x = 0.f;
@@ -469,6 +473,9 @@ void update(float dtSeconds) {
     g_input_y = g_roll_direction_y * 0.5f;
   }
   
+  // Apply status effect modifiers to movement
+  float status_speed_modifier = g_player_status_effects.get_movement_modifier();
+  
   const float speed = (BASE_SPEED * g_speed_mult) * speed_multiplier * status_speed_modifier;
   const float acceleration = PLAYER_ACCEL * dtSeconds;
   const float friction = PLAYER_FRICTION * dtSeconds * friction_multiplier;
@@ -510,9 +517,6 @@ void update(float dtSeconds) {
   
   // Update status effects
   g_player_status_effects.update(dtSeconds, g_time_seconds);
-  
-  // Apply status effect modifiers to movement
-  float status_speed_modifier = g_player_status_effects.get_movement_modifier();
   
   // Check if stunned by status effects
   if (g_player_status_effects.is_stunned()) {
@@ -1387,8 +1391,8 @@ float get_stun_remaining() {
 }
 
 // Apply stun to player (for enemy attacks that cause stun)
-__attribute__((export_name("apply_stun")))
-void apply_stun(float duration) {
+__attribute__((export_name("apply_player_stun")))
+void apply_player_stun(float duration) {
   g_is_stunned = 1;
   g_stun_end_time = g_time_seconds + duration;
 }
@@ -2072,12 +2076,7 @@ float get_enemy_morale(unsigned int idx) {
   return (idx < g_enemy_count && g_enemies[idx].active) ? g_enemies[idx].morale : 0.f; 
 }
 
-// Pack Information
-__attribute__((export_name("get_pack_plan")))
-int get_pack_plan() { return (int)g_pack_plan; }
-
-__attribute__((export_name("get_pack_morale")))
-float get_pack_morale() { return g_pack_morale; }
+// Pack Information (duplicates removed - already defined above)
 
 __attribute__((export_name("get_pack_sync_timer")))
 float get_pack_sync_timer() { return g_pack_sync_timer; }

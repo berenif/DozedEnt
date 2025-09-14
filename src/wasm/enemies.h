@@ -3,9 +3,6 @@
 
 #include "internal_core.h"
 #include "wolf_anim_data.h"
-#include "wolf_vocalization.h"
-#include "alpha_wolf.h"
-#include "scent_tracking.h"
 
 enum class EnemyType : unsigned char { Wolf = 0, Dummy = 1 };
 enum class EnemyState : unsigned char { Idle = 0, Seek = 1, Circle = 2, Harass = 3, Recover = 4, Ambush = 5, Flank = 6, Retreat = 7, Prowl = 8, Howl = 9 };
@@ -21,6 +18,11 @@ enum class EmotionalState : unsigned char {
     Hurt = 6        // Recently damaged, defensive behavior
 };
 enum class PackRole : unsigned char { Lead = 0, FlankL = 1, FlankR = 2, Harasser = 3, PupGuard = 4, Scout = 5, Ambusher = 6, None = 255 };
+
+// Forward declarations
+static void update_vocalization_system(float dt);
+static void update_alpha_wolf(float dt);
+static void update_scent_tracking(float dt);
 
 #define MAX_ENEMIES 16
 #define MAX_SOUND_PINGS 32

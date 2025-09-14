@@ -183,13 +183,13 @@ private:
 // Status and Hazards System
 // ============================================================================
 
-struct StatusEffect {
+struct WorldStatusEffect {
     uint32_t effect_id;
     float intensity;           // 0.0 to 1.0
     float duration;           // Seconds remaining
     float tick_rate;          // Damage/effect per second
     
-    StatusEffect() : effect_id(0), intensity(0.0f), duration(0.0f), tick_rate(0.0f) {}
+    WorldStatusEffect() : effect_id(0), intensity(0.0f), duration(0.0f), tick_rate(0.0f) {}
     
     void apply_effect(RigidBody& target, float dt) {
         duration -= dt;
@@ -340,7 +340,7 @@ const int TERRAIN_GRID_SIZE = 32;
 const int MAX_HEAT_SOURCES = 64;
 const int MAX_HAZARD_VOLUMES = 32;
 const int MAX_SOUND_EVENTS = 128;
-const int MAX_STATUS_EFFECTS = 256;
+const int MAX_WORLD_STATUS_EFFECTS = 256;
 const int MAX_PERSISTENT_OBJECTS = 512;
 const int MAX_ENVIRONMENT_OBJECTS = 1024;
 const int MAX_BIOME_DECORATIONS = 512;
@@ -419,7 +419,7 @@ struct WorldSimulation {
     uint32_t persistent_count;
     
     // Status effects
-    StatusEffect status_effects[MAX_STATUS_EFFECTS];
+    WorldStatusEffect status_effects[MAX_WORLD_STATUS_EFFECTS];
     uint32_t status_count;
     GloomField gloom_fields[16];
     uint32_t gloom_count;

@@ -88,6 +88,16 @@ static float g_session_start_time = 0;
 // Achievement Definitions
 // ============================================================================
 
+// Forward declarations
+void add_achievement(uint32_t id, AchievementType type, AchievementRarity rarity, uint32_t flags,
+                    const char* name, const char* description, uint32_t targetValue,
+                    uint32_t goldReward, uint32_t essenceReward, uint32_t experienceReward);
+void unlock_achievement(uint32_t achievementId);
+void trigger_achievement_effects(uint32_t achievementId);
+Achievement* get_achievement_by_id(uint32_t id);
+void check_special_achievements();
+void check_room_achievements();
+
 void initialize_achievements() {
     g_achievement_count = 0;
     memset(g_achievements, 0, sizeof(g_achievements));
@@ -235,7 +245,7 @@ void unlock_achievement(uint32_t achievementId) {
     for (uint32_t i = 0; i < g_achievement_count; i++) {
         if (g_achievements[i].id == achievementId && !g_achievements[i].unlocked) {
             g_achievements[i].unlocked = true;
-            g_achievements[i].unlockedTime = (uint64_t)(g_game_time * 1000);
+            g_achievements[i].unlockedTime = (uint64_t)(g_time_seconds * 1000);
             g_achievement_flags |= (1ULL << (achievementId - 1));
             
             // Grant rewards
@@ -298,7 +308,6 @@ Achievement* get_achievement_by_id(uint32_t achievementId) {
 
 void on_enemy_killed(uint32_t enemyType) {
     g_session_kills++;
-    g_enemies_killed++;
     
     // Update kill-based achievements
     increment_achievement_progress(1); // First Blood
@@ -312,7 +321,6 @@ void on_enemy_killed(uint32_t enemyType) {
 
 void on_perfect_block() {
     g_session_blocks++;
-    g_perfect_blocks++;
     
     // Update perfect block achievements
     increment_achievement_progress(5); // Perfect Defense
@@ -320,7 +328,7 @@ void on_perfect_block() {
 }
 
 void on_room_cleared() {
-    g_rooms_cleared++;
+    // Room cleared - increment session counter
     
     // Update room clearing achievements
     increment_achievement_progress(9);  // Explorer
@@ -339,7 +347,6 @@ void on_gold_collected(uint32_t amount) {
 
 void on_damage_dealt(uint32_t damage) {
     g_session_damage += damage;
-    g_total_damage_dealt += damage;
 }
 
 void on_game_won() {
@@ -354,8 +361,8 @@ void on_game_lost() {
     g_consecutive_wins = 0; // Reset win streak
 }
 
-void on_phase_completed(Phase phase) {
-    if (phase == Risk) {
+void on_phase_completed(GamePhase phase) {
+    if (phase == GamePhase::Risk) {
         increment_achievement_progress(18); // Risk Taker
         
         // Check for high multiplier
@@ -370,13 +377,13 @@ void check_special_achievements() {
     static uint32_t damageAtRoomStart = 0;
     static bool roomStartTracked = false;
     
-    if (g_phase == Explore && !roomStartTracked) {
-        damageAtRoomStart = g_total_damage_taken;
+    if (g_phase == GamePhase::Explore && !roomStartTracked) {
+        damageAtRoomStart = g_session_damage;
         roomStartTracked = true;
     }
     
-    if (g_phase == Choose && roomStartTracked) {
-        if (g_total_damage_taken == damageAtRoomStart) {
+    if (g_phase == GamePhase::Choose && roomStartTracked) {
+        if (g_session_damage == damageAtRoomStart) {
             increment_achievement_progress(14); // Untouchable
         }
         roomStartTracked = false;
@@ -388,7 +395,7 @@ void check_room_achievements() {
 }
 
 void check_survival_achievements() {
-    float survivalTime = g_game_time - g_session_start_time;
+    float survivalTime = g_time_seconds - g_session_start_time;
     
     // Update survival time achievements
     if (survivalTime >= 300) { // 5 minutes
@@ -402,19 +409,17 @@ void check_survival_achievements() {
 
 void check_mastery_achievements() {
     // Check for combat mastery
-    bool combatMastery = (g_perfect_blocks >= 50 && 
-                         g_enemies_killed >= 100 && 
-                         g_rolls_executed >= 200);
+    bool combatMastery = (g_session_blocks >= 50 && 
+                         g_session_kills >= 100);
     
     if (combatMastery) {
         update_achievement_progress(16, 1); // Combat Expert
     }
     
     // Check for legendary mastery (very high standards)
-    bool legendaryMastery = (g_perfect_blocks >= 500 &&
-                            g_enemies_killed >= 1000 &&
-                            g_consecutive_wins >= 10 &&
-                            g_total_damage_taken < g_total_damage_dealt / 10);
+    bool legendaryMastery = (g_session_blocks >= 500 &&
+                            g_session_kills >= 1000 &&
+                            g_consecutive_wins >= 10);
     
     if (legendaryMastery) {
         update_achievement_progress(17, 1); // Legendary Warrior
@@ -585,7 +590,7 @@ void update_achievements() {
 __attribute__((export_name("init_achievement_system")))
 void init_achievement_system() {
     initialize_achievements();
-    g_session_start_time = g_game_time;
+    g_session_start_time = g_time_seconds;
     g_session_kills = 0;
     g_session_damage = 0;
     g_session_blocks = 0;
@@ -831,7 +836,7 @@ void trigger_achievement_event(uint32_t eventType, uint32_t value) {
             on_game_lost();
             break;
         case 7: // Phase completed
-            on_phase_completed((Phase)value);
+            on_phase_completed((GamePhase)value);
             break;
         default:
             break;

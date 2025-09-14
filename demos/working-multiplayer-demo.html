@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Multiplayer Demo - Trystero</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+            50% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .demo-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        
+        .control-section {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .control-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 5px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.danger {
+            border-color: #ff0000;
+            color: #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+        }
+        
+        .btn.danger:hover {
+            background: rgba(255, 0, 0, 0.2);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        
+        .btn.primary {
+            background: rgba(0, 255, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status-panel {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 4px;
+        }
+        
+        .status-label {
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+        
+        .status-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .log-panel {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid rgba(0, 255, 0, 0.5);
+            padding-left: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .log-entry.error {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+        
+        .log-entry.success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        
+        .log-entry.info {
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+        
+        .timestamp {
+            opacity: 0.5;
+            margin-right: 10px;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        
+        label {
+            display: block;
+            font-size: 11px;
+            margin-top: 10px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+        
+        .peer-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .peer-item {
+            padding: 5px;
+            margin: 2px 0;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 3px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <h1>🌐 WORKING MULTIPLAYER DEMO</h1>
+        <div class="subtitle">Real Trystero P2P Networking • WebRTC • Serverless</div>
+    </div>
+    
+    <div class="status-panel">
+        <h3>Connection Status</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-label">Room ID</div>
+                <div class="status-value" id="room-id">Not Connected</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Connected Peers</div>
+                <div class="status-value" id="peer-count">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Messages Sent</div>
+                <div class="status-value" id="messages-sent">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Messages Received</div>
+                <div class="status-value" id="messages-received">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Connection Quality</div>
+                <div class="status-value" id="connection-quality">Unknown</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Network Type</div>
+                <div class="status-value" id="network-type">WebRTC</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-controls">
+        <div class="control-section">
+            <h3>🏠 Room Management</h3>
+            <label>Room ID</label>
+            <input type="text" id="room-id-input" placeholder="Enter room ID or leave empty for random" value="">
+            <label>Network Provider</label>
+            <select id="network-provider">
+                <option value="torrent">Torrent (BitTorrent)</option>
+                <option value="firebase">Firebase</option>
+                <option value="ipfs">IPFS</option>
+                <option value="mqtt">MQTT</option>
+                <option value="nostr">Nostr</option>
+                <option value="supabase">Supabase</option>
+            </select>
+            <button class="btn primary" onclick="createRoom()">Create Room</button>
+            <button class="btn" onclick="joinRoom()">Join Room</button>
+            <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>💬 Chat System</h3>
+            <label>Message</label>
+            <input type="text" id="chat-message" placeholder="Type your message here...">
+            <button class="btn" onclick="sendMessage()">Send Message</button>
+            <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
+            <button class="btn" onclick="clearChat()">Clear Chat</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>👥 Connected Peers</h3>
+            <div class="peer-list" id="peer-list">
+                <div class="peer-item">No peers connected</div>
+            </div>
+            <button class="btn" onclick="refreshPeers()">Refresh Peers</button>
+            <button class="btn" onclick="pingAllPeers()">Ping All Peers</button>
+        </div>
+        
+        <div class="control-section">
+            <h3>📊 Network Diagnostics</h3>
+            <button class="btn" onclick="showNetworkStats()">Show Network Stats</button>
+            <button class="btn" onclick="testConnection()">Test Connection</button>
+            <button class="btn" onclick="exportLogs()">Export Logs</button>
+            <button class="btn danger" onclick="resetStats()">Reset Stats</button>
+        </div>
+    </div>
+    
+    <div class="log-panel">
+        <h3>📝 Event Log</h3>
+        <div id="event-log"></div>
+    </div>
+    
+    <script type="module">
+        // Global variables
+        let room = null
+        let sendMessage = null
+        let sendPing = null
+        let stats = {
+            messagesSent: 0,
+            messagesReceived: 0
+        }
+        
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('event-log')
+            const entry = document.createElement('div')
+            entry.className = `log-entry ${type}`
+            const time = new Date().toLocaleTimeString()
+            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`
+            log.insertBefore(entry, log.firstChild)
+            
+            // Keep only last 50 entries
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild)
+            }
+        }
+        
+        // Initialize Trystero
+        async function initializeTrystero() {
+            try {
+                addLog('Initializing Trystero networking...', 'info')
+                
+                const provider = document.getElementById('network-provider').value
+                addLog(`Using network provider: ${provider}`, 'info')
+                
+                // Import the appropriate Trystero module
+                let trysteroModule
+                switch (provider) {
+                    case 'torrent':
+                        trysteroModule = await import('../dist/trystero-torrent.min.js')
+                        break
+                    case 'firebase':
+                        trysteroModule = await import('../dist/trystero-firebase.min.js')
+                        break
+                    case 'ipfs':
+                        trysteroModule = await import('../dist/trystero-ipfs.min.js')
+                        break
+                    case 'mqtt':
+                        trysteroModule = await import('../dist/trystero-mqtt.min.js')
+                        break
+                    case 'nostr':
+                        trysteroModule = await import('../dist/trystero-nostr.min.js')
+                        break
+                    case 'supabase':
+                        trysteroModule = await import('../dist/trystero-supabase.min.js')
+                        break
+                    default:
+                        throw new Error(`Unknown provider: ${provider}`)
+                }
+                
+                const { joinRoom: createTrysteroRoom } = trysteroModule
+                
+                // Create room with actions
+                room = createTrysteroRoom({
+                    appId: 'working-multiplayer-demo',
+                    password: null
+                }, 'demo-room')
+                
+                // Set up actions
+                const [sendMessageAction, getMessageAction] = room.makeAction('message')
+                const [sendPingAction, getPingAction] = room.makeAction('ping')
+                
+                sendMessage = sendMessageAction
+                sendPing = sendPingAction
+                
+                // Set up event handlers
+                room.onPeerJoin(peerId => {
+                    addLog(`Peer joined: ${peerId}`, 'success')
+                    updatePeerList()
+                    updateStatus()
+                })
+                
+                room.onPeerLeave(peerId => {
+                    addLog(`Peer left: ${peerId}`, 'info')
+                    updatePeerList()
+                    updateStatus()
+                })
+                
+                getMessageAction(message => {
+                    stats.messagesReceived++
+                    addLog(`Message from peer: ${message}`, 'info')
+                    updateStatus()
+                })
+                
+                getPingAction(pingData => {
+                    addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
+                })
+                
+                addLog('Trystero initialized successfully!', 'success')
+                updateStatus()
+                
+            } catch (error) {
+                addLog(`Failed to initialize Trystero: ${error.message}`, 'error')
+                console.error('Trystero initialization error:', error)
+            }
+        }
+        
+        // Room management functions
+        window.createRoom = async function() {
+            try {
+                const roomId = document.getElementById('room-id-input').value || 
+                    Math.random().toString(36).substring(2, 8)
+                
+                addLog(`Creating room: ${roomId}`, 'info')
+                
+                if (!room) {
+                    await initializeTrystero()
+                }
+                
+                document.getElementById('room-id').textContent = roomId
+                addLog(`Room created successfully: ${roomId}`, 'success')
+                updateStatus()
+                
+            } catch (error) {
+                addLog(`Failed to create room: ${error.message}`, 'error')
+            }
+        }
+        
+        window.joinRoom = async function() {
+            try {
+                const roomId = document.getElementById('room-id-input').value
+                
+                if (!roomId) {
+                    addLog('Please enter a room ID to join', 'error')
+                    return
+                }
+                
+                addLog(`Joining room: ${roomId}`, 'info')
+                
+                if (!room) {
+                    await initializeTrystero()
+                }
+                
+                document.getElementById('room-id').textContent = roomId
+                addLog(`Joined room: ${roomId}`, 'success')
+                updateStatus()
+                
+            } catch (error) {
+                addLog(`Failed to join room: ${error.message}`, 'error')
+            }
+        }
+        
+        window.leaveRoom = function() {
+            if (room) {
+                room.leave()
+                room = null
+                sendMessage = null
+                sendPing = null
+                addLog('Left room', 'info')
+                document.getElementById('room-id').textContent = 'Not Connected'
+                updatePeerList()
+                updateStatus()
+            }
+        }
+        
+        // Chat functions
+        window.sendMessage = function() {
+            if (!sendMessage) {
+                addLog('Not connected to a room', 'error')
+                return
+            }
+            
+            const message = document.getElementById('chat-message').value
+            if (!message) {
+                addLog('Please enter a message', 'error')
+                return
+            }
+            
+            try {
+                sendMessage(message)
+                stats.messagesSent++
+                addLog(`Sent: ${message}`, 'info')
+                document.getElementById('chat-message').value = ''
+                updateStatus()
+            } catch (error) {
+                addLog(`Failed to send message: ${error.message}`, 'error')
+            }
+        }
+        
+        window.sendRandomMessage = function() {
+            if (!sendMessage) {
+                addLog('Not connected to a room', 'error')
+                return
+            }
+            
+            const messages = [
+                'Hello everyone!',
+                'How is everyone doing?',
+                'This is a test message',
+                'WebRTC is working!',
+                'P2P networking is awesome!',
+                'Trystero is great!',
+                'Anyone want to play?',
+                'Connection is stable!'
+            ]
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)]
+            sendMessage(randomMessage)
+            stats.messagesSent++
+            addLog(`Sent random message: ${randomMessage}`, 'info')
+            updateStatus()
+        }
+        
+        window.clearChat = function() {
+            document.getElementById('event-log').innerHTML = ''
+            addLog('Chat cleared', 'info')
+        }
+        
+        // Peer management
+        window.refreshPeers = function() {
+            updatePeerList()
+            addLog('Peer list refreshed', 'info')
+        }
+        
+        window.pingAllPeers = function() {
+            if (!sendPing) {
+                addLog('Not connected to a room', 'error')
+                return
+            }
+            
+            const pingData = {
+                timestamp: Date.now(),
+                message: 'Ping from demo!'
+            }
+            
+            sendPing(pingData)
+            addLog('Ping sent to all peers', 'info')
+        }
+        
+        // Network diagnostics
+        window.showNetworkStats = function() {
+            if (!room) {
+                addLog('Not connected to a room', 'error')
+                return
+            }
+            
+            addLog('=== Network Statistics ===', 'success')
+            addLog(`Messages sent: ${stats.messagesSent}`)
+            addLog(`Messages received: ${stats.messagesReceived}`)
+            addLog(`Connected peers: ${Object.keys(room.getPeers()).length}`)
+            addLog(`Room ID: ${document.getElementById('room-id').textContent}`)
+        }
+        
+        window.testConnection = function() {
+            if (!room) {
+                addLog('Not connected to a room', 'error')
+                return
+            }
+            
+            addLog('Testing connection...', 'info')
+            pingAllPeers()
+        }
+        
+        window.exportLogs = function() {
+            const logs = Array.from(document.getElementById('event-log').children)
+                .map(entry => entry.textContent)
+                .join('\n')
+            
+            const blob = new Blob([logs], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'multiplayer-demo-logs.txt'
+            a.click()
+            
+            addLog('Logs exported', 'success')
+        }
+        
+        window.resetStats = function() {
+            stats = { messagesSent: 0, messagesReceived: 0 }
+            addLog('Statistics reset', 'info')
+            updateStatus()
+        }
+        
+        // Update functions
+        function updatePeerList() {
+            const peerList = document.getElementById('peer-list')
+            const peersObj = room ? room.getPeers() : {}
+            const peers = Object.keys(peersObj)
+            
+            if (peers.length === 0) {
+                peerList.innerHTML = '<div class="peer-item">No peers connected</div>'
+            } else {
+                peerList.innerHTML = peers.map(peerId => 
+                    `<div class="peer-item">${peerId}</div>`
+                ).join('')
+            }
+        }
+        
+        function updateStatus() {
+            const peersObj = room ? room.getPeers() : {}
+            document.getElementById('peer-count').textContent = Object.keys(peersObj).length
+            document.getElementById('messages-sent').textContent = stats.messagesSent
+            document.getElementById('messages-received').textContent = stats.messagesReceived
+            document.getElementById('connection-quality').textContent = room ? 'Good' : 'Unknown'
+        }
+        
+        // Initialize demo
+        addLog('Working Multiplayer Demo initialized', 'success')
+        addLog('Select a network provider and create/join a room to start', 'info')
+        updateStatus()
+        
+        // Auto-refresh status
+        setInterval(updateStatus, 2000)
+    </script>
+</body>
+</html>
