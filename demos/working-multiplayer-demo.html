@@ -274,8 +274,8 @@
                 <div class="status-value" id="connection-quality">Unknown</div>
             </div>
             <div class="status-item">
-                <div class="status-label">Network Type</div>
-                <div class="status-value" id="network-type">WebRTC</div>
+                <div class="status-label">Your Peer Name</div>
+                <div class="status-value" id="peer-name">Generating...</div>
             </div>
         </div>
     </div>
@@ -332,10 +332,18 @@
     </div>
     
     <script type="module">
+        import NetworkProviderManager from '../src/netcode/network-provider-manager.js'
+        import { peerNameGenerator } from '../src/utils/peer-name-generator.js'
+        
         // Global variables
+        let networkManager = null
         let room = null
         let sendMessage = null
         let sendPing = null
+        let sendPeerInfo = null
+        let getPeerInfo = null
+        let currentPeerName = null
+        let peerNames = new Map() // Map of peerId -> peerName
         let stats = {
             messagesSent: 0,
             messagesReceived: 0
@@ -356,83 +364,63 @@
             }
         }
         
-        // Initialize Trystero
-        async function initializeTrystero() {
+        // Initialize Network Provider Manager
+        async function initializeNetworkManager() {
             try {
-                addLog('Initializing Trystero networking...', 'info')
+                addLog('Initializing Network Provider Manager...', 'info')
                 
                 const provider = document.getElementById('network-provider').value
                 addLog(`Using network provider: ${provider}`, 'info')
                 
-                // Import the appropriate Trystero module
-                let trysteroModule
-                switch (provider) {
-                    case 'torrent':
-                        trysteroModule = await import('../dist/trystero-torrent.min.js')
-                        break
-                    case 'firebase':
-                        trysteroModule = await import('../dist/trystero-firebase.min.js')
-                        break
-                    case 'ipfs':
-                        trysteroModule = await import('../dist/trystero-ipfs.min.js')
-                        break
-                    case 'mqtt':
-                        trysteroModule = await import('../dist/trystero-mqtt.min.js')
-                        break
-                    case 'nostr':
-                        trysteroModule = await import('../dist/trystero-nostr.min.js')
-                        break
-                    case 'supabase':
-                        trysteroModule = await import('../dist/trystero-supabase.min.js')
-                        break
-                    default:
-                        throw new Error(`Unknown provider: ${provider}`)
-                }
-                
-                const { joinRoom: createTrysteroRoom } = trysteroModule
-                
-                // Create room with actions
-                room = createTrysteroRoom({
-                    appId: 'working-multiplayer-demo',
-                    password: null
-                }, 'demo-room')
-                
-                // Set up actions
-                const [sendMessageAction, getMessageAction] = room.makeAction('message')
-                const [sendPingAction, getPingAction] = room.makeAction('ping')
-                
-                sendMessage = sendMessageAction
-                sendPing = sendPingAction
+                // Create network manager instance
+                networkManager = new NetworkProviderManager()
                 
                 // Set up event handlers
-                room.onPeerJoin(peerId => {
+                networkManager.on('onProviderChanged', (providerId) => {
+                    addLog(`Provider changed to: ${providerId}`, 'info')
+                })
+                
+                networkManager.on('onRoomCreated', (roomId, providerId) => {
+                    addLog(`Room created: ${roomId} with ${providerId}`, 'success')
+                })
+                
+                networkManager.on('onRoomJoined', (roomId, providerId) => {
+                    addLog(`Joined room: ${roomId} with ${providerId}`, 'success')
+                })
+                
+                networkManager.on('onRoomLeft', () => {
+                    addLog('Left room', 'info')
+                })
+                
+                networkManager.on('onPeerJoined', (peerId) => {
                     addLog(`Peer joined: ${peerId}`, 'success')
                     updatePeerList()
                     updateStatus()
                 })
                 
-                room.onPeerLeave(peerId => {
+                networkManager.on('onPeerLeft', (peerId) => {
                     addLog(`Peer left: ${peerId}`, 'info')
                     updatePeerList()
                     updateStatus()
                 })
                 
-                getMessageAction(message => {
-                    stats.messagesReceived++
-                    addLog(`Message from peer: ${message}`, 'info')
-                    updateStatus()
+                networkManager.on('onError', (error) => {
+                    addLog(`Network error: ${error.message}`, 'error')
+                    console.error('Network error:', error)
                 })
                 
-                getPingAction(pingData => {
-                    addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
-                })
+                // Initialize the provider
+                const success = await networkManager.initializeProvider(provider)
+                if (!success) {
+                    throw new Error('Failed to initialize network provider')
+                }
                 
-                addLog('Trystero initialized successfully!', 'success')
+                addLog('Network Provider Manager initialized successfully!', 'success')
                 updateStatus()
                 
             } catch (error) {
-                addLog(`Failed to initialize Trystero: ${error.message}`, 'error')
-                console.error('Trystero initialization error:', error)
+                addLog(`Failed to initialize Network Manager: ${error.message}`, 'error')
+                console.error('Network Manager initialization error:', error)
             }
         }
         
@@ -444,12 +432,52 @@
                 
                 addLog(`Creating room: ${roomId}`, 'info')
                 
-                if (!room) {
-                    await initializeTrystero()
+                if (!networkManager) {
+                    await initializeNetworkManager()
                 }
+                
+                // Create room using network manager
+                room = await networkManager.createRoom(roomId)
+                
+                // Set up actions
+                const [sendMessageAction, getMessageAction] = networkManager.createAction('message')
+                const [sendPingAction, getPingAction] = networkManager.createAction('ping')
+                const [sendPeerInfoAction, getPeerInfoAction] = networkManager.createAction('peerInfo')
+                
+                sendMessage = sendMessageAction
+                sendPing = sendPingAction
+                sendPeerInfo = sendPeerInfoAction
+                getPeerInfo = getPeerInfoAction
+                
+                // Set up message handlers
+                getMessageAction(message => {
+                    stats.messagesReceived++
+                    networkManager.updateMessageStats('received')
+                    addLog(`Message from peer: ${message}`, 'info')
+                    updateStatus()
+                })
+                
+                getPingAction(pingData => {
+                    addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
+                })
+                
+                getPeerInfoAction(peerInfo => {
+                    const { peerId, peerName } = peerInfo
+                    peerNames.set(peerId, peerName)
+                    addLog(`Peer info received: [${peerId.substring(0, 4)}] ${peerName}`, 'info')
+                    updatePeerList()
+                })
                 
                 document.getElementById('room-id').textContent = roomId
                 addLog(`Room created successfully: ${roomId}`, 'success')
+                
+                // Broadcast our peer info
+                if (sendPeerInfo && currentPeerName) {
+                    // Get our actual peer ID from the room
+                    const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
+                    sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                }
+                
                 updateStatus()
                 
             } catch (error) {
@@ -468,12 +496,52 @@
                 
                 addLog(`Joining room: ${roomId}`, 'info')
                 
-                if (!room) {
-                    await initializeTrystero()
+                if (!networkManager) {
+                    await initializeNetworkManager()
                 }
+                
+                // Join room using network manager
+                room = await networkManager.joinRoom(roomId)
+                
+                // Set up actions
+                const [sendMessageAction, getMessageAction] = networkManager.createAction('message')
+                const [sendPingAction, getPingAction] = networkManager.createAction('ping')
+                const [sendPeerInfoAction, getPeerInfoAction] = networkManager.createAction('peerInfo')
+                
+                sendMessage = sendMessageAction
+                sendPing = sendPingAction
+                sendPeerInfo = sendPeerInfoAction
+                getPeerInfo = getPeerInfoAction
+                
+                // Set up message handlers
+                getMessageAction(message => {
+                    stats.messagesReceived++
+                    networkManager.updateMessageStats('received')
+                    addLog(`Message from peer: ${message}`, 'info')
+                    updateStatus()
+                })
+                
+                getPingAction(pingData => {
+                    addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
+                })
+                
+                getPeerInfoAction(peerInfo => {
+                    const { peerId, peerName } = peerInfo
+                    peerNames.set(peerId, peerName)
+                    addLog(`Peer info received: [${peerId.substring(0, 4)}] ${peerName}`, 'info')
+                    updatePeerList()
+                })
                 
                 document.getElementById('room-id').textContent = roomId
                 addLog(`Joined room: ${roomId}`, 'success')
+                
+                // Broadcast our peer info
+                if (sendPeerInfo && currentPeerName) {
+                    // Get our actual peer ID from the room
+                    const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
+                    sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                }
+                
                 updateStatus()
                 
             } catch (error) {
@@ -482,11 +550,14 @@
         }
         
         window.leaveRoom = function() {
-            if (room) {
-                room.leave()
+            if (networkManager) {
+                networkManager.leaveRoom()
                 room = null
                 sendMessage = null
                 sendPing = null
+                sendPeerInfo = null
+                getPeerInfo = null
+                peerNames.clear()
                 addLog('Left room', 'info')
                 document.getElementById('room-id').textContent = 'Not Connected'
                 updatePeerList()
@@ -508,9 +579,13 @@
             }
             
             try {
-                sendMessage(message)
+                const messageWithName = `[${currentPeerName}]: ${message}`
+                sendMessage(messageWithName)
                 stats.messagesSent++
-                addLog(`Sent: ${message}`, 'info')
+                if (networkManager) {
+                    networkManager.updateMessageStats('sent')
+                }
+                addLog(`Sent: ${messageWithName}`, 'info')
                 document.getElementById('chat-message').value = ''
                 updateStatus()
             } catch (error) {
@@ -536,9 +611,13 @@
             ]
             
             const randomMessage = messages[Math.floor(Math.random() * messages.length)]
-            sendMessage(randomMessage)
+            const messageWithName = `[${currentPeerName}]: ${randomMessage}`
+            sendMessage(messageWithName)
             stats.messagesSent++
-            addLog(`Sent random message: ${randomMessage}`, 'info')
+            if (networkManager) {
+                networkManager.updateMessageStats('sent')
+            }
+            addLog(`Sent random message: ${messageWithName}`, 'info')
             updateStatus()
         }
         
@@ -570,20 +649,26 @@
         
         // Network diagnostics
         window.showNetworkStats = function() {
-            if (!room) {
-                addLog('Not connected to a room', 'error')
+            if (!networkManager) {
+                addLog('Network manager not initialized', 'error')
                 return
             }
             
+            const networkStats = networkManager.getStats()
+            const currentProvider = networkManager.getCurrentProvider()
+            
             addLog('=== Network Statistics ===', 'success')
-            addLog(`Messages sent: ${stats.messagesSent}`)
-            addLog(`Messages received: ${stats.messagesReceived}`)
-            addLog(`Connected peers: ${Object.keys(room.getPeers()).length}`)
+            addLog(`Provider: ${currentProvider ? currentProvider.name : 'None'}`)
+            addLog(`Messages sent: ${networkStats.messagesSent}`)
+            addLog(`Messages received: ${networkStats.messagesReceived}`)
+            addLog(`Connected peers: ${networkStats.peerCount}`)
+            addLog(`Connections established: ${networkStats.connectionsEstablished}`)
+            addLog(`Errors: ${networkStats.errors}`)
             addLog(`Room ID: ${document.getElementById('room-id').textContent}`)
         }
         
         window.testConnection = function() {
-            if (!room) {
+            if (!networkManager || !room) {
                 addLog('Not connected to a room', 'error')
                 return
             }
@@ -609,6 +694,9 @@
         
         window.resetStats = function() {
             stats = { messagesSent: 0, messagesReceived: 0 }
+            if (networkManager) {
+                networkManager.resetStats()
+            }
             addLog('Statistics reset', 'info')
             updateStatus()
         }
@@ -616,29 +704,65 @@
         // Update functions
         function updatePeerList() {
             const peerList = document.getElementById('peer-list')
-            const peersObj = room ? room.getPeers() : {}
+            const peersObj = networkManager ? networkManager.getPeers() : {}
             const peers = Object.keys(peersObj)
             
             if (peers.length === 0) {
                 peerList.innerHTML = '<div class="peer-item">No peers connected</div>'
             } else {
-                peerList.innerHTML = peers.map(peerId => 
-                    `<div class="peer-item">${peerId}</div>`
-                ).join('')
+                peerList.innerHTML = peers.map(peerId => {
+                    const shortId = peerId.substring(0, 4)
+                    const peerName = peerNames.get(peerId) || 'Unknown'
+                    return `<div class="peer-item">[${shortId}] ${peerName}</div>`
+                }).join('')
             }
         }
         
         function updateStatus() {
-            const peersObj = room ? room.getPeers() : {}
-            document.getElementById('peer-count').textContent = Object.keys(peersObj).length
-            document.getElementById('messages-sent').textContent = stats.messagesSent
-            document.getElementById('messages-received').textContent = stats.messagesReceived
-            document.getElementById('connection-quality').textContent = room ? 'Good' : 'Unknown'
+            const peersObj = networkManager ? networkManager.getPeers() : {}
+            const networkStats = networkManager ? networkManager.getStats() : { messagesSent: 0, messagesReceived: 0, peerCount: 0 }
+            const currentProvider = networkManager ? networkManager.getCurrentProvider() : null
+            
+            document.getElementById('peer-count').textContent = networkStats.peerCount
+            document.getElementById('messages-sent').textContent = networkStats.messagesSent
+            document.getElementById('messages-received').textContent = networkStats.messagesReceived
+            document.getElementById('connection-quality').textContent = networkManager && room ? 'Good' : 'Unknown'
+        }
+        
+        // Peer name management functions
+        window.generateNewPeerName = function() {
+            const oldName = currentPeerName
+            currentPeerName = peerNameGenerator.generateName()
+            
+            document.getElementById('peer-name').textContent = currentPeerName
+            
+            if (oldName) {
+                peerNameGenerator.releaseName(oldName)
+                addLog(`Peer name changed from "${oldName}" to "${currentPeerName}"`, 'info')
+            } else {
+                addLog(`Generated new peer name: "${currentPeerName}"`, 'success')
+            }
+            
+            updateStatus()
+        }
+        
+        window.showPeerNameStats = function() {
+            const stats = peerNameGenerator.getStats()
+            addLog('=== Peer Name Statistics ===', 'success')
+            addLog(`Total possible combinations: ${stats.totalPossible}`)
+            addLog(`Names used: ${stats.usedCount}`)
+            addLog(`Names available: ${stats.availableCount}`)
+            addLog(`Usage: ${stats.usagePercentage}%`)
+            addLog(`Current name: "${currentPeerName}"`)
         }
         
         // Initialize demo
         addLog('Working Multiplayer Demo initialized', 'success')
         addLog('Select a network provider and create/join a room to start', 'info')
+        
+        // Generate initial peer name
+        generateNewPeerName()
+        
         updateStatus()
         
         // Auto-refresh status
