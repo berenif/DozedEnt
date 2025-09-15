@@ -1,6 +1,6 @@
 // Environmental Interaction Animations
 // Provides animations for interactive objects in the game world
-import { randFloat, randInt, randChoice, randRange } from '../utils/rng.js'
+import { randFloat, randInt, randChoice, randRange, setGlobalSeed } from '../utils/rng.js'
 
 export class EnvironmentalObject {
     constructor(x, y, type = 'generic') {
@@ -11,6 +11,9 @@ export class EnvironmentalObject {
         this.animationTime = 0
         this.interactionRadius = 50
         this.activated = false
+        
+        // Ensure RNG is seeded for deterministic behavior
+        this.initializeRNG()
         
         // Animation properties
         this.scale = 1
@@ -115,6 +118,13 @@ export class EnvironmentalObject {
                 this.collectAnimation = 0
                 break
         }
+    }
+    
+    initializeRNG() {
+        // Initialize RNG with a seed based on object position and type
+        // This ensures deterministic behavior for environmental effects
+        const seed = this.x * 1000 + this.y + this.type.charCodeAt(0)
+        setGlobalSeed(seed)
     }
     
     update(deltaTime, player = null) {

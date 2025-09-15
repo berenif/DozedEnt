@@ -11,6 +11,7 @@ export class ComboSystem {
         this.comboMultiplier = 1
         this.totalHits = 0
         this.lastInputTime = 0
+        this.inputTimes = [] // Initialize inputTimes array
         this.specialMoveBuffer = []
         this.bufferTime = options.bufferTime || 0.2
         
@@ -167,6 +168,7 @@ export class ComboSystem {
         
         // Add move to current combo
         this.currentCombo.push(move)
+        this.inputTimes.push(now) // Track input time
         this.lastInputTime = now
         this.comboTimer = this.comboWindow
         
@@ -391,7 +393,23 @@ export class ComboSystem {
     getMoveProgress() {
         // This should be connected to animation system
         // Returns normalized time (0-1) of current move animation
-        return 0.5 // Placeholder
+        if (!this.currentMove || !this.animationSystem) {
+            return 0
+        }
+        
+        // Try to get progress from animation system
+        if (typeof this.animationSystem.getAnimationProgress === 'function') {
+            return this.animationSystem.getAnimationProgress(this.currentMove)
+        }
+        
+        // Fallback: calculate based on time since combo started
+        if (this.inputTimes.length > 0) {
+            const timeSinceStart = (Date.now() - this.inputTimes[this.inputTimes.length - 1]) / 1000
+            const estimatedDuration = 1.0 // Default animation duration
+            return Math.min(timeSinceStart / estimatedDuration, 1)
+        }
+        
+        return 0
     }
 
     // Helper methods for UI
@@ -423,6 +441,7 @@ export class ComboSystem {
         this.isInCombo = false
         this.currentMove = null
         this.specialMoveBuffer = []
+        this.inputTimes = []
     }
 
     // Set player facing for directional inputs
@@ -438,6 +457,11 @@ export class ComboSystem {
     // Set stamina for stamina-based combos
     setStamina(stamina) {
         this.stamina = stamina
+    }
+
+    // Set animation system reference for progress tracking
+    setAnimationSystem(animationSystem) {
+        this.animationSystem = animationSystem
     }
 }
 

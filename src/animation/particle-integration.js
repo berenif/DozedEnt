@@ -262,12 +262,12 @@ export class AnimationParticleIntegration {
         } else if (config.spread >= 360) {
             // Full circle burst
             return (index / total) * Math.PI * 2
-        } 
+        } else {
             // Cone spread
             const spreadRad = (config.spread * Math.PI) / 180
             const offset = (Math.random() - 0.5) * spreadRad
             return baseAngle + offset
-        
+        }
     }
 
     calculateParticleSpeed(config, options) {
@@ -403,8 +403,8 @@ export class AnimationParticleIntegration {
 
     subscribeToAnimationEvent(animator, eventName, effectName) {
         // This assumes the animator has an event system
-        // We'll need to implement this in the animation system
-        if (animator.on) {
+        // Check if animator has the on method before subscribing
+        if (animator && typeof animator.on === 'function') {
             animator.on(eventName, (data) => {
                 this.triggerEffect(
                     effectName,
@@ -413,6 +413,8 @@ export class AnimationParticleIntegration {
                     data.options || {}
                 )
             })
+        } else {
+            console.warn(`Animator does not have event system (on method) for event: ${eventName}`)
         }
     }
 
