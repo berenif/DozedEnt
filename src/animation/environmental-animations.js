@@ -1,6 +1,6 @@
 // Environmental Interaction Animations
 // Provides animations for interactive objects in the game world
-import { randFloat, randInt, randChoice, randRange, setGlobalSeed } from '../utils/rng.js'
+import { createRngStream } from '../utils/rng.js'
 
 export class EnvironmentalObject {
     constructor(x, y, type = 'generic') {
@@ -12,7 +12,7 @@ export class EnvironmentalObject {
         this.interactionRadius = 50
         this.activated = false
         
-        // Ensure RNG is seeded for deterministic behavior
+        // Create per-object RNG stream derived from global seed
         this.initializeRNG()
         
         // Animation properties
@@ -121,10 +121,10 @@ export class EnvironmentalObject {
     }
     
     initializeRNG() {
-        // Initialize RNG with a seed based on object position and type
-        // This ensures deterministic behavior for environmental effects
-        const seed = this.x * 1000 + this.y + this.type.charCodeAt(0)
-        setGlobalSeed(seed)
+        // Create a unique stream name for this object based on position and type
+        // This derives from the global seed without resetting it
+        this.streamName = `env:${this.type}:${Math.floor(this.x)}:${Math.floor(this.y)}`
+        this.rng = createRngStream(this.streamName)
     }
     
     update(deltaTime, player = null) {
@@ -302,7 +302,7 @@ export class EnvironmentalObject {
             this.flameHeight = 20 + Math.sin(this.animationTime * 5) * 3
             
             // Occasional spark
-            if (randFloat('env:torch:spark') < 0.01) {
+            if (this.rng.float() < 0.01) {
                 this.particleEmitRate = 2
             }
             
@@ -390,7 +390,7 @@ export class EnvironmentalObject {
         this.spinRotation += deltaTime * 2
         
         // Sparkle effect
-        if (randFloat('env:collectible:sparkle') < 0.02) {
+        if (this.rng.float() < 0.02) {
             this.particleEmitRate = 1
         }
         
@@ -484,16 +484,16 @@ export class EnvironmentalObject {
     generateLoot() {
         // Generate random loot for chests
         return {
-            gold: 50 + randInt(100, 'env:loot:gold'),
-            items: randChoice(['potion', 'key', 'scroll'], 'env:loot:item')
+            gold: 50 + this.rng.int(100),
+            items: this.rng.choice(['potion', 'key', 'scroll'])
         }
     }
     
     generateDrops() {
         // Generate drops for breakable objects
         return {
-            gold: 5 + randInt(20, 'env:drops:gold'),
-            items: (randFloat('env:drops:item') > 0.7) ? ['potion'] : []
+            gold: 5 + this.rng.int(20),
+            items: (this.rng.float() > 0.7) ? ['potion'] : []
         }
     }
 }
@@ -505,6 +505,9 @@ export class GameOverAnimation {
         this.phase = 'intro' // intro, main, outro
         this.time = 0
         this.elements = []
+        
+        // Create per-instance RNG stream for confetti generation
+        this.rng = createRngStream(`gameover:${type}:${Date.now()}`)
         
         if (type === 'victory') {
             this.setupVictoryElements()
@@ -635,15 +638,15 @@ export class GameOverAnimation {
         const confetti = []
         for (let i = 0; i < count; i++) {
             confetti.push({
-                x: randRange(-400, 400, `env:confetti:${i}:x`),
-                y: -50 - randRange(0, 200, `env:confetti:${i}:y`),
-                speed: 100 + randRange(0, 100, `env:confetti:${i}:spd`),
-                sway: randRange(0, 2, `env:confetti:${i}:sway`),
-                phase: randRange(0, Math.PI * 2, `env:confetti:${i}:phase`),
-                rotation: randRange(0, Math.PI * 2, `env:confetti:${i}:rot`),
-                rotSpeed: randRange(-5, 5, `env:confetti:${i}:rotSpd`),
-                color: randChoice(['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'], `env:confetti:${i}:color`),
-                size: 10 + randRange(0, 10, `env:confetti:${i}:size`)
+                x: this.rng.range(-400, 400),
+                y: -50 - this.rng.range(0, 200),
+                speed: 100 + this.rng.range(0, 100),
+                sway: this.rng.range(0, 2),
+                phase: this.rng.range(0, Math.PI * 2),
+                rotation: this.rng.range(0, Math.PI * 2),
+                rotSpeed: this.rng.range(-5, 5),
+                color: this.rng.choice(['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']),
+                size: 10 + this.rng.range(0, 10)
             })
         }
         return confetti
