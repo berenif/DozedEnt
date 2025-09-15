@@ -116,8 +116,9 @@ export class SoundSystem {
     if (this.currentMusic) {
       try { 
         this.currentMusic.stop() 
-      } catch (_) {
+      } catch (stopError) {
         // Ignore stop errors on already stopped audio
+        console.debug('Audio stop error (expected for already stopped audio):', stopError.message);
       }
     }
 
@@ -151,8 +152,9 @@ export class SoundSystem {
     if (this.currentMusic) {
       try { 
         this.currentMusic.stop() 
-      } catch (_) {
+      } catch (stopError) {
         // Ignore stop errors on already stopped audio
+        console.debug('Audio stop error (expected for already stopped audio):', stopError.message);
       }
     }
     this.currentMusic = null

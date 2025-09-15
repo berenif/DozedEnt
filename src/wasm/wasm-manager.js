@@ -109,8 +109,10 @@ export class WasmManager {
       const resolveUrl = (p) => {
         try {
           return new URL(p, document.baseURI).toString();
-        } catch (_) {
-          return p; // fallback to raw if URL construction fails (non-browser env)
+        } catch (urlError) {
+          // fallback to raw if URL construction fails (non-browser env)
+          console.debug('URL construction failed, using raw path:', urlError.message);
+          return p;
         }
       };
 
@@ -296,8 +298,9 @@ export class WasmManager {
       globalThis.runSeedForVisuals = this.runSeed;
       try { 
         setVisualRngSeed(this.runSeed); 
-      } catch {
+      } catch (seedError) {
         // Ignore visual RNG seed setting errors
+        console.debug('Visual RNG seed setting failed:', seedError.message);
       }
       
       // Verify initialization by checking basic functions
@@ -926,7 +929,17 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.get_choice_id !== 'function') {
       return 0;
     }
-    return this.exports.get_choice_id(index);
+    
+    // Validate index bounds
+    const choiceCount = this.getChoiceCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < choiceCount ? index : 0;
+    
+    try {
+      return this.exports.get_choice_id(safeIndex);
+    } catch (error) {
+      console.error(`Error getting choice ID at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**
@@ -938,7 +951,17 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.get_choice_type !== 'function') {
       return 0;
     }
-    return this.exports.get_choice_type(index);
+    
+    // Validate index bounds
+    const choiceCount = this.getChoiceCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < choiceCount ? index : 0;
+    
+    try {
+      return this.exports.get_choice_type(safeIndex);
+    } catch (error) {
+      console.error(`Error getting choice type at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**
@@ -950,7 +973,17 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.get_choice_rarity !== 'function') {
       return 0;
     }
-    return this.exports.get_choice_rarity(index);
+    
+    // Validate index bounds
+    const choiceCount = this.getChoiceCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < choiceCount ? index : 0;
+    
+    try {
+      return this.exports.get_choice_rarity(safeIndex);
+    } catch (error) {
+      console.error(`Error getting choice rarity at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**
@@ -962,7 +995,17 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.get_choice_tags !== 'function') {
       return 0;
     }
-    return this.exports.get_choice_tags(index);
+    
+    // Validate index bounds
+    const choiceCount = this.getChoiceCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < choiceCount ? index : 0;
+    
+    try {
+      return this.exports.get_choice_tags(safeIndex);
+    } catch (error) {
+      console.error(`Error getting choice tags at index ${safeIndex}:`, error);
+      return 0;
+    }
   }
 
   /**
@@ -1140,7 +1183,10 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.damage_miniboss !== 'function') {
       return;
     }
-    this.exports.damage_miniboss(amount);
+    
+    // Validate damage amount
+    const safeAmount = Number.isFinite(amount) && amount >= 0 ? amount : 0;
+    this.exports.damage_miniboss(safeAmount);
   }
 
   // ===== CASHOUT PHASE =====
@@ -1186,7 +1232,16 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.buy_shop_item !== 'function') {
       return;
     }
-    this.exports.buy_shop_item(index);
+    
+    // Validate shop item index
+    const shopItemCount = this.getShopItemCount();
+    const safeIndex = Number.isInteger(index) && index >= 0 && index < shopItemCount ? index : 0;
+    
+    try {
+      this.exports.buy_shop_item(safeIndex);
+    } catch (error) {
+      console.error(`Error buying shop item at index ${safeIndex}:`, error);
+    }
   }
 
   /**
@@ -1313,7 +1368,8 @@ export class WasmManager {
     }
     try {
       return this.exports.get_is_rolling() === 1;
-    } catch {
+    } catch (rollingError) {
+      console.debug('Error checking rolling state:', rollingError.message);
       return false;
     }
   }
