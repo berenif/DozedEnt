@@ -43,7 +43,7 @@ export class AnimationEventSystem {
 
     // Remove event listener
     off(eventName, callback) {
-        if (!this.listeners.has(eventName)) {return}
+        if (!this.listeners.has(eventName)) {return false}
         
         const listeners = this.listeners.get(eventName)
         for (const listener of listeners) {
@@ -56,6 +56,8 @@ export class AnimationEventSystem {
         if (listeners.size === 0) {
             this.listeners.delete(eventName)
         }
+        
+        return true
     }
 
     // Emit event
@@ -138,7 +140,9 @@ export class AnimationEventSystem {
                     ...eventData
                 })
             }
+            return true
         }
+        return false
     }
 
     // Register state transition event
@@ -155,6 +159,7 @@ export class AnimationEventSystem {
     // Trigger state transition events
     triggerStateEvents(fromState, toState) {
         const key = `${fromState}_to_${toState}`
+        let hasSpecificEvents = false
         
         if (this.stateEvents.has(key)) {
             const events = this.stateEvents.get(key)
@@ -166,10 +171,13 @@ export class AnimationEventSystem {
                     ...eventData
                 })
             }
+            hasSpecificEvents = true
         }
         
         // Also trigger generic state change event
         this.emit('stateChange', { fromState, toState })
+        
+        return hasSpecificEvents
     }
 
     // Add global listener (receives all events)

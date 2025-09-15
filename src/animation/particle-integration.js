@@ -1,11 +1,16 @@
 // Particle System Integration for Animation Effects
 // Provides seamless integration between animation system and particle effects
 
+import { randFloat, randRange, syncSeedFromWasm } from '../utils/rng.js'
+
 export class AnimationParticleIntegration {
     constructor(particleSystem) {
         this.particleSystem = particleSystem
         this.activeEffects = new Map()
         this.effectConfigs = this.createEffectConfigs()
+        
+        // Sync RNG seed from WASM for deterministic particle effects
+        syncSeedFromWasm()
     }
 
     createEffectConfigs() {
@@ -262,18 +267,18 @@ export class AnimationParticleIntegration {
         } else if (config.spread >= 360) {
             // Full circle burst
             return (index / total) * Math.PI * 2
-        } 
+        } else {
             // Cone spread
             const spreadRad = (config.spread * Math.PI) / 180
-            const offset = (Math.random() - 0.5) * spreadRad
+            const offset = (randFloat('particle_angle') - 0.5) * spreadRad
             return baseAngle + offset
-        
+        }
     }
 
     calculateParticleSpeed(config, options) {
         const baseSpeed = options.speed || config.speed
         const variation = options.speedVariation || 0.2
-        return baseSpeed * (1 + (Math.random() - 0.5) * variation)
+        return baseSpeed * (1 + (randFloat('particle_speed') - 0.5) * variation)
     }
 
     // Update active particle effects
@@ -443,7 +448,7 @@ export class AnimationParticleIntegration {
 
     // Utility functions
     randomRange(min, max) {
-        return min + Math.random() * (max - min)
+        return randRange(min, max, 'particle_size')
     }
 
     clear() {

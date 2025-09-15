@@ -55,6 +55,42 @@ export function setGlobalSeed(seed) {
   streams.clear()
 }
 
+/** Sync seed from WASM if available */
+export function syncSeedFromWasm() {
+  try {
+    // Try to get seed from WASM
+    if (globalThis.wasmExports?.get_game_seed) {
+      const wasmSeed = globalThis.wasmExports.get_game_seed()
+      if (typeof wasmSeed === 'number' && Number.isFinite(wasmSeed)) {
+        setGlobalSeed(BigInt(Math.floor(wasmSeed)))
+        return true
+      }
+    }
+    
+    // Try alternative WASM seed functions
+    if (globalThis.wasmExports?.get_random_seed) {
+      const wasmSeed = globalThis.wasmExports.get_random_seed()
+      if (typeof wasmSeed === 'number' && Number.isFinite(wasmSeed)) {
+        setGlobalSeed(BigInt(Math.floor(wasmSeed)))
+        return true
+      }
+    }
+    
+    // Try to get current time as seed from WASM
+    if (globalThis.wasmExports?.get_time_seconds) {
+      const timeSeed = globalThis.wasmExports.get_time_seconds()
+      if (typeof timeSeed === 'number' && Number.isFinite(timeSeed)) {
+        setGlobalSeed(BigInt(Math.floor(timeSeed * 1000000))) // Convert to microseconds for better entropy
+        return true
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to sync seed from WASM:', error)
+  }
+  
+  return false
+}
+
 /** Float in [0,1) from a named stream */
 export function randFloat(stream = 'default') {
   return getStream(stream).nextFloat01()
@@ -88,6 +124,6 @@ export function createRngStream(name) {
   }
 }
 
-export default { setGlobalSeed, randFloat, randInt, randChoice, randRange, createRngStream }
+export default { setGlobalSeed, syncSeedFromWasm, randFloat, randInt, randChoice, randRange, createRngStream }
 
 
