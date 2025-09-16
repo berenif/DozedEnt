@@ -80,7 +80,7 @@ jobs:
         run: npm ci
         
       - name: Build project and prepare docs
-        run: bash ./deploy.sh
+        run: bash tools/scripts/deploy.sh
         
       - name: Validate GitHub Pages deployment
         run: |
@@ -93,7 +93,7 @@ jobs:
           ls -la dist/ || echo "dist folder not found"
           echo ""
           echo "🚀 Running validation script..."
-          node scripts/validate-github-pages.js
+          node tools/scripts/validate-github-pages.js
         
       - name: Check critical files
         run: |

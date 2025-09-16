@@ -22,7 +22,7 @@ console.log(chalk.blue.bold('\n🔍 Validating GitHub Pages Deployment...\n'));
 // Check if root directory is ready for deployment
 function checkDocsFolder() {
   console.log('Checking root directory for deployment...');
-  if (!fs.existsSync(docsDir)) {
+  if (!fs.existsSync(rootDir)) {
     errors.push('❌ Root directory does not exist.');
     return false;
   }
@@ -33,7 +33,7 @@ function checkDocsFolder() {
 // Check for index.html
 function checkIndexFile() {
   console.log('Checking index.html...');
-  const indexPath = path.join(docsDir, 'index.html');
+  const indexPath = path.join(rootDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
     errors.push('❌ index.html is missing');
     return false;
@@ -63,7 +63,7 @@ function checkIndexFile() {
 // Check for .nojekyll file
 function checkNoJekyll() {
   console.log('Checking .nojekyll file...');
-  const nojekyllPath = path.join(docsDir, '.nojekyll');
+  const nojekyllPath = path.join(rootDir, '.nojekyll');
   if (!fs.existsSync(nojekyllPath)) {
     errors.push('❌ .nojekyll file is missing in docs folder');
     return false;
@@ -75,7 +75,7 @@ function checkNoJekyll() {
 // Check for built assets
 function checkBuiltAssets() {
   console.log('Checking built assets...');
-  const docsDistPath = path.join(docsDir, 'dist');
+  const docsDistPath = path.join(rootDir, 'dist');
   
   if (!fs.existsSync(docsDistPath)) {
     errors.push('❌ dist folder is missing in root');
@@ -120,7 +120,7 @@ function checkProjectFiles() {
   
   const missingFiles = [];
   essentialFiles.forEach(file => {
-    const filePath = path.join(docsDir, file);
+    const filePath = path.join(rootDir, file);
     if (!fs.existsSync(filePath)) {
       missingFiles.push(file);
     }
@@ -140,7 +140,7 @@ function checkSupportingFiles() {
   console.log('Checking supporting files...');
   
   // Check for main site.js if it exists
-  const siteJsPath = path.join(docsDir, 'site.js');
+  const siteJsPath = path.join(rootDir, 'site.js');
   if (fs.existsSync(siteJsPath)) {
     successes.push('✓ Main site.js file is present');
   }
@@ -157,13 +157,12 @@ function checkFileSizes() {
   
   const filesToCheck = [
     'index.html',
-    'complete-game.html',
     'dist/trystero-firebase.min.js'
   ];
   
   const emptyFiles = [];
   filesToCheck.forEach(file => {
-    const filePath = path.join(docsDir, file);
+    const filePath = path.join(rootDir, file);
     if (fs.existsSync(filePath)) {
       const stats = fs.statSync(filePath);
       if (stats.size === 0) {
