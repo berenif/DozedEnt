@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
     <title>DozedEnt - P2P Survival Game</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Game Stylesheets -->
@@ -124,9 +124,12 @@
 
     <!-- Orientation Overlay (Mobile) -->
     <div id="orientation-overlay">
-        <h2>🎮 DozedEnt</h2>
-        <p>Please rotate your device to landscape mode for the best gaming experience.</p>
-        <button id="overlay-start">Start Game</button>
+        <div class="overlay-content">
+            <div class="rotation-icon">📱</div>
+            <h2>🎮 DozedEnt</h2>
+            <p>Please rotate your device to landscape mode for the best gaming experience.</p>
+            <button id="overlay-start">Start Game</button>
+        </div>
     </div>
 
     <!-- Phase Overlays -->
