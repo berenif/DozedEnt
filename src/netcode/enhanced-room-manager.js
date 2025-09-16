@@ -980,24 +980,39 @@ export class EnhancedRoomManager {
    * ID Generation helpers
    */
   generateRoomId() {
-    return `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Use deterministic ID generation based on time and counter
+    const counter = (this.roomCounter = (this.roomCounter || 0) + 1)
+    const timeId = Date.now().toString(36)
+    const counterId = counter.toString(36)
+    return `room_${timeId}_${counterId}`
   }
   
   generateRoomCode() {
+    // Use deterministic room code generation based on time
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const timeSeed = Date.now()
     let code = ''
     for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length))
+      const charIndex = Math.floor((timeSeed + i) % chars.length)
+      code += chars.charAt(charIndex)
     }
     return code
   }
   
   generatePlayerId() {
-    return `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Use deterministic ID generation based on time and counter
+    const counter = (this.playerCounter = (this.playerCounter || 0) + 1)
+    const timeId = Date.now().toString(36)
+    const counterId = counter.toString(36)
+    return `player_${timeId}_${counterId}`
   }
   
   generateMessageId() {
-    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Use deterministic ID generation based on time and counter
+    const counter = (this.messageCounter = (this.messageCounter || 0) + 1)
+    const timeId = Date.now().toString(36)
+    const counterId = counter.toString(36)
+    return `msg_${timeId}_${counterId}`
   }
   
   /**

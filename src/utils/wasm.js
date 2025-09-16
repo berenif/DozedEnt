@@ -15,8 +15,9 @@ const getInstantiate = async (source, importObject) => {
     try {
       const resForStreaming = typeof source.clone === 'function' ? source.clone() : source
       return await WebAssembly.instantiateStreaming(resForStreaming, importObject)
-    } catch (_) {
+    } catch (streamingError) {
       // Fallback for incorrect MIME types
+      console.debug('WebAssembly streaming failed, falling back to array buffer:', streamingError.message);
       const resForArray = typeof source.clone === 'function' ? source.clone() : source
       const bytes = await resForArray.arrayBuffer()
       return await WebAssembly.instantiate(bytes, importObject)

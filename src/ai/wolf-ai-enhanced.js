@@ -1045,12 +1045,21 @@ export class ScentTrackingSystem {
         )
     }
     
+    // Get deterministic wind seed based on time and position
+    getDeterministicWindSeed(deltaTime) {
+        // Use time-based seed for deterministic wind variation
+        const timeSeed = (Date.now() * 0.001) % 1
+        const positionSeed = ((this.wind.direction.x + this.wind.direction.y) * 1000) % 1
+        return (timeSeed + positionSeed) % 1
+    }
+
     // Update wind system
     updateWind(deltaTime) {
-        // Add some variability to wind
+        // Add some variability to wind using deterministic seed
         const variance = this.wind.variability
-        this.wind.direction.x += (Math.random() - 0.5) * variance * deltaTime
-        this.wind.direction.y += (Math.random() - 0.5) * variance * deltaTime
+        const windSeed = this.getDeterministicWindSeed(deltaTime)
+        this.wind.direction.x += (windSeed - 0.5) * variance * deltaTime
+        this.wind.direction.y += (windSeed - 0.5) * variance * deltaTime
         
         // Normalize wind direction
         const length = Math.sqrt(
@@ -1287,18 +1296,28 @@ export class EnhancedWolfAISystem {
         })
     }
     
+    // Get deterministic vocalization seed based on wolf state and time
+    getDeterministicVocalizationSeed(wolf, player) {
+        // Use wolf ID, time, and state for deterministic vocalization timing
+        const wolfId = wolf.id || 0
+        const timeSeed = (Date.now() * 0.001) % 1
+        const stateSeed = wolf.state.charCodeAt(0) / 255
+        return (wolfId + timeSeed + stateSeed) % 1
+    }
+
     // Check and trigger vocalizations
     checkVocalizations(wolf, player) {
         const distanceToPlayer = this.getDistance(wolf.position, player.position)
+        const vocalizationSeed = this.getDeterministicVocalizationSeed(wolf, player)
         
-        // Vocalize based on situation
-        if (wolf.state === 'attacking' && Math.random() < 0.01) {
+        // Vocalize based on situation using deterministic seed
+        if (wolf.state === 'attacking' && vocalizationSeed < 0.01) {
             this.vocalizationSystem.vocalize(wolf, 'GROWL_AGGRESSIVE', player.position)
-        } else if (wolf.health < wolf.maxHealth * 0.3 && Math.random() < 0.02) {
+        } else if (wolf.health < wolf.maxHealth * 0.3 && vocalizationSeed < 0.02) {
             this.vocalizationSystem.vocalize(wolf, 'WHINE_PAIN')
-        } else if (wolf.isAlpha && wolf.packMembers.length > 2 && Math.random() < 0.005) {
+        } else if (wolf.isAlpha && wolf.packMembers.length > 2 && vocalizationSeed < 0.005) {
             this.vocalizationSystem.vocalize(wolf, 'HOWL_HUNT', player.position)
-        } else if (distanceToPlayer < 100 && Math.random() < 0.01) {
+        } else if (distanceToPlayer < 100 && vocalizationSeed < 0.01) {
             this.vocalizationSystem.vocalize(wolf, 'GROWL_WARNING', player.position)
         }
     }

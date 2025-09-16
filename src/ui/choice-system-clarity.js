@@ -562,13 +562,43 @@ export class ChoiceSystemClarity {
     }
 
     /**
+     * Get deterministic seed for statistics
+     */
+    getDeterministicStatsSeed(choice) {
+        // Use choice ID and time for consistent statistics
+        const choiceId = choice.id || 0
+        const timeSeed = (Date.now() * 0.001) % 1
+        return (choiceId + timeSeed) % 1
+    }
+
+    /**
+     * Get deterministic seed for recommendations
+     */
+    getDeterministicRecommendationSeed() {
+        // Use time-based seed for consistent recommendations
+        return (Date.now() * 0.001) % 1
+    }
+
+    /**
+     * Get deterministic seed for random choice selection
+     */
+    getDeterministicRandomChoiceSeed() {
+        // Use time and choice count for consistent random selection
+        const timeSeed = (Date.now() * 0.001) % 1
+        const countSeed = this.currentChoices.length / 1000
+        return (timeSeed + countSeed) % 1
+    }
+
+    /**
      * Gather statistical data about choice
      */
     gatherStatistics(choice, _wasmData) {
+        // Use deterministic seed for consistent statistics
+        const statsSeed = this.getDeterministicStatsSeed(choice)
         return {
-            pickRate: Math.random() * 100, // Placeholder - would come from analytics
-            winRate: 50 + Math.random() * 40, // Placeholder
-            averageValue: Math.random() * 100, // Placeholder
+            pickRate: statsSeed * 100, // Placeholder - would come from analytics
+            winRate: 50 + statsSeed * 40, // Placeholder
+            averageValue: statsSeed * 100, // Placeholder
             playerLevel: 'Beginner', // Would be determined by player stats
             recommendation: this.generateRecommendation(choice)
         };
@@ -587,7 +617,9 @@ export class ChoiceSystemClarity {
             'Build-defining choice'
         ];
         
-        return recommendations[Math.floor(Math.random() * recommendations.length)];
+        // Use deterministic seed for consistent recommendations
+        const recSeed = this.getDeterministicRecommendationSeed()
+        return recommendations[Math.floor(recSeed * recommendations.length)];
     }
 
     /**
@@ -1592,7 +1624,9 @@ export class ChoiceSystemClarity {
             return;
         }
 
-        const randomIndex = Math.floor(Math.random() * this.currentChoices.length);
+        // Use deterministic seed for consistent random selection
+        const randomSeed = this.getDeterministicRandomChoiceSeed()
+        const randomIndex = Math.floor(randomSeed * this.currentChoices.length);
         const randomChoice = this.currentChoices[randomIndex];
         
         this.selectChoice(randomChoice.id);

@@ -739,7 +739,11 @@ export class ChatSystem {
    * Helper: Generate message ID
    */
   generateMessageId() {
-    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Use deterministic ID generation based on time and counter
+    const counter = (this.messageCounter = (this.messageCounter || 0) + 1)
+    const timeId = Date.now().toString(36)
+    const counterId = counter.toString(36)
+    return `msg_${timeId}_${counterId}`
   }
   
   /**
