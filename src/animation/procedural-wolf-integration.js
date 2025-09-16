@@ -267,20 +267,47 @@ export class ProceduralWolfSystem {
             // Calculate target position relative to alpha using WASM-based deterministic positioning
             const targetOffset = { x: 0, y: 0 }
             
-            if (this.wasmModule && typeof this.wasmModule.get_wolf_pack_position === 'function') {
+            let hasWasmPosition = false
+
+            if (
+                this.wasmModule &&
+                typeof this.wasmModule.get_wolf_pack_position === 'function' &&
+                typeof this.wasmModule.malloc === 'function' &&
+                typeof this.wasmModule.free === 'function' &&
+                this.wasmModule.memory instanceof WebAssembly.Memory
+            ) {
                 // Use WASM-based deterministic positioning
                 const formationType = this.getFormationType(formation)
                 const packSize = wolves.length
                 const wolfId = parseInt(wolf.id) || index
-                
-                // Get deterministic position from WASM
-                const wasmX = new Float32Array(1)
-                const wasmY = new Float32Array(1)
-                this.wasmModule.get_wolf_pack_position(wolfId, formationType, packSize, wasmX, wasmY)
-                
-                targetOffset.x = wasmX[0]
-                targetOffset.y = wasmY[0]
-            } else {
+
+                // Allocate space in WASM memory for two floats (x, y)
+                const floatBytes = Float32Array.BYTES_PER_ELEMENT * 2
+                const ptr = this.wasmModule.malloc(floatBytes)
+
+                if (ptr) {
+                    try {
+                        const wasmView = new Float32Array(this.wasmModule.memory.buffer, ptr, 2)
+                        this.wasmModule.get_wolf_pack_position(
+                            wolfId,
+                            formationType,
+                            packSize,
+                            ptr,
+                            ptr + Float32Array.BYTES_PER_ELEMENT
+                        )
+
+                        targetOffset.x = wasmView[0]
+                        targetOffset.y = wasmView[1]
+                        hasWasmPosition = true
+                    } finally {
+                        this.wasmModule.free(ptr)
+                    }
+                } else {
+                    console.warn('Failed to allocate WASM memory for pack position; falling back to JS calculations')
+                }
+            }
+
+            if (!hasWasmPosition) {
                 // Fallback to JavaScript calculations if WASM not available
                 switch (formation) {
                     case 'line':
