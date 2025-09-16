@@ -249,7 +249,13 @@ export class GameStateManager {
 
     // Update game phase (maintain compatibility with legacy property)
     const safePhase = Number.isFinite(playerState.phase) ? playerState.phase : this.phaseState.currentPhase;
-    this.phaseState.currentPhase = safePhase;
+    const previousPhase = this.phaseState.currentPhase;
+
+    if (safePhase !== previousPhase) {
+      this.phaseState.currentPhase = safePhase;
+      this.emit('phaseChanged', safePhase);
+    }
+
     this.currentPhase = safePhase;
 
     // Update camera to follow player
