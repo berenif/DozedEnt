@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Install PowerShell
-        uses: pwsh/setup-pwsh@v2
+        uses: microsoft/setup-powershell@v1
         
       - name: Build docs
         run: npm run build:docs

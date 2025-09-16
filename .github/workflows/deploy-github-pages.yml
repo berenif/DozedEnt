@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install PowerShell
+        uses: microsoft/setup-powershell@v1
+      
       - name: Clone emsdk
         run: git clone https://github.com/emscripten-core/emsdk.git
         
