@@ -37,6 +37,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install PowerShell
+        run: |
+          # Install PowerShell Core on Ubuntu
+          wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+          pwsh --version
+      
       - name: Clone emsdk
         run: git clone https://github.com/emscripten-core/emsdk.git
         

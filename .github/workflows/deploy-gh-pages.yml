@@ -37,9 +37,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Install PowerShell
-        uses: pwsh/setup-pwsh@v2
-      
       - name: Build project and prepare docs
         run: npm run build:docs
         
