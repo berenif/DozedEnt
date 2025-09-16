@@ -219,10 +219,24 @@ export class GameStateManager {
 
     // Get all state in one batched call
     const playerState = this.wasmManager.getPlayerState();
-    
-    // Update player state
-    this.playerState.x = playerState.x;
-    this.playerState.y = playerState.y;
+    if (!playerState || typeof playerState !== 'object') {
+      console.warn('Invalid player state received from WASM:', playerState);
+      return;
+    }
+
+    const safeX = Number.isFinite(playerState.x) ? playerState.x : 0;
+    const safeY = Number.isFinite(playerState.y) ? playerState.y : 0;
+
+    // Update player state (preserve both normalized and legacy nested structure)
+    this.playerState.x = safeX;
+    this.playerState.y = safeY;
+    if (!this.playerState.position) {
+      this.playerState.position = { x: safeX, y: safeY };
+    } else {
+      this.playerState.position.x = safeX;
+      this.playerState.position.y = safeY;
+    }
+
     this.playerState.stamina = playerState.stamina;
     this.playerState.health = playerState.health;
     this.playerState.gold = playerState.gold;
@@ -232,11 +246,16 @@ export class GameStateManager {
     this.playerState.isRolling = Boolean(playerState.isRolling);
     this.playerState.isBlocking = Boolean(playerState.isBlocking);
     this.playerState.animState = playerState.animState;
-    
-    // Update game phase
-    this.currentPhase = playerState.phase;
-    
+
+    // Update game phase (maintain compatibility with legacy property)
+    const safePhase = Number.isFinite(playerState.phase) ? playerState.phase : this.phaseState.currentPhase;
+    this.phaseState.currentPhase = safePhase;
+    this.currentPhase = safePhase;
+
     // Update camera to follow player
+    this.cameraState.targetPosition.x = safeX;
+    this.cameraState.targetPosition.y = safeY;
+
     this.updateCameraState();
   }
 
