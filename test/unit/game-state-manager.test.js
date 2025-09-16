@@ -299,9 +299,38 @@ describe('GameStateManager', () => {
 
     it('should update camera state', () => {
       gameStateManager.updateCameraState();
-      
+
       // Camera state should be updated based on player position
       expect(gameStateManager.cameraState.targetPosition).to.deep.equal({ x: 0.5, y: 0.5 });
+    });
+
+    it('should synchronize position and phase from batched WASM state', () => {
+      mockWasmManager.isLoaded = true;
+      mockWasmManager.getPlayerState.returns({
+        x: 0.65,
+        y: 0.35,
+        stamina: 75,
+        health: 0.8,
+        gold: 12,
+        essence: 3,
+        velX: 1,
+        velY: -0.5,
+        isRolling: 1,
+        isBlocking: 0,
+        animState: 2,
+        phase: 3
+      });
+
+      gameStateManager.updateStateFromWasm();
+
+      expect(gameStateManager.playerState.x).to.equal(0.65);
+      expect(gameStateManager.playerState.y).to.equal(0.35);
+      expect(gameStateManager.playerState.position).to.deep.equal({ x: 0.65, y: 0.35 });
+      expect(gameStateManager.phaseState.currentPhase).to.equal(3);
+      expect(gameStateManager.currentPhase).to.equal(3);
+      expect(gameStateManager.cameraState.targetPosition).to.deep.equal({ x: 0.65, y: 0.35 });
+      expect(gameStateManager.playerState.isRolling).to.be.true;
+      expect(gameStateManager.playerState.isBlocking).to.be.false;
     });
   });
 
