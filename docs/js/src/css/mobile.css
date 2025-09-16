@@ -80,21 +80,21 @@
     bottom: 20px;
     right: 20px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    max-width: 200px;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 80px;
     align-items: center;
     justify-content: center;
 }
 
 .action-btn {
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -130,14 +130,14 @@
 
 /* Button content styling */
 .btn-icon {
-    font-size: 20px;
-    margin-bottom: 2px;
+    font-size: 16px;
+    margin-bottom: 1px;
     z-index: 2;
     position: relative;
 }
 
 .btn-label {
-    font-size: 10px;
+    font-size: 8px;
     font-weight: bold;
     text-transform: uppercase;
     z-index: 2;
@@ -147,12 +147,12 @@
 
 .btn-key {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    font-size: 8px;
+    top: 1px;
+    right: 1px;
+    font-size: 6px;
     background: rgba(0, 0, 0, 0.5);
-    padding: 1px 3px;
-    border-radius: 3px;
+    padding: 1px 2px;
+    border-radius: 2px;
     z-index: 3;
 }
 
@@ -662,6 +662,193 @@
 }
 
 /* ===========================================
+   RESOURCE PANEL IMPROVEMENTS
+   =========================================== */
+
+/* Organized Resources Panel */
+.resources-panel-mobile {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    min-width: 120px;
+    max-width: 150px;
+}
+
+.resources-panel-mobile .panel-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 4px;
+}
+
+.resource-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding: 4px 0;
+}
+
+.resource-row:last-child {
+    margin-bottom: 0;
+}
+
+.resource-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.resource-label {
+    font-size: 10px;
+    color: #ccc;
+    flex: 1;
+    margin-left: 6px;
+}
+
+.resource-value {
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+    min-width: 30px;
+    text-align: right;
+}
+
+/* Status Effects Panel */
+.status-effects-mobile {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    min-width: 120px;
+    max-width: 150px;
+}
+
+.status-effects-mobile .panel-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 4px;
+}
+
+.status-effect-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 2px 0;
+}
+
+.status-effect-item:last-child {
+    margin-bottom: 0;
+}
+
+.effect-icon-small {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+}
+
+.effect-name-small {
+    font-size: 9px;
+    color: #ccc;
+    flex: 1;
+    margin-left: 4px;
+}
+
+.effect-duration-small {
+    font-size: 8px;
+    color: #888;
+    min-width: 25px;
+    text-align: right;
+}
+
+/* Health and Energy Bars */
+.vitals-mobile {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 8px 16px;
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    min-width: 200px;
+    max-width: 250px;
+}
+
+.vital-bar-mobile {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.vital-bar-mobile:last-child {
+    margin-bottom: 0;
+}
+
+.vital-icon-mobile {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    margin-right: 8px;
+}
+
+.vital-progress-mobile {
+    flex: 1;
+    height: 16px;
+    background: rgba(40, 40, 40, 0.8);
+    border: 1px solid rgba(100, 100, 100, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.vital-fill-mobile {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 8px;
+}
+
+.health-fill-mobile {
+    background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+}
+
+.stamina-fill-mobile {
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+}
+
+.vital-text-mobile {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    z-index: 1;
+}
+
+/* ===========================================
    ADDITIONAL RESPONSIVE OPTIMIZATIONS
    =========================================== */
 
@@ -884,5 +1071,146 @@
     .mobile-controls.interface-compact #joystick-knob,
     .mobile-controls.interface-minimal #joystick-knob {
         border-width: 1px;
+    }
+}
+
+/* ===========================================
+   MOBILE PANEL RESPONSIVE ADJUSTMENTS
+   =========================================== */
+
+/* Mobile Panel Responsive Adjustments */
+@media (max-width: 480px) {
+    .resources-panel-mobile,
+    .status-effects-mobile {
+        min-width: 100px;
+        max-width: 120px;
+        padding: 8px;
+    }
+    
+    .vitals-mobile {
+        min-width: 180px;
+        max-width: 220px;
+        padding: 6px 12px;
+    }
+    
+    .resource-row,
+    .status-effect-item {
+        margin-bottom: 4px;
+        padding: 2px 0;
+    }
+    
+    .resource-icon,
+    .effect-icon-small {
+        font-size: 14px;
+        width: 16px;
+    }
+    
+    .resource-label,
+    .effect-name-small {
+        font-size: 9px;
+    }
+    
+    .resource-value,
+    .effect-duration-small {
+        font-size: 10px;
+    }
+    
+    .vital-icon-mobile {
+        font-size: 14px;
+        width: 18px;
+    }
+    
+    .vital-progress-mobile {
+        height: 14px;
+    }
+    
+    .vital-text-mobile {
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 360px) {
+    .resources-panel-mobile,
+    .status-effects-mobile {
+        min-width: 90px;
+        max-width: 110px;
+        padding: 6px;
+    }
+    
+    .vitals-mobile {
+        min-width: 160px;
+        max-width: 200px;
+        padding: 4px 10px;
+    }
+    
+    .panel-title {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+    
+    .resource-icon,
+    .effect-icon-small {
+        font-size: 12px;
+        width: 14px;
+    }
+    
+    .resource-label,
+    .effect-name-small {
+        font-size: 8px;
+    }
+    
+    .resource-value,
+    .effect-duration-small {
+        font-size: 9px;
+    }
+}
+
+/* Landscape adjustments for mobile panels */
+@media (max-height: 500px) and (orientation: landscape) {
+    .resources-panel-mobile,
+    .status-effects-mobile {
+        top: 10px;
+        min-width: 100px;
+        max-width: 120px;
+        padding: 6px;
+    }
+    
+    .vitals-mobile {
+        top: 10px;
+        min-width: 180px;
+        max-width: 220px;
+        padding: 4px 12px;
+    }
+    
+    .panel-title {
+        font-size: 10px;
+        margin-bottom: 4px;
+    }
+    
+    .resource-row,
+    .status-effect-item {
+        margin-bottom: 2px;
+        padding: 1px 0;
+    }
+    
+    .vital-bar-mobile {
+        margin-bottom: 4px;
+    }
+    
+    .vital-progress-mobile {
+        height: 12px;
+    }
+    
+    .vital-text-mobile {
+        font-size: 8px;
+    }
+}
+
+/* Hide mobile panels on desktop */
+@media (min-width: 768px) and (pointer: fine) {
+    .resources-panel-mobile,
+    .status-effects-mobile,
+    .vitals-mobile {
+        display: none;
     }
 }
