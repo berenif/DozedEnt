@@ -2163,6 +2163,36 @@ void generate_environment(int biome_type, int seed) {
   g_world_sim.generate_environment(static_cast<BiomeType>(biome_type), static_cast<uint32_t>(seed));
 }
 
+// Get deterministic seed for wolf individualization
+__attribute__((export_name("get_wolf_individual_seed")))
+unsigned int get_wolf_individual_seed(unsigned int wolf_id) {
+  // Generate deterministic seed based on wolf ID and current RNG state
+  return (wolf_id * 1000003u + (unsigned int)g_rng) % 1000000007u;
+}
+
+// Calculate deterministic pack formation position
+__attribute__((export_name("get_wolf_pack_position")))
+void get_wolf_pack_position(unsigned int wolf_id, unsigned int formation_type, unsigned int pack_size, float* x, float* y) {
+  // Use deterministic positioning based on wolf ID and formation type
+  float angle = (wolf_id * 2.0f * 3.14159f) / pack_size;
+  float radius = 2.0f + (formation_type % 3) * 1.0f; // Vary radius by formation type
+  
+  *x = cosf(angle) * radius;
+  *y = sinf(angle) * radius * 0.5f; // Elliptical formation
+}
+
+// Make deterministic social interaction decision
+__attribute__((export_name("should_wolf_socialize")))
+unsigned int should_wolf_socialize(unsigned int wolf_id, float distance, float playfulness) {
+  // Use deterministic decision making based on wolf ID, distance, and personality
+  unsigned int seed = get_wolf_individual_seed(wolf_id);
+  float threshold = 0.3f + playfulness * 0.4f; // Base threshold modified by personality
+  
+  // Use deterministic "random" check
+  unsigned int decision = (seed + (unsigned int)(distance * 1000)) % 1000;
+  return (decision < (unsigned int)(threshold * 1000)) ? 1u : 0u;
+}
+
 
 // Get environment object count
 __attribute__((export_name("get_environment_object_count")))
