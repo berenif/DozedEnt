@@ -1,0 +1,159 @@
+# Source Module Feature Overview
+
+This guide mirrors the `src/` directory so you can quickly map gameplay systems to their owning modules. Each section highlights flagship responsibilities, integration points, and reference files to explore next.
+
+- [AI (`src/ai/`)](#ai-srcai)
+- [Animation (`src/animation/`)](#animation-srcanimation)
+- [Audio (`src/audio/` & `src/sound-system.js`)](#audio-srcaudio--srcsound-systemjs)
+- [Effects (`src/effects/`)](#effects-srceffects)
+- [Game State (`src/game/`)](#game-state-srcgame)
+- [Gameplay Systems (`src/gameplay/`)](#gameplay-systems-srcgameplay)
+- [Entities (`src/gameentity/`)](#entities-srcgameentity)
+- [Input (`src/input/`)](#input-srcinput)
+- [Lobby, Multiplayer & Netcode (`src/lobby/`, `src/multiplayer/`, `src/netcode/`)](#lobby-multiplayer--netcode-srclobby-srcmultiplayer-srcnetcode)
+- [UI (`src/ui/`)](#ui-srcui)
+- [Utilities (`src/utils/`)](#utilities-srcutils)
+- [WASM Integration (`src/wasm/`)](#wasm-integration-srcwasm)
+- [Assets & Media (`src/images/`, `assets/`)](#assets--media-srcimages-assets)
+
+---
+
+## AI (`src/ai/`)
+
+**Focus:** Pack coordination, sensory simulation, and JS↔️WASM bridges for wolf behavior.
+
+- [**Wolf Vocalization & Pack Leadership**](../src/ai/wolf-ai-enhanced.js) implements detailed howl/growl/bark tables, alpha command abilities, and scent tracking complete with wind drift and pack morale loops.【F:src/ai/wolf-ai-enhanced.js†L1-L1341】
+- [**WASM Integration Layer**](../src/ai/wolf-ai-wasm-integration.js) streams vocalization, territory, and scent data from the compiled module, throttles reads to 60 FPS, and forwards cues to audio playback.【F:src/ai/wolf-ai-wasm-integration.js†L1-L141】
+- [**Legacy Behaviour Glue**](../src/ai/wolf-ai.js) remains available for simple demos but new work should prefer the enhanced pipeline.
+
+**Integration notes:** Inject [EnhancedAudioManager](../src/audio/enhanced-audio-manager.js) for real howl playback, wire `WolfAIWASMIntegration` into the [WasmManager](../src/wasm/wasm-manager.js) export set, and feed pack events into UI threat indicators. AI relies on deterministic seeds supplied by `WasmManager.setGlobalSeed()` for reproducible scent trails.
+
+**Further reading:** [`GUIDELINES/AI/WOLF_AI.md`](../GUIDELINES/AI/WOLF_AI.md).
+
+## Animation (`src/animation/`)
+
+**Focus:** Procedural wolves, IK-driven combat moves, and performance tooling.
+
+- [**Enhanced Animation Controller**](../src/animation/enhanced-animation-controller.js) blends combat states with sub-state timings, integrates inverse kinematics, and coordinates camera/audio hooks for each transition.【F:src/animation/enhanced-animation-controller.js†L1-L145】
+- [**Advanced Fur System**](../src/animation/advanced-fur-system.js) drives multi-layer fur strands with deterministic RNG streams, wind fields, and region-specific densities for wolves.【F:src/animation/advanced-fur-system.js†L1-L113】
+- [**Procedural Wolf Body & Physics**](../src/animation/enhanced-wolf-procedural.js) couples body morph targets, gait cycles, and physics constraints to maintain natural poses, while [`wolf-body-physics.js`](../src/animation/wolf-body-physics.js) handles ragdoll recovery.
+- [**Environmental & Particle Integration**](../src/animation/environmental-animations.js) stitches biome ambience, while [`particle-integration.js`](../src/animation/particle-integration.js) syncs VFX emitters with animation events.
+
+**Integration notes:** The controllers expect a [`VisualEffectsManager`](../src/effects/visual-effects-manager.js) instance for particle hooks and [Input Manager](../src/input/input-manager.js) state for combo timing. Tie procedural animation seed streams to `utils/rng.js` to keep wolf appearances deterministic across clients.
+
+**Further reading:** [`GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md`](../GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md).
+
+## Audio (`src/audio/` & `src/sound-system.js`)
+
+**Focus:** Adaptive 3D soundscapes, combat mix, and Web Audio plumbing.
+
+- [**Enhanced Audio Manager**](../src/audio/enhanced-audio-manager.js) establishes category gain stages, resumes contexts after user input, builds a multi-bus audio graph (reverb, compressor, dynamic effects), and reacts to biome/weather updates from the game state.【F:src/audio/enhanced-audio-manager.js†L1-L129】
+- [**Baseline Sound System**](../src/sound-system.js) supplies reusable helpers for decoding audio buffers, routing SFX/music buses, fades, and pitch-randomized one-shots used by both gameplay and UI.【F:src/sound-system.js†L1-L124】
+
+**Integration notes:** Instantiate `EnhancedAudioManager` with the [GameStateManager](../src/game/game-state-manager.js) so adaptive playlists can read current biome/phase data. Inject the class into AI (`WolfVocalizationSystem`) and VFX for synchronized howls, impacts, and slow-motion filters. Web Audio contexts require a user gesture—ensure menu flows forward touch/keyboard events as documented in the manager’s `setupUserInteractionListeners()`.
+
+**Assets:** Audio content is organized under [`assets/audio/`](../assets/audio/) by ambient, music, SFX, UI, and wolf vocalizations.
+
+## Effects (`src/effects/`)
+
+**Focus:** Screen-space polish, combat readability, and biome ambience.
+
+- [**Visual Effects Manager**](../src/effects/visual-effects-manager.js) centralizes camera shake, flash/slow-motion, particle pools, environmental fog/rain/snow, and phase transitions driven by window events.【F:src/effects/visual-effects-manager.js†L1-L132】
+- Sprite assets for block states live beside the manager (`block.png`, `perfect-block.png`) for rapid prototyping.
+
+**Integration notes:** Provide a render canvas and the shared `GameStateManager`. Hook game events (`playerAttack`, `phaseTransition`, etc.) so combat systems automatically trigger VFX. Particle presets align with animation controllers and the HUD threat overlays.
+
+## Game State (`src/game/`)
+
+**Focus:** Deterministic run orchestration and JS-side snapshots.
+
+- [**Game State Manager**](../src/game/game-state-manager.js) keeps canonical JS mirrors of player stats, phase progression, and wolf pack metadata, initializing from WASM exports and delegating persistence/UI wiring.【F:src/game/game-state-manager.js†L1-L116】
+
+**Integration notes:** Call `initialize(wasmManager)` once WASM is ready so seeds, biome selection, and stamina mirror exported state. The manager dynamically loads [`PersistenceManager`](../src/gameplay/persistence-manager.js) and emits `stateInitialized`, `gameStarted`, and `stateUpdated` events consumed by UI, audio, and networking layers.
+
+## Gameplay Systems (`src/gameplay/`)
+
+**Focus:** Persistence, replay, and competitive meta systems.
+
+- [**Replay System**](../src/gameplay/replay-system.js) records deterministic input streams, compresses frame data via a Web Worker, and supports playback with speed controls and analytics counters.【F:src/gameplay/replay-system.js†L1-L104】
+- [**Persistence Manager**](../src/gameplay/persistence-manager.js) coordinates leaderboards, auto-save timers, WASM achievement/stat exports, and event-driven telemetry queues.【F:src/gameplay/persistence-manager.js†L1-L120】
+- [**Leaderboard System**](../src/gameplay/leaderboard-system.js) defines ranking categories, tiers, personal best storage, and cloud sync placeholders for future backends.【F:src/gameplay/leaderboard-system.js†L1-L87】
+
+**Integration notes:** Persistence expects a live `GameStateManager` and `WasmManager.exports` with achievement/stat hooks. UI bindings come from [`src/ui/persistence-ui.js`](../src/ui/persistence-ui.js), and replay capture listens for window events emitted by the main loop. Ensure netcode dispatches `playerInput` and `gameFrameUpdate` events so replays stay authoritative.
+
+## Entities (`src/gameentity/`)
+
+**Focus:** Renderable actors and device-specific controls.
+
+- [**WolfCharacter**](../src/gameentity/wolf-character.js) encapsulates wolf physics, pack roles, deterministic fur coloration, lunge attacks, and animation orchestration driven by WASM state.【F:src/gameentity/wolf-character.js†L1-L103】
+- [**MobileGameControls**](../src/gameentity/controls.js) renders enhanced on-screen controls with gesture detection, haptics, and ripple feedback tied into the shared `InputManager` for deterministic routing.【F:src/gameentity/controls.js†L1-L88】
+
+**Integration notes:** Inject [`WolfAnimationSystem`](../src/animation/wolf-animation.js) and optionally a WASM module into `WolfCharacter` to share skeletal data. For `MobileGameControls`, pass the [`InputManager`](../src/input/input-manager.js) so touch events feed the WASM-first pipeline.
+
+## Input (`src/input/`)
+
+**Focus:** Deterministic input aggregation across keyboard, mobile, and gamepad.
+
+- [**Input Manager**](../src/input/input-manager.js) normalizes device detection, queues inputs per frame, and forwards them to WASM exports like `set_player_input` while exposing debug inspectors.
+- [**Gamepad Manager**](../src/input/gamepad-manager.js) handles hot-plugging, rumble, and device-specific mapping.
+- [**Enhanced Mobile Controls**](../src/input/enhanced-mobile-controls.js) supplies responsive touch layouts, while [`mobile-controls.js`](../src/input/mobile-controls.js) offers a lightweight fallback.
+- [**Integration Example**](../src/input/integration-example.js) demonstrates wiring input, WASM, and UI loops together.
+
+**Integration notes:** Initialize with the shared [`WasmManager`](../src/wasm/wasm-manager.js) so exported setters are available. Mobile overlays expect CSS hooks (`src/css/mobile.css`) and can be toggled via device detection. For onboarding and mapping tables, consult [`src/input/README.md`](../src/input/README.md).
+
+## Lobby, Multiplayer & Netcode (`src/lobby/`, `src/multiplayer/`, `src/netcode/`)
+
+**Focus:** Host-authoritative sessions, rollback simulation, provider abstraction, and community UX.
+
+- [**Room Manager**](../src/lobby/room-manager.js) manages room lifecycle, deterministic ID generation, player identity storage, and friendly error messaging.【F:src/lobby/room-manager.js†L1-L120】
+- [**Spectator System**](../src/multiplayer/spectator-system.js) delivers follow/free/cinematic camera modes, picture-in-picture replays, and spectator UI overlays tied to network player updates.【F:src/multiplayer/spectator-system.js†L1-L88】
+- [**Host Authority Loop**](../src/netcode/host-authority.js) runs the authoritative WASM tick, buffers player inputs deterministically, and streams state snapshots at configurable rates.【F:src/netcode/host-authority.js†L1-L111】
+- [**Rollback Netcode**](../src/netcode/rollback-netcode.js) implements GGPO-style prediction, frame history compression, and multi-stage desync detection for peer-to-peer play.【F:src/netcode/rollback-netcode.js†L1-L107】
+- [**Network Provider Manager**](../src/netcode/network-provider-manager.js) swaps Trystero backends (torrent, Firebase, IPFS, MQTT, Nostr, Supabase) and tracks transport metrics.【F:src/netcode/network-provider-manager.js†L1-L74】
+- Supplementary utilities include [`desync-detection.js`](../src/netcode/desync-detection.js), [`enhanced-multiplayer-sync.js`](../src/netcode/enhanced-multiplayer-sync.js), [`chat-system.js`](../src/netcode/chat-system.js), and provider-specific shims in `*.d.ts` files for type guidance.
+
+**Integration notes:** Netcode layers depend on `RoomManager` events (`onPlayerAction`) and `WasmManager` exports for state serialization. Host authority requires `loadWasm` from [`src/utils/wasm.js`](../src/utils/wasm.js) plus JSON helpers (`utils/utils.js`). When enabling rollback, register `saveState`, `loadState`, and checksum callbacks backed by WASM exports for deterministic recovery.
+
+## UI (`src/ui/`)
+
+**Focus:** Enhanced HUD, accessibility, and performance visibility.
+
+- [**Enhanced UI Manager**](../src/ui/enhanced-ui-manager.js) rebuilds the HUD with stable layouts, prioritized health/stamina zones, ability bars, and progressive disclosure clusters for threat awareness.【F:src/ui/enhanced-ui-manager.js†L1-L109】
+- [**Roguelike HUD**](../src/ui/roguelike-hud.js) provides the fully themed overlay including minimap, status effects, quick inventory, and control reference panels.【F:src/ui/roguelike-hud.js†L1-L104】
+- [**Performance Dashboard**](../src/ui/performance-dashboard.js) renders live frame, memory, WASM-call metrics, and LOD controls backed by profiler/LOD utilities.【F:src/ui/performance-dashboard.js†L1-L91】
+- Additional modules cover combat readability (`combat-ui-optimizer.js`), accessibility (`accessibility-manager.js`, `comprehensive-accessibility.js`), persistence overlays (`persistence-ui.js`), and threat visualization (`threat-awareness-ui.js`).
+
+**Integration notes:** Most UI managers listen for `GameStateManager` events and call into `WasmManager` for stat snapshots. Attach `PerformanceDashboard` after initializing [`globalProfiler`](../src/utils/performance-profiler.js) and `globalLODSystem`. Accessibility helpers reference CSS classes defined in `src/css/`.
+
+## Utilities (`src/utils/`)
+
+**Focus:** Shared infrastructure for determinism, performance, and WASM orchestration.
+
+- [**Deterministic RNG & Visual Seeds**](../src/utils/rng.js) exposes xorshift64* streams for JS-side visuals while syncing seeds from WASM exports.【F:src/utils/rng.js†L1-L84】
+- [**WASM Lazy Loader**](../src/utils/wasm-lazy-loader.js) provides caching, retries, and streaming instantiation for large modules, reporting progress and handling compression heuristics.【F:src/utils/wasm-lazy-loader.js†L1-L88】
+- [**Performance LOD System**](../src/utils/performance-lod-system.js) adaptively tunes rendering detail and entity update frequency based on frame timing targets.【F:src/utils/performance-lod-system.js†L1-L84】
+- [**Deterministic ID Generator**](../src/utils/deterministic-id-generator.js) yields reproducible room/player IDs used throughout lobby and persistence flows.
+- [**WASM Helpers**](../src/utils/wasm.js) wrap `fetch`/`instantiate` flows and string codecs used by host authority and the lazy loader.
+- Supporting modules include profilers (`performance-profiler.js`, `performance-benchmark.js`), error reporters, memory optimizers, and networking fallbacks.
+
+**Integration notes:** Utilities are intended to be singleton/shared instances (e.g., `globalWasmLoader`, `globalMemoryOptimizer`). Import them rather than recreating per system to avoid redundant resource usage.
+
+## WASM Integration (`src/wasm/`)
+
+**Focus:** Core gameplay compiled to WebAssembly and its JS loader.
+
+- [**WasmManager**](../src/wasm/wasm-manager.js) orchestrates lazy loading strategies, seeds JS RNG streams, exposes performance metrics, and falls back to multiple `game.wasm` URLs for GitHub Pages compatibility.【F:src/wasm/wasm-manager.js†L1-L120】
+- C++ sources (`game.cpp`, `game-host.cpp`) plus domain headers (`wolf_vocalization.h`, `scent_tracking.h`, `terrain_hazards.h`, `statistics-system.h`, etc.) define the deterministic simulation exported to JS.【F:src/wasm/game.cpp†L1-L60】【F:src/wasm/wolf_vocalization.h†L1-L60】
+- Generated bindings live under [`src/wasm/generated/`](../src/wasm/generated/) for structured data sharing.
+
+**Integration notes:** Keep gameplay logic within C++—JS modules read state via exports only. Review [`GUIDELINES/BUILD/API.md`](../GUIDELINES/BUILD/API.md) for canonical export signatures before adding new WASM hooks. When updating C++ headers, rebuild `game.wasm` and update `docs/game-host.wasm` as needed.
+
+## Assets & Media (`src/images/`, `assets/`)
+
+**Focus:** Art, audio, and auxiliary data referenced by runtime modules.
+
+- [**Images**](../src/images/) include player sprite atlases (`player-sprites.png/.bmp`), hand reference art, and favicon resources along with editing notes (`player-sprites_instructions.txt`).
+- [**Audio Assets**](../assets/audio/) are grouped by usage (ambient layers, combat SFX, UI cues, wolf vocals) to align with `EnhancedAudioManager` categories.
+- Additional build-time data lives in [`docs/data/`](../docs/data/) for documentation demos and WASM packaging.
+
+**Integration notes:** The asset directories are served statically. When adding new media ensure filenames map to identifiers expected by `EnhancedAudioManager`, `VisualEffectsManager`, or UI modules, and update preload lists if using service workers.

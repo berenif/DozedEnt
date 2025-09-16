@@ -46,6 +46,7 @@
 | Topic | File | Quick Description |
 |-------|------|-------------------|
 | **Quick Reference** | [`QUICK_REFERENCE.md`](./QUICK_REFERENCE.md) | ⭐ Essential info, checklists, and common patterns |
+| **Source Module Overview** | [`docs/src-feature-overview.md`](./docs/src-feature-overview.md) | Directory-by-directory summary of major `src/` systems |
 | **Development Workflow** | [`DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) | ⭐ Complete development cycle and best practices |
 | **Main Architecture** | [`AGENTS.md`](./AGENTS.md) | WASM-first architecture, API reference, build process |
 | **Combat System** | [`5-BUTTON_COMBAT_IMPLEMENTATION.md`](./5-BUTTON_COMBAT_IMPLEMENTATION.md) | Complete 5-button combat implementation |
