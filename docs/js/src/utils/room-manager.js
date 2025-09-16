@@ -3,7 +3,7 @@
  * Handles room creation, listing, joining, and authority management
  */
 
-import { joinRoom as joinNostrRoom, selfId } from './nostr.js'
+import { joinRoom as joinNostrRoom, selfId } from '../netcode/nostr.js'
 import { toJson, fromJson, genId } from './utils.js'
 
 const ROOM_ANNOUNCE_INTERVAL = 5000 // 5 seconds
