@@ -8,8 +8,8 @@ export class WillChangeOptimizer {
     this.activeElements = new Set();
     this.transformingElements = new Map();
     // More conservative budget - browser limit is typically 3x surface area
-    // Using 689037px as mentioned in the error, with 50% safety margin
-    this.memoryBudget = 344518; // Conservative budget for will-change
+    // Using 1079808px as mentioned in the error, with 70% safety margin
+    this.memoryBudget = 323942; // Conservative budget for will-change (30% of limit)
     this.currentUsage = 0;
     
     // Performance monitoring
@@ -36,13 +36,12 @@ export class WillChangeOptimizer {
     
     // Check if we're within budget
     if (this.currentUsage + memoryImpact > this.memoryBudget) {
-      console.warn('⚠️ Will-change budget exceeded, attempting cleanup');
       // Try to free up some memory by disabling oldest elements
       this.cleanupOldestElements();
       
       // Check again after cleanup
       if (this.currentUsage + memoryImpact > this.memoryBudget) {
-        console.warn('⚠️ Will-change budget still exceeded after cleanup, skipping optimization');
+        // Silently skip optimization to avoid console spam
         return;
       }
     }

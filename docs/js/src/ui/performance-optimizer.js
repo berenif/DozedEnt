@@ -275,8 +275,8 @@ export class PerformanceOptimizer {
       this.metrics.fps = 1000 / this.metrics.avgFrameTime;
     }
     
-    // Check for performance issues
-    if (frameTime > this.targets.maxFrameTime * 1.5) {
+    // Check for performance issues (less aggressive threshold)
+    if (frameTime > this.targets.maxFrameTime * 2.5) {
       this.handlePerformanceIssue('frame-time', frameTime);
     }
   }
@@ -310,7 +310,12 @@ export class PerformanceOptimizer {
    * Handle performance issues
    */
   handlePerformanceIssue(type, value) {
-    console.warn(`Performance issue detected: ${type}`, value);
+    // Only log severe performance issues to reduce console spam
+    if (type === 'frame-time' && value > this.targets.maxFrameTime * 3) {
+      console.warn(`Performance issue detected: ${type}`, value);
+    } else if (type !== 'frame-time') {
+      console.warn(`Performance issue detected: ${type}`, value);
+    }
     
     switch (type) {
       case 'frame-time':
@@ -681,8 +686,8 @@ export class PerformanceOptimizer {
     // Style the dashboard
     dashboard.style.cssText = `
       position: fixed;
-      top: 10px;
-      right: 10px;
+      top: 80px;
+      right: 20px;
       background: rgba(0, 0, 0, 0.8);
       color: white;
       padding: 10px;
@@ -691,6 +696,8 @@ export class PerformanceOptimizer {
       font-size: 12px;
       z-index: 10000;
       pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(5px);
     `;
     
     document.body.appendChild(dashboard);

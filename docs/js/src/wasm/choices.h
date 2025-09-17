@@ -92,6 +92,36 @@ static void init_choice_pool() {
   g_choice_pool.choices[g_choice_pool.count++] = {3004, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Uncommon, TAG_FREEZE};
   g_choice_pool.choices[g_choice_pool.count++] = {3005, (unsigned char)ChoiceType::Economy, (unsigned char)ChoiceRarity::Rare, TAG_LIFESTEAL | TAG_DAMAGE};
   g_choice_pool.choices[g_choice_pool.count++] = {3006, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Legendary, TAG_TELEPORT | TAG_LIGHTNING};
+  
+  // Additional Safe choices (Passive/Defensive)
+  g_choice_pool.choices[g_choice_pool.count++] = {1007, (unsigned char)ChoiceType::Passive, (unsigned char)ChoiceRarity::Common, TAG_DEFENSE | TAG_SPEED};
+  g_choice_pool.choices[g_choice_pool.count++] = {1008, (unsigned char)ChoiceType::Defensive, (unsigned char)ChoiceRarity::Common, TAG_STAMINA | TAG_DEFENSE};
+  g_choice_pool.choices[g_choice_pool.count++] = {1009, (unsigned char)ChoiceType::Passive, (unsigned char)ChoiceRarity::Uncommon, TAG_SPEED | TAG_COOLDOWN};
+  g_choice_pool.choices[g_choice_pool.count++] = {1010, (unsigned char)ChoiceType::Defensive, (unsigned char)ChoiceRarity::Uncommon, TAG_DEFENSE | TAG_LIFESTEAL};
+  g_choice_pool.choices[g_choice_pool.count++] = {1011, (unsigned char)ChoiceType::Passive, (unsigned char)ChoiceRarity::Rare, TAG_STAMINA | TAG_DEFENSE | TAG_SPEED};
+  g_choice_pool.choices[g_choice_pool.count++] = {1012, (unsigned char)ChoiceType::Defensive, (unsigned char)ChoiceRarity::Rare, TAG_DEFENSE | TAG_COOLDOWN};
+  g_choice_pool.choices[g_choice_pool.count++] = {1013, (unsigned char)ChoiceType::Passive, (unsigned char)ChoiceRarity::Legendary, TAG_STAMINA | TAG_SPEED | TAG_DEFENSE};
+  g_choice_pool.choices[g_choice_pool.count++] = {1014, (unsigned char)ChoiceType::Defensive, (unsigned char)ChoiceRarity::Legendary, TAG_DEFENSE | TAG_LIFESTEAL | TAG_STAMINA};
+  
+  // Additional Spicy choices (Active/Offensive)
+  g_choice_pool.choices[g_choice_pool.count++] = {2007, (unsigned char)ChoiceType::Active, (unsigned char)ChoiceRarity::Common, TAG_DAMAGE | TAG_COOLDOWN};
+  g_choice_pool.choices[g_choice_pool.count++] = {2008, (unsigned char)ChoiceType::Offensive, (unsigned char)ChoiceRarity::Common, TAG_DAMAGE | TAG_SPEED};
+  g_choice_pool.choices[g_choice_pool.count++] = {2009, (unsigned char)ChoiceType::Active, (unsigned char)ChoiceRarity::Uncommon, TAG_DAMAGE | TAG_FREEZE};
+  g_choice_pool.choices[g_choice_pool.count++] = {2010, (unsigned char)ChoiceType::Offensive, (unsigned char)ChoiceRarity::Uncommon, TAG_DAMAGE | TAG_LIGHTNING};
+  g_choice_pool.choices[g_choice_pool.count++] = {2011, (unsigned char)ChoiceType::Active, (unsigned char)ChoiceRarity::Rare, TAG_DAMAGE | TAG_POISON};
+  g_choice_pool.choices[g_choice_pool.count++] = {2012, (unsigned char)ChoiceType::Offensive, (unsigned char)ChoiceRarity::Rare, TAG_DAMAGE | TAG_BLEED};
+  g_choice_pool.choices[g_choice_pool.count++] = {2013, (unsigned char)ChoiceType::Active, (unsigned char)ChoiceRarity::Legendary, TAG_DAMAGE | TAG_AREA | TAG_PIERCE};
+  g_choice_pool.choices[g_choice_pool.count++] = {2014, (unsigned char)ChoiceType::Offensive, (unsigned char)ChoiceRarity::Legendary, TAG_DAMAGE | TAG_KNOCKBACK | TAG_PULL};
+  
+  // Additional Weird choices (Economy/Utility)
+  g_choice_pool.choices[g_choice_pool.count++] = {3007, (unsigned char)ChoiceType::Economy, (unsigned char)ChoiceRarity::Common, TAG_TREASURE};
+  g_choice_pool.choices[g_choice_pool.count++] = {3008, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Common, TAG_PULL};
+  g_choice_pool.choices[g_choice_pool.count++] = {3009, (unsigned char)ChoiceType::Economy, (unsigned char)ChoiceRarity::Uncommon, TAG_TREASURE | TAG_COOLDOWN};
+  g_choice_pool.choices[g_choice_pool.count++] = {3010, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Uncommon, TAG_PULL | TAG_KNOCKBACK};
+  g_choice_pool.choices[g_choice_pool.count++] = {3011, (unsigned char)ChoiceType::Economy, (unsigned char)ChoiceRarity::Rare, TAG_TREASURE | TAG_LIFESTEAL};
+  g_choice_pool.choices[g_choice_pool.count++] = {3012, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Rare, TAG_TELEPORT | TAG_FREEZE};
+  g_choice_pool.choices[g_choice_pool.count++] = {3013, (unsigned char)ChoiceType::Economy, (unsigned char)ChoiceRarity::Legendary, TAG_TREASURE | TAG_LIFESTEAL | TAG_DAMAGE};
+  g_choice_pool.choices[g_choice_pool.count++] = {3014, (unsigned char)ChoiceType::Utility, (unsigned char)ChoiceRarity::Legendary, TAG_TELEPORT | TAG_PULL | TAG_KNOCKBACK};
 }
 
 // Check if a choice has been taken

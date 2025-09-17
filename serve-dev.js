@@ -16,6 +16,8 @@ const __dirname = path.dirname(__filename);
 
 const PORT = 8081;
 const DOCS_DIR = path.join(__dirname, 'docs');
+const DIST_DIR = path.join(__dirname, 'dist');
+const SRC_DIR = path.join(__dirname, 'src');
 
 // MIME type mapping
 const mimeTypes = {
@@ -78,10 +80,41 @@ const server = http.createServer((req, res) => {
         pathname = 'index.html';
     }
     
-    const filePath = path.join(DOCS_DIR, pathname);
+    // Try to find the file in multiple directories
+    let filePath = null;
+    let baseDir = null;
     
-    // Security check - ensure file is within docs directory
-    if (!filePath.startsWith(DOCS_DIR)) {
+    // Check docs directory first (main game files)
+    const docsPath = path.join(DOCS_DIR, pathname);
+    if (fs.existsSync(docsPath) && fs.statSync(docsPath).isFile()) {
+        filePath = docsPath;
+        baseDir = DOCS_DIR;
+    }
+    // Check dist directory (for trystero-wasm.min.js and other dist files)
+    else if (pathname.startsWith('dist/')) {
+        const distPath = path.join(DIST_DIR, pathname.substring(5)); // Remove 'dist/' prefix
+        if (fs.existsSync(distPath) && fs.statSync(distPath).isFile()) {
+            filePath = distPath;
+            baseDir = DIST_DIR;
+        }
+    }
+    // Check src directory (for wasm.js and other source files)
+    else if (pathname.startsWith('src/')) {
+        const srcPath = path.join(SRC_DIR, pathname.substring(4)); // Remove 'src/' prefix
+        if (fs.existsSync(srcPath) && fs.statSync(srcPath).isFile()) {
+            filePath = srcPath;
+            baseDir = SRC_DIR;
+        }
+    }
+    // Fallback to docs directory
+    else {
+        filePath = docsPath;
+        baseDir = DOCS_DIR;
+    }
+    
+    // Security check - ensure file is within allowed directories
+    const allowedDirs = [DOCS_DIR, DIST_DIR, SRC_DIR];
+    if (!allowedDirs.some(dir => filePath.startsWith(dir))) {
         res.writeHead(403, { 'Content-Type': 'text/plain' });
         res.end('Forbidden');
         return;
@@ -101,7 +134,10 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
     console.log(`🚀 DozedEnt development server running at http://localhost:${PORT}`);
-    console.log(`📁 Serving files from: ${DOCS_DIR}`);
+    console.log(`📁 Serving files from:`);
+    console.log(`   - ${DOCS_DIR} (main game files)`);
+    console.log(`   - ${DIST_DIR} (distribution files)`);
+    console.log(`   - ${SRC_DIR} (source files)`);
     console.log(`🎮 Open http://localhost:${PORT} to play the game`);
     console.log(`⚡ JavaScript modules will be served with proper MIME types`);
     console.log(`\nPress Ctrl+C to stop the server`);

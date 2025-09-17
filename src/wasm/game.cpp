@@ -2707,98 +2707,11 @@ void reset_leaderboard_stats() {
     g_gold = 0.0f;
 }
 
-// Get session statistics
-__attribute__((export_name("get_session_stats")))
-const char* get_session_stats() {
-    static char session_json[512];
-    
-    snprintf(session_json, sizeof(session_json),
-        "{"
-        "\"sessionStartTime\":%llu,"
-        "\"totalPlayTime\":%.2f,"
-        "\"runsCompleted\":%d,"
-        "\"totalScore\":%d,"
-        "\"averageScore\":%.2f,"
-        "\"bestRun\":{\"score\":%d,\"time\":%.2f}"
-        "}",
-        (unsigned long long)time(NULL) - (unsigned long long)g_total_play_time,
-        g_total_play_time,
-        1, // runsCompleted - would need to track this
-        (int)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
-        (float)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
-        (int)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
-        g_total_play_time
-    );
-    
-    return session_json;
-}
+// Session statistics function is already exported from statistics-system.h
 
 // ============================================================================
 // Tutorial System Exports
 // ============================================================================
+// Tutorial functions are already exported from tutorial-system.h
 
-// Get tutorial count
-__attribute__((export_name("get_tutorial_count")))
-uint32_t get_tutorial_count() {
-    return get_tutorial_count();
-}
-
-// Get tutorial info by ID
-__attribute__((export_name("get_tutorial_info")))
-const char* get_tutorial_info(uint32_t tutorialId) {
-    return get_tutorial_info(tutorialId);
-}
-
-// Get current tutorial step info
-__attribute__((export_name("get_current_tutorial_step")))
-const char* get_current_tutorial_step() {
-    return get_current_tutorial_step();
-}
-
-// Get tutorial status
-__attribute__((export_name("get_tutorial_status")))
-const char* get_tutorial_status() {
-    return get_tutorial_status();
-}
-
-// Start tutorial by ID
-__attribute__((export_name("start_tutorial_by_id")))
-void start_tutorial_by_id(uint32_t tutorialId) {
-    start_tutorial_by_id(tutorialId);
-}
-
-// Go to next tutorial step
-__attribute__((export_name("next_tutorial_step_export")))
-void next_tutorial_step_export() {
-    next_tutorial_step_export();
-}
-
-// Go to previous tutorial step
-__attribute__((export_name("previous_tutorial_step_export")))
-void previous_tutorial_step_export() {
-    previous_tutorial_step_export();
-}
-
-// Complete current tutorial
-__attribute__((export_name("complete_tutorial_export")))
-void complete_tutorial_export() {
-    complete_tutorial_export();
-}
-
-// Skip current tutorial
-__attribute__((export_name("skip_tutorial_export")))
-void skip_tutorial_export() {
-    skip_tutorial_export();
-}
-
-// Enable/disable tutorials
-__attribute__((export_name("set_tutorial_enabled")))
-void set_tutorial_enabled(bool enabled) {
-    set_tutorial_enabled(enabled);
-}
-
-// Set tutorial settings
-__attribute__((export_name("set_tutorial_settings")))
-void set_tutorial_settings(bool autoStart, bool showTooltips, bool skipCompleted) {
-    set_tutorial_settings(autoStart, showTooltips, skipCompleted);
-}
+// All tutorial functions are already exported from tutorial-system.h

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DozedEnt Freeze Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .debug-panel {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .status.success { background-color: #2d5a2d; }
+        .status.error { background-color: #5a2d2d; }
+        .status.warning { background-color: #5a5a2d; }
+        .status.info { background-color: #2d2d5a; }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #357abd; }
+        button:disabled { background-color: #666; cursor: not-allowed; }
+        .log {
+            background-color: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 DozedEnt Freeze Debug Tool</h1>
+    
+    <div class="debug-panel">
+        <h2>System Status</h2>
+        <div id="system-status">
+            <div class="status info">Initializing debug tool...</div>
+        </div>
+        
+        <h2>Actions</h2>
+        <button onclick="testWasmLoading()">Test WASM Loading</button>
+        <button onclick="testGameInitialization()">Test Game Initialization</button>
+        <button onclick="testGameStart()">Test Game Start</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>Debug Log</h2>
+        <div id="debug-log" class="log"></div>
+    </div>
+
+    <script type="module">
+        let debugLog = document.getElementById('debug-log');
+        let systemStatus = document.getElementById('system-status');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            debugLog.textContent += logEntry;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            systemStatus.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function clearLog() {
+            debugLog.textContent = '';
+        }
+        
+        // Test WASM loading
+        async function testWasmLoading() {
+            log('🔍 Testing WASM loading...');
+            updateStatus('Testing WASM loading...', 'info');
+            
+            try {
+                // Import the WASM utility function
+                const { loadWasm } = await import('http://localhost:8081/js/src/utils/wasm.js');
+                log('✅ WASM utility imported successfully');
+                
+                // Try to load the WASM file using the proper utility
+                const wasmResult = await loadWasm('http://localhost:8081/game.wasm');
+                log(`✅ WASM file loaded successfully (${wasmResult.memory.buffer.byteLength} bytes)`);
+                log('✅ WASM module instantiated successfully');
+                log(`📋 Available exports: ${Object.keys(wasmResult.exports).join(', ')}`);
+                
+                // Store for potential use
+                window.debugWasmResult = wasmResult;
+                
+                updateStatus('WASM loading successful', 'success');
+                
+            } catch (error) {
+                log(`❌ WASM loading failed: ${error.message}`);
+                log(`Stack trace: ${error.stack}`);
+                updateStatus(`WASM loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test game initialization
+        async function testGameInitialization() {
+            log('🔍 Testing game initialization...');
+            updateStatus('Testing game initialization...', 'info');
+            
+            try {
+                // Import the main game module
+                const { GameApp } = await import('http://localhost:8081/site.js');
+                log('✅ Game module imported successfully');
+                
+                // Create game instance
+                const gameApp = new GameApp();
+                log('✅ Game instance created');
+                
+                // Test initialization
+                const initResult = await gameApp.initialize();
+                if (initResult) {
+                    log('✅ Game initialization successful');
+                    updateStatus('Game initialization successful', 'success');
+                    
+                    // Store for testing
+                    window.debugGameApp = gameApp;
+                } else {
+                    log('⚠️ Game initialization returned false');
+                    updateStatus('Game initialization returned false', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Game initialization failed: ${error.message}`);
+                log(`Stack trace: ${error.stack}`);
+                updateStatus(`Game initialization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test game start
+        async function testGameStart() {
+            log('🔍 Testing game start...');
+            updateStatus('Testing game start...', 'info');
+            
+            if (!window.debugGameApp) {
+                log('❌ No game instance available. Run "Test Game Initialization" first.');
+                updateStatus('No game instance available', 'error');
+                return;
+            }
+            
+            try {
+                // Check if game is initialized
+                if (!window.debugGameApp.isInitialized) {
+                    log('❌ Game not initialized');
+                    updateStatus('Game not initialized', 'error');
+                    return;
+                }
+                
+                log('✅ Game is initialized');
+                
+                // Check WASM status
+                if (!window.debugGameApp.wasmManager?.isLoaded) {
+                    log('❌ WASM not loaded');
+                    updateStatus('WASM not loaded', 'error');
+                    return;
+                }
+                
+                log('✅ WASM is loaded');
+                
+                // Check animated player
+                if (!window.debugGameApp.animatedPlayer) {
+                    log('❌ AnimatedPlayer is null');
+                    updateStatus('AnimatedPlayer is null', 'error');
+                    return;
+                }
+                
+                log('✅ AnimatedPlayer is available');
+                
+                // Test game start
+                log('🎮 Starting game...');
+                window.debugGameApp.startGame();
+                
+                // Check if game loop started
+                setTimeout(() => {
+                    if (window.debugGameApp.animationFrameId) {
+                        log('✅ Game loop started successfully');
+                        updateStatus('Game started successfully', 'success');
+                    } else {
+                        log('❌ Game loop did not start');
+                        updateStatus('Game loop did not start', 'error');
+                    }
+                }, 100);
+                
+            } catch (error) {
+                log(`❌ Game start failed: ${error.message}`);
+                log(`Stack trace: ${error.stack}`);
+                updateStatus(`Game start failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Make functions globally available
+        window.testWasmLoading = testWasmLoading;
+        window.testGameInitialization = testGameInitialization;
+        window.testGameStart = testGameStart;
+        window.clearLog = clearLog;
+        
+        // Initial status
+        log('🚀 Debug tool initialized');
+        updateStatus('Debug tool ready', 'info');
+        
+        // Auto-run basic tests
+        setTimeout(() => {
+            log('🔄 Running automatic tests...');
+            testWasmLoading();
+        }, 1000);
+    </script>
+</body>
+</html>

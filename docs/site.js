@@ -370,6 +370,21 @@ class GameApplication {
         this.handleOrientationChange();
       }
     });
+
+    // Listen for screen orientation API changes (more reliable)
+    if (screen.orientation) {
+      screen.orientation.addEventListener('change', () => {
+        this.handleOrientationChange();
+      });
+    }
+
+    // Handle visibility change (when app comes back to foreground)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.detectMobileDevice()) {
+        // Recheck orientation when app becomes visible
+        setTimeout(() => this.handleOrientationChange(), 100);
+      }
+    });
   }
 
   /**
@@ -382,15 +397,42 @@ class GameApplication {
     const orientationOverlay = document.getElementById('orientation-overlay');
     if (!orientationOverlay) return;
 
-    const isPortrait = window.innerHeight > window.innerWidth;
-    
-    if (isPortrait && this.gameStateManager?.isGameRunning) {
-      console.log('📱 Device rotated to portrait - showing rotation prompt');
-      orientationOverlay.style.display = 'flex';
-    } else if (!isPortrait) {
-      console.log('📱 Device rotated to landscape - hiding overlay');
-      orientationOverlay.style.display = 'none';
-    }
+    // Wait for orientation change to complete
+    setTimeout(() => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const orientation = screen.orientation?.angle || 0;
+      
+      console.log(`📱 Orientation change detected: ${isPortrait ? 'Portrait' : 'Landscape'} (angle: ${orientation}°)`);
+      
+      if (isPortrait) {
+        console.log('📱 Device rotated to portrait - showing rotation prompt');
+        orientationOverlay.style.display = 'flex';
+        
+        // Prevent body scrolling using CSS class
+        document.body.classList.add('orientation-overlay-active');
+        
+        // Pause game if running
+        if (this.gameStateManager?.isGameRunning) {
+          this.gameStateManager.pauseGame?.();
+        }
+      } else {
+        console.log('📱 Device rotated to landscape - hiding overlay');
+        orientationOverlay.style.display = 'none';
+        
+        // Restore body scrolling
+        document.body.classList.remove('orientation-overlay-active');
+        
+        // Resume game if it was paused
+        if (this.gameStateManager?.isGamePaused) {
+          this.gameStateManager.resumeGame?.();
+        }
+      }
+      
+      // Update mobile controls layout
+      if (this.enhancedMobileControls?.adjustLayoutForOrientation) {
+        this.enhancedMobileControls.adjustLayoutForOrientation();
+      }
+    }, 100); // Small delay to ensure orientation change is complete
   }
 
   /**
@@ -531,8 +573,16 @@ class GameApplication {
   detectMobileDevice() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()) ||
-                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-    return isMobile;
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) ||
+                     ('ontouchstart' in window) ||
+                     (window.innerWidth <= 768);
+    
+    // Additional check for tablet devices
+    const isTablet = /ipad|android(?!.*mobile)|tablet/i.test(userAgent.toLowerCase());
+    
+    console.log(`📱 Device detection: Mobile=${isMobile}, Tablet=${isTablet}, TouchPoints=${navigator.maxTouchPoints}, Width=${window.innerWidth}`);
+    
+    return isMobile || isTablet;
   }
 
   /**
@@ -569,7 +619,29 @@ class GameApplication {
     if (orientationOverlay) {
       orientationOverlay.style.display = 'none';
     }
+    
+    // Restore body scrolling
+    document.body.classList.remove('orientation-overlay-active');
+    
+    // Try to lock orientation to landscape if supported
+    this.requestOrientationLock();
+    
     this.startGame();
+  }
+
+  /**
+   * Request orientation lock to landscape mode
+   * @private
+   */
+  requestOrientationLock() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').then(() => {
+        console.log('📱 Orientation locked to landscape');
+      }).catch((error) => {
+        console.log('📱 Could not lock orientation:', error);
+        // This is expected on many devices/browsers
+      });
+    }
   }
 
   /**

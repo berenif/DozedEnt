@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern UI Integration Test</title>
+    <link rel="stylesheet" href="docs/js/src/css/modern-roguelite-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        
+        .test-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .test-info h3 {
+            margin: 0 0 10px 0;
+            color: #4a9eff;
+        }
+        
+        .test-controls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .test-controls button {
+            background: #4a9eff;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 2px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .test-controls button:hover {
+            background: #3a8ae0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Test Information -->
+    <div class="test-info">
+        <h3>Modern UI Integration Test</h3>
+        <p>This test verifies that the modern roguelite UI components are properly integrated into the main game.</p>
+        <ul>
+            <li>✅ CSS styles loaded</li>
+            <li>✅ Modern UI container present</li>
+            <li>🔄 Testing JavaScript integration...</li>
+        </ul>
+    </div>
+    
+    <!-- Test Controls -->
+    <div class="test-controls">
+        <button onclick="testModernUI()">Test Modern UI</button>
+        <button onclick="testAccessibility()">Test Accessibility</button>
+        <button onclick="testPerformance()">Test Performance</button>
+        <button onclick="testInputManager()">Test Input Manager</button>
+    </div>
+    
+    <!-- Modern Roguelite UI Container -->
+    <div id="modern-roguelite-ui" class="modern-roguelite-ui">
+        <!-- This will be populated by the ModernRogueliteUI class -->
+    </div>
+    
+    <script type="module">
+        // Mock WASM Manager for testing
+        class MockWASMManager {
+            constructor() {
+                this.gameState = {
+                    health: 1.0,
+                    shield: 0.5,
+                    stamina: 0.8,
+                    x: 0.5,
+                    y: 0.5,
+                    phase: 0,
+                    roomCount: 3,
+                    gold: 150,
+                    essence: 75,
+                    abilities: {
+                        'ability-1': { cooldown: 0.3 },
+                        'ability-2': { cooldown: 0.7 },
+                        'ability-3': { cooldown: 1.0 },
+                        'ultimate': { charge: 0.6 }
+                    }
+                };
+            }
+            
+            // WASM API methods
+            getHP() { return this.gameState.health; }
+            getShield() { return this.gameState.shield; }
+            getStamina() { return this.gameState.stamina; }
+            getX() { return this.gameState.x; }
+            getY() { return this.gameState.y; }
+            getPhase() { return this.gameState.phase; }
+            getRoomCount() { return this.gameState.roomCount; }
+            getGold() { return this.gameState.gold; }
+            getEssence() { return this.gameState.essence; }
+            getAbilityCooldown(abilityId) { return this.gameState.abilities[abilityId]?.cooldown || 0; }
+            
+            // Combat actions
+            onAttack() { console.log('Light attack triggered'); return 1; }
+            onHeavyAttack() { console.log('Heavy attack triggered'); return 1; }
+            onSpecialAttack() { console.log('Special attack triggered'); return 1; }
+            onRollStart() { console.log('Roll started'); return 1; }
+            setBlocking(on, faceX, faceY, timestamp) { console.log('Blocking:', on ? 'ON' : 'OFF'); return on; }
+            onUltimate() { console.log('Ultimate activated!'); return 1; }
+            useConsumable(slot) { console.log('Used consumable', slot); }
+            updateMovement(x, y) { this.gameState.x = Math.max(0, Math.min(1, this.gameState.x + x * 0.01)); this.gameState.y = Math.max(0, Math.min(1, this.gameState.y + y * 0.01)); }
+            handleInput(action, isPressed) { console.log('Input:', action, isPressed ? 'pressed' : 'released'); }
+        }
+        
+        // Test functions
+        window.testModernUI = async function() {
+            try {
+                const { ModernRogueliteUI } = await import('./docs/js/src/ui/modern-roguelite-ui.js');
+                const wasmManager = new MockWASMManager();
+                const modernUI = new ModernRogueliteUI(wasmManager);
+                console.log('✅ Modern UI initialized successfully');
+                alert('Modern UI test passed! Check console for details.');
+            } catch (error) {
+                console.error('❌ Modern UI test failed:', error);
+                alert('Modern UI test failed: ' + error.message);
+            }
+        };
+        
+        window.testAccessibility = async function() {
+            try {
+                const { AccessibilityManager } = await import('./docs/js/src/ui/accessibility-manager.js');
+                const accessibilityManager = new AccessibilityManager();
+                console.log('✅ Accessibility Manager initialized successfully');
+                alert('Accessibility test passed! Check console for details.');
+            } catch (error) {
+                console.error('❌ Accessibility test failed:', error);
+                alert('Accessibility test failed: ' + error.message);
+            }
+        };
+        
+        window.testPerformance = async function() {
+            try {
+                const { PerformanceOptimizer } = await import('./docs/js/src/ui/performance-optimizer.js');
+                const performanceOptimizer = new PerformanceOptimizer();
+                performanceOptimizer.enableDashboard();
+                console.log('✅ Performance Optimizer initialized successfully');
+                alert('Performance test passed! Check console for details.');
+            } catch (error) {
+                console.error('❌ Performance test failed:', error);
+                alert('Performance test failed: ' + error.message);
+            }
+        };
+        
+        window.testInputManager = async function() {
+            try {
+                const { InputManager } = await import('./docs/js/src/ui/input-manager.js');
+                const wasmManager = new MockWASMManager();
+                const inputManager = new InputManager(wasmManager);
+                console.log('✅ Input Manager initialized successfully');
+                alert('Input Manager test passed! Check console for details.');
+            } catch (error) {
+                console.error('❌ Input Manager test failed:', error);
+                alert('Input Manager test failed: ' + error.message);
+            }
+        };
+        
+        console.log('Modern UI Integration Test loaded successfully');
+        console.log('Available test functions: testModernUI, testAccessibility, testPerformance, testInputManager');
+    </script>
+</body>
+</html>

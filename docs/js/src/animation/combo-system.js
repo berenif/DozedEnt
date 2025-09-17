@@ -11,6 +11,7 @@ export class ComboSystem {
         this.comboMultiplier = 1
         this.totalHits = 0
         this.lastInputTime = 0
+        this.inputTimes = [] // Initialize inputTimes array for timing calculations
         this.specialMoveBuffer = []
         this.bufferTime = options.bufferTime || 0.2
         
@@ -167,6 +168,7 @@ export class ComboSystem {
         
         // Add move to current combo
         this.currentCombo.push(move)
+        this.inputTimes.push(now) // Track input timing for combo analysis
         this.lastInputTime = now
         this.comboTimer = this.comboWindow
         
@@ -313,6 +315,7 @@ export class ComboSystem {
         }
         
         this.currentCombo = []
+        this.inputTimes = [] // Clear input timing history
         this.comboTimer = 0
         this.isInCombo = false
         this.comboMultiplier = 1
@@ -391,7 +394,39 @@ export class ComboSystem {
     getMoveProgress() {
         // This should be connected to animation system
         // Returns normalized time (0-1) of current move animation
-        return 0.5 // Placeholder
+        
+        if (!this.currentMove) {
+            return 0
+        }
+        
+        // Try to get progress from WASM if available
+        if (globalThis.wasmExports?.get_player_anim_progress) {
+            const progress = globalThis.wasmExports.get_player_anim_progress()
+            if (typeof progress === 'number' && Number.isFinite(progress)) {
+                return Math.max(0, Math.min(1, progress))
+            }
+        }
+        
+        // Try to get progress from animation state timer
+        if (globalThis.wasmExports?.get_player_state_timer) {
+            const stateTimer = globalThis.wasmExports.get_player_state_timer()
+            const stateDuration = globalThis.wasmExports?.get_player_state_duration?.() || 1.0
+            
+            if (typeof stateTimer === 'number' && typeof stateDuration === 'number' && stateDuration > 0) {
+                return Math.max(0, Math.min(1, stateTimer / stateDuration))
+            }
+        }
+        
+        // Fallback: estimate progress based on combo timing
+        if (this.inputTimes.length > 0) {
+            const lastInputTime = this.inputTimes[this.inputTimes.length - 1]
+            const timeSinceInput = (Date.now() - lastInputTime) / 1000
+            const estimatedDuration = 0.5 // Default animation duration
+            
+            return Math.max(0, Math.min(1, timeSinceInput / estimatedDuration))
+        }
+        
+        return 0
     }
 
     // Helper methods for UI
@@ -417,6 +452,7 @@ export class ComboSystem {
     // Reset combo system
     reset() {
         this.currentCombo = []
+        this.inputTimes = [] // Clear input timing history
         this.comboTimer = 0
         this.comboMultiplier = 1
         this.totalHits = 0

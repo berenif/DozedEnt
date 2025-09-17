@@ -455,8 +455,7 @@ static int g_player_level = 1;    // Player level
 static int g_skill_points = 0;    // Available skill points
 static uint32_t g_unlocked_skills = 0; // Bitfield of unlocked skills
 
-// Equipment and inventory
-static int g_current_weapon = 0;  // Current weapon ID
+// Equipment and inventory (weapon system implemented in weapons.h)
 static int g_equipped_armor = 0; // Equipped armor ID
 #define MAX_INVENTORY_SIZE 32
 static uint32_t g_inventory[MAX_INVENTORY_SIZE]; // Inventory items
@@ -469,9 +468,8 @@ static uint32_t g_choice_history_count = 0; // Number of choices made
 static int g_pity_timer = 0;     // Pity timer for rare choices
 static int g_super_pity_timer = 0; // Super pity timer for legendary choices
 
-// Active effects
-static uint32_t g_active_curses = 0; // Bitfield of active curses
-static float g_curse_intensities[8]; // Curse intensity values
+// Active effects (curse system implemented in risk.h)
+static float g_curse_intensities[8]; // Curse intensity values (legacy compatibility)
 static uint32_t g_active_buffs = 0;  // Bitfield of active buffs
 static float g_buff_durations[16];   // Buff duration values
 
@@ -490,9 +488,7 @@ static float g_sfx_volume = 1.0f;     // SFX volume (0.0-1.0)
 static float g_music_volume = 1.0f;   // Music volume (0.0-1.0)
 static uint32_t g_control_settings = 0; // Control settings bitfield
 
-// Achievement system variables (declared in achievement-system.h)
-extern uint64_t g_achievement_flags;
-extern uint32_t g_achievement_progress[32];
+// Achievement system variables (defined in achievement-system.h)
 
 // ---------------- Save/Load System Helper Functions ----------------
 // Helper functions for save/load system validation and initialization
@@ -515,9 +511,9 @@ static inline void init_explore_phase() { /* Implemented in explore phase */ }
 static inline void init_fight_phase() { /* Implemented in fight phase */ }
 static inline void init_choice_phase() { /* Implemented in choice phase */ }
 static inline void init_powerup_phase() { /* Implemented in powerup phase */ }
-static inline void init_risk_phase() { /* Implemented in risk phase */ }
+// init_risk_phase() implemented in risk.h
 static inline void init_escalate_phase() { /* Implemented in escalate phase */ }
-static inline void init_cashout_phase() { /* Implemented in cashout phase */ }
+// init_cashout_phase() implemented in cashout.h
 static inline void init_reset_phase() { /* Implemented in reset phase */ }
 
 // AI system reinitialization
@@ -528,11 +524,11 @@ static inline void apply_curse_effect(int curse_type, float intensity) { /* Impl
 static inline void apply_buff_effect(int buff_type, float duration) { /* Implemented in status effects */ }
 
 // Achievement system reinitialization
-static inline void reinitialize_achievement_system() { /* Implemented in achievement system */ }
+// reinitialize_achievement_system() implemented in achievement-system.h
 
 // Item validation functions
 static inline bool is_valid_item_id(uint32_t item_id) { return item_id < 1000; } // Placeholder
-static inline bool is_valid_weapon_id(int weapon_id) { return weapon_id >= 0 && weapon_id < 10; } // Placeholder
+static inline bool is_valid_weapon_id(int weapon_id) { return weapon_id >= 0 && weapon_id < 10; } // Placeholder - will be overridden by weapons.h
 static inline bool is_valid_armor_id(int armor_id) { return armor_id >= 0 && armor_id < 5; } // Placeholder
 
 // Equipment bonus functions

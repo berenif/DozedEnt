@@ -368,7 +368,9 @@ export class InputManager {
     handleTouchMove(event) {
         for (const touch of event.changedTouches) {
             const touchData = this.touchState.touches.get(touch.identifier);
-            if (!touchData) {continue;}
+            if (!touchData) {
+              continue;
+            }
             
             // Handle joystick movement
             if (touchData.element && touchData.element.closest('#joystick')) {
@@ -387,7 +389,9 @@ export class InputManager {
     handleTouchEnd(event) {
         for (const touch of event.changedTouches) {
             const touchData = this.touchState.touches.get(touch.identifier);
-            if (!touchData) {continue;}
+            if (!touchData) {
+              continue;
+            }
             
             // Handle joystick release
             if (touchData.element && touchData.element.closest('#joystick')) {
@@ -424,7 +428,9 @@ export class InputManager {
      * Handle joystick movement
      */
     handleJoystickMove(touch) {
-        if (!this.touchState.joystick.active) {return;}
+        if (!this.touchState.joystick.active) {
+          return;
+        }
         
         const center = this.touchState.joystick.center;
         const maxDist = this.touchState.joystick.maxDistance;
@@ -515,11 +521,15 @@ export class InputManager {
         }
         
         // Fallback to basic gamepad input
-        if (this.inputState.gamepadIndex === -1) {return;}
+        if (this.inputState.gamepadIndex === -1) {
+          return;
+        }
         
         const gamepads = navigator.getGamepads();
         const gamepad = gamepads[this.inputState.gamepadIndex];
-        if (!gamepad) {return;}
+        if (!gamepad) {
+          return;
+        }
         
         const deadzone = this.inputState.gamepadDeadzone;
         
@@ -556,11 +566,17 @@ export class InputManager {
         
         if (this.isMobile || this.hasTouch) {
             // Show mobile controls
-            if (mobileControls) {mobileControls.style.display = 'block';}
-            if (controlsTip) {controlsTip.style.display = 'none';}
+            if (mobileControls) {
+              mobileControls.style.display = 'block';
+            }
+            if (controlsTip) {
+              controlsTip.style.display = 'none';
+            }
         } else {
             // Show desktop controls tip
-            if (mobileControls) {mobileControls.style.display = 'none';}
+            if (mobileControls) {
+              mobileControls.style.display = 'none';
+            }
             if (controlsTip) {
                 controlsTip.style.display = 'block';
                 
@@ -592,7 +608,9 @@ export class InputManager {
      * Send input state to WASM
      */
     sendInputToWasm() {
-        if (!this.wasmManager || !this.wasmManager.exports) {return;}
+        if (!this.wasmManager || !this.wasmManager.exports) {
+          return;
+        }
         
         // Send input to WASM using the 5-button combat system
         if (this.wasmManager.exports.set_player_input) {

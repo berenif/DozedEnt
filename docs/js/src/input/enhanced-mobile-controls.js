@@ -625,7 +625,9 @@ export class EnhancedMobileControls {
    */
   adjustLayoutForOrientation() {
     const orientation = screen.orientation?.angle || 0;
-    const isLandscape = Math.abs(orientation) === 90;
+    const isLandscape = Math.abs(orientation) === 90 || window.innerWidth > window.innerHeight;
+    
+    console.log(`📱 Mobile controls: Orientation=${orientation}°, Landscape=${isLandscape}`);
     
     document.body.classList.toggle('landscape', isLandscape);
     document.body.classList.toggle('portrait', !isLandscape);
@@ -635,9 +637,52 @@ export class EnhancedMobileControls {
     if (mobileControls) {
       if (isLandscape) {
         mobileControls.style.height = '160px';
+        mobileControls.classList.add('landscape-mode');
+        mobileControls.classList.remove('portrait-mode');
       } else {
         mobileControls.style.height = '200px';
+        mobileControls.classList.add('portrait-mode');
+        mobileControls.classList.remove('landscape-mode');
       }
+    }
+    
+    // Recalculate joystick center position
+    this.updateJoystickCenter();
+    
+    // Adjust button layout
+    this.adjustButtonLayout(isLandscape);
+  }
+  
+  /**
+   * Update joystick center position after orientation change
+   */
+  updateJoystickCenter() {
+    const base = document.getElementById('joystick-base');
+    if (base) {
+      const rect = base.getBoundingClientRect();
+      this.joystickState.center = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      this.joystickState.radius = rect.width / 2 - 20;
+    }
+  }
+  
+  /**
+   * Adjust button layout for orientation
+   */
+  adjustButtonLayout(isLandscape) {
+    const actionsContainer = document.getElementById('actions');
+    if (!actionsContainer) return;
+    
+    if (isLandscape) {
+      actionsContainer.style.flexDirection = 'row';
+      actionsContainer.style.flexWrap = 'wrap';
+      actionsContainer.style.maxWidth = '300px';
+    } else {
+      actionsContainer.style.flexDirection = 'column-reverse';
+      actionsContainer.style.flexWrap = 'nowrap';
+      actionsContainer.style.maxWidth = 'none';
     }
   }
   

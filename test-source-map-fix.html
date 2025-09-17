@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Map URL Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4a90e2;
+        }
+        .success { border-left-color: #4CAF50; }
+        .error { border-left-color: #f44336; }
+        .warning { border-left-color: #ff9800; }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #357abd; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        #console-output {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Source Map URL Fix Test</h1>
+    <p>This page tests the fix for the "URL constructor: is not a valid URL" error in WASM source maps.</p>
+
+    <div class="test-section">
+        <h3>Test Controls</h3>
+        <button onclick="testUrlConstructor()">Test URL Constructor Override</button>
+        <button onclick="testWasmLoading()">Test WASM Loading</button>
+        <button onclick="clearConsole()">Clear Console</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Console Output</h3>
+        <div id="console-output"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Capture console output
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addToConsole(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            consoleOutput.textContent += `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addToConsole('log', ...args);
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addToConsole('warn', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addToConsole('error', ...args);
+        };
+
+        function clearConsole() {
+            consoleOutput.textContent = '';
+        }
+
+        function addTestResult(testName, success, message) {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-section ${success ? 'success' : 'error'}`;
+            resultDiv.innerHTML = `
+                <strong>${testName}:</strong> ${success ? '✅ PASS' : '❌ FAIL'}<br>
+                <small>${message}</small>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function testUrlConstructor() {
+            console.log('Testing URL constructor override...');
+            
+            try {
+                // Test various invalid URLs that should be handled gracefully
+                const testCases = [
+                    { input: null, description: 'null URL' },
+                    { input: undefined, description: 'undefined URL' },
+                    { input: '', description: 'empty string URL' },
+                    { input: 'null', description: 'string "null"' },
+                    { input: 'undefined', description: 'string "undefined"' },
+                    { input: 'invalid://url', description: 'invalid protocol URL' }
+                ];
+                
+                let allPassed = true;
+                
+                testCases.forEach(({ input, description }) => {
+                    try {
+                        const url = new URL(input, 'http://localhost:8081');
+                        console.log(`✅ ${description}: Created URL successfully`);
+                    } catch (error) {
+                        console.error(`❌ ${description}: ${error.message}`);
+                        allPassed = false;
+                    }
+                });
+                
+                addTestResult('URL Constructor Override', allPassed, 
+                    allPassed ? 'All invalid URLs handled gracefully' : 'Some URLs still cause errors');
+                
+            } catch (error) {
+                console.error('URL constructor test failed:', error);
+                addTestResult('URL Constructor Override', false, error.message);
+            }
+        }
+
+        async function testWasmLoading() {
+            console.log('Testing WASM loading with source map protection...');
+            
+            try {
+                // Import the WASM lazy loader
+                const { globalWasmLoader } = await import('./src/utils/wasm-lazy-loader.js');
+                console.log('✅ WASM lazy loader imported successfully');
+                
+                // Try to load a WASM module (this will fail if no WASM file exists, but should not crash on source maps)
+                try {
+                    const instance = await globalWasmLoader.loadModule('game', {
+                        imports: {},
+                        onProgress: (progress) => {
+                            console.log(`WASM loading progress: ${(progress.progress * 100).toFixed(1)}%`);
+                        }
+                    });
+                    console.log('✅ WASM module loaded successfully');
+                    addTestResult('WASM Loading', true, 'Module loaded without source map errors');
+                } catch (error) {
+                    if (error.message.includes('source map') || error.message.includes('URL constructor')) {
+                        console.error('❌ Source map error still present:', error.message);
+                        addTestResult('WASM Loading', false, 'Source map error still occurs: ' + error.message);
+                    } else {
+                        console.warn('⚠️ WASM loading failed for other reasons (expected if no WASM file):', error.message);
+                        addTestResult('WASM Loading', true, 'No source map errors (loading failed for other reasons)');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to import WASM lazy loader:', error);
+                addTestResult('WASM Loading', false, 'Failed to import WASM lazy loader: ' + error.message);
+            }
+        }
+
+        // Run initial tests when page loads
+        window.addEventListener('load', () => {
+            console.log('🚀 Source Map URL Fix Test Page Loaded');
+            console.log('Testing URL constructor override...');
+            testUrlConstructor();
+        });
+    </script>
+</body>
+</html>

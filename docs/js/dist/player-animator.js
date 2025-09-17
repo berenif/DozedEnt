@@ -3233,4 +3233,3 @@ AnimatedPlayer.attachDebugToggle = function(playerInstance, key = 'F3') {
 };
 
 export { AnimatedPlayer, AnimatedPlayer as default };
-//# sourceMappingURL=player-animator.js.map

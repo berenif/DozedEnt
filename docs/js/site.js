@@ -1,6 +1,14 @@
 /**
  * Main Game Application - Refactored version using modular architecture
  * Follows WASM-first principles from AGENTS.MD guidelines
+ * 
+ * This file contains the main GameApplication class that orchestrates all game systems.
+ * It follows the WASM-first architecture where all game logic resides in WebAssembly
+ * and JavaScript handles only rendering, input capture, and networking.
+ * 
+ * @fileoverview Main game application entry point
+ * @author DozedEnt Development Team
+ * @version 2.0.0
  */
 
 // Core imports
@@ -27,6 +35,12 @@ import { uiCoordinator } from './src/ui/ui-coordinator.js';
 import { PhaseOverlayManager } from './src/ui/phase-overlay-manager.js';
 import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js';
 
+// Modern Roguelite UI Components
+import { ModernRogueliteUI } from './src/ui/modern-roguelite-ui.js';
+import { InputManager as ModernInputManager } from './src/ui/input-manager.js';
+import { AccessibilityManager } from './src/ui/accessibility-manager.js';
+import { PerformanceOptimizer } from './src/ui/performance-optimizer.js';
+
 // Performance optimization systems
 import { globalFrameTimeOptimizer } from './src/utils/frame-time-optimizer.js';
 import { globalWillChangeOptimizer } from './src/utils/will-change-optimizer.js';
@@ -35,10 +49,31 @@ import { globalPerformanceIntegration } from './src/utils/performance-integratio
 /**
  * Main Game Application Class
  * Centralizes all game systems and manages their lifecycle
+ * 
+ * This class follows the WASM-first architecture principle where all game logic
+ * resides in WebAssembly modules, while JavaScript handles only rendering,
+ * input capture, and networking.
+ * 
+ * @class GameApplication
  */
 class GameApplication {
+  /**
+   * Creates a new GameApplication instance
+   * Initializes all core constants and system managers
+   */
   constructor() {
-    // Core constants
+    this._initializeConstants();
+    this._initializeSystemManagers();
+    this._initializeDOMReferences();
+    this._initializeGameLoop();
+  }
+
+  /**
+   * Initialize core game constants
+   * @private
+   */
+  _initializeConstants() {
+    // Biome types for environment generation
     this.BiomeType = {
       Forest: 0,
       Swamp: 1,
@@ -46,12 +81,18 @@ class GameApplication {
       Plains: 3
     };
 
+    // Viewport and world dimensions
     this.VIRTUAL_WIDTH = 1280;
     this.VIRTUAL_HEIGHT = 720;
     this.WORLD_WIDTH = 3840;  // 3x viewport width
     this.WORLD_HEIGHT = 2160; // 3x viewport height
+  }
 
-    // System managers
+  /**
+   * Initialize system managers
+   * @private
+   */
+  _initializeSystemManagers() {
     this.wasmManager = new WasmManager();
     this.roomManager = new RoomManager();
     this.audioManager = new AudioManager();
@@ -65,19 +106,34 @@ class GameApplication {
     // Enhanced UI Integration
     this.enhancedUI = null;
     this.phaseOverlayManager = null;
+  }
 
-    // Game systems
+  /**
+   * Initialize game systems
+   * @private
+   */
+  _initializeGameSystems() {
     this.gameRenderer = null;
     this.cameraEffects = null;
     this.wolfAISystem = null;
     this.animatedPlayer = null;
     this.wolfCharacters = [];
+  }
 
-    // DOM elements
+  /**
+   * Initialize DOM element references
+   * @private
+   */
+  _initializeDOMReferences() {
     this.canvas = null;
     this.gameCanvas = null;
+  }
 
-    // Game loop
+  /**
+   * Initialize game loop variables
+   * @private
+   */
+  _initializeGameLoop() {
     this.lastFrameTime = 0;
     this.animationFrameId = null;
     this.frameCount = 0;
@@ -110,141 +166,67 @@ class GameApplication {
     }
   }
 
+  // ============================================================================
+  // WORLD MANAGEMENT METHODS
+  // ============================================================================
+
   /**
    * Change biome and regenerate environment
-   * @param {number} biomeType - The biome type to switch to
-   * @param {number} seed - Optional seed for deterministic generation
+   * Updates the current biome and regenerates the environment with optional seed
+   * @param {number} biomeType - The biome type to switch to (0-3)
+   * @param {number} [seed=null] - Optional seed for deterministic generation
+   * @throws {Error} If game renderer is not available
    */
   changeBiome(biomeType, seed = null) {
-    if (!this.gameRenderer) return;
+    if (!this.gameRenderer) {
+      throw new Error('Cannot change biome - game renderer not available');
+    }
     
-    const runSeedBig = this.wasmManager?.getRunSeed?.() ?? 0n;
-    const fallbackSeed = Number(runSeedBig % 2147483647n);
-    this.gameRenderer.changeBiome(
-      biomeType, 
-      this.wasmManager?.module,
-      seed ?? fallbackSeed
-    );
-    
-    // Update any game state related to biome change
-    this.gameStateManager.updateBiome(biomeType);
+    try {
+      const runSeedBig = this.wasmManager?.getRunSeed?.() ?? 0n;
+      const fallbackSeed = Number(runSeedBig % 2147483647n);
+      
+      this.gameRenderer.changeBiome(
+        biomeType, 
+        this.wasmManager?.module,
+        seed ?? fallbackSeed
+      );
+      
+      // Update any game state related to biome change
+      this.gameStateManager.updateBiome(biomeType);
+      
+      console.log(`🌍 Biome changed to: ${this._getBiomeName(biomeType)}`);
+    } catch (error) {
+      console.error('Failed to change biome:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get biome name by type ID
+   * @private
+   * @param {number} biomeType - Biome type ID
+   * @returns {string} Biome name
+   */
+  _getBiomeName(biomeType) {
+    const biomeNames = ['Forest', 'Swamp', 'Mountains', 'Plains'];
+    return biomeNames[biomeType] || `Unknown(${biomeType})`;
   }
 
   /**
    * Initialize the game application
+   * Orchestrates the initialization of all game systems in the correct order
    * @returns {Promise<boolean>} Success status
    */
   async initialize() {
     try {
       console.log('🔧 Initializing game application...');
 
-      // Initialize UI Performance Optimizer first
-      console.log('⚡ Initializing UI Performance Optimizer...');
-      uiPerformanceOptimizer.initialize();
-      console.log('✅ UI Performance Optimizer initialized');
-
-      // Initialize UI Coordinator
-      console.log('🎛️ Initializing UI Coordinator...');
-      uiCoordinator.initialize();
-      console.log('✅ UI Coordinator initialized');
-
-      // Initialize DOM elements
-      console.log('📋 Initializing DOM elements...');
-      this.initializeDOM();
-      console.log('✅ DOM elements initialized');
-
-      // Initialize WASM first (core requirement)
-      console.log('🔧 Initializing WASM manager...');
-      const wasmSuccess = await this.wasmManager.initialize();
-      if (!wasmSuccess) {
-        console.warn('⚠️ WASM initialization failed - running in fallback mode');
-      } else {
-        console.log('✅ WASM initialized successfully');
-        
-        // Initialize WASM-based environment system now that WASM is ready
-        this.initializeWasmEnvironment();
-
-        // Seed deterministic visual RNG from the current run seed
-        try {
-          const seed = this.wasmManager.getRunSeed?.();
-          if (seed !== undefined && seed !== null) {
-            setGlobalSeed(seed);
-          }
-        } catch (e) {
-          console.warn('Failed to seed visual RNG:', e);
-        }
-      }
-
-      // Initialize game systems
-      console.log('🔧 Initializing game systems...');
-      this.initializeGameSystems();
-      console.log('✅ Game systems initialized');
-
-      // Initialize audio system
-      console.log('🔧 Initializing audio system...');
-      this.audioManager.setupEventListeners();
-      console.log('✅ Audio system initialized');
-
-      // Initialize UI event handlers
-      console.log('🔧 Initializing UI event handlers...');
-      this.uiEventHandlers = new UIEventHandlers(
-        this.gameStateManager,
-        this.roomManager,
-        this.audioManager
-      );
-      console.log('✅ UI event handlers initialized');
-
-
-      // Initialize Roguelike HUD
-      console.log('🔧 Initializing Roguelike HUD...');
-      this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
-      uiCoordinator.registerSystem('roguelike-hud', this.roguelikeHUD);
-      console.log('✅ Roguelike HUD initialized');
-
-      // Initialize game state with WASM
-      console.log('🔧 Initializing game state manager...');
-      this.gameStateManager.initialize(this.wasmManager);
-      console.log('✅ Game state manager initialized');
-
-      // Initialize input manager
-      console.log('🔧 Initializing input manager...');
-      this.inputManager = new InputManager(this.wasmManager);
-      console.log('✅ Input manager initialized');
-
-      // Initialize enhanced mobile controls
-      console.log('🔧 Initializing enhanced mobile controls...');
-      this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
-      uiCoordinator.registerSystem('mobile-controls', this.enhancedMobileControls);
-      console.log('✅ Enhanced mobile controls initialized');
-
-      // Initialize enhanced UI systems after WASM is ready
-      if (wasmSuccess) {
-        console.log('🔧 Initializing Enhanced UI Systems...');
-        this.enhancedUI = new EnhancedUIIntegration(
-          this.wasmManager,
-          this.gameCanvas,
-          this.audioManager
-        );
-        uiCoordinator.registerSystem('enhanced-ui', this.enhancedUI);
-        console.log('✅ Enhanced UI Systems initialized');
-      }
-
-      // Initialize Phase Overlay Manager
-      console.log('🔧 Initializing Phase Overlay Manager...');
-      this.phaseOverlayManager = new PhaseOverlayManager(this.wasmManager);
-      this.phaseOverlayManager.initialize();
-      uiCoordinator.registerSystem('phase-overlays', this.phaseOverlayManager);
-      console.log('✅ Phase Overlay Manager initialized');
-
-      // Setup event listeners
-      console.log('🔧 Setting up event listeners...');
-      this.setupEventListeners();
-      console.log('✅ Event listeners setup complete');
-
-      // Update UI to reflect initialization status
-      console.log('🔧 Updating initialization UI...');
-      this.updateInitializationUI(wasmSuccess);
-      console.log('✅ Initialization UI updated');
+      const wasmSuccess = await this._initializeCoreSystems();
+      await this._initializeGameSystems(wasmSuccess);
+      await this._initializeUISystems(wasmSuccess);
+      this._setupEventListeners();
+      this._updateInitializationUI(wasmSuccess);
 
       this.isInitialized = true;
       console.log('🎉 Game application initialized successfully');
@@ -263,45 +245,280 @@ class GameApplication {
   }
 
   /**
-   * Initialize DOM elements
+   * Initialize core systems (UI optimizers, DOM, WASM)
+   * @private
+   * @returns {Promise<boolean>} WASM initialization success
+   */
+  async _initializeCoreSystems() {
+    // Initialize UI Performance Optimizer first
+    console.log('⚡ Initializing UI Performance Optimizer...');
+    uiPerformanceOptimizer.initialize();
+    console.log('✅ UI Performance Optimizer initialized');
+
+    // Initialize UI Coordinator
+    console.log('🎛️ Initializing UI Coordinator...');
+    uiCoordinator.initialize();
+    console.log('✅ UI Coordinator initialized');
+
+    // Initialize DOM elements
+    console.log('📋 Initializing DOM elements...');
+    this.initializeDOM();
+    console.log('✅ DOM elements initialized');
+
+    // Initialize WASM first (core requirement)
+    console.log('🔧 Initializing WASM manager...');
+    const wasmSuccess = await this.wasmManager.initialize();
+    if (!wasmSuccess) {
+      console.warn('⚠️ WASM initialization failed - running in fallback mode');
+    } else {
+      console.log('✅ WASM initialized successfully');
+      this._initializeWasmEnvironment();
+      this._seedVisualRNG();
+    }
+
+    return wasmSuccess;
+  }
+
+  /**
+   * Initialize WASM-based environment system
    * @private
    */
-  initializeDOM() {
-    this.canvas = document.getElementById('canvas');
-    this.gameCanvas = document.getElementById('gameCanvas');
+  _initializeWasmEnvironment() {
+    this.initializeWasmEnvironment();
+  }
 
-    if (!this.gameCanvas) {
-      throw new Error('Game canvas not found');
+  /**
+   * Seed deterministic visual RNG from WASM run seed
+   * @private
+   */
+  _seedVisualRNG() {
+    try {
+      const seed = this.wasmManager.getRunSeed?.();
+      if (seed !== undefined && seed !== null) {
+        setGlobalSeed(seed);
+      }
+    } catch (e) {
+      console.warn('Failed to seed visual RNG:', e);
+    }
+  }
+
+  /**
+   * Initialize game systems (renderer, audio, input, etc.)
+   * @private
+   * @param {boolean} wasmSuccess - Whether WASM initialization succeeded
+   */
+  async _initializeGameSystems(wasmSuccess) {
+    // Initialize game systems
+    console.log('🔧 Initializing game systems...');
+    this.initializeGameSystems();
+    console.log('✅ Game systems initialized');
+
+    // Initialize audio system
+    console.log('🔧 Initializing audio system...');
+    this.audioManager.setupEventListeners();
+    console.log('✅ Audio system initialized');
+
+    // Initialize UI event handlers
+    console.log('🔧 Initializing UI event handlers...');
+    this.uiEventHandlers = new UIEventHandlers(
+      this.gameStateManager,
+      this.roomManager,
+      this.audioManager
+    );
+    console.log('✅ UI event handlers initialized');
+
+    // Initialize Roguelike HUD
+    console.log('🔧 Initializing Roguelike HUD...');
+    this.roguelikeHUD = new RoguelikeHUD(this.gameStateManager, this.wasmManager);
+    uiCoordinator.registerSystem('roguelike-hud', this.roguelikeHUD);
+    console.log('✅ Roguelike HUD initialized');
+
+    // Initialize game state with WASM
+    console.log('🔧 Initializing game state manager...');
+    this.gameStateManager.initialize(this.wasmManager);
+    console.log('✅ Game state manager initialized');
+
+    // Initialize input manager
+    console.log('🔧 Initializing input manager...');
+    this.inputManager = new InputManager(this.wasmManager);
+    console.log('✅ Input manager initialized');
+
+    // Initialize enhanced mobile controls
+    console.log('🔧 Initializing enhanced mobile controls...');
+    this.enhancedMobileControls = new EnhancedMobileControls(this.gameStateManager);
+    uiCoordinator.registerSystem('mobile-controls', this.enhancedMobileControls);
+    console.log('✅ Enhanced mobile controls initialized');
+  }
+
+  /**
+   * Initialize UI systems (enhanced UI, phase overlays, modern UI)
+   * @private
+   * @param {boolean} wasmSuccess - Whether WASM initialization succeeded
+   */
+  async _initializeUISystems(wasmSuccess) {
+    // Initialize enhanced UI systems after WASM is ready
+    if (wasmSuccess) {
+      console.log('🔧 Initializing Enhanced UI Systems...');
+      this.enhancedUI = new EnhancedUIIntegration(
+        this.wasmManager,
+        this.gameCanvas,
+        this.audioManager
+      );
+      uiCoordinator.registerSystem('enhanced-ui', this.enhancedUI);
+      console.log('✅ Enhanced UI Systems initialized');
+    }
+
+    // Initialize Phase Overlay Manager
+    console.log('🔧 Initializing Phase Overlay Manager...');
+    this.phaseOverlayManager = new PhaseOverlayManager(this.wasmManager);
+    this.phaseOverlayManager.initialize();
+    uiCoordinator.registerSystem('phase-overlays', this.phaseOverlayManager);
+    console.log('✅ Phase Overlay Manager initialized');
+
+    // Initialize Modern Roguelite UI Components
+    console.log('🔧 Initializing Modern Roguelite UI...');
+    this.accessibilityManager = new AccessibilityManager();
+    this.performanceOptimizer = new PerformanceOptimizer();
+    this.modernInputManager = new ModernInputManager(this.wasmManager);
+    this.modernUI = new ModernRogueliteUI(this.wasmManager);
+    
+    // Enable performance dashboard
+    this.performanceOptimizer.enableDashboard();
+    
+    // Register with UI coordinator
+    uiCoordinator.registerSystem('modern-ui', this.modernUI);
+    uiCoordinator.registerSystem('accessibility', this.accessibilityManager);
+    uiCoordinator.registerSystem('performance', this.performanceOptimizer);
+    uiCoordinator.registerSystem('modern-input', this.modernInputManager);
+    
+    console.log('✅ Modern Roguelite UI initialized');
+  }
+
+  /**
+   * Setup event listeners for the application
+   * @private
+   */
+  _setupEventListeners() {
+    console.log('🔧 Setting up event listeners...');
+    this.setupEventListeners();
+    console.log('✅ Event listeners setup complete');
+  }
+
+  /**
+   * Update UI to reflect initialization status
+   * @private
+   * @param {boolean} wasmSuccess - Whether WASM initialization succeeded
+   */
+  _updateInitializationUI(wasmSuccess) {
+    console.log('🔧 Updating initialization UI...');
+    this.updateInitializationUI(wasmSuccess);
+    console.log('✅ Initialization UI updated');
+  }
+
+  /**
+   * Initialize DOM elements
+   * @private
+   * @throws {Error} If required DOM elements are not found
+   */
+  initializeDOM() {
+    try {
+      this.canvas = document.getElementById('canvas');
+      this.gameCanvas = document.getElementById('gameCanvas');
+
+      if (!this.gameCanvas) {
+        throw new Error('Game canvas not found - required element #gameCanvas missing from DOM');
+      }
+
+      console.log('✅ DOM elements initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize DOM elements:', error.message);
+      throw error;
     }
   }
 
   /**
    * Initialize game systems
+   * Sets up renderer, camera effects, AI systems, and player
    * @private
+   * @throws {Error} If canvas context cannot be obtained or systems fail to initialize
    */
   initializeGameSystems() {
-    if (!this.gameCanvas) return;
+    if (!this.gameCanvas) {
+      throw new Error('Cannot initialize game systems - game canvas not available');
+    }
 
+    try {
+      this._initializeCanvas();
+      this._initializeRenderer();
+      this._initializeCameraEffects();
+      this._initializeAISystems();
+      this._initializePlayer();
+      this._setupGlobalDebugAccess();
+      
+      console.log('✅ Game systems initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize game systems:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize canvas context and dimensions
+   * @private
+   * @throws {Error} If canvas context cannot be obtained
+   */
+  _initializeCanvas() {
     const ctx = this.gameCanvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2D canvas context');
+    }
+    
     this.gameCanvas.width = this.VIRTUAL_WIDTH;
     this.gameCanvas.height = this.VIRTUAL_HEIGHT;
+  }
 
-    // Initialize renderer
+  /**
+   * Initialize game renderer
+   * @private
+   * @throws {Error} If renderer initialization fails
+   */
+  _initializeRenderer() {
+    const ctx = this.gameCanvas.getContext('2d');
     this.gameRenderer = new GameRenderer(ctx, this.gameCanvas, this.BiomeType.Forest);
     this.gameRenderer.useExternalPlayer = true;
     
     // Store reference for later WASM integration
     this.initialBiome = this.BiomeType.Forest;
+  }
 
-    // Initialize camera effects
+  /**
+   * Initialize camera effects system
+   * @private
+   * @throws {Error} If camera effects initialization fails
+   */
+  _initializeCameraEffects() {
     this.cameraEffects = new CameraEffects(this.gameCanvas);
+  }
 
-    // Initialize wolf AI system
+  /**
+   * Initialize AI systems
+   * @private
+   * @throws {Error} If AI system initialization fails
+   */
+  _initializeAISystems() {
     this.wolfAISystem = new EnhancedWolfAISystem(null);
+    this.gameStateManager.setWolfAISystem(this.wolfAISystem);
+  }
 
-    // Initialize animated player
+  /**
+   * Initialize animated player
+   * @private
+   * @throws {Error} If player initialization fails
+   */
+  _initializePlayer() {
     const worldCenterX = this.WORLD_WIDTH / 2;
     const worldCenterY = this.WORLD_HEIGHT / 2;
+    
     this.animatedPlayer = new AnimatedPlayer(worldCenterX, worldCenterY, {
       health: 100,
       maxHealth: 100,
@@ -314,10 +531,13 @@ class GameApplication {
       particleSystem: null,
       soundSystem: null
     });
+  }
 
-    // Set wolf AI system in game state
-    this.gameStateManager.setWolfAISystem(this.wolfAISystem);
-
+  /**
+   * Setup global debug access for development
+   * @private
+   */
+  _setupGlobalDebugAccess() {
     // Make systems globally accessible for debugging
     window.gameRenderer = this.gameRenderer;
     window.cameraEffects = this.cameraEffects;
@@ -466,10 +686,28 @@ class GameApplication {
 
   /**
    * Handle initialization error
+   * Updates UI to show error state and provides user feedback
    * @param {Error} error - Initialization error
    * @private
    */
   handleInitializationError(error) {
+    console.error('🚨 Initialization error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      timestamp: new Date().toISOString()
+    });
+
+    this._updateErrorUI(error);
+    this._logErrorMetrics(error);
+  }
+
+  /**
+   * Update UI to show error state
+   * @private
+   * @param {Error} error - The error that occurred
+   */
+  _updateErrorUI(error) {
     const startGameBtn = document.getElementById('start-game-btn');
     if (startGameBtn) {
       startGameBtn.disabled = false;
@@ -481,6 +719,41 @@ class GameApplication {
     const loadingText = document.querySelector('.loading-text');
     if (loadingText) {
       loadingText.textContent = `Initialization failed: ${error.message}`;
+    }
+  }
+
+  /**
+   * Log error metrics for debugging
+   * @private
+   * @param {Error} error - The error that occurred
+   */
+  _logErrorMetrics(error) {
+    // Log error metrics for debugging and monitoring
+    const errorMetrics = {
+      type: 'initialization_error',
+      message: error.message,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+    
+    console.log('📊 Error metrics:', errorMetrics);
+  }
+
+  /**
+   * Safe execution wrapper for methods that might fail
+   * @private
+   * @param {Function} method - Method to execute safely
+   * @param {string} methodName - Name of the method for logging
+   * @param {Array} args - Arguments to pass to the method
+   * @returns {*} Result of the method execution or null if it failed
+   */
+  _safeExecute(method, methodName, args = []) {
+    try {
+      return method.apply(this, args);
+    } catch (error) {
+      console.error(`❌ Error in ${methodName}:`, error.message);
+      return null;
     }
   }
 
@@ -582,56 +855,95 @@ class GameApplication {
     console.log('Loading screen hidden, game UI shown');
   }
 
+  // ============================================================================
+  // GAME CONTROL METHODS
+  // ============================================================================
+
   /**
    * Start the game
+   * Initializes the game world and begins the game loop
+   * @throws {Error} If game is not properly initialized or WASM is not loaded
    */
   startGame() {
     if (!this.isInitialized) {
-      console.error('Game not initialized');
-      return;
+      throw new Error('Cannot start game - application not initialized');
     }
 
     console.log('🎮 Starting game with WASM-first architecture');
     
     // Verify WASM is ready
     if (!this.wasmManager.isLoaded) {
-      console.error('❌ WASM not loaded - cannot start deterministic gameplay');
-      return;
-    } else {
-      console.log('✅ WASM engine ready, starting deterministic gameplay');
+      throw new Error('Cannot start game - WASM not loaded, deterministic gameplay unavailable');
     }
-
-    // Start game state manager
-    this.gameStateManager.startGame();
     
-    // Initialize game world
-    this.initializeGameWorld();
+    console.log('✅ WASM engine ready, starting deterministic gameplay');
+
+    try {
+      // Start game state manager
+      this.gameStateManager.startGame();
+      
+      // Initialize game world
+      this.initializeGameWorld();
+      
+      console.log('🎉 Game started successfully');
+    } catch (error) {
+      console.error('❌ Failed to start game:', error);
+      throw error;
+    }
   }
+
+  // ============================================================================
+  // GAME WORLD INITIALIZATION METHODS
+  // ============================================================================
 
   /**
    * Initialize the game world
+   * Spawns player, enemies, and sets up initial world state
    * @private
+   * @throws {Error} If world initialization fails
    */
   initializeGameWorld() {
     console.log('🌍 Initializing game world...');
     
     try {
-      // Spawn player at world center
-      this.spawnPlayer();
-      
-      // Spawn initial enemies
-      this.spawnWolves();
-      
-      // Initialize world state
-      if (this.wasmManager.isLoaded) {
-        const currentPhase = this.wasmManager.getPhase();
-        console.log(`🎯 Game started in phase: ${this.getPhaseNameById(currentPhase)}`);
-      }
+      this._spawnPlayer();
+      this._spawnWolves();
+      this._logInitialPhase();
       
       console.log('✅ Game world initialized successfully');
       
     } catch (error) {
       console.error('❌ Failed to initialize game world:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Spawn player at world center
+   * @private
+   * @throws {Error} If player spawning fails
+   */
+  _spawnPlayer() {
+    this.spawnPlayer();
+  }
+
+  /**
+   * Spawn initial wolf enemies
+   * @private
+   * @throws {Error} If wolf spawning fails
+   */
+  _spawnWolves() {
+    this.spawnWolves();
+  }
+
+  /**
+   * Log the initial game phase
+   * @private
+   */
+  _logInitialPhase() {
+    if (this.wasmManager.isLoaded) {
+      const currentPhase = this.wasmManager.getPhase();
+      console.log(`🎯 Game started in phase: ${this.getPhaseNameById(currentPhase)}`);
     }
   }
 
@@ -662,28 +974,28 @@ class GameApplication {
     // Get initial position from WASM if available
     if (this.wasmManager && this.wasmManager.isLoaded) {
       const wasmPos = this.wasmManager.getPlayerPosition();
-      const posX = wasmPos.x * this.WORLD_WIDTH;
-      const posY = wasmPos.y * this.WORLD_HEIGHT;
       
-      this.animatedPlayer.x = posX;
-      this.animatedPlayer.y = posY;
-      console.log(`Player spawned at WASM position: (${posX.toFixed(0)}, ${posY.toFixed(0)}) from normalized (${wasmPos.x.toFixed(3)}, ${wasmPos.y.toFixed(3)})`);
+      // Use normalized coordinates directly (0-1 range)
+      this.animatedPlayer.x = wasmPos.x;
+      this.animatedPlayer.y = wasmPos.y;
+      console.log(`Player spawned at WASM normalized position: (${wasmPos.x.toFixed(3)}, ${wasmPos.y.toFixed(3)})`);
       
       // Debug: Check if position is valid
-      if (posX < 0 || posX > this.WORLD_WIDTH || posY < 0 || posY > this.WORLD_HEIGHT) {
-        console.warn('Player spawned at invalid position, using center fallback');
-        this.animatedPlayer.x = this.WORLD_WIDTH / 2;
-        this.animatedPlayer.y = this.WORLD_HEIGHT / 2;
+      if (wasmPos.x < 0 || wasmPos.x > 1 || wasmPos.y < 0 || wasmPos.y > 1) {
+        console.warn('Player spawned at invalid normalized position, using center fallback');
+        this.animatedPlayer.x = 0.5;
+        this.animatedPlayer.y = 0.5;
       }
     } else {
-      // Fallback to center of world
-      const posX = this.WORLD_WIDTH / 2;
-      const posY = this.WORLD_HEIGHT / 2;
-      
-      this.animatedPlayer.x = posX;
-      this.animatedPlayer.y = posY;
-      console.log(`Player spawned at center: (${posX.toFixed(0)}, ${posY.toFixed(0)})`);
+      // Fallback to center (normalized coordinates)
+      this.animatedPlayer.x = 0.5;
+      this.animatedPlayer.y = 0.5;
+      console.log(`Player spawned at center (normalized): (0.5, 0.5)`);
     }
+    
+    // Make gameRenderer globally available for coordinate conversion
+    globalThis.gameRenderer = this.gameRenderer;
+    globalThis.wasmExports = this.wasmManager?.exports;
     
     // Debug: Log final player position
     console.log('Final player position:', {
@@ -757,206 +1069,379 @@ class GameApplication {
 
   /**
    * Main game loop
+   * Handles frame timing, updates all systems, and renders the frame
    * @private
    */
   gameLoop() {
     const frameStartTime = performance.now();
-    const currentTime = frameStartTime;
-    const deltaTime = (currentTime - this.lastFrameTime) / 1000; // Convert to seconds
-    this.lastFrameTime = currentTime;
+    const deltaTime = this._calculateDeltaTime(frameStartTime);
     this.frameCount++;
 
     try {
-      // Get input state from input manager (with null check)
-      const inputState = this.inputManager?.getInputState() || {};
-      
-      // Debug input state retrieval
-      if (this.frameCount % 60 === 0) { // Log every second at 60fps
-        console.log(`🎮 Input manager status: ${!!this.inputManager}, input state:`, inputState);
-      }
-
-      // Update game state with individual error handling
-      try {
-        this.gameStateManager.update(deltaTime, inputState);
-      } catch (gameStateError) {
-        console.error('Error updating game state:', gameStateError);
-        // Continue with other updates even if game state update fails
-      }
-
-      // Sync player position from WASM to animated player
-      try {
-        if (this.animatedPlayer && this.gameStateManager.playerState) {
-          const oldX = this.animatedPlayer.x;
-          const oldY = this.animatedPlayer.y;
-          this.animatedPlayer.x = this.gameStateManager.playerState.position?.x || this.animatedPlayer.x;
-          this.animatedPlayer.y = this.gameStateManager.playerState.position?.y || this.animatedPlayer.y;
-          
-          // Log significant movement
-          const dx = this.animatedPlayer.x - oldX;
-          const dy = this.animatedPlayer.y - oldY;
-          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-            console.log(`Player moved: (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) -> (${this.animatedPlayer.x.toFixed(0)}, ${this.animatedPlayer.y.toFixed(0)})`);
-          }
-        }
-      } catch (positionError) {
-        console.error('Error syncing player position:', positionError);
-      }
-
-      // Update wolf AI
-      try {
-        if (this.wolfAISystem && this.animatedPlayer) {
-          this.wolfAISystem.update(deltaTime, this.animatedPlayer, this.wolfCharacters);
-        }
-      } catch (aiError) {
-        console.error('Error updating wolf AI:', aiError);
-      }
-
-      // Update audio visualizations
-      try {
-        this.audioManager.updateVocalizationVisuals();
-      } catch (audioError) {
-        console.error('Error updating audio visualizations:', audioError);
-      }
-
-      // Update Roguelike HUD
-      try {
-        if (this.roguelikeHUD) {
-          this.roguelikeHUD.update();
-        }
-      } catch (hudError) {
-        console.error('Error updating Roguelike HUD:', hudError);
-      }
-
-      // Update Combat Feedback
-      try {
-        if (this.combatFeedback) {
-          this.combatFeedback.update();
-        }
-      } catch (combatError) {
-        console.error('Error updating Combat Feedback:', combatError);
-      }
-
-      // Update Phase Overlay Manager
-      try {
-        if (this.phaseOverlayManager) {
-          this.phaseOverlayManager.update();
-        }
-      } catch (phaseError) {
-        console.error('Error updating Phase Overlay Manager:', phaseError);
-      }
-
-      // Run adaptive performance optimization every 60 frames
-      if (this.frameCount % 60 === 0) {
-        try {
-          uiPerformanceOptimizer.adaptiveOptimization();
-        } catch (perfError) {
-          console.error('Error in adaptive performance optimization:', perfError);
-        }
-      }
-
-      // Render frame
-      try {
-        this.render(deltaTime);
-      } catch (renderError) {
-        console.error('Error rendering frame:', renderError);
-      }
-
-      // Optimize frame time performance
-      try {
-        const frameEndTime = performance.now();
-        const optimizationResult = globalFrameTimeOptimizer.optimizeFrame(this.frameStartTime || frameEndTime);
-        
-        // Log performance warnings
-        if (optimizationResult.frameTime > 50) {
-          console.warn(`⚠️ Frame time exceeded target: ${optimizationResult.frameTime.toFixed(2)}ms (target: 16.67ms)`);
-        }
-      } catch (optimizationError) {
-        console.error('Frame optimization error:', optimizationError);
-      }
+      this._updateGameSystems(deltaTime);
+      this._updateUISystems();
+      this._renderFrame(deltaTime);
+      this._optimizeFramePerformance(frameStartTime);
 
       // Continue loop
       this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
 
     } catch (error) {
-      console.error('Critical error in game loop:', error);
-      // Only stop the game loop for truly critical errors
-      // For WASM errors, try to continue running
-      if (error.message && (error.message.includes('WASM') || error.message.includes('index out of bounds'))) {
-        console.warn('WASM error detected, continuing game loop with degraded functionality');
-        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
-      } else {
-        console.error('Stopping game loop due to critical error');
-        this.stopGameLoop();
+      this._handleGameLoopError(error);
+    }
+  }
+
+  /**
+   * Calculate delta time for this frame
+   * @private
+   * @param {number} frameStartTime - Current frame start time
+   * @returns {number} Delta time in seconds
+   */
+  _calculateDeltaTime(frameStartTime) {
+    const deltaTime = (frameStartTime - this.lastFrameTime) / 1000; // Convert to seconds
+    this.lastFrameTime = frameStartTime;
+    return deltaTime;
+  }
+
+  /**
+   * Update all game systems
+   * @private
+   * @param {number} deltaTime - Time elapsed since last frame in seconds
+   */
+  _updateGameSystems(deltaTime) {
+    const inputState = this._getInputState();
+    this._logDebugInfo(inputState);
+
+    this._updateGameState(deltaTime, inputState);
+    this._syncPlayerPosition();
+    this._updateWolfAI(deltaTime);
+    this._updateAudioVisualizations();
+  }
+
+  /**
+   * Get input state from input manager
+   * @private
+   * @returns {Object} Input state object
+   */
+  _getInputState() {
+    return this.inputManager?.getInputState() || {};
+  }
+
+  /**
+   * Log debug information every second
+   * @private
+   * @param {Object} inputState - Current input state
+   */
+  _logDebugInfo(inputState) {
+    if (this.frameCount % 60 === 0) { // Log every second at 60fps
+      console.log(`🎮 Input manager status: ${!!this.inputManager}, input state:`, inputState);
+    }
+  }
+
+  /**
+   * Update game state with error handling
+   * @private
+   * @param {number} deltaTime - Time elapsed since last frame
+   * @param {Object} inputState - Current input state
+   */
+  _updateGameState(deltaTime, inputState) {
+    try {
+      this.gameStateManager.update(deltaTime, inputState);
+    } catch (gameStateError) {
+      console.error('Error updating game state:', gameStateError);
+      // Continue with other updates even if game state update fails
+    }
+  }
+
+  /**
+   * Sync player position from WASM to animated player
+   * @private
+   */
+  _syncPlayerPosition() {
+    try {
+      if (this.animatedPlayer && this.wasmManager && this.wasmManager.isLoaded) {
+        const oldX = this.animatedPlayer.x;
+        const oldY = this.animatedPlayer.y;
+        
+        // Get position directly from WASM (normalized 0-1 coordinates)
+        const wasmPos = this.wasmManager.getPlayerPosition();
+        this.animatedPlayer.x = wasmPos.x;
+        this.animatedPlayer.y = wasmPos.y;
+        
+        // Log significant movement
+        const dx = this.animatedPlayer.x - oldX;
+        const dy = this.animatedPlayer.y - oldY;
+        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+          console.log(`Player moved: (${oldX.toFixed(3)}, ${oldY.toFixed(3)}) -> (${this.animatedPlayer.x.toFixed(3)}, ${this.animatedPlayer.y.toFixed(3)})`);
+        }
+      }
+    } catch (positionError) {
+      console.error('Error syncing player position:', positionError);
+    }
+  }
+
+  /**
+   * Update wolf AI system
+   * @private
+   * @param {number} deltaTime - Time elapsed since last frame
+   */
+  _updateWolfAI(deltaTime) {
+    try {
+      if (this.wolfAISystem && this.animatedPlayer) {
+        this.wolfAISystem.update(deltaTime, this.animatedPlayer, this.wolfCharacters);
+      }
+    } catch (aiError) {
+      console.error('Error updating wolf AI:', aiError);
+    }
+  }
+
+  /**
+   * Update audio visualizations
+   * @private
+   */
+  _updateAudioVisualizations() {
+    try {
+      this.audioManager.updateVocalizationVisuals();
+    } catch (audioError) {
+      console.error('Error updating audio visualizations:', audioError);
+    }
+  }
+
+  /**
+   * Update all UI systems
+   * @private
+   */
+  _updateUISystems() {
+    this._updateRoguelikeHUD();
+    this._updateCombatFeedback();
+    this._updatePhaseOverlayManager();
+    this._runPerformanceOptimization();
+  }
+
+  /**
+   * Update Roguelike HUD
+   * @private
+   */
+  _updateRoguelikeHUD() {
+    try {
+      if (this.roguelikeHUD) {
+        this.roguelikeHUD.update();
+      }
+    } catch (hudError) {
+      console.error('Error updating Roguelike HUD:', hudError);
+    }
+  }
+
+  /**
+   * Update Combat Feedback
+   * @private
+   */
+  _updateCombatFeedback() {
+    try {
+      if (this.combatFeedback) {
+        this.combatFeedback.update();
+      }
+    } catch (combatError) {
+      console.error('Error updating Combat Feedback:', combatError);
+    }
+  }
+
+  /**
+   * Update Phase Overlay Manager
+   * @private
+   */
+  _updatePhaseOverlayManager() {
+    try {
+      if (this.phaseOverlayManager) {
+        this.phaseOverlayManager.update();
+      }
+    } catch (phaseError) {
+      console.error('Error updating Phase Overlay Manager:', phaseError);
+    }
+  }
+
+  /**
+   * Run adaptive performance optimization every 60 frames
+   * @private
+   */
+  _runPerformanceOptimization() {
+    if (this.frameCount % 60 === 0) {
+      try {
+        uiPerformanceOptimizer.adaptiveOptimization();
+      } catch (perfError) {
+        console.error('Error in adaptive performance optimization:', perfError);
       }
     }
   }
 
   /**
+   * Render the current frame
+   * @private
+   * @param {number} deltaTime - Time elapsed since last frame
+   */
+  _renderFrame(deltaTime) {
+    try {
+      this.render(deltaTime);
+    } catch (renderError) {
+      console.error('Error rendering frame:', renderError);
+    }
+  }
+
+  /**
+   * Optimize frame time performance
+   * @private
+   * @param {number} frameStartTime - Frame start time
+   */
+  _optimizeFramePerformance(frameStartTime) {
+    try {
+      const frameEndTime = performance.now();
+      const optimizationResult = globalFrameTimeOptimizer.optimizeFrame(this.frameStartTime || frameEndTime);
+      
+      // Log performance warnings
+      if (optimizationResult.frameTime > 50) {
+        console.warn(`⚠️ Frame time exceeded target: ${optimizationResult.frameTime.toFixed(2)}ms (target: 16.67ms)`);
+      }
+    } catch (optimizationError) {
+      console.error('Frame optimization error:', optimizationError);
+    }
+  }
+
+  /**
+   * Handle game loop errors with appropriate recovery
+   * @private
+   * @param {Error} error - The error that occurred
+   */
+  _handleGameLoopError(error) {
+    console.error('Critical error in game loop:', error);
+    
+    // Only stop the game loop for truly critical errors
+    // For WASM errors, try to continue running
+    if (error.message && (error.message.includes('WASM') || error.message.includes('index out of bounds'))) {
+      console.warn('WASM error detected, continuing game loop with degraded functionality');
+      this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+    } else {
+      console.error('Stopping game loop due to critical error');
+      this.stopGameLoop();
+    }
+  }
+
+  /**
    * Render game frame
+   * Optimized rendering pipeline with performance monitoring
    * @private
    * @param {number} deltaTime - Time elapsed since last frame in seconds
    */
   render(deltaTime) {
-    if (!this.gameRenderer || !this.cameraEffects) return;
+    if (!this.gameRenderer || !this.cameraEffects) {
+      return;
+    }
+
+    const renderStartTime = performance.now();
 
     try {
-      // Clear canvas
-      const ctx = this.gameRenderer.ctx;
-      ctx.clearRect(0, 0, this.VIRTUAL_WIDTH, this.VIRTUAL_HEIGHT);
+      this._clearCanvas();
+      this._updateCamera(deltaTime);
+      this._renderWorld();
+      this._renderEntities();
+      this._renderUI();
 
-      // Update camera to follow player
-      if (this.animatedPlayer) {
-        // Update game renderer's player position for camera tracking
-        this.gameRenderer.player.x = this.animatedPlayer.x;
-        this.gameRenderer.player.y = this.animatedPlayer.y;
-        
-        // Update GameRenderer camera to follow player
-        this.gameRenderer.updateCamera(this.animatedPlayer.x, this.animatedPlayer.y, deltaTime);
-        
-        // Apply camera effects to follow player
-        this.cameraEffects.followTarget(this.animatedPlayer.x, this.animatedPlayer.y);
-        
-        // Update game renderer's camera with camera effects position
-        this.gameRenderer.camera.x = this.cameraEffects.position.x;
-        this.gameRenderer.camera.y = this.cameraEffects.position.y;
+      // Performance monitoring
+      const renderTime = performance.now() - renderStartTime;
+      if (renderTime > 16) { // Warn if render takes longer than one frame
+        console.warn(`⚠️ Render time exceeded target: ${renderTime.toFixed(2)}ms`);
       }
-
-      // Update camera effects
-      this.cameraEffects.update(deltaTime);
-      
-      // Apply camera shake if needed
-      const cameraState = this.gameStateManager.cameraState;
-      this.cameraEffects.shake(cameraState.shakeStrength);
-
-      // Render world
-      this.gameRenderer.render();
-
-      // Render wolves
-      const camera = this.gameRenderer.camera;
-      this.wolfCharacters.forEach(wolf => {
-        wolf.render(ctx, camera);
-      });
-
-      // Render player
-      if (this.animatedPlayer) {
-        // Debug: Log player rendering
-        if (this.frameCount % 60 === 0) {
-          console.log('Rendering player at:', {
-            x: this.animatedPlayer.x,
-            y: this.animatedPlayer.y,
-            camera: camera
-          });
-        }
-        this.animatedPlayer.render(ctx, camera);
-      } else {
-        console.warn('No animatedPlayer to render');
-      }
-
-      // Render UI overlays
-      this.renderUI();
 
     } catch (error) {
       console.error('Error in render loop:', error);
+    }
+  }
+
+  /**
+   * Clear the canvas for new frame
+   * @private
+   */
+  _clearCanvas() {
+    const ctx = this.gameRenderer.ctx;
+    ctx.clearRect(0, 0, this.VIRTUAL_WIDTH, this.VIRTUAL_HEIGHT);
+  }
+
+  /**
+   * Update camera system
+   * @private
+   * @param {number} deltaTime - Time elapsed since last frame
+   */
+  _updateCamera(deltaTime) {
+    if (!this.animatedPlayer || !this.gameRenderer) {
+      return;
+    }
+
+    // Convert WASM coordinates to world coordinates for camera tracking
+    const worldPos = this.gameRenderer.wasmToWorld(this.animatedPlayer.x, this.animatedPlayer.y);
+    
+    // Update game renderer's player position for camera tracking
+    this.gameRenderer.player.x = worldPos.x;
+    this.gameRenderer.player.y = worldPos.y;
+    
+    // Update GameRenderer camera to follow player
+    this.gameRenderer.updateCamera(worldPos.x, worldPos.y, deltaTime);
+    
+    // Apply camera effects to follow player
+    this.cameraEffects.followTarget(worldPos.x, worldPos.y);
+    
+    // Update game renderer's camera with camera effects position
+    this.gameRenderer.camera.x = this.cameraEffects.position.x;
+    this.gameRenderer.camera.y = this.cameraEffects.position.y;
+
+    // Update camera effects
+    this.cameraEffects.update(deltaTime);
+    
+    // Apply camera shake if needed
+    const cameraState = this.gameStateManager.cameraState;
+    this.cameraEffects.shake(cameraState.shakeStrength);
+  }
+
+  /**
+   * Render the game world
+   * @private
+   */
+  _renderWorld() {
+    this.gameRenderer.render();
+  }
+
+  /**
+   * Render all game entities (wolves, player)
+   * @private
+   */
+  _renderEntities() {
+    const ctx = this.gameRenderer.ctx;
+    const camera = this.gameRenderer.camera;
+
+    // Render wolves
+    this.wolfCharacters.forEach(wolf => {
+      wolf.render(ctx, camera);
+    });
+
+    // Render player
+    if (this.animatedPlayer) {
+      this._logPlayerRenderDebug(camera);
+      this.animatedPlayer.render(ctx, camera);
+    } else {
+      console.warn('No animatedPlayer to render');
+    }
+  }
+
+  /**
+   * Log player rendering debug info every second
+   * @private
+   * @param {Object} camera - Camera object
+   */
+  _logPlayerRenderDebug(camera) {
+    if (this.frameCount % 60 === 0) {
+      console.log('Rendering player at:', {
+        x: this.animatedPlayer.x,
+        y: this.animatedPlayer.y,
+        camera: camera
+      });
     }
   }
 
@@ -1037,30 +1522,62 @@ class GameApplication {
     }
   }
 
+  // ============================================================================
+  // MULTIPLAYER & ROOM MANAGEMENT METHODS
+  // ============================================================================
+
   /**
    * Update rooms list display
+   * Refreshes the UI with current available rooms
    */
   updateRoomsList() {
     const roomsList = document.getElementById('roomsList');
-    if (!roomsList) return;
+    if (!roomsList) {
+      console.warn('Rooms list element not found');
+      return;
+    }
 
-    const rooms = this.roomManager.getRoomList({ hasSpace: true });
+    try {
+      const rooms = this.roomManager.getRoomList({ hasSpace: true });
+      this._renderRoomsList(roomsList, rooms);
+    } catch (error) {
+      console.error('Failed to update rooms list:', error);
+      roomsList.innerHTML = '<p style="color: #ff6b6b;">Error loading rooms</p>';
+    }
+  }
 
+  /**
+   * Render the rooms list HTML
+   * @private
+   * @param {HTMLElement} roomsList - The rooms list DOM element
+   * @param {Array} rooms - Array of room objects
+   */
+  _renderRoomsList(roomsList, rooms) {
     if (rooms.length === 0) {
       roomsList.innerHTML = '<p style="color: #888;">No rooms available. Create one!</p>';
     } else {
-      roomsList.innerHTML = rooms.map(room => `
-        <div style="border: 1px solid #333; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
-          <h4 style="margin: 0; color: #4a90e2;">${room.name}</h4>
-          <p style="margin: 5px 0; color: #888;">
-            ${room.players.length}/${room.maxPlayers} players | 
-            Mode: ${room.gameMode} | 
-            Code: ${room.code}
-          </p>
-          <button onclick="gameApp.joinRoom('${room.id}')" style="padding: 5px 10px; background: #4a90e2; border: none; color: white; border-radius: 3px; cursor: pointer;">Join</button>
-        </div>
-      `).join('');
+      roomsList.innerHTML = rooms.map(room => this._createRoomHTML(room)).join('');
     }
+  }
+
+  /**
+   * Create HTML for a single room
+   * @private
+   * @param {Object} room - Room object
+   * @returns {string} HTML string for the room
+   */
+  _createRoomHTML(room) {
+    return `
+      <div style="border: 1px solid #333; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+        <h4 style="margin: 0; color: #4a90e2;">${room.name}</h4>
+        <p style="margin: 5px 0; color: #888;">
+          ${room.players.length}/${room.maxPlayers} players | 
+          Mode: ${room.gameMode} | 
+          Code: ${room.code}
+        </p>
+        <button onclick="gameApp.joinRoom('${room.id}')" style="padding: 5px 10px; background: #4a90e2; border: none; color: white; border-radius: 3px; cursor: pointer;">Join</button>
+      </div>
+    `;
   }
 
   /**
@@ -1474,45 +1991,130 @@ class GameApplication {
     return curseNames[curseType] || `Curse ${curseType}`;
   }
 
+  // ============================================================================
+  // CLEANUP & RESOURCE MANAGEMENT METHODS
+  // ============================================================================
+
   /**
-   * Cleanup resources
+   * Cleanup resources and destroy all game systems
+   * Properly disposes of all managers and stops the game loop
    */
   destroy() {
+    console.log('🧹 Cleaning up game application resources...');
+    
+    try {
+      this._stopGameSystems();
+      this._destroyManagers();
+      this._resetGameState();
+      
+      console.log('✅ Game application cleanup completed');
+    } catch (error) {
+      console.error('❌ Error during cleanup:', error);
+    }
+  }
+
+  /**
+   * Stop game systems and loop
+   * @private
+   */
+  _stopGameSystems() {
     this.stopGameLoop();
-    
-    if (this.inputManager) {
-      this.inputManager.destroy();
+  }
+
+  /**
+   * Destroy all managers and UI systems
+   * @private
+   */
+  _destroyManagers() {
+    const managers = [
+      { name: 'inputManager', instance: this.inputManager },
+      { name: 'enhancedMobileControls', instance: this.enhancedMobileControls },
+      { name: 'uiEventHandlers', instance: this.uiEventHandlers },
+      { name: 'roguelikeHUD', instance: this.roguelikeHUD },
+      { name: 'combatFeedback', instance: this.combatFeedback },
+      { name: 'audioManager', instance: this.audioManager },
+      { name: 'enhancedUI', instance: this.enhancedUI }
+    ];
+
+    managers.forEach(({ name, instance }) => {
+      if (instance && typeof instance.destroy === 'function') {
+        try {
+          instance.destroy();
+          console.log(`✅ ${name} destroyed`);
+        } catch (error) {
+          console.error(`❌ Failed to destroy ${name}:`, error);
+        }
+      }
+    });
+  }
+
+  /**
+   * Reset game state
+   * @private
+   */
+  _resetGameState() {
+    if (this.gameStateManager) {
+      this.gameStateManager.reset();
     }
+  }
+
+  // ============================================================================
+  // UTILITY METHODS
+  // ============================================================================
+
+  /**
+   * Get application status information
+   * @returns {Object} Status object with initialization and system states
+   */
+  getStatus() {
+    return {
+      isInitialized: this.isInitialized,
+      wasmLoaded: this.wasmManager?.isLoaded || false,
+      gameRunning: this.gameStateManager?.isGameRunning || false,
+      frameCount: this.frameCount,
+      systems: {
+        renderer: !!this.gameRenderer,
+        camera: !!this.cameraEffects,
+        input: !!this.inputManager,
+        audio: !!this.audioManager,
+        ui: !!this.enhancedUI
+      }
+    };
+  }
+
+  /**
+   * Validate that all required systems are initialized
+   * @returns {boolean} True if all systems are ready
+   */
+  validateSystems() {
+    const requiredSystems = [
+      { name: 'WASM Manager', instance: this.wasmManager },
+      { name: 'Game Renderer', instance: this.gameRenderer },
+      { name: 'Camera Effects', instance: this.cameraEffects },
+      { name: 'Game State Manager', instance: this.gameStateManager },
+      { name: 'Input Manager', instance: this.inputManager }
+    ];
+
+    const missingSystems = requiredSystems.filter(({ instance }) => !instance);
     
-    if (this.enhancedMobileControls) {
-      this.enhancedMobileControls.destroy();
+    if (missingSystems.length > 0) {
+      console.warn('⚠️ Missing required systems:', missingSystems.map(s => s.name));
+      return false;
     }
-    
-    if (this.uiEventHandlers) {
-      this.uiEventHandlers.destroy();
-    }
-    
-    if (this.roguelikeHUD) {
-      this.roguelikeHUD.destroy();
-    }
-    
-    if (this.combatFeedback) {
-      this.combatFeedback.destroy();
-    }
-    
-    if (this.audioManager) {
-      this.audioManager.destroy();
-    }
-    
-    if (this.enhancedUI) {
-      this.enhancedUI.destroy();
-    }
-    
-    this.gameStateManager.reset();
+
+    return true;
   }
 }
 
-// Global game application instance
+// ============================================================================
+// GLOBAL APPLICATION INSTANCE
+// ============================================================================
+
+/**
+ * Global game application instance
+ * This instance is created when the module loads and manages the entire game
+ * @type {GameApplication}
+ */
 const gameApp = new GameApplication();
 
 // Global functions for UI compatibility

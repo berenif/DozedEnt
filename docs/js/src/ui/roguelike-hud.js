@@ -93,19 +93,20 @@ export class RoguelikeHUD {
           <div class="panel-title">Quick Items</div>
           <div class="inventory-slots">
             <div class="inventory-slot" data-slot="0">
-              <div class="slot-key">1</div>
+              <div class="slot-key">Q</div>
               <div class="slot-icon">🗡️</div>
             </div>
             <div class="inventory-slot" data-slot="1">
-              <div class="slot-key">2</div>
+              <div class="slot-key">W</div>
               <div class="slot-icon">🛡️</div>
             </div>
             <div class="inventory-slot" data-slot="2">
-              <div class="slot-key">3</div>
+              <div class="slot-key">E</div>
               <div class="slot-icon">🧪</div>
             </div>
-            <div class="inventory-slot empty" data-slot="3">
-              <div class="slot-key">4</div>
+            <div class="inventory-slot" data-slot="3">
+              <div class="slot-key">R</div>
+              <div class="slot-icon">✨</div>
             </div>
           </div>
         </div>

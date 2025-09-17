@@ -2130,4 +2130,3 @@ class WolfAnimationSystem {
 }
 
 export { WolfAnimationSystem, WolfAnimationSystem as default };
-//# sourceMappingURL=wolf-animation.js.map

@@ -98,8 +98,8 @@ export class UIPerformanceOptimizer {
         this.performanceMetrics.worstFrameTime = Math.max(this.performanceMetrics.worstFrameTime, this.frameTime);
         this.fps = 1000 / this.frameTime;
         
-        // Log performance warnings
-        if (this.frameTime > this.targetFrameTime * 1.5) {
+        // Log performance warnings (less aggressive threshold)
+        if (this.frameTime > this.targetFrameTime * 2.5) {
             console.warn(`⚠️ Frame time exceeded target: ${this.frameTime.toFixed(2)}ms (target: ${this.targetFrameTime}ms)`);
         }
         

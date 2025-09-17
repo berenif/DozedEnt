@@ -90,6 +90,66 @@ export class WasmLazyLoader {
   }
 
   /**
+   * Clear source map references from WASM instance
+   * @private
+   */
+  clearSourceMapReferences(instance) {
+    if (!instance) {
+      return;
+    }
+    
+    try {
+      // Clear all possible source map properties
+      const sourceMapProps = ['sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap'];
+      
+      sourceMapProps.forEach(prop => {
+        if (instance[prop]) {
+          delete instance[prop];
+        }
+        if (instance.module && instance.module[prop]) {
+          delete instance.module[prop];
+        }
+      });
+      
+      // Also clear any nested source map references
+      if (instance.exports && typeof instance.exports === 'object') {
+        sourceMapProps.forEach(prop => {
+          if (instance.exports[prop]) {
+            delete instance.exports[prop];
+          }
+        });
+      }
+      
+      // Clear any WebAssembly.Module source map references that might cause URL constructor errors
+      if (instance.module) {
+        // Remove any source map URL that might be invalid
+        if (instance.module.sourceMapURL === null || instance.module.sourceMapURL === '') {
+          delete instance.module.sourceMapURL;
+        }
+        // Clear any other potential source map references
+        if (instance.module._sourceMapURL) {
+          delete instance.module._sourceMapURL;
+        }
+      }
+      
+      // Clear any global source map references that might interfere with devtools
+      if (typeof window !== 'undefined' && window.WebAssembly) {
+        // Ensure no global source map state is left
+        try {
+          if (window.WebAssembly.Module.prototype.sourceMapURL === null) {
+            delete window.WebAssembly.Module.prototype.sourceMapURL;
+          }
+        } catch (prototypeError) {
+          // Ignore prototype modification errors
+        }
+      }
+    } catch (e) {
+      // Ignore errors when clearing source map references
+      console.debug('Source map cleanup warning:', e.message);
+    }
+  }
+
+  /**
    * Perform the actual lazy loading with retry logic
    * @private
    */
@@ -117,6 +177,9 @@ export class WasmLazyLoader {
           );
           instance = result.instance;
           
+          // Immediately clear any source map references to prevent devtools issues
+          this.clearSourceMapReferences(instance);
+          
           // Clear any source map references to prevent null URL errors
           if (instance && typeof instance.exports === 'object') {
             // Ensure no source map URLs are attached that could cause issues
@@ -125,8 +188,20 @@ export class WasmLazyLoader {
               if (instance.sourceMapURL) {
                 delete instance.sourceMapURL;
               }
+              // Also clear any WebAssembly.Module source map references
+              if (instance.module && instance.module.sourceMapURL) {
+                delete instance.module.sourceMapURL;
+              }
+              // Clear any additional source map properties that might exist
+              if (instance._sourceMapURL) {
+                delete instance._sourceMapURL;
+              }
+              if (instance.module && instance.module._sourceMapURL) {
+                delete instance.module._sourceMapURL;
+              }
             } catch (e) {
               // Ignore errors when clearing source map references
+              console.debug('Source map cleanup warning:', e.message);
             }
           }
         } else {

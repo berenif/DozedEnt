@@ -275,8 +275,8 @@ export class PerformanceOptimizer {
       this.metrics.fps = 1000 / this.metrics.avgFrameTime;
     }
     
-    // Check for performance issues
-    if (frameTime > this.targets.maxFrameTime * 1.5) {
+    // Check for performance issues (less aggressive threshold)
+    if (frameTime > this.targets.maxFrameTime * 2.5) {
       this.handlePerformanceIssue('frame-time', frameTime);
     }
   }
@@ -310,7 +310,12 @@ export class PerformanceOptimizer {
    * Handle performance issues
    */
   handlePerformanceIssue(type, value) {
-    console.warn(`Performance issue detected: ${type}`, value);
+    // Only log severe performance issues to reduce console spam
+    if (type === 'frame-time' && value > this.targets.maxFrameTime * 3) {
+      console.warn(`Performance issue detected: ${type}`, value);
+    } else if (type !== 'frame-time') {
+      console.warn(`Performance issue detected: ${type}`, value);
+    }
     
     switch (type) {
       case 'frame-time':
@@ -343,6 +348,42 @@ export class PerformanceOptimizer {
     
     // Reduce update frequency for expensive operations
     this.throttleExpensiveOperations();
+    
+    // Batch WASM calls to reduce overhead
+    this.enableWasmCallBatching();
+  }
+
+  /**
+   * Enable WASM call batching to reduce overhead
+   */
+  enableWasmCallBatching() {
+    // Enable batching for WASM calls
+    this.wasmCallBatching = true;
+    this.batchedWasmCalls = [];
+    
+    // Process batched calls every few frames
+    this.batchProcessInterval = setInterval(() => {
+      this.processBatchedWasmCalls();
+    }, 16); // ~60fps
+  }
+
+  /**
+   * Process batched WASM calls
+   */
+  processBatchedWasmCalls() {
+    if (this.batchedWasmCalls.length === 0) {
+      return;
+    }
+    
+    // Process all batched calls at once
+    const calls = this.batchedWasmCalls.splice(0);
+    calls.forEach(call => {
+      try {
+        call.func.apply(call.context, call.args);
+      } catch (error) {
+        console.warn('Batched WASM call failed:', error);
+      }
+    });
   }
 
   /**

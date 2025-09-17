@@ -6,7 +6,7 @@ import RealisticProceduralAnimator from './realistic-procedural-animator.js'
 // SoundSystem and ParticleSystem imports removed - not used in this file
 
 export class AnimatedPlayer {
-    constructor(x = 400, y = 300, options = {}) {
+    constructor(x = 0.5, y = 0.5, options = {}) {
         // Position - driven by WASM (normalized 0-1 coordinates)
         this.x = x
         this.y = y

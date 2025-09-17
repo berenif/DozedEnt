@@ -52,10 +52,10 @@ export class FrameTimeOptimizer {
     // Update metrics
     this.updateMetrics(frameTime);
     
-    // Apply optimizations if frame time is too high
-    if (frameTime > this.targetFrameTime * 1.5) { // 25ms threshold
+    // Apply optimizations if frame time is too high (less aggressive thresholds)
+    if (frameTime > this.targetFrameTime * 3) { // 50ms threshold for emergency
       this.applyEmergencyOptimizations();
-    } else if (frameTime > this.targetFrameTime) {
+    } else if (frameTime > this.targetFrameTime * 2) { // 33ms threshold for standard
       this.applyStandardOptimizations();
     }
     

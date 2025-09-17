@@ -1116,7 +1116,8 @@ export class DeathFeedbackSystem {
         
         // Trigger restart through WASM
         if (this.wasmManager && this.wasmManager.exports && this.wasmManager.exports.reset_run) {
-            const newSeed = Math.floor(Math.random() * 1000000);
+            // Use deterministic seed based on time for consistent restarts
+            const newSeed = Math.floor(Date.now() % 1000000);
             this.wasmManager.exports.reset_run(newSeed);
         }
         

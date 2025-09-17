@@ -126,7 +126,7 @@ export function createEnhancedWolfAnimComponent(overrides = {}) {
         
         // Procedural variation seeds for unique animations
         // ARCHITECTURAL VIOLATION FIXED: Use deterministic seed from WASM instead of Math.random()
-        individualSeed: 0, // Should be set from WASM-generated deterministic seed
+        individualSeed: overrides.individualSeed || 0, // Should be set from WASM-generated deterministic seed
         personalityTraits: {
             confidence: 0.5,          // Affects posture and movement
             playfulness: 0.5,         // Affects idle animations
@@ -458,13 +458,17 @@ function updatePackFormation(comp, packData) {
             break
         case 'tight':
             // ARCHITECTURAL VIOLATION FIXED: Pack positioning should be deterministic
-            comp.packPosition.x = 0 // Should use WASM-based deterministic positioning
-            comp.packPosition.y = 0
+            // Use deterministic positioning based on wolf index and formation
+            const tightAngle = (myIndex / packSize) * Math.PI * 2
+            comp.packPosition.x = Math.cos(tightAngle) * 1.5
+            comp.packPosition.y = Math.sin(tightAngle) * 1.5
             break
         default: // loose
             // ARCHITECTURAL VIOLATION FIXED: Pack positioning should be deterministic
-            comp.packPosition.x = 0 // Should use WASM-based deterministic positioning
-            comp.packPosition.y = 0
+            // Use deterministic positioning based on wolf index and formation
+            const looseAngle = (myIndex / packSize) * Math.PI * 2
+            comp.packPosition.x = Math.cos(looseAngle) * 3
+            comp.packPosition.y = Math.sin(looseAngle) * 3
             break
     }
 }
@@ -512,7 +516,13 @@ function updateSocialBehavior(comp, packData, deltaTime) {
             )
             
             // ARCHITECTURAL VIOLATION FIXED: Behavioral decisions should be deterministic
-            if (distance < 2.0 /* && should use WASM-based decision */) {
+            // Use deterministic decision based on distance, personality, and wolf ID
+            const playfulness = comp.personalityTraits.playfulness
+            const threshold = 0.3 + playfulness * 0.4 // Base threshold modified by personality
+            const wolfId = comp.individualSeed || 0
+            const decision = (wolfId + Math.floor(distance * 1000)) % 1000
+            
+            if (distance < 2.0 && decision < threshold * 1000) {
                 comp.behavior = EnhancedWolfBehavior.Socializing
                 comp.socialInteractionTarget = other.id
             }
@@ -809,10 +819,12 @@ export function getWolfBehaviorName(behavior) {
 export function createRealisticWolfPersonality(seed = 0.5) {
     // ARCHITECTURAL VIOLATION FIXED: Default seed should be deterministic
     // Generate correlated personality traits based on real wolf psychology
-    const confidence = 0.3 + seed * 0.4
-    const playfulness = Math.max(0, Math.min(1, 0.7 - confidence * 0.3 + (seed * 0.4 - 0.2)))
-    const aggression = Math.max(0, Math.min(1, confidence * 0.6 + (seed * 0.6 - 0.3)))
-    const curiosity = 0.4 + seed * 0.4
+    // Use deterministic seed instead of random values
+    const deterministicSeed = typeof seed === 'number' ? seed : 0.5
+    const confidence = 0.3 + deterministicSeed * 0.4
+    const playfulness = Math.max(0, Math.min(1, 0.7 - confidence * 0.3 + (deterministicSeed * 0.4 - 0.2)))
+    const aggression = Math.max(0, Math.min(1, confidence * 0.6 + (deterministicSeed * 0.6 - 0.3)))
+    const curiosity = 0.4 + deterministicSeed * 0.4
     
     return {
         confidence,

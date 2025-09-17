@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include "weapons.h"
+#include "achievement-system.h"
+#include "statistics-system.h"
 
 // Additional tags for shop items
 #define TAG_CRIT (1 << 16)

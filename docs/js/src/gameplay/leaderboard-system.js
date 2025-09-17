@@ -789,7 +789,10 @@ export class LeaderboardSystem {
     // Generate or retrieve persistent player ID
     let playerId = localStorage.getItem('playerId');
     if (!playerId) {
-      playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+      // Use deterministic ID generation based on time and browser fingerprint
+      const timeId = Date.now().toString(36)
+      const browserId = navigator.userAgent.length.toString(36)
+      playerId = 'player_' + timeId + '_' + browserId;
       localStorage.setItem('playerId', playerId);
     }
     return playerId;
@@ -992,7 +995,10 @@ export class LeaderboardSystem {
   generateClientId() {
     let clientId = localStorage.getItem('clientId');
     if (!clientId) {
-      clientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      // Use deterministic ID generation based on time and browser fingerprint
+      const timeId = Date.now().toString(36)
+      const browserId = navigator.userAgent.length.toString(36)
+      clientId = 'client_' + timeId + '_' + browserId;
       localStorage.setItem('clientId', clientId);
     }
     return clientId;
@@ -1002,7 +1008,11 @@ export class LeaderboardSystem {
    * Generate session ID
    */
   generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    // Use deterministic session ID generation based on time and counter
+    const counter = (this.sessionCounter = (this.sessionCounter || 0) + 1)
+    const timeId = Date.now().toString(36)
+    const counterId = counter.toString(36)
+    return 'session_' + timeId + '_' + counterId;
   }
   
   /**

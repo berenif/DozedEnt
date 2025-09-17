@@ -1,8 +1,14 @@
 #pragma once
 
 #include "internal_core.h"
+#include "weapons.h"
 #include <cstring>
 #include <cstdlib>
+
+// Forward declarations
+void apply_loaded_effects();
+void validate_inventory_state();
+void recalculate_player_stats();
 
 // ============================================================================
 // Save/Load System - WASM Implementation
@@ -44,7 +50,7 @@ struct GameSaveData {
     
     // Inventory and equipment
     int gold, essence;
-    int currentWeapon;
+    unsigned char currentWeapon;  // WeaponType enum value
     int equippedArmor;
     uint32_t inventory[32]; // Item IDs
     uint32_t inventoryCount;
@@ -55,9 +61,12 @@ struct GameSaveData {
     int pityTimer;
     int superPityTimer;
     
-    // Active effects and curses
-    uint32_t activeCurses;
-    float curseIntensities[8];
+    // Active effects and curses (risk.h system)
+    unsigned char curseCount;
+    unsigned char curseTypes[4];      // CurseType enum values
+    float curseIntensities[4];        // Curse intensity values
+    float curseDurations[4];          // Remaining duration for each curse
+    unsigned char cursePermanent[4];   // Whether each curse is permanent
     uint32_t activeBuffs;
     float buffDurations[16];
     
@@ -72,7 +81,7 @@ struct GameSaveData {
     
     // Achievement progress
     uint64_t achievementFlags;
-    uint32_t achievementProgress[32];
+    uint32_t achievementProgress[64];  // MAX_ACHIEVEMENTS from achievement-system.h
     
     // Settings
     float masterVolume;
@@ -139,7 +148,7 @@ void serializeGameState() {
     // Currency and equipment
     g_saveData.gold = g_gold;
     g_saveData.essence = g_essence;
-    g_saveData.currentWeapon = g_current_weapon;
+    g_saveData.currentWeapon = (unsigned char)g_current_weapon;
     g_saveData.equippedArmor = g_equipped_armor;
     
     // Copy inventory
@@ -156,10 +165,20 @@ void serializeGameState() {
     g_saveData.pityTimer = g_pity_timer;
     g_saveData.superPityTimer = g_super_pity_timer;
     
-    // Active effects
-    g_saveData.activeCurses = g_active_curses;
-    for (int i = 0; i < 8; i++) {
-        g_saveData.curseIntensities[i] = g_curse_intensities[i];
+    // Active effects (risk.h curse system)
+    g_saveData.curseCount = g_curse_count;
+    for (int i = 0; i < MAX_ACTIVE_CURSES; i++) {
+        if (i < g_curse_count) {
+            g_saveData.curseTypes[i] = (unsigned char)g_active_curses[i].type;
+            g_saveData.curseIntensities[i] = g_active_curses[i].intensity;
+            g_saveData.curseDurations[i] = g_active_curses[i].remainingDuration;
+            g_saveData.cursePermanent[i] = g_active_curses[i].isPermanent ? 1 : 0;
+        } else {
+            g_saveData.curseTypes[i] = 0;
+            g_saveData.curseIntensities[i] = 0.0f;
+            g_saveData.curseDurations[i] = 0.0f;
+            g_saveData.cursePermanent[i] = 0;
+        }
     }
     g_saveData.activeBuffs = g_active_buffs;
     for (int i = 0; i < 16; i++) {
@@ -177,7 +196,7 @@ void serializeGameState() {
     
     // Achievements
     g_saveData.achievementFlags = g_achievement_flags;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 64; i++) {
         g_saveData.achievementProgress[i] = g_achievement_progress[i];
     }
     
@@ -220,7 +239,7 @@ bool deserializeGameState(const GameSaveData* saveData) {
     g_stamina = saveData->stamina;
     g_health = saveData->health;
     g_max_health = saveData->maxHealth;
-    g_phase = (Phase)saveData->currentPhase;
+    g_phase = (GamePhase)saveData->currentPhase;
     g_room_count = saveData->roomCount;
     g_rng_seed = saveData->seed;
     
@@ -233,7 +252,7 @@ bool deserializeGameState(const GameSaveData* saveData) {
     // Restore currency and equipment
     g_gold = saveData->gold;
     g_essence = saveData->essence;
-    g_current_weapon = saveData->currentWeapon;
+    g_current_weapon = (WeaponType)saveData->currentWeapon;
     g_equipped_armor = saveData->equippedArmor;
     
     // Restore inventory
@@ -250,10 +269,20 @@ bool deserializeGameState(const GameSaveData* saveData) {
     g_pity_timer = saveData->pityTimer;
     g_super_pity_timer = saveData->superPityTimer;
     
-    // Restore active effects
-    g_active_curses = saveData->activeCurses;
-    for (int i = 0; i < 8; i++) {
-        g_curse_intensities[i] = saveData->curseIntensities[i];
+    // Restore active effects (risk.h curse system)
+    g_curse_count = saveData->curseCount;
+    for (int i = 0; i < MAX_ACTIVE_CURSES; i++) {
+        if (i < g_curse_count) {
+            g_active_curses[i].type = (CurseType)saveData->curseTypes[i];
+            g_active_curses[i].intensity = saveData->curseIntensities[i];
+            g_active_curses[i].remainingDuration = saveData->curseDurations[i];
+            g_active_curses[i].isPermanent = saveData->cursePermanent[i] != 0;
+        } else {
+            g_active_curses[i].type = (CurseType)0;
+            g_active_curses[i].intensity = 0.0f;
+            g_active_curses[i].remainingDuration = 0.0f;
+            g_active_curses[i].isPermanent = false;
+        }
     }
     g_active_buffs = saveData->activeBuffs;
     for (int i = 0; i < 16; i++) {
@@ -271,7 +300,7 @@ bool deserializeGameState(const GameSaveData* saveData) {
     
     // Restore achievements
     g_achievement_flags = saveData->achievementFlags;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 64; i++) {
         g_achievement_progress[i] = saveData->achievementProgress[i];
     }
     
@@ -318,7 +347,7 @@ int load_save_data(const uint8_t* saveDataPtr, uint32_t dataSize) {
     
     if (deserializeGameState(saveData)) {
         // Reinitialize game systems with loaded data
-        reinitialize_game_systems();
+        reinitialize_ai_systems();
         return 1; // Success
     }
     
@@ -425,7 +454,7 @@ int auto_save_check() {
     // - After significant events (boss kills, rare item acquisition)
     
     static float lastAutoSaveTime = 0;
-    static Phase lastAutoSavePhase = Explore;
+    static GamePhase lastAutoSavePhase = GamePhase::Explore;
     
     bool shouldAutoSave = false;
     
@@ -501,28 +530,28 @@ void reinitialize_game_systems() {
     
     // Reinitialize phase-specific systems
     switch (g_phase) {
-        case Explore:
+        case GamePhase::Explore:
             init_explore_phase();
             break;
-        case Fight:
+        case GamePhase::Fight:
             init_fight_phase();
             break;
-        case Choose:
+        case GamePhase::Choose:
             init_choice_phase();
             break;
-        case PowerUp:
+        case GamePhase::PowerUp:
             init_powerup_phase();
             break;
-        case Risk:
+        case GamePhase::Risk:
             init_risk_phase();
             break;
-        case Escalate:
+        case GamePhase::Escalate:
             init_escalate_phase();
             break;
-        case CashOut:
+        case GamePhase::CashOut:
             init_cashout_phase();
             break;
-        case Reset:
+        case GamePhase::Reset:
             init_reset_phase();
             break;
     }
@@ -547,12 +576,11 @@ void reinitialize_game_systems() {
  * Apply loaded effects and validate them
  */
 void apply_loaded_effects() {
-    // Apply active curses with intensity validation
-    for (int i = 0; i < 8; i++) {
-        if (g_active_curses & (1 << i)) {
-            g_curse_intensities[i] = clamp(g_curse_intensities[i], 0.0f, 10.0f);
-            apply_curse_effect(i, g_curse_intensities[i]);
-        }
+    // Apply active curses with intensity validation (risk.h system)
+    for (int i = 0; i < g_curse_count; i++) {
+        g_active_curses[i].intensity = clamp(g_active_curses[i].intensity, 0.0f, 1.0f);
+        g_active_curses[i].remainingDuration = clamp(g_active_curses[i].remainingDuration, 0.0f, 3600.0f);
+        // Curse effects are applied automatically by the risk system
     }
     
     // Apply active buffs with duration validation
@@ -584,8 +612,8 @@ void validate_inventory_state() {
     }
     
     // Validate equipped items
-    if (!is_valid_weapon_id(g_current_weapon)) {
-        g_current_weapon = 0; // Default weapon
+    if (!is_valid_weapon_id((int)g_current_weapon)) {
+        g_current_weapon = WeaponType::BasicSword; // Default weapon
     }
     
     if (!is_valid_armor_id(g_equipped_armor)) {
@@ -662,7 +690,7 @@ const char* get_save_statistics() {
         g_saveData.currentWeapon,
         g_saveData.equippedArmor,
         g_saveData.inventoryCount,
-        __builtin_popcount(g_saveData.activeCurses),
+        g_saveData.curseCount,
         __builtin_popcount(g_saveData.activeBuffs),
         g_saveData.currentPhase
     );

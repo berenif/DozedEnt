@@ -2,6 +2,7 @@
 
 #include "internal_core.h"
 #include <cstring>
+#include <cstdio>
 
 // ============================================================================
 // Achievement System - WASM Implementation
