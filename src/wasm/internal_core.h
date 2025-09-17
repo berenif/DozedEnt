@@ -441,4 +441,105 @@ extern PlayerAnimState g_player_anim_state;
 // ---------------- Player Modifiers (from choices, etc) ----------------
 extern float g_max_stamina;
 
+// ---------------- Save/Load System Variables ----------------
+// Core game state variables
+static float g_player_x = 0.5f;  // Player X position (alias for g_pos_x)
+static float g_player_y = 0.5f;  // Player Y position (alias for g_pos_y)
+static int g_health = 100;       // Current health
+static int g_max_health = 100;   // Maximum health
+static unsigned long long g_rng_seed = 1ull; // RNG seed for deterministic gameplay
+static float g_game_time = 0.0f;  // Game time in seconds
+
+// Player progression
+static int g_player_level = 1;    // Player level
+static int g_skill_points = 0;    // Available skill points
+static uint32_t g_unlocked_skills = 0; // Bitfield of unlocked skills
+
+// Equipment and inventory
+static int g_current_weapon = 0;  // Current weapon ID
+static int g_equipped_armor = 0; // Equipped armor ID
+#define MAX_INVENTORY_SIZE 32
+static uint32_t g_inventory[MAX_INVENTORY_SIZE]; // Inventory items
+static uint32_t g_inventory_count = 0; // Number of items in inventory
+
+// Choice system
+#define MAX_CHOICE_HISTORY 64
+static uint32_t g_choice_history[MAX_CHOICE_HISTORY]; // Choice history
+static uint32_t g_choice_history_count = 0; // Number of choices made
+static int g_pity_timer = 0;     // Pity timer for rare choices
+static int g_super_pity_timer = 0; // Super pity timer for legendary choices
+
+// Active effects
+static uint32_t g_active_curses = 0; // Bitfield of active curses
+static float g_curse_intensities[8]; // Curse intensity values
+static uint32_t g_active_buffs = 0;  // Bitfield of active buffs
+static float g_buff_durations[16];   // Buff duration values
+
+// Statistics
+static int g_enemies_killed = 0;     // Total enemies killed
+static int g_rooms_cleared = 0;       // Total rooms cleared
+static int g_total_damage_dealt = 0; // Total damage dealt
+static int g_total_damage_taken = 0; // Total damage taken
+static int g_perfect_blocks = 0;     // Perfect blocks executed
+static int g_rolls_executed = 0;     // Rolls executed
+static float g_total_play_time = 0.0f; // Total play time
+
+// Settings
+static float g_master_volume = 1.0f; // Master volume (0.0-1.0)
+static float g_sfx_volume = 1.0f;     // SFX volume (0.0-1.0)
+static float g_music_volume = 1.0f;   // Music volume (0.0-1.0)
+static uint32_t g_control_settings = 0; // Control settings bitfield
+
+// Achievement system variables (declared in achievement-system.h)
+extern uint64_t g_achievement_flags;
+extern uint32_t g_achievement_progress[32];
+
+// ---------------- Save/Load System Helper Functions ----------------
+// Helper functions for save/load system validation and initialization
+
+// Initialize RNG with seed
+static inline void init_rng(unsigned long long seed) {
+    g_rng = seed ? seed : 1ull;
+    g_rng_seed = seed;
+}
+
+// Clamp function for validation
+static inline int clamp(int value, int min_val, int max_val) {
+    if (value < min_val) return min_val;
+    if (value > max_val) return max_val;
+    return value;
+}
+
+// Phase initialization functions (placeholders - implemented in respective phase files)
+static inline void init_explore_phase() { /* Implemented in explore phase */ }
+static inline void init_fight_phase() { /* Implemented in fight phase */ }
+static inline void init_choice_phase() { /* Implemented in choice phase */ }
+static inline void init_powerup_phase() { /* Implemented in powerup phase */ }
+static inline void init_risk_phase() { /* Implemented in risk phase */ }
+static inline void init_escalate_phase() { /* Implemented in escalate phase */ }
+static inline void init_cashout_phase() { /* Implemented in cashout phase */ }
+static inline void init_reset_phase() { /* Implemented in reset phase */ }
+
+// AI system reinitialization
+static inline void reinitialize_ai_systems() { /* Implemented in AI systems */ }
+
+// Effect application functions
+static inline void apply_curse_effect(int curse_type, float intensity) { /* Implemented in status effects */ }
+static inline void apply_buff_effect(int buff_type, float duration) { /* Implemented in status effects */ }
+
+// Achievement system reinitialization
+static inline void reinitialize_achievement_system() { /* Implemented in achievement system */ }
+
+// Item validation functions
+static inline bool is_valid_item_id(uint32_t item_id) { return item_id < 1000; } // Placeholder
+static inline bool is_valid_weapon_id(int weapon_id) { return weapon_id >= 0 && weapon_id < 10; } // Placeholder
+static inline bool is_valid_armor_id(int armor_id) { return armor_id >= 0 && armor_id < 5; } // Placeholder
+
+// Equipment bonus functions
+static inline int get_armor_health_bonus(int armor_id) { return armor_id * 5; } // Placeholder
+
+// Combat and movement stat updates
+static inline void update_combat_stats() { /* Implemented in combat system */ }
+static inline void update_movement_stats() { /* Implemented in movement system */ }
+
 

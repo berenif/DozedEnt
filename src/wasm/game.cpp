@@ -29,6 +29,7 @@ extern WorldSimulation g_world_sim;
 // Include achievement and statistics systems
 #include "achievement-system.h"
 #include "statistics-system.h"
+#include "tutorial-system.h"
 #include "adaptive_ai.h"
 
 // Player input variables - 5-button combat system
@@ -90,13 +91,19 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
     set_character_weapon(character, weapon);
   }
   g_rng = (seed ? seed : 1ull);
+  g_rng_seed = seed;
   g_phase = GamePhase::Explore;
   g_wolf_kills_since_choice = 0;
   g_pos_x = 0.5f;
   g_pos_y = 0.5f;
+  g_player_x = 0.5f;  // Synchronize with save system
+  g_player_y = 0.5f;  // Synchronize with save system
   g_vel_x = 0.f;
   g_vel_y = 0.f;
   g_stamina = 1.0f;
+  g_health = 100;     // Initialize health
+  g_max_health = 100; // Initialize max health
+  g_game_time = 0.0f; // Initialize game time
   g_blocking = 0;
   g_is_rolling = 0;
   g_prev_is_rolling = 0;
@@ -107,6 +114,13 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   g_jump_count = 0; // New: Jump counter
   init_choice_pool();  // Initialize the choice pool
   init_risk_phase();   // Initialize risk phase
+  
+  // Initialize statistics system
+  initialize_statistics_system();
+  start_stats_session();
+  
+  // Initialize tutorial system
+  initialize_tutorial_system();
   g_time_seconds = 0.f;
   g_room_count = 0;     // Reset room counter
   g_last_attack_time = -1000.f;
@@ -260,6 +274,9 @@ int escape_risk() {
   if (attempt_risk_escape()) {
     g_phase = GamePhase::Explore;
     g_room_count++;  // Increment room count for early room spawn logic
+    g_rooms_cleared++; // Track room progression for achievements
+    update_achievement_progress(ACHIEVEMENT_ROOMS_CLEARED, 1);
+    on_room_cleared_stats(); // Track room clearing statistics
     return 1;
   }
   return 0;
@@ -281,6 +298,9 @@ int exit_cashout() {
   g_phase = GamePhase::Explore;
   g_wolf_kills_since_choice = 0;
   g_room_count++;  // Increment room count for early room spawn logic
+  g_rooms_cleared++; // Track room progression for achievements
+  update_achievement_progress(ACHIEVEMENT_ROOMS_CLEARED, 1);
+  on_room_cleared_stats(); // Track room clearing statistics
   return 1;
 }
 
@@ -413,6 +433,8 @@ int commit_choice(unsigned int choice_id) {
   g_choice_count = 0;
   g_wolf_kills_since_choice = 0;
   g_room_count++;  // Increment room count for early room spawn logic
+  g_rooms_cleared++; // Track room progression for achievements
+  update_achievement_progress(ACHIEVEMENT_ROOMS_CLEARED, 1);
   return 1;
 }
 // Initialize/reset state
@@ -435,6 +457,11 @@ void update(float dtSeconds) {
   // Advance simulation clock deterministically
   if (dtSeconds > 0.f) {
     g_time_seconds += dtSeconds;
+    g_game_time += dtSeconds;  // Update save system game time
+    g_total_play_time += dtSeconds;  // Update total play time
+    
+    // Track survival time for achievements
+    update_achievement_progress(ACHIEVEMENT_SURVIVAL_TIME, (uint32_t)dtSeconds);
   }
   // Normalize input direction if needed
   float len = g_input_x * g_input_x + g_input_y * g_input_y;
@@ -765,6 +792,10 @@ void update(float dtSeconds) {
   resolve_player_enemy_collisions(g_pos_x, g_pos_y, nextX, nextY);
   g_pos_x = nextX;
   g_pos_y = nextY;
+  
+  // Synchronize with save system variables
+  g_player_x = g_pos_x;
+  g_player_y = g_pos_y;
 
   // Reconcile velocity to actual displacement to avoid post-collision drift
   if (dtSeconds > 0.f) {
@@ -785,6 +816,10 @@ void update(float dtSeconds) {
     resolve_player_enemy_collisions(g_pos_x, g_pos_y, nx2, ny2);
     g_pos_x = nx2;
     g_pos_y = ny2;
+    
+    // Synchronize with save system variables
+    g_player_x = g_pos_x;
+    g_player_y = g_pos_y;
   }
 
   // Update player facing from velocity when not blocking
@@ -835,9 +870,25 @@ void update(float dtSeconds) {
           e.health -= damage;
           if (e.health < 0.f) e.health = 0.f;
           if (damage > 0.f && g_lifesteal > 0.f) { g_hp += damage * g_lifesteal; if (g_hp > 1.0f) g_hp = 1.0f; }
+          
+          // Track damage dealt for achievements
+          if (damage > 0.f) {
+            update_achievement_progress(ACHIEVEMENT_DAMAGE_DEALT, (uint32_t)(damage * 100));
+            g_total_damage_dealt += (int)(damage * 100);
+            
+            // Track attack landed statistics
+            on_attack_landed_stats((uint32_t)(damage * 100));
+          }
           // Count wolf kills and trigger boon after 3 kills
           if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {
             g_wolf_kills_since_choice += 1u;
+            
+            // Track achievement progress
+            update_achievement_progress(ACHIEVEMENT_KILL_COUNT, 1);
+            g_enemies_killed++;
+            
+            // Track statistics
+            on_enemy_killed_stats((uint32_t)e.type);
             
             // Award currency for defeating enemies
             add_gold(10.0f + rng_float01() * 5.0f);
@@ -963,6 +1014,8 @@ void update(float dtSeconds) {
       g_phase = GamePhase::Explore;
       g_wolf_kills_since_choice = 0;
       g_room_count++;  // Increment room count for early room spawn logic
+      g_rooms_cleared++; // Track room progression for achievements
+      update_achievement_progress(ACHIEVEMENT_ROOMS_CLEARED, 1);
     }
   } else if (g_phase == GamePhase::Explore || g_phase == GamePhase::Fight) {
     // Check if should enter risk phase
@@ -1571,6 +1624,12 @@ int on_roll_start() {
   g_roll_state = RollState::Active;
   g_roll_start_time = g_time_seconds;
   
+  // Track roll achievement
+  g_rolls_executed++;
+  
+  // Track roll statistics
+  on_roll_executed_stats();
+  
   // Set roll direction based on current input or facing direction
   if (g_input_x != 0.f || g_input_y != 0.f) {
     g_roll_direction_x = g_input_x;
@@ -1670,6 +1729,13 @@ int handle_incoming_attack(float attackerX, float attackerY, float attackDirX, f
         g_stamina = 1.0f;
         g_can_counter = 1;
         g_counter_window_end = g_time_seconds + COUNTER_WINDOW_DURATION;
+        
+        // Track perfect block achievement
+        update_achievement_progress(ACHIEVEMENT_PERFECT_BLOCKS, 1);
+        g_perfect_blocks++;
+        
+        // Track perfect block statistics
+        on_perfect_block_stats();
         
         // Apply 300ms stun to the attacker (this would be handled by enemy system)
         // For now, we signal that a parry stun should be applied
@@ -2366,4 +2432,373 @@ int interact_with_environment_object(int object_index) {
     default:
       return 0; // No interaction defined
   }
+}
+
+// ============================================================================
+// Save/Load System Exports
+// ============================================================================
+
+// Include save system functions
+#include "save-load-system.h"
+
+// Additional save system exports for JavaScript integration
+__attribute__((export_name("get_save_data_ptr")))
+const uint8_t* get_save_data_ptr() {
+    return create_save_data();
+}
+
+__attribute__((export_name("get_save_data_size_bytes")))
+uint32_t get_save_data_size_bytes() {
+    return get_save_data_size();
+}
+
+__attribute__((export_name("load_game_from_save")))
+int load_game_from_save(const uint8_t* saveDataPtr, uint32_t dataSize) {
+    return load_save_data(saveDataPtr, dataSize);
+}
+
+__attribute__((export_name("is_current_save_valid")))
+int is_current_save_valid() {
+    return is_save_data_valid();
+}
+
+__attribute__((export_name("get_current_save_timestamp")))
+uint64_t get_current_save_timestamp() {
+    return get_save_timestamp();
+}
+
+__attribute__((export_name("get_save_data_version")))
+uint32_t get_save_data_version() {
+    return get_save_version();
+}
+
+__attribute__((export_name("validate_save_data_from_ptr")))
+int validate_save_data_from_ptr(const uint8_t* saveDataPtr, uint32_t dataSize) {
+    return validate_save_data(saveDataPtr, dataSize);
+}
+
+__attribute__((export_name("get_save_data_info_string")))
+const char* get_save_data_info_string() {
+    return get_save_info();
+}
+
+__attribute__((export_name("perform_quick_save")))
+int perform_quick_save() {
+    return quick_save();
+}
+
+__attribute__((export_name("check_auto_save")))
+int check_auto_save() {
+    return auto_save_check();
+}
+
+__attribute__((export_name("clear_current_save")))
+void clear_current_save() {
+    clear_save_data();
+}
+
+__attribute__((export_name("get_save_statistics_json")))
+const char* get_save_statistics_json() {
+    return get_save_statistics();
+}
+
+// ============================================================================
+// Leaderboard System Exports
+// ============================================================================
+
+// Get current game statistics for leaderboard submission
+__attribute__((export_name("get_current_game_stats")))
+const char* get_current_game_stats() {
+    static char stats_json[1024];
+    
+    // Calculate current session statistics
+    float survival_time = g_total_play_time;
+    int rooms_cleared = g_rooms_cleared;
+    int enemies_killed = g_enemies_killed;
+    int perfect_blocks = g_perfect_blocks;
+    int gold_collected = (int)g_gold;
+    int damage_taken = (int)(g_max_health - g_health);
+    int damage_dealt = g_total_damage_dealt;
+    
+    // Calculate score based on various factors
+    int score = (int)(
+        enemies_killed * 100 +
+        rooms_cleared * 500 +
+        perfect_blocks * 50 +
+        gold_collected * 10 +
+        survival_time * 10 -
+        damage_taken * 5
+    );
+    
+    // Create JSON string
+    snprintf(stats_json, sizeof(stats_json),
+        "{"
+        "\"score\":%d,"
+        "\"survivalTime\":%.2f,"
+        "\"roomsCleared\":%d,"
+        "\"enemiesKilled\":%d,"
+        "\"perfectBlocks\":%d,"
+        "\"goldCollected\":%d,"
+        "\"damageTaken\":%d,"
+        "\"damageDealt\":%d,"
+        "\"completionTime\":%.2f,"
+        "\"timestamp\":%llu"
+        "}",
+        score, survival_time, rooms_cleared, enemies_killed,
+        perfect_blocks, gold_collected, damage_taken, damage_dealt,
+        survival_time, (unsigned long long)time(NULL)
+    );
+    
+    return stats_json;
+}
+
+// Get player performance metrics
+__attribute__((export_name("get_performance_metrics")))
+const char* get_performance_metrics() {
+    static char metrics_json[512];
+    
+    // Calculate performance metrics
+    float accuracy = g_enemies_killed > 0 ? (float)g_perfect_blocks / g_enemies_killed : 0.0f;
+    float efficiency = g_rooms_cleared > 0 ? (float)g_enemies_killed / g_rooms_cleared : 0.0f;
+    float survival_rate = g_total_play_time > 0 ? (float)g_rooms_cleared / g_total_play_time : 0.0f;
+    
+    snprintf(metrics_json, sizeof(metrics_json),
+        "{"
+        "\"accuracy\":%.3f,"
+        "\"efficiency\":%.3f,"
+        "\"survivalRate\":%.3f,"
+        "\"totalPlayTime\":%.2f,"
+        "\"averageDamagePerKill\":%.2f"
+        "}",
+        accuracy, efficiency, survival_rate, g_total_play_time,
+        g_enemies_killed > 0 ? (float)g_total_damage_dealt / g_enemies_killed : 0.0f
+    );
+    
+    return metrics_json;
+}
+
+// Get current tier information
+__attribute__((export_name("get_current_tier_info")))
+const char* get_current_tier_info() {
+    static char tier_json[256];
+    
+    // Calculate total score for tier determination
+    int total_score = (int)(
+        g_enemies_killed * 100 +
+        g_rooms_cleared * 500 +
+        g_perfect_blocks * 50 +
+        (int)g_gold * 10 +
+        g_total_play_time * 10
+    );
+    
+    // Determine tier based on score
+    const char* tier_name = "Bronze";
+    const char* tier_icon = "🥉";
+    int tier_threshold = 0;
+    
+    if (total_score >= 500000) {
+        tier_name = "Legend";
+        tier_icon = "🌟";
+        tier_threshold = 500000;
+    } else if (total_score >= 250000) {
+        tier_name = "Grandmaster";
+        tier_icon = "⭐";
+        tier_threshold = 250000;
+    } else if (total_score >= 100000) {
+        tier_name = "Master";
+        tier_icon = "👑";
+        tier_threshold = 100000;
+    } else if (total_score >= 50000) {
+        tier_name = "Diamond";
+        tier_icon = "💍";
+        tier_threshold = 50000;
+    } else if (total_score >= 15000) {
+        tier_name = "Platinum";
+        tier_icon = "💎";
+        tier_threshold = 15000;
+    } else if (total_score >= 5000) {
+        tier_name = "Gold";
+        tier_icon = "🥇";
+        tier_threshold = 5000;
+    } else if (total_score >= 1000) {
+        tier_name = "Silver";
+        tier_icon = "🥈";
+        tier_threshold = 1000;
+    }
+    
+    // Calculate progress to next tier
+    int next_tier_threshold = 1000;
+    if (total_score >= 500000) {
+        next_tier_threshold = 500000; // Max tier
+    } else if (total_score >= 250000) {
+        next_tier_threshold = 500000;
+    } else if (total_score >= 100000) {
+        next_tier_threshold = 250000;
+    } else if (total_score >= 50000) {
+        next_tier_threshold = 100000;
+    } else if (total_score >= 15000) {
+        next_tier_threshold = 50000;
+    } else if (total_score >= 5000) {
+        next_tier_threshold = 15000;
+    } else if (total_score >= 1000) {
+        next_tier_threshold = 50000;
+    }
+    
+    float progress = next_tier_threshold > tier_threshold ? 
+        (float)(total_score - tier_threshold) / (next_tier_threshold - tier_threshold) : 1.0f;
+    
+    snprintf(tier_json, sizeof(tier_json),
+        "{"
+        "\"tierName\":\"%s\","
+        "\"tierIcon\":\"%s\","
+        "\"totalScore\":%d,"
+        "\"tierThreshold\":%d,"
+        "\"nextTierThreshold\":%d,"
+        "\"progress\":%.3f"
+        "}",
+        tier_name, tier_icon, total_score, tier_threshold, next_tier_threshold, progress
+    );
+    
+    return tier_json;
+}
+
+// Get leaderboard categories summary
+__attribute__((export_name("get_leaderboard_categories")))
+const char* get_leaderboard_categories() {
+    static char categories_json[1024];
+    
+    snprintf(categories_json, sizeof(categories_json),
+        "{"
+        "\"highScore\":{\"value\":%d,\"format\":\"number\"},"
+        "\"survivalTime\":{\"value\":%.2f,\"format\":\"time\"},"
+        "\"roomsCleared\":{\"value\":%d,\"format\":\"number\"},"
+        "\"enemiesKilled\":{\"value\":%d,\"format\":\"number\"},"
+        "\"perfectBlocks\":{\"value\":%d,\"format\":\"number\"},"
+        "\"goldCollected\":{\"value\":%d,\"format\":\"currency\"},"
+        "\"winStreak\":{\"value\":%d,\"format\":\"number\"},"
+        "\"speedRun\":{\"value\":%.2f,\"format\":\"time\"},"
+        "\"noHitRun\":{\"value\":%d,\"format\":\"number\"},"
+        "\"achievement\":{\"value\":%d,\"format\":\"number\"}"
+        "}",
+        (int)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50 + (int)g_gold * 10),
+        g_total_play_time,
+        g_rooms_cleared,
+        g_enemies_killed,
+        g_perfect_blocks,
+        (int)g_gold,
+        1, // winStreak - would need to track this
+        g_total_play_time, // speedRun - would need to track best time
+        g_health == g_max_health ? g_rooms_cleared : 0, // noHitRun
+        0 // achievement count - would need to integrate with achievement system
+    );
+    
+    return categories_json;
+}
+
+// Reset leaderboard statistics
+__attribute__((export_name("reset_leaderboard_stats")))
+void reset_leaderboard_stats() {
+    g_enemies_killed = 0;
+    g_rooms_cleared = 0;
+    g_total_damage_dealt = 0;
+    g_perfect_blocks = 0;
+    g_rolls_executed = 0;
+    g_total_play_time = 0.0f;
+    g_gold = 0.0f;
+}
+
+// Get session statistics
+__attribute__((export_name("get_session_stats")))
+const char* get_session_stats() {
+    static char session_json[512];
+    
+    snprintf(session_json, sizeof(session_json),
+        "{"
+        "\"sessionStartTime\":%llu,"
+        "\"totalPlayTime\":%.2f,"
+        "\"runsCompleted\":%d,"
+        "\"totalScore\":%d,"
+        "\"averageScore\":%.2f,"
+        "\"bestRun\":{\"score\":%d,\"time\":%.2f}"
+        "}",
+        (unsigned long long)time(NULL) - (unsigned long long)g_total_play_time,
+        g_total_play_time,
+        1, // runsCompleted - would need to track this
+        (int)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
+        (float)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
+        (int)(g_enemies_killed * 100 + g_rooms_cleared * 500 + g_perfect_blocks * 50),
+        g_total_play_time
+    );
+    
+    return session_json;
+}
+
+// ============================================================================
+// Tutorial System Exports
+// ============================================================================
+
+// Get tutorial count
+__attribute__((export_name("get_tutorial_count")))
+uint32_t get_tutorial_count() {
+    return get_tutorial_count();
+}
+
+// Get tutorial info by ID
+__attribute__((export_name("get_tutorial_info")))
+const char* get_tutorial_info(uint32_t tutorialId) {
+    return get_tutorial_info(tutorialId);
+}
+
+// Get current tutorial step info
+__attribute__((export_name("get_current_tutorial_step")))
+const char* get_current_tutorial_step() {
+    return get_current_tutorial_step();
+}
+
+// Get tutorial status
+__attribute__((export_name("get_tutorial_status")))
+const char* get_tutorial_status() {
+    return get_tutorial_status();
+}
+
+// Start tutorial by ID
+__attribute__((export_name("start_tutorial_by_id")))
+void start_tutorial_by_id(uint32_t tutorialId) {
+    start_tutorial_by_id(tutorialId);
+}
+
+// Go to next tutorial step
+__attribute__((export_name("next_tutorial_step_export")))
+void next_tutorial_step_export() {
+    next_tutorial_step_export();
+}
+
+// Go to previous tutorial step
+__attribute__((export_name("previous_tutorial_step_export")))
+void previous_tutorial_step_export() {
+    previous_tutorial_step_export();
+}
+
+// Complete current tutorial
+__attribute__((export_name("complete_tutorial_export")))
+void complete_tutorial_export() {
+    complete_tutorial_export();
+}
+
+// Skip current tutorial
+__attribute__((export_name("skip_tutorial_export")))
+void skip_tutorial_export() {
+    skip_tutorial_export();
+}
+
+// Enable/disable tutorials
+__attribute__((export_name("set_tutorial_enabled")))
+void set_tutorial_enabled(bool enabled) {
+    set_tutorial_enabled(enabled);
+}
+
+// Set tutorial settings
+__attribute__((export_name("set_tutorial_settings")))
+void set_tutorial_settings(bool autoStart, bool showTooltips, bool skipCompleted) {
+    set_tutorial_settings(autoStart, showTooltips, skipCompleted);
 }
