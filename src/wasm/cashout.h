@@ -422,6 +422,12 @@ int use_forge_option(unsigned int index) {
 // Add currency (called when defeating enemies or completing challenges)
 static void add_gold(float amount) {
   g_gold += amount * g_risk_multiplier; // Risk multiplier affects rewards
+  
+  // Track gold collection for achievements
+  update_achievement_progress(ACHIEVEMENT_GOLD_COLLECTED, (uint32_t)(amount * g_risk_multiplier));
+  
+  // Track gold earned statistics
+  on_gold_earned_stats((uint32_t)(amount * g_risk_multiplier));
 }
 
 static void add_essence(float amount) {
