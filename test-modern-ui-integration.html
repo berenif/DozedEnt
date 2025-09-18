@@ -63,11 +63,12 @@
     <!-- Test Information -->
     <div class="test-info">
         <h3>Modern UI Integration Test</h3>
-        <p>This test verifies that the modern roguelite UI components are properly integrated into the main game.</p>
+        <p>This test verifies that the modern roguelite UI components are properly integrated with player movement.</p>
         <ul>
             <li>✅ CSS styles loaded</li>
             <li>✅ Modern UI container present</li>
-            <li>🔄 Testing JavaScript integration...</li>
+            <li>✅ Player movement integration ready</li>
+            <li>🎮 Click "Test Movement" to start!</li>
         </ul>
     </div>
     
@@ -77,6 +78,7 @@
         <button onclick="testAccessibility()">Test Accessibility</button>
         <button onclick="testPerformance()">Test Performance</button>
         <button onclick="testInputManager()">Test Input Manager</button>
+        <button onclick="testMovementIntegration()" style="background: #ff6b4a;">🎮 Test Movement</button>
     </div>
     
     <!-- Modern Roguelite UI Container -->
@@ -85,59 +87,87 @@
     </div>
     
     <script type="module">
-        // Mock WASM Manager for testing
-        class MockWASMManager {
-            constructor() {
-                this.gameState = {
-                    health: 1.0,
-                    shield: 0.5,
-                    stamina: 0.8,
-                    x: 0.5,
-                    y: 0.5,
-                    phase: 0,
-                    roomCount: 3,
-                    gold: 150,
-                    essence: 75,
-                    abilities: {
-                        'ability-1': { cooldown: 0.3 },
-                        'ability-2': { cooldown: 0.7 },
-                        'ability-3': { cooldown: 1.0 },
-                        'ultimate': { charge: 0.6 }
-                    }
-                };
+        // Import existing systems instead of recreating them
+        import { InputManager } from './src/input/input-manager.js';
+        import { WasmManager } from './src/wasm/wasm-manager.js';
+        import { GameStateManager } from './src/game/game-state-manager.js';
+        
+        // Global instances for movement integration
+        let wasmManager;
+        let inputManager;
+        let gameStateManager;
+        let modernUI;
+        let gameLoopRunning = false;
+        let lastFrameTime = 0;
+        
+        // Game loop for movement integration using existing systems
+        function gameLoop(currentTime) {
+            if (!gameLoopRunning) {
+                return;
             }
             
-            // WASM API methods
-            getHP() { return this.gameState.health; }
-            getShield() { return this.gameState.shield; }
-            getStamina() { return this.gameState.stamina; }
-            getX() { return this.gameState.x; }
-            getY() { return this.gameState.y; }
-            getPhase() { return this.gameState.phase; }
-            getRoomCount() { return this.gameState.roomCount; }
-            getGold() { return this.gameState.gold; }
-            getEssence() { return this.gameState.essence; }
-            getAbilityCooldown(abilityId) { return this.gameState.abilities[abilityId]?.cooldown || 0; }
+            const deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds
+            lastFrameTime = currentTime;
             
-            // Combat actions
-            onAttack() { console.log('Light attack triggered'); return 1; }
-            onHeavyAttack() { console.log('Heavy attack triggered'); return 1; }
-            onSpecialAttack() { console.log('Special attack triggered'); return 1; }
-            onRollStart() { console.log('Roll started'); return 1; }
-            setBlocking(on, faceX, faceY, timestamp) { console.log('Blocking:', on ? 'ON' : 'OFF'); return on; }
-            onUltimate() { console.log('Ultimate activated!'); return 1; }
-            useConsumable(slot) { console.log('Used consumable', slot); }
-            updateMovement(x, y) { this.gameState.x = Math.max(0, Math.min(1, this.gameState.x + x * 0.01)); this.gameState.y = Math.max(0, Math.min(1, this.gameState.y + y * 0.01)); }
-            handleInput(action, isPressed) { console.log('Input:', action, isPressed ? 'pressed' : 'released'); }
+            // Update game state using existing GameStateManager
+            if (gameStateManager && inputManager) {
+                // Get input state from InputManager
+                const inputState = inputManager.getInputState();
+                
+                // Update game state with input
+                gameStateManager.update(deltaTime, inputState);
+                
+                // Update UI with new position from WASM
+                updatePlayerVisual();
+            }
+            
+            requestAnimationFrame(gameLoop);
         }
         
-        // Test functions
+        // Update player visual representation using existing WASM API
+        function updatePlayerVisual() {
+            const playerElement = document.getElementById('player-visual');
+            if (playerElement && wasmManager && wasmManager.exports) {
+                // Use existing WASM API methods
+                const x = wasmManager.exports.get_x ? wasmManager.exports.get_x() : 0.5;
+                const y = wasmManager.exports.get_y ? wasmManager.exports.get_y() : 0.5;
+                
+                // Convert normalized coordinates to screen coordinates
+                const screenX = x * window.innerWidth;
+                const screenY = y * window.innerHeight;
+                
+                playerElement.style.left = `${screenX - 10}px`; // Center the 20px circle
+                playerElement.style.top = `${screenY - 10}px`;
+            }
+        }
+        
+        // Start the game loop
+        function startGameLoop() {
+            if (!gameLoopRunning) {
+                gameLoopRunning = true;
+                lastFrameTime = performance.now();
+                requestAnimationFrame(gameLoop);
+                console.log('🎮 Game loop started');
+            }
+        }
+        
+        // Stop the game loop
+        function stopGameLoop() {
+            gameLoopRunning = false;
+            console.log('⏹️ Game loop stopped');
+        }
+        
+        // Test functions using existing systems
         window.testModernUI = async function() {
             try {
                 const { ModernRogueliteUI } = await import('./docs/js/src/ui/modern-roguelite-ui.js');
-                const wasmManager = new MockWASMManager();
-                const modernUI = new ModernRogueliteUI(wasmManager);
-                console.log('✅ Modern UI initialized successfully');
+                
+                // Initialize WASM manager with existing system
+                wasmManager = new WasmManager();
+                await wasmManager.initialize();
+                
+                modernUI = new ModernRogueliteUI(wasmManager);
+                console.log('✅ Modern UI initialized successfully with existing WASM system');
                 alert('Modern UI test passed! Check console for details.');
             } catch (error) {
                 console.error('❌ Modern UI test failed:', error);
@@ -159,11 +189,8 @@
         
         window.testPerformance = async function() {
             try {
-                const { PerformanceOptimizer } = await import('./docs/js/src/ui/performance-optimizer.js');
-                const performanceOptimizer = new PerformanceOptimizer();
-                performanceOptimizer.enableDashboard();
-                console.log('✅ Performance Optimizer initialized successfully');
-                alert('Performance test passed! Check console for details.');
+                console.log('✅ Performance Optimizer test skipped (removed)');
+                alert('Performance test skipped - component removed.');
             } catch (error) {
                 console.error('❌ Performance test failed:', error);
                 alert('Performance test failed: ' + error.message);
@@ -172,10 +199,15 @@
         
         window.testInputManager = async function() {
             try {
-                const { InputManager } = await import('./docs/js/src/ui/input-manager.js');
-                const wasmManager = new MockWASMManager();
-                const inputManager = new InputManager(wasmManager);
-                console.log('✅ Input Manager initialized successfully');
+                // Initialize WASM manager if not already done
+                if (!wasmManager) {
+                    wasmManager = new WasmManager();
+                    await wasmManager.initialize();
+                }
+                
+                // Use existing InputManager from src/input/
+                inputManager = new InputManager(wasmManager);
+                console.log('✅ Input Manager initialized successfully with existing WASM system');
                 alert('Input Manager test passed! Check console for details.');
             } catch (error) {
                 console.error('❌ Input Manager test failed:', error);
@@ -183,8 +215,123 @@
             }
         };
         
+        // New comprehensive movement integration test using existing systems
+        window.testMovementIntegration = async function() {
+            try {
+                // Initialize all components using existing systems
+                const { ModernRogueliteUI } = await import('./docs/js/src/ui/modern-roguelite-ui.js');
+                
+                // Initialize WASM manager
+                wasmManager = new WasmManager();
+                await wasmManager.initialize();
+                
+                // Initialize GameStateManager (handles WASM integration)
+                gameStateManager = new GameStateManager();
+                gameStateManager.initialize(wasmManager);
+                
+                // Initialize InputManager (from src/input/)
+                inputManager = new InputManager(wasmManager);
+                
+                // Initialize Modern UI
+                modernUI = new ModernRogueliteUI(wasmManager);
+                
+                // Start the game
+                gameStateManager.startGame();
+                
+                // Create player visual element
+                createPlayerVisual();
+                
+                // Start the game loop
+                startGameLoop();
+                
+                console.log('✅ Movement integration test started using existing systems');
+                console.log('🎮 Use WASD or Arrow keys to move the player');
+                console.log('🎯 Use Ctrl or 4 key to roll');
+                console.log('⚔️ Use J/1 for light attack, K/2 for heavy attack');
+                console.log('🛡️ Use Shift or 3 to block');
+                console.log('📊 Using existing InputManager, WasmManager, and GameStateManager');
+                
+                alert('Movement integration test started! Using existing built systems. Check console for controls.');
+            } catch (error) {
+                console.error('❌ Movement integration test failed:', error);
+                alert('Movement integration test failed: ' + error.message);
+            }
+        };
+        
+        // Create visual player representation
+        function createPlayerVisual() {
+            // Remove existing player visual if any
+            const existingPlayer = document.getElementById('player-visual');
+            if (existingPlayer) {
+                existingPlayer.remove();
+            }
+            
+            // Create new player visual
+            const playerVisual = document.createElement('div');
+            playerVisual.id = 'player-visual';
+            playerVisual.style.cssText = `
+                position: fixed;
+                width: 20px;
+                height: 20px;
+                background: #4a9eff;
+                border: 2px solid #ffffff;
+                border-radius: 50%;
+                z-index: 1000;
+                pointer-events: none;
+                transition: all 0.1s ease-out;
+                box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+            `;
+            
+            // Position at center initially
+            playerVisual.style.left = `${window.innerWidth / 2 - 10}px`;
+            playerVisual.style.top = `${window.innerHeight / 2 - 10}px`;
+            
+            document.body.appendChild(playerVisual);
+            
+            // Add movement instructions
+            const instructions = document.createElement('div');
+            instructions.id = 'movement-instructions';
+            instructions.style.cssText = `
+                position: fixed;
+                top: 50px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 12px;
+                z-index: 1000;
+                max-width: 200px;
+            `;
+            instructions.innerHTML = `
+                <h4 style="margin: 0 0 10px 0; color: #4a9eff;">Movement Controls</h4>
+                <div style="margin-bottom: 5px;">🎮 <strong>WASD</strong> or <strong>Arrow Keys</strong> - Move</div>
+                <div style="margin-bottom: 5px;">🎯 <strong>Ctrl</strong> or <strong>4</strong> - Roll</div>
+                <div style="margin-bottom: 5px;">⚔️ <strong>J/1</strong> - Light Attack</div>
+                <div style="margin-bottom: 5px;">⚔️ <strong>K/2</strong> - Heavy Attack</div>
+                <div style="margin-bottom: 5px;">🛡️ <strong>Shift/3</strong> - Block</div>
+                <div style="margin-top: 10px; font-size: 10px; color: #888;">
+                    Player position: <span id="player-position">0.5, 0.5</span>
+                </div>
+            `;
+            
+            document.body.appendChild(instructions);
+            
+            // Update position display using existing WASM API
+            setInterval(() => {
+                if (wasmManager && wasmManager.exports) {
+                    const posElement = document.getElementById('player-position');
+                    if (posElement) {
+                        const x = wasmManager.exports.get_x ? wasmManager.exports.get_x().toFixed(3) : '0.500';
+                        const y = wasmManager.exports.get_y ? wasmManager.exports.get_y().toFixed(3) : '0.500';
+                        posElement.textContent = `${x}, ${y}`;
+                    }
+                }
+            }, 100);
+        }
+        
         console.log('Modern UI Integration Test loaded successfully');
-        console.log('Available test functions: testModernUI, testAccessibility, testPerformance, testInputManager');
+        console.log('Available test functions: testModernUI, testAccessibility, testPerformance, testInputManager, testMovementIntegration');
+        console.log('🎮 Click "Test Movement" to start the comprehensive movement integration test!');
     </script>
 </body>
 </html>
