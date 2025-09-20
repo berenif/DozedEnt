@@ -39,7 +39,6 @@ import { uiPerformanceOptimizer } from './src/ui/ui-performance-optimizer.js';
 import { ModernRogueliteUI } from './src/ui/modern-roguelite-ui.js';
 import { InputManager as ModernInputManager } from './src/ui/input-manager.js';
 import { AccessibilityManager } from './src/ui/accessibility-manager.js';
-import { PerformanceOptimizer } from './src/ui/performance-optimizer.js';
 
 // Performance optimization systems
 import { globalFrameTimeOptimizer } from './src/utils/frame-time-optimizer.js';
@@ -378,17 +377,12 @@ class GameApplication {
     // Initialize Modern Roguelite UI Components
     console.log('🔧 Initializing Modern Roguelite UI...');
     this.accessibilityManager = new AccessibilityManager();
-    this.performanceOptimizer = new PerformanceOptimizer();
     this.modernInputManager = new ModernInputManager(this.wasmManager);
     this.modernUI = new ModernRogueliteUI(this.wasmManager);
-    
-    // Enable performance dashboard
-    this.performanceOptimizer.enableDashboard();
     
     // Register with UI coordinator
     uiCoordinator.registerSystem('modern-ui', this.modernUI);
     uiCoordinator.registerSystem('accessibility', this.accessibilityManager);
-    uiCoordinator.registerSystem('performance', this.performanceOptimizer);
     uiCoordinator.registerSystem('modern-input', this.modernInputManager);
     
     console.log('✅ Modern Roguelite UI initialized');
@@ -448,6 +442,8 @@ class GameApplication {
     }
 
     try {
+      // Ensure wolfCharacters is initialized
+      this.wolfCharacters = this.wolfCharacters || [];
       this._initializeCanvas();
       this._initializeRenderer();
       this._initializeCameraEffects();
@@ -553,14 +549,6 @@ class GameApplication {
    * @private
    */
   setupEventListeners() {
-    // Start button click handler
-    const startGameBtn = document.getElementById('start-game-btn');
-    if (startGameBtn) {
-      startGameBtn.addEventListener('click', () => {
-        this.handleStartButtonClick();
-      });
-    }
-
     // Mobile overlay start button
     const overlayStartBtn = document.getElementById('overlay-start');
     if (overlayStartBtn) {
@@ -652,27 +640,6 @@ class GameApplication {
    */
   updateInitializationUI(wasmSuccess) {
     console.log('🔧 Updating initialization UI with WASM success:', wasmSuccess);
-    
-    const startGameBtn = document.getElementById('start-game-btn');
-    if (startGameBtn) {
-      console.log('✅ Start button found, enabling...');
-      startGameBtn.disabled = false;
-      startGameBtn.textContent = wasmSuccess ? 'Start Game' : 'Start (UI Only)';
-      startGameBtn.style.background = wasmSuccess ? '#4a90e2' : '#ff6b6b';
-      startGameBtn.style.cursor = 'pointer';
-      
-      // Ensure click handler is attached (defensive programming)
-      const existingHandler = startGameBtn.onclick;
-      if (!existingHandler) {
-        console.log('⚠️ No click handler found, adding fallback...');
-        startGameBtn.addEventListener('click', () => {
-          console.log('🎮 Fallback click handler triggered');
-          this.handleStartButtonClick();
-        });
-      }
-    } else {
-      console.error('❌ Start button not found in DOM');
-    }
 
     const loadingText = document.querySelector('.loading-text');
     if (loadingText) {
@@ -681,6 +648,14 @@ class GameApplication {
       }
     } else {
       console.warn('⚠️ Loading text element not found');
+    }
+
+    // Hide loading screen automatically when WASM is ready
+    if (wasmSuccess) {
+      console.log('🎮 WASM ready - hiding loading screen automatically');
+      setTimeout(() => {
+        this.hideLoadingScreen();
+      }, 500); // Small delay to show the "ready" message
     }
   }
 
@@ -708,14 +683,6 @@ class GameApplication {
    * @param {Error} error - The error that occurred
    */
   _updateErrorUI(error) {
-    const startGameBtn = document.getElementById('start-game-btn');
-    if (startGameBtn) {
-      startGameBtn.disabled = false;
-      startGameBtn.textContent = 'Start Game (Error)';
-      startGameBtn.style.background = '#ff6b6b';
-      startGameBtn.style.cursor = 'pointer';
-    }
-
     const loadingText = document.querySelector('.loading-text');
     if (loadingText) {
       loadingText.textContent = `Initialization failed: ${error.message}`;
@@ -1417,7 +1384,7 @@ class GameApplication {
     const camera = this.gameRenderer.camera;
 
     // Render wolves
-    this.wolfCharacters.forEach(wolf => {
+    (this.wolfCharacters || []).forEach(wolf => {
       wolf.render(ctx, camera);
     });
 
@@ -1428,6 +1395,15 @@ class GameApplication {
     } else {
       console.warn('No animatedPlayer to render');
     }
+  }
+
+  /**
+   * Render UI elements
+   * @private
+   */
+  _renderUI() {
+    // UI rendering logic can be added here if needed
+    // For now, this is a placeholder to prevent the error
   }
 
   /**
@@ -2194,30 +2170,98 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const success = await gameApp.initialize();
     if (success) {
-      console.log('✅ Game application ready');
+      console.log('✅ Game application ready - auto-starting game');
+      // Auto-start the game after successful initialization
+      setTimeout(() => {
+        try {
+          gameApp.handleStartButtonClick();
+        } catch (error) {
+          console.error('❌ Failed to auto-start game:', error);
+        }
+      }, 100); // Small delay to ensure everything is ready
     } else {
-      console.warn('⚠️ Game application initialized with warnings');
+      console.warn('⚠️ Game application initialized with warnings - auto-starting anyway');
+      // Still try to start the game even with warnings
+      setTimeout(() => {
+        try {
+          gameApp.handleStartButtonClick();
+        } catch (error) {
+          console.error('❌ Failed to auto-start game:', error);
+        }
+      }, 100);
     }
   } catch (error) {
     console.error('❌ Failed to initialize game application:', error);
     console.error('📋 Error stack:', error.stack);
     
-    // Enable button anyway in case of initialization failure
-    const startGameBtn = document.getElementById('start-game-btn');
-    if (startGameBtn) {
-      startGameBtn.disabled = false;
-      startGameBtn.textContent = 'Start Game (Error Mode)';
-      startGameBtn.style.background = '#ff6b6b';
-      startGameBtn.style.cursor = 'pointer';
-      
-      // Add click handler directly as fallback
-      startGameBtn.addEventListener('click', () => {
-        console.log('🎮 Fallback start button clicked');
-        alert('Game initialization failed, but you clicked the button! Check console for details.');
-      });
-    }
+    // Ensure canvas is visible even if initialization fails
+    document.body.classList.add('game-started');
+    console.log('🔧 Canvas made visible despite initialization error');
   }
 });
 
 // Make game app globally accessible
 window.gameApp = gameApp;
+
+// Fallback: Ensure canvas is visible after 3 seconds regardless of initialization status
+setTimeout(() => {
+  if (!document.body.classList.contains('game-started')) {
+    console.log('🔧 Fallback: Making canvas visible after timeout');
+    document.body.classList.add('game-started');
+  }
+}, 3000);
+
+// Additional immediate canvas visibility check
+document.addEventListener('DOMContentLoaded', () => {
+  // Check canvas visibility every 500ms for the first 10 seconds
+  let checkCount = 0;
+  const maxChecks = 20; // 10 seconds total
+  
+  const canvasVisibilityChecker = setInterval(() => {
+    checkCount++;
+    
+    // Check if canvas elements exist and are visible
+    const gameCanvas = document.getElementById('gameCanvas');
+    const viewport = document.getElementById('viewport');
+    
+    if (gameCanvas && viewport) {
+      const canvasStyle = getComputedStyle(gameCanvas);
+      const viewportStyle = getComputedStyle(viewport);
+      
+      // If canvas or viewport is not visible, force visibility
+      if (canvasStyle.display === 'none' || 
+          canvasStyle.visibility === 'hidden' || 
+          parseFloat(canvasStyle.opacity) === 0 ||
+          viewportStyle.display === 'none' ||
+          parseFloat(viewportStyle.opacity) === 0) {
+        
+        console.log('🔧 Canvas visibility issue detected - forcing visibility');
+        document.body.classList.add('game-started');
+        
+        // Force canvas visibility
+        gameCanvas.style.display = 'block';
+        gameCanvas.style.visibility = 'visible';
+        gameCanvas.style.opacity = '1';
+        
+        // Force viewport visibility
+        viewport.style.display = 'block';
+        viewport.style.opacity = '1';
+        
+        // Hide loading screen
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          loadingScreen.style.visibility = 'hidden';
+          loadingScreen.style.pointerEvents = 'none';
+        }
+      }
+    }
+    
+    // Stop checking after max attempts or if game-started class is present
+    if (checkCount >= maxChecks || document.body.classList.contains('game-started')) {
+      clearInterval(canvasVisibilityChecker);
+      console.log('🔧 Canvas visibility checker stopped');
+    }
+  }, 500);
+});
+

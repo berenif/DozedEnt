@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Canvas Test - DozedEnt</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            border: 2px solid #00ff00;
+            background: #000;
+            margin: 10px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success { background: #4CAF50; }
+        .status.error { background: #f44336; }
+        .status.info { background: #2196F3; }
+        
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #357abd;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎮 Quick Canvas Test</h1>
+        
+        <div class="status info">
+            <strong>Test Status:</strong> <span id="testStatus">Running...</span>
+        </div>
+        
+        <canvas id="testCanvas" width="400" height="200"></canvas>
+        
+        <div id="testResults"></div>
+        
+        <button onclick="runTests()">Run Tests</button>
+        <button onclick="testMainGame()">Test Main Game Canvas</button>
+    </div>
+
+    <script>
+        function runTests() {
+            const canvas = document.getElementById('testCanvas');
+            const results = document.getElementById('testResults');
+            const status = document.getElementById('testStatus');
+            
+            let html = '';
+            let allPassed = true;
+            
+            try {
+                // Test 1: Canvas context
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    html += '<div class="status success">✅ Canvas context obtained</div>';
+                } else {
+                    html += '<div class="status error">❌ Failed to get canvas context</div>';
+                    allPassed = false;
+                }
+                
+                // Test 2: Basic drawing
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(10, 10, 100, 50);
+                    html += '<div class="status success">✅ Basic drawing test passed</div>';
+                }
+                
+                // Test 3: Text rendering
+                if (ctx) {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.font = '16px Arial';
+                    ctx.fillText('Canvas Working!', 120, 40);
+                    html += '<div class="status success">✅ Text rendering test passed</div>';
+                }
+                
+                // Test 4: Animation
+                if (ctx) {
+                    let frame = 0;
+                    function animate() {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        const time = frame * 0.1;
+                        const x = canvas.width / 2 + Math.sin(time) * 100;
+                        const y = canvas.height / 2 + Math.cos(time) * 50;
+                        
+                        ctx.fillStyle = `hsl(${(frame * 2) % 360}, 70%, 50%)`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`Frame: ${frame}`, canvas.width / 2, canvas.height - 20);
+                        
+                        frame++;
+                        if (frame < 60) { // 1 second animation
+                            requestAnimationFrame(animate);
+                        }
+                    }
+                    animate();
+                    html += '<div class="status success">✅ Animation test passed</div>';
+                }
+                
+            } catch (error) {
+                html += `<div class="status error">❌ Test failed: ${error.message}</div>`;
+                allPassed = false;
+            }
+            
+            results.innerHTML = html;
+            status.textContent = allPassed ? 'All tests passed!' : 'Some tests failed';
+            status.parentElement.className = allPassed ? 'status success' : 'status error';
+        }
+        
+        function testMainGame() {
+            // Try to access the main game canvas
+            const gameCanvas = document.getElementById('gameCanvas');
+            const results = document.getElementById('testResults');
+            
+            if (gameCanvas) {
+                try {
+                    const ctx = gameCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                        
+                        // Draw test pattern
+                        ctx.fillStyle = '#4a90e2';
+                        ctx.fillRect(100, 100, 50, 50);
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '24px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Main Game Canvas Test', gameCanvas.width / 2, 50);
+                        
+                        results.innerHTML = '<div class="status success">✅ Main game canvas test passed - blue square and text should be visible</div>';
+                    } else {
+                        results.innerHTML = '<div class="status error">❌ Failed to get main game canvas context</div>';
+                    }
+                } catch (error) {
+                    results.innerHTML = `<div class="status error">❌ Main game canvas test failed: ${error.message}</div>`;
+                }
+            } else {
+                results.innerHTML = '<div class="status error">❌ Main game canvas not found</div>';
+            }
+        }
+        
+        // Auto-run tests when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

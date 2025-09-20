@@ -9,7 +9,6 @@ import { globalWasmLoader } from '../src/utils/wasm-lazy-loader.js';
 import { globalMemoryOptimizer } from '../src/utils/memory-optimizer.js';
 import { globalDeadCodeEliminator } from '../src/utils/dead-code-eliminator.js';
 import { globalProfiler } from '../src/utils/performance-profiler.js';
-import { globalDashboard } from '../src/ui/performance-dashboard.js';
 
 /**
  * Example: Complete Performance Optimization Setup
@@ -271,12 +270,8 @@ export class PerformanceOptimizedGame {
   setupPerformanceMonitoring() {
     console.log('📊 Setting up performance monitoring...');
 
-    // Enable performance dashboard with keyboard shortcut
+    // Enable debug shortcuts
     document.addEventListener('keydown', (event) => {
-      if (event.ctrlKey && event.shiftKey && event.code === 'KeyP') {
-        event.preventDefault();
-        globalPerformanceIntegration.togglePerformanceDashboard();
-      }
 
       // Additional debug shortcuts
       if (event.ctrlKey && event.shiftKey && event.code === 'KeyM') {
@@ -296,7 +291,6 @@ export class PerformanceOptimizedGame {
     }, 30000); // Every 30 seconds
 
     console.log('✅ Performance monitoring configured');
-    console.log('   📊 Ctrl+Shift+P: Toggle performance dashboard');
     console.log('   🧠 Ctrl+Shift+M: Log memory statistics');
     console.log('   📦 Ctrl+Shift+W: Log WASM statistics');
   }
@@ -419,7 +413,6 @@ export async function runOptimizedGameExample() {
 
     // Game is now running with all optimizations enabled
     console.log('✅ Optimized game is now running!');
-    console.log('   📊 Press Ctrl+Shift+P to view performance dashboard');
     
     // Return game instance for further use
     return game;

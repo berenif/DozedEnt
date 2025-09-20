@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 8081;
+const PORT = 8080;
 const DOCS_DIR = path.join(__dirname, 'docs');
 const DIST_DIR = path.join(__dirname, 'dist');
 const SRC_DIR = path.join(__dirname, 'src');
@@ -27,6 +27,7 @@ const mimeTypes = {
     '.wasm': 'application/wasm',
     '.css': 'text/css',
     '.json': 'application/json',
+    '.map': 'application/json',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',

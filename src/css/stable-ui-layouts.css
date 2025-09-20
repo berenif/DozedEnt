@@ -187,10 +187,10 @@
   max-width: 150px !important;
 }
 
-.stable-resource-item {
+.stable-status-item {
   height: 32px;
   margin-bottom: 6px;
-  /* Consistent resource item height */
+  /* Consistent status item height */
   min-height: 32px !important;
   max-height: 32px !important;
 }

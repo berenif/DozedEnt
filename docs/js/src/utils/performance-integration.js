@@ -7,7 +7,6 @@ import { globalWasmLoader } from './wasm-lazy-loader.js';
 import { globalMemoryOptimizer } from './memory-optimizer.js';
 // import { globalDeadCodeEliminator } from './dead-code-eliminator.js'; // Not used
 import { globalProfiler } from './performance-profiler.js';
-import { globalDashboard } from '../ui/performance-dashboard.js';
 
 export class PerformanceIntegration {
   constructor() {
@@ -19,7 +18,7 @@ export class PerformanceIntegration {
       enableWasmLazyLoading: true,
       enableDeadCodeElimination: true,
       enablePerformanceProfiling: true,
-      enableDashboard: true,
+      enableDashboard: false,
       autoOptimization: true
     };
 
@@ -28,7 +27,6 @@ export class PerformanceIntegration {
       memoryOptimized: false,
       wasmLazyLoaded: false,
       profilingActive: false,
-      dashboardActive: false
     };
   }
 
@@ -57,10 +55,6 @@ export class PerformanceIntegration {
         await this.initializePerformanceProfiling();
       }
 
-      // 4. Initialize performance dashboard
-      if (this.config.enableDashboard) {
-        await this.initializePerformanceDashboard();
-      }
 
       // 5. Set up auto-optimization
       if (this.config.autoOptimization) {
@@ -133,28 +127,6 @@ export class PerformanceIntegration {
     }
   }
 
-  /**
-   * Initialize performance dashboard
-   * @private
-   */
-  initializePerformanceDashboard() {
-    try {
-      if (globalDashboard) {
-        // Set up keyboard shortcut (Ctrl+Shift+P)
-        document.addEventListener('keydown', (event) => {
-          if (event.ctrlKey && event.shiftKey && event.code === 'KeyP') {
-            event.preventDefault();
-            this.togglePerformanceDashboard();
-          }
-        });
-
-        this.stats.dashboardActive = true;
-        console.log('   ✅ Performance dashboard ready (Ctrl+Shift+P to toggle)');
-      }
-    } catch (error) {
-      console.warn('   ⚠️ Performance dashboard failed:', error.message);
-    }
-  }
 
   /**
    * Set up automatic optimization based on performance metrics
@@ -262,20 +234,6 @@ export class PerformanceIntegration {
     }
   }
 
-  /**
-   * Toggle performance dashboard
-   */
-  togglePerformanceDashboard() {
-    if (globalDashboard) {
-      if (globalDashboard.isVisible) {
-        globalDashboard.hide();
-        console.log('📊 Performance dashboard hidden');
-      } else {
-        globalDashboard.show();
-        console.log('📊 Performance dashboard shown');
-      }
-    }
-  }
 
   /**
    * Run performance analysis
@@ -342,11 +300,6 @@ export class PerformanceIntegration {
     console.log(`   🧠 Memory Optimization: ${this.stats.memoryOptimized ? '✅' : '❌'}`);
     console.log(`   📦 WASM Lazy Loading: ${this.stats.wasmLazyLoaded ? '✅' : '❌'}`);
     console.log(`   📈 Performance Profiling: ${this.stats.profilingActive ? '✅' : '❌'}`);
-    console.log(`   📊 Dashboard Available: ${this.stats.dashboardActive ? '✅' : '❌'}`);
-    
-    if (this.stats.dashboardActive) {
-      console.log('   🎮 Press Ctrl+Shift+P to toggle performance dashboard');
-    }
   }
 
   /**

@@ -116,12 +116,7 @@ export class ThreatAwarenessUI {
         telegraphContainer.className = 'telegraph-warnings';
         overlay.appendChild(telegraphContainer);
         
-        // Create attack type legend
-        const legend = document.createElement('div');
-        legend.id = 'threat-legend';
-        legend.className = 'threat-legend';
-        legend.innerHTML = this.createThreatLegend();
-        overlay.appendChild(legend);
+        // Threat Types legend panel removed per request
         
         document.body.appendChild(overlay);
         

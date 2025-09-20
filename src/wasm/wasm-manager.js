@@ -96,10 +96,35 @@ export class WasmManager {
         
         this.exports = wasmInstance.exports;
         this.isLoaded = true;
-        
+        this.isFallbackMode = false;
+
+        const lazyLoadTime = performance.now() - initStartTime;
+        console.log(`WASM module loaded successfully with lazy loader in ${lazyLoadTime.toFixed(2)}ms`);
+
+        globalThis.wasmExports = this.exports;
+
+        if (typeof this.exports.start === 'function') {
+          this.exports.start();
+        }
+
+        this.initializeGameRun();
+        this.loadTimingConstants();
+        this.applyUrlParameters();
+
         const initTime = performance.now() - initStartTime;
-        console.log(`✅ WASM module loaded successfully with lazy loader in ${initTime.toFixed(2)}ms`);
-        
+        const wasmPath = 'lazy-loader:game';
+
+        console.log(`WASM initialization completed in ${initTime.toFixed(1)}ms`);
+        console.log('WASM loaded successfully from:', wasmPath);
+        console.log('WASM exports available:', Object.keys(this.exports || {}));
+
+        this.emitInitializationEvent({
+          success: true,
+          fallbackMode: this.isFallbackMode,
+          loadTime: initTime,
+          wasmPath
+        });
+
         return true;
       } catch (lazyLoadError) {
         console.warn('⚠️ Lazy loader failed, falling back to traditional loading:', lazyLoadError.message);
@@ -437,16 +462,19 @@ export class WasmManager {
         return; // Skip this update cycle
       }
       
-      // Set player input first using the correct WASM API
-      if (typeof this.exports.set_player_input === 'function') {
+      const wasmUpdate = this.exports.update;
+      const arity = Number.isInteger(wasmUpdate.length) ? wasmUpdate.length : 0;
+
+      // If using legacy 1-arg update, set input first via set_player_input
+      if (arity < 4 && typeof this.exports.set_player_input === 'function') {
         // set_player_input(inputX, inputY, isRolling, isJumping, lightAttack, heavyAttack, isBlocking, special)
         this.exports.set_player_input(
-          safeDirectionX, 
-          safeDirY, 
-          safeIsRolling, 
+          safeDirectionX,
+          safeDirY,
+          safeIsRolling,
           0, // isJumping
           0, // lightAttack (handled separately)
-          0, // heavyAttack (handled separately) 
+          0, // heavyAttack (handled separately)
           0, // isBlocking (handled separately)
           0  // special (handled separately)
         );
@@ -460,7 +488,13 @@ export class WasmManager {
       }, 100); // 100ms timeout
       
       try {
-        this.exports.update(safeDeltaTime);
+        if (arity >= 4) {
+          // Canonical signature: update(dirX, dirY, isRolling, dtSeconds)
+          wasmUpdate(safeDirectionX, safeDirY, safeIsRolling, safeDeltaTime);
+        } else {
+          // Legacy signature: update(dtSeconds)
+          wasmUpdate(safeDeltaTime);
+        }
         clearTimeout(updateTimeout);
       } catch (error) {
         clearTimeout(updateTimeout);

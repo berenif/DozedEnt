@@ -1,6 +1,11 @@
 // Advanced Animation System for Smooth Character and Object Animations
 // Provides sprite animations, procedural animations, and smooth transitions
 
+const toMilliseconds = (value) => {
+    if (!Number.isFinite(value) || value <= 0) {return 0}
+    return value > 10 ? value : value * 1000
+}
+
 export class AnimationFrame {
     constructor(x, y, width, height, duration = 100) {
         this.x = x
@@ -61,45 +66,109 @@ export class Animation {
             return
         }
 
-        this.elapsedTime += deltaTime * this.speed * 1000 // Convert to milliseconds
+        const deltaMs = toMilliseconds(deltaTime) * this.speed
+        if (deltaMs <= 0) {
+            return
+        }
 
-        const currentFrameData = this.frames[this.currentFrame]
+        this.elapsedTime += deltaMs
 
-        // Handle frames with non-positive duration as indefinite holds
-        if (currentFrameData && currentFrameData.duration <= 0) {
-            if (!this.loop && this.currentFrame === this.frames.length - 1) {
-                this.isPlaying = false
-                this.hasCompleted = true
-                if (this.onComplete) {this.onComplete()}
+        if (this.frames.length <= 1) {
+            const singleFrame = this.frames[0]
+            if (!singleFrame) {
+                this.elapsedTime = 0
+                return
+            }
+
+            if (singleFrame.duration <= 0) {
+                if (!this.loop) {
+                    this.isPlaying = false
+                    this.hasCompleted = true
+                    if (this.onComplete) {this.onComplete()}
+                }
+                this.elapsedTime = 0
+                return
+            }
+
+            if (this.elapsedTime >= singleFrame.duration) {
+                if (this.loop) {
+                    this.elapsedTime = this.elapsedTime % singleFrame.duration
+                } else {
+                    this.currentFrame = 0
+                    this.isPlaying = false
+                    this.hasCompleted = true
+                    this.elapsedTime = 0
+                    if (this.onComplete) {this.onComplete()}
+                }
             }
             return
         }
 
-        if (this.elapsedTime >= currentFrameData.duration) {
+        const maxSteps = this.frames.length * 3
+        let steps = 0
+
+        while (steps < maxSteps) {
+            const currentFrameData = this.frames[this.currentFrame]
+
+            if (!currentFrameData) {
+                this.currentFrame = Math.min(Math.max(this.currentFrame, 0), this.frames.length - 1)
+                this.elapsedTime = 0
+                break
+            }
+
+            if (currentFrameData.duration <= 0) {
+                if (!this.loop && this.currentFrame === this.frames.length - 1) {
+                    this.isPlaying = false
+                    this.hasCompleted = true
+                    if (this.onComplete) {this.onComplete()}
+                }
+                this.elapsedTime = 0
+                break
+            }
+
+            if (this.elapsedTime < currentFrameData.duration) {
+                break
+            }
+
             this.elapsedTime -= currentFrameData.duration
-            
+
             const previousFrame = this.currentFrame
             this.currentFrame += this.direction
 
             if (this.pingPong) {
                 if (this.currentFrame >= this.frames.length || this.currentFrame < 0) {
                     this.direction *= -1
-                    this.currentFrame += this.direction * 2
+                    this.currentFrame = previousFrame + this.direction
                 }
             } else if (this.currentFrame >= this.frames.length) {
-                    if (this.loop) {
-                        this.currentFrame = 0
-                    } else {
-                        this.currentFrame = this.frames.length - 1
-                        this.isPlaying = false
-                        this.hasCompleted = true
-                        if (this.onComplete) {this.onComplete()}
+                if (this.loop) {
+                    this.currentFrame = 0
+                } else {
+                    this.currentFrame = this.frames.length - 1
+                    this.isPlaying = false
+                    this.hasCompleted = true
+                    this.elapsedTime = 0
+                    if (this.onComplete) {this.onComplete()}
+                    if (this.onFrame && this.currentFrame !== previousFrame) {
+                        const frameData = this.frames[this.currentFrame]
+                        if (frameData) {
+                            this.onFrame(this.currentFrame, frameData)
+                        }
                     }
+                    break
                 }
+            } else if (this.currentFrame < 0) {
+                this.currentFrame = this.loop ? this.frames.length - 1 : 0
+            }
 
             if (this.onFrame && this.currentFrame !== previousFrame) {
-                this.onFrame(this.currentFrame, this.frames[this.currentFrame])
+                const frameData = this.frames[this.currentFrame]
+                if (frameData) {
+                    this.onFrame(this.currentFrame, frameData)
+                }
             }
+
+            steps += 1
         }
     }
 
@@ -123,36 +192,76 @@ export class Animation {
 
 export class AnimationController {
     constructor() {
-        this.animations = new Map()
+        this.animations = Object.create(null)
+        this._animationMap = new Map()
         this.currentAnimation = null
-        this.transitions = new Map()
         this.blendTime = 0
         this.blendFrom = null
         this.blendProgress = 0
+        this.isTransitioning = false
+        this.transitionDuration = 0
     }
 
     addAnimation(nameOrAnimation, maybeAnimation) {
+        let name = null
+        let animation = null
+
         if (typeof nameOrAnimation === 'string' && maybeAnimation) {
-            this.animations.set(nameOrAnimation, maybeAnimation)
-            return
+            name = nameOrAnimation
+            animation = maybeAnimation
+        } else {
+            animation = nameOrAnimation
+            if (animation && typeof animation.name === 'string') {
+                name = animation.name
+            }
         }
-        const animation = nameOrAnimation
-        this.animations.set(animation.name, animation)
+
+        if (!name || !animation) {return}
+
+        this.animations[name] = animation
+        this._animationMap.set(name, animation)
+    }
+
+    getAnimation(name) {
+        if (!name) {return null}
+        return this._animationMap.get(name) || this.animations[name] || null
     }
 
     play(animationName, options = {}) {
-        const animation = this.animations.get(animationName)
+        const animation = this.getAnimation(animationName)
         if (!animation) {
-            // Animation not found: ${animationName}
             return
         }
 
-        const transition = options.transition || 0
-        
-        if (transition > 0 && this.currentAnimation) {
+        const hasCurrent = !!this.currentAnimation
+        const rawTransition = options.transition
+        const explicitDuration = typeof options.transitionDuration === 'number' ? options.transitionDuration : 0
+        let transitionDuration = 0
+
+        if (typeof rawTransition === 'number' && rawTransition > 0) {
+            transitionDuration = rawTransition
+        } else if ((rawTransition === true || explicitDuration > 0) && explicitDuration > 0) {
+            transitionDuration = explicitDuration
+        } else if (rawTransition === true && explicitDuration === 0) {
+            transitionDuration = 150
+        } else if (explicitDuration > 0) {
+            transitionDuration = explicitDuration
+        }
+
+        const blendDurationMs = toMilliseconds(transitionDuration)
+
+        if (hasCurrent && blendDurationMs > 0) {
             this.blendFrom = this.currentAnimation
-            this.blendTime = transition
+            this.blendTime = blendDurationMs
             this.blendProgress = 0
+            this.isTransitioning = true
+            this.transitionDuration = blendDurationMs
+        } else {
+            this.blendFrom = null
+            this.blendTime = 0
+            this.blendProgress = 0
+            this.isTransitioning = false
+            this.transitionDuration = 0
         }
 
         this.currentAnimation = animation
@@ -163,15 +272,24 @@ export class AnimationController {
         if (this.currentAnimation) {
             this.currentAnimation.stop()
         }
+        this.isTransitioning = false
+        this.blendTime = 0
+        this.blendFrom = null
+        this.blendProgress = 0
+        this.transitionDuration = 0
     }
 
     update(deltaTime) {
-        if (this.blendTime > 0) {
-            this.blendProgress += deltaTime
+        const deltaMs = toMilliseconds(deltaTime)
+
+        if (this.blendTime > 0 && deltaMs > 0) {
+            this.blendProgress += deltaMs
             if (this.blendProgress >= this.blendTime) {
                 this.blendTime = 0
                 this.blendFrom = null
                 this.blendProgress = 0
+                this.isTransitioning = false
+                this.transitionDuration = 0
             }
         }
 
@@ -190,17 +308,17 @@ export class AnimationController {
             return { current: this.getCurrentFrame(), blend: null, blendFactor: 0 }
         }
 
-        const blendFactor = this.blendProgress / this.blendTime
+        const blendFactor = this.blendTime > 0 ? Math.min(1, this.blendProgress / this.blendTime) : 0
         return {
-            current: this.currentAnimation.getCurrentFrame(),
-            blend: this.blendFrom.getCurrentFrame(),
-            blendFactor: blendFactor
+            current: this.currentAnimation ? this.currentAnimation.getCurrentFrame() : null,
+            blend: this.blendFrom ? this.blendFrom.getCurrentFrame() : null,
+            blendFactor
         }
     }
 
     isPlaying(animationName) {
-        return this.currentAnimation && 
-               this.currentAnimation.name === animationName && 
+        return this.currentAnimation &&
+               this.currentAnimation.name === animationName &&
                this.currentAnimation.isPlaying
     }
 
@@ -213,7 +331,59 @@ export class AnimationController {
 
 export class ProceduralAnimator {
     constructor() {
-        this.animations = new Map()
+        this.animations = Object.create(null)
+    }
+
+    addAnimation(name, updateFn, options = {}) {
+        if (!name || typeof updateFn !== 'function') {return null}
+
+        const entry = {
+            name,
+            update: updateFn,
+            duration: typeof options.duration === 'number' ? options.duration : null,
+            loop: options.loop !== undefined ? options.loop : true,
+            isPlaying: options.autoStart === undefined ? true : options.autoStart !== false,
+            elapsed: 0,
+            meta: options.meta ?? null
+        }
+
+        this.animations[name] = entry
+        return entry
+    }
+
+    play(name) {
+        const animation = this.animations[name]
+        if (!animation) {return}
+        animation.isPlaying = true
+        animation.elapsed = 0
+    }
+
+    stop(name) {
+        const animation = this.animations[name]
+        if (!animation) {return}
+        animation.isPlaying = false
+        animation.elapsed = 0
+    }
+
+    update(deltaTime) {
+        const dt = Number.isFinite(deltaTime) ? deltaTime : 0
+
+        for (const animation of Object.values(this.animations)) {
+            if (!animation || animation.isPlaying === false || typeof animation.update !== 'function') {
+                continue
+            }
+
+            animation.elapsed += dt
+            animation.update(dt, animation)
+
+            if (animation.duration && animation.duration > 0 && animation.elapsed >= animation.duration) {
+                if (animation.loop) {
+                    animation.elapsed = animation.elapsed % animation.duration
+                } else {
+                    animation.isPlaying = false
+                }
+            }
+        }
     }
 
     // Enhanced breathing animation with state-based modulation
@@ -810,6 +980,8 @@ export class CharacterAnimator {
     constructor() {
         this.controller = new AnimationController()
         this.procedural = new ProceduralAnimator()
+        this.animations = Object.create(null)
+        this.currentAnimation = null
         
         // Event system integration
         this.eventSystem = null
@@ -897,6 +1069,23 @@ export class CharacterAnimator {
         this.rollTimer = 0
     }
 
+    addAnimation(name, animation) {
+        if (!animation) {return}
+        const key = name || (animation && animation.name)
+        if (!key) {return}
+        this.animations[key] = animation
+        this.controller.addAnimation(key, animation)
+    }
+
+    play(name, options = {}) {
+        if (!name || !this.animations[name]) {return}
+        this.controller.play(name, options)
+        this.currentAnimation = this.controller.currentAnimation
+        if (typeof name === 'string') {
+            this.stateName = name
+        }
+    }
+
     // Helper function to convert numeric WASM state to string for internal use
     getAnimStateName(state) {
         switch(state) {
@@ -942,7 +1131,7 @@ export class CharacterAnimator {
         this.targetBlendFactors[this.stateName] = 1
         
         // Play animation based on state
-        this.controller.play(this.stateName, { transition: 0.1 })
+        this.play(this.stateName, { transition: 0.1 })
         
         // Trigger procedural animations
         switch(newState) {
@@ -1219,6 +1408,13 @@ export class CharacterAnimator {
 
 // Animation presets for common game objects
 export const AnimationPresets = {
+    playerWalk: { frameCount: 6, frameDuration: 100, loop: true },
+    playerRun: { frameCount: 6, frameDuration: 80, loop: true },
+    playerJump: { frameCount: 3, frameDuration: 100, loop: false },
+    wolfWalk: { frameCount: 4, frameDuration: 150, loop: true },
+    wolfRun: { frameCount: 6, frameDuration: 100, loop: true },
+    wolfAttack: { frameCount: 5, frameDuration: 80, loop: false },
+
     // Character animations
     createPlayerAnimations() {
         return {
@@ -1411,7 +1607,7 @@ export class WolfAnimator {
             return;
         }
         this.state = newState;
-        this.controller.play(newState);
+        this.play(newState);
         // Trigger procedural effects specific to wolf
         switch(newState) {
             case 'lunge':

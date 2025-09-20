@@ -816,6 +816,10 @@
         constructor() {
             this.controller = new AnimationController();
             this.procedural = new ProceduralAnimator();
+            
+            // Event system integration
+            this.eventSystem = null;
+            this.eventListeners = new Map();
 
             // Enhanced procedural animation instances
             this.breathing = this.procedural.createBreathingAnimation({
@@ -923,8 +927,19 @@
             if (this.state === newState) {return}
             this.resetActionTimers();
 
+            const previousState = this.state;
+            const previousStateName = this.stateName;
+            
             this.state = newState;
             this.stateName = this.getAnimStateName(newState);
+            
+            // Emit state change event
+            this.emit('stateChange', {
+                fromState: previousState,
+                toState: newState,
+                fromStateName: previousStateName,
+                toStateName: this.stateName
+            });
             
             // Update target blend factors
             Object.keys(this.targetBlendFactors).forEach(key => {
@@ -1073,29 +1088,128 @@
         setFacing(direction) {
             this.facing = direction;
         }
+        
+        // Event system integration
+        setEventSystem(eventSystem) {
+            this.eventSystem = eventSystem;
+        }
+        
+        // Subscribe to animation events
+        on(eventName, callback, context = null) {
+            if (!this.eventListeners.has(eventName)) {
+                this.eventListeners.set(eventName, new Set());
+            }
+            
+            const listener = { callback, context, once: false };
+            this.eventListeners.get(eventName).add(listener);
+            
+            // Also subscribe to global event system if available
+            if (this.eventSystem) {
+                return this.eventSystem.on(eventName, callback, context)
+            }
+            
+            return () => this.off(eventName, callback)
+        }
+        
+        // Subscribe to one-time animation events
+        once(eventName, callback, context = null) {
+            if (!this.eventListeners.has(eventName)) {
+                this.eventListeners.set(eventName, new Set());
+            }
+            
+            const listener = { callback, context, once: true };
+            this.eventListeners.get(eventName).add(listener);
+            
+            // Also subscribe to global event system if available
+            if (this.eventSystem) {
+                return this.eventSystem.once(eventName, callback, context)
+            }
+            
+            return () => this.off(eventName, callback)
+        }
+        
+        // Unsubscribe from animation events
+        off(eventName, callback) {
+            if (!this.eventListeners.has(eventName)) {
+                return false
+            }
+            
+            const listeners = this.eventListeners.get(eventName);
+            for (const listener of listeners) {
+                if (listener.callback === callback) {
+                    listeners.delete(listener);
+                    break
+                }
+            }
+            
+            if (listeners.size === 0) {
+                this.eventListeners.delete(eventName);
+            }
+            
+            // Also unsubscribe from global event system if available
+            if (this.eventSystem) {
+                this.eventSystem.off(eventName, callback);
+            }
+            
+            return true
+        }
+        
+        // Emit animation events
+        emit(eventName, data = {}) {
+            // Emit to local listeners
+            if (this.eventListeners.has(eventName)) {
+                const listeners = Array.from(this.eventListeners.get(eventName));
+                
+                for (const listener of listeners) {
+                    try {
+                        if (listener.context) {
+                            listener.callback.call(listener.context, data);
+                        } else {
+                            listener.callback(data);
+                        }
+                        
+                        if (listener.once) {
+                            this.eventListeners.get(eventName).delete(listener);
+                        }
+                    } catch (error) {
+                        console.error(`Error in animation event listener for ${eventName}:`, error);
+                    }
+                }
+            }
+            
+            // Emit to global event system if available
+            if (this.eventSystem) {
+                this.eventSystem.emit(eventName, data);
+            }
+        }
 
         triggerHurt() {
             this.setAnimState(5); // Hurt
             this.hurtTimer = 300;
+            this.emit('hurt', { timer: this.hurtTimer });
         }
 
         triggerAttack() {
             this.setAnimState(2); // Attack
             this.attackTimer = 400;
+            this.emit('attack', { timer: this.attackTimer });
         }
 
         triggerRoll() {
             this.setAnimState(4); // Roll
             this.rollTimer = 400;
+            this.emit('roll', { timer: this.rollTimer });
         }
 
         triggerBlock() {
             this.setAnimState(3); // Block
+            this.emit('block');
         }
 
         releaseBlock() {
             if (this.state === 3) { // Block
                 this.setAnimState(0); // Idle
+                this.emit('blockRelease');
             }
         }
 
@@ -3244,3 +3358,4 @@
     Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
+//# sourceMappingURL=player-animator.umd.js.map

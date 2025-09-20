@@ -994,13 +994,7 @@ body {
   font-size: 1.2em;
 }
 
-.gold {
-  color: #ffd700;
-}
-
-.essence {
-  color: #00ddff;
-}
+/* Resource colors removed */
 
 .shop-items {
   display: grid;

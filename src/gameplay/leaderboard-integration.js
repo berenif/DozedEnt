@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Leaderboard Integration
  * 
  * Integrates the WASM leaderboard system with the JavaScript leaderboard system

@@ -70,22 +70,12 @@ export class EnhancedUIManager {
         </div>
       </div>
 
-      <!-- Status Effects Zone (High Priority) -->
+      <!-- Status Zone (High Priority) -->
       <div class="ui-zone-top-right">
-        <div class="priority-status-effects" id="status-effects-enhanced">
-          <!-- Status effects populated dynamically -->
-        </div>
         
-        <!-- Resource Cluster -->
-        <div class="priority-resources" id="resources-enhanced">
-          <div class="priority-resource">
-            <span class="priority-resource-icon icon-gold"></span>
-            <span class="priority-resource-value" id="gold-enhanced">0</span>
-          </div>
-          <div class="priority-resource">
-            <span class="priority-resource-icon icon-essence"></span>
-            <span class="priority-resource-value" id="essence-enhanced">0</span>
-          </div>
+        <!-- Status Cluster -->
+        <div class="priority-status" id="status-enhanced">
+          <!-- Status indicators can be added here if needed -->
         </div>
       </div>
 
@@ -210,7 +200,6 @@ export class EnhancedUIManager {
       '#critical-health',
       '#critical-stamina',
       '#abilities-enhanced',
-      '#status-effects-enhanced',
       '#phase-info-enhanced'
     ];
 
@@ -242,11 +231,6 @@ export class EnhancedUIManager {
       updateFrequency: 60
     });
 
-    this.informationClusters.set('status', {
-      priority: 3,
-      elements: ['#status-effects-enhanced'],
-      updateFrequency: 30 // Update every other frame
-    });
 
     this.informationClusters.set('progress', {
       priority: 4,
@@ -449,31 +433,6 @@ export class EnhancedUIManager {
     });
   }
 
-  /**
-   * Update status effects display
-   */
-  updateStatusEffects() {
-    const statusContainer = document.getElementById('status-effects-enhanced');
-    if (!statusContainer) {return;}
-
-    // TODO: Get status effects from WASM
-    const statusEffects = []; // TODO: Get from WASM exports
-
-    statusContainer.innerHTML = '';
-
-    statusEffects.forEach(effect => {
-      const statusElement = document.createElement('div');
-      statusElement.className = `priority-status-effect ${effect.type}`;
-      
-      statusElement.innerHTML = `
-        <span class="status-icon-large">${effect.icon}</span>
-        <span class="status-name-large">${effect.name}</span>
-        <span class="status-duration-large">${effect.duration > 0 ? Math.ceil(effect.duration) : '∞'}</span>
-      `;
-      
-      statusContainer.appendChild(statusElement);
-    });
-  }
 
   /**
    * Update progress and phase information
@@ -482,8 +441,6 @@ export class EnhancedUIManager {
     try {
       const phase = this.wasmManager.exports.get_phase?.() || 0;
       const roomCount = this.wasmManager.exports.get_room_count?.() || 1;
-      const gold = this.wasmManager.exports.get_gold?.() || 0;
-      const essence = this.wasmManager.exports.get_essence?.() || 0;
 
       // Update phase display
       const phaseName = document.getElementById('phase-name-enhanced');
@@ -498,16 +455,7 @@ export class EnhancedUIManager {
         roomCounter.textContent = `Room ${roomCount}`;
       }
 
-      // Update resources
-      const goldElement = document.getElementById('gold-enhanced');
-      const essenceElement = document.getElementById('essence-enhanced');
-      
-      if (goldElement) {
-        goldElement.textContent = Math.floor(gold).toString();
-      }
-      if (essenceElement) {
-        essenceElement.textContent = Math.floor(essence).toString();
-      }
+      // Resource display removed - no longer updating resource elements
 
     } catch (error) {
       console.error('Error updating progress info:', error);

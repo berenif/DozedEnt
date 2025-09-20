@@ -245,34 +245,6 @@ body {
   animation: damage-ripple 0.3s ease-out;
 }
 
-/* Status Effects */
-.status-effects-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  max-width: 250px;
-}
-
-.status-effect {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  background: rgba(0, 0, 0, 0.8);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  font-size: calc(12px * var(--text-scale));
-  border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-}
-
-.effect-icon {
-  font-size: calc(14px * var(--text-scale));
-}
-
-.effect-duration {
-  font-family: var(--font-family-mono);
-  color: var(--color-text-secondary);
-  font-size: calc(10px * var(--text-scale));
-}
 
 /* Top-Right: Minimap */
 .hud-top-right {
@@ -364,10 +336,10 @@ body {
 .ability-bar {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   background: rgba(0, 0, 0, 0.7);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
   backdrop-filter: blur(12px);
   border: var(--border-width) solid rgba(255, 255, 255, 0.1);
 }

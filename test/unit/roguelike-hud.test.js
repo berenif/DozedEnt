@@ -129,7 +129,6 @@ describe('RoguelikeHUD', () => {
         'minimap-canvas': mockCanvas,
         'controls-toggle': controlsToggleMock,
         'controls-panel': controlsPanelMock,
-        'status-effects-container': { innerHTML: '', appendChild: sinon.stub() },
         'combo-display': mockElement,
         'gold-value': { textContent: '' },
         'essence-value': { textContent: '' },
@@ -462,87 +461,6 @@ describe('RoguelikeHUD', () => {
     });
   });
 
-  describe('Status Effects', () => {
-    let mockContainer;
-
-    beforeEach(() => {
-      mockContainer = { innerHTML: '', appendChild: sinon.stub() };
-      global.document.getElementById.withArgs('status-effects-container').returns(mockContainer);
-    });
-
-    it('should clear existing status effects', () => {
-      roguelikeHUD.updateStatusEffects();
-
-      expect(mockContainer.innerHTML).to.equal('');
-    });
-
-    it('should request status effects from wasmManager', () => {
-      roguelikeHUD.updateStatusEffects();
-      expect(mockWasmManager.getStatusEffects.called).to.be.true;
-    });
-
-    it('should render status effects returned by wasmManager', () => {
-      mockWasmManager.getStatusEffects.returns([
-        { icon: '🔥', name: 'Burning', description: 'Losing health', duration: 5, type: 'debuff' }
-      ]);
-
-      roguelikeHUD.updateStatusEffects();
-
-      expect(mockContainer.appendChild.called).to.be.true;
-    });
-
-    it('should add status effect with correct properties', () => {
-      const mockEffectEl = {
-        className: '',
-        title: '',
-        innerHTML: '',
-        appendChild: sinon.stub()
-      };
-      global.document.createElement.returns(mockEffectEl);
-
-      const effect = {
-        icon: '💀',
-        name: 'Test Effect',
-        description: 'Test description',
-        duration: 10,
-        type: 'debuff'
-      };
-
-      roguelikeHUD.addStatusEffect(mockContainer, effect);
-
-      expect(mockEffectEl.className).to.equal('status-effect debuff');
-      expect(mockEffectEl.title).to.equal('Test Effect: Test description');
-      expect(mockContainer.appendChild.calledWith(mockEffectEl)).to.be.true;
-    });
-
-    it('should handle permanent status effects', () => {
-      const mockEffectEl = {
-        className: '',
-        title: '',
-        innerHTML: '',
-        appendChild: sinon.stub()
-      };
-      global.document.createElement.returns(mockEffectEl);
-
-      const effect = {
-        icon: '💀',
-        name: 'Permanent Effect',
-        description: 'Permanent description',
-        duration: -1,
-        type: 'neutral'
-      };
-
-      roguelikeHUD.addStatusEffect(mockContainer, effect);
-
-      expect(mockEffectEl.innerHTML).to.not.include('duration');
-    });
-
-    it('should handle missing status effects container gracefully', () => {
-      global.document.getElementById.withArgs('status-effects-container').returns(null);
-      
-      expect(() => roguelikeHUD.updateStatusEffects()).to.not.throw();
-    });
-  });
 
   describe('Combat Feedback Integration', () => {
     it('should animate damage numbers', () => {

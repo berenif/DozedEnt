@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Roguelite UI Demo</title>
-    <link rel="stylesheet" href="src/css/modern-roguelite-ui.css">
+    <link rel="stylesheet" href="js/src/css/modern-roguelite-ui.css">
     <style>
         /* Additional demo styles */
         body {
@@ -117,10 +117,10 @@
     <!-- The UI will be injected here by JavaScript -->
     
     <script type="module">
-        import { ModernRogueliteUI } from './src/ui/modern-roguelite-ui.js';
-        import { InputManager } from './src/ui/input-manager.js';
-        import { AccessibilityManager } from './src/ui/accessibility-manager.js';
-        import { PerformanceOptimizer } from './src/ui/performance-optimizer.js';
+        import { ModernRogueliteUI } from './js/src/ui/modern-roguelite-ui.js';
+        import { InputManager } from './js/src/ui/input-manager.js';
+        import { AccessibilityManager } from './js/src/ui/accessibility-manager.js';
+        import { PerformanceOptimizer } from './js/src/ui/performance-optimizer.js';
         
         // Mock WASM Manager that simulates the real WASM interface
         class MockWASMManager {
@@ -278,8 +278,6 @@
         window.performanceOptimizer = performanceOptimizer;
         window.accessibilityManager = accessibilityManager;
         
-        // Enable performance dashboard for demo
-        performanceOptimizer.enableDashboard();
         
         // Demo functions
         window.simulateDamage = function() {
@@ -336,24 +334,6 @@
             }
         });
         
-        // Demo status effects
-        setTimeout(() => {
-            const statusContainer = document.getElementById('status-effects');
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <div class="status-effect">
-                        <div class="effect-icon">🔥</div>
-                        <div class="effect-name">Burning</div>
-                        <div class="effect-duration">5s</div>
-                    </div>
-                    <div class="status-effect">
-                        <div class="effect-icon">⚡</div>
-                        <div class="effect-name">Speed Boost</div>
-                        <div class="effect-duration">12s</div>
-                    </div>
-                `;
-            }
-        }, 2000);
         
         // Simulate phase changes
         setTimeout(() => {

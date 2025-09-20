@@ -198,8 +198,30 @@ export class GameStateManager {
         );
       }
       
-      // Now update WASM with just deltaTime
-      this.wasmManager.exports?.update?.(deltaTime);
+      // Now update WASM with correct signature
+      // Prefer canonical API: update(dirX, dirY, isRolling, dtSeconds)
+      const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime > 0 ? Math.min(deltaTime, 0.05) : 0.016;
+      const wasmUpdate = this.wasmManager.exports?.update;
+      if (typeof wasmUpdate === 'function') {
+        try {
+          const arity = Number.isInteger(wasmUpdate.length) ? wasmUpdate.length : 0;
+          if (arity >= 4) {
+            // Canonical signature
+            wasmUpdate(
+              safeInputState.direction.x,
+              safeInputState.direction.y,
+              safeInputState.roll ? 1 : 0,
+              safeDeltaTime
+            );
+          } else {
+            // Legacy signature (dtSeconds only) with input already set via set_player_input
+            wasmUpdate(safeDeltaTime);
+          }
+        } catch (e) {
+          // Fallback to legacy call if arity detection fails
+          try { wasmUpdate(safeDeltaTime); } catch {}
+        }
+      }
 
       // Read updated state from WASM using batched calls
       this.updateStateFromWasm();

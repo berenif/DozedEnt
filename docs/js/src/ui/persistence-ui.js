@@ -3,6 +3,8 @@
  * Comprehensive UI system for all persistence features
  */
 
+import { parseWasmJson } from '../utils/wasm-string.js';
+
 export class PersistenceUI {
   constructor(gameStateManager, wasmManager) {
     this.gameStateManager = gameStateManager;
@@ -701,11 +703,14 @@ export class PersistenceUI {
     
     try {
       // Get achievement summary (create from individual functions if get_achievements_summary_json doesn't exist)
-      let summary;
+      let summary = null;
       if (typeof this.wasmManager.exports.get_achievements_summary_json === 'function') {
-        const summaryJson = this.wasmManager.exports.get_achievements_summary_json();
-        summary = JSON.parse(summaryJson);
-      } else {
+        const summaryValue = this.wasmManager.exports.get_achievements_summary_json();
+        summary = parseWasmJson(this.wasmManager.exports, summaryValue, {
+          onError: (error) => console.warn('Failed to parse achievement summary from WASM:', error)
+        });
+      }
+      if (!summary) {
         // Create summary from individual achievement functions
         summary = this.createAchievementSummary();
       }
@@ -729,14 +734,11 @@ export class PersistenceUI {
       for (let i = 0; i < achievementCount; i++) {
         try {
           const achievementId = this.wasmManager.exports.get_achievement_id(i);
-          const infoJson = this.wasmManager.exports.get_achievement_info_json(achievementId);
-          
-          // Check if infoJson is a valid string or if it's a memory address
-          let achievement;
-          if (typeof infoJson === 'string' && infoJson.startsWith('{')) {
-            achievement = JSON.parse(infoJson);
-          } else {
-            // If it's a memory address (number), create a default achievement object
+          const infoValue = this.wasmManager.exports.get_achievement_info_json(achievementId);
+          let achievement = parseWasmJson(this.wasmManager.exports, infoValue, {
+            onError: (error) => console.warn(`Failed to parse achievement ${achievementId} JSON:`, error)
+          });
+          if (!achievement || typeof achievement !== 'object') {
             console.warn(`Achievement ${i} returned invalid data, creating default object`);
             achievement = {
               id: achievementId,
@@ -1083,11 +1085,14 @@ export class PersistenceUI {
     
     try {
       // Get statistics data from WASM
-      let sessionData;
+      let sessionData = null;
       if (typeof this.wasmManager.exports.get_session_stats === 'function') {
-        const sessionStats = this.wasmManager.exports.get_session_stats();
-        sessionData = JSON.parse(sessionStats);
-      } else {
+        const sessionValue = this.wasmManager.exports.get_session_stats();
+        sessionData = parseWasmJson(this.wasmManager.exports, sessionValue, {
+          onError: (error) => console.warn('Failed to parse session statistics from WASM:', error)
+        });
+      }
+      if (!sessionData) {
         // Create fallback session data
         sessionData = this.createFallbackSessionStats();
       }
@@ -1134,13 +1139,11 @@ export class PersistenceUI {
       
       for (let i = 0; i < statCount; i++) {
         try {
-          const statInfo = this.wasmManager.exports.get_statistic_info(i);
-          
-          // Check if statInfo is a valid string or if it's a memory address
-          let stat;
-          if (typeof statInfo === 'string' && statInfo.startsWith('{')) {
-            stat = JSON.parse(statInfo);
-          } else {
+          const statValue = this.wasmManager.exports.get_statistic_info(i);
+          let stat = parseWasmJson(this.wasmManager.exports, statValue, {
+            onError: (error) => console.warn(`Failed to parse statistic ${i} JSON:`, error)
+          });
+          if (!stat || typeof stat !== 'object') {
             // If it's a memory address (number), create a default statistic object
             console.warn(`Statistic ${i} returned invalid data, creating default object`);
             stat = {
@@ -1304,7 +1307,8 @@ export class PersistenceUI {
   getAchievementData() {
     try {
       if (this.wasmManager?.exports?.get_achievements_summary_json) {
-        return JSON.parse(this.wasmManager.exports.get_achievements_summary_json());
+        const summaryValue = this.wasmManager.exports.get_achievements_summary_json();
+        return parseWasmJson(this.wasmManager.exports, summaryValue);
       }
     } catch (error) {
       console.warn('Failed to get achievement data:', error);
@@ -1325,7 +1329,8 @@ export class PersistenceUI {
   getStatisticsData() {
     try {
       if (this.wasmManager?.exports?.get_session_stats) {
-        return JSON.parse(this.wasmManager.exports.get_session_stats());
+        const statsValue = this.wasmManager.exports.get_session_stats();
+        return parseWasmJson(this.wasmManager.exports, statsValue);
       }
     } catch (error) {
       console.warn('Failed to get statistics data:', error);

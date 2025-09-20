@@ -24,6 +24,8 @@ export default {
       file: 'dist/wolf-animation.min.js',
       format: 'es',
       compact: true,
+      sourcemap: true,
+      sourcemapFile: 'dist/wolf-animation.min.js.map',
       plugins: [
         terser({
           compress: {

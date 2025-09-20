@@ -6,7 +6,7 @@ import RealisticProceduralAnimator from './realistic-procedural-animator.js'
 // SoundSystem and ParticleSystem imports removed - not used in this file
 
 export class AnimatedPlayer {
-    constructor(x = 0.5, y = 0.5, options = {}) {
+    constructor(x = 400, y = 300, options = {}) {
         // Position - driven by WASM (normalized 0-1 coordinates)
         this.x = x
         this.y = y
@@ -152,12 +152,12 @@ export class AnimatedPlayer {
     
     setupAnimations() {
         // Add all animations to the controller
-        Object.values(this.animations).forEach(animation => {
-            this.animator.controller.addAnimation(animation)
+        Object.entries(this.animations).forEach(([name, animation]) => {
+            this.animator.addAnimation(name, animation)
         })
         
         // Start with idle animation
-        this.animator.controller.play('idle')
+        this.animator.play('idle')
     }
     
     update(deltaTime, input = {}) {

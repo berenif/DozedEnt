@@ -84,10 +84,10 @@ body {
   top: 720px;   /* Start of center third */
   width: 1280px;  /* WASM playable area width */
   height: 720px;  /* WASM playable area height */
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 3px dashed rgba(255, 255, 255, 0.3);
   box-shadow: 
-    inset 0 0 10px rgba(255, 255, 255, 0.05),
-    0 0 10px rgba(255, 255, 255, 0.05);
+    inset 0 0 20px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(255, 255, 255, 0.1);
   pointer-events: none;
   z-index: 1;
   /* Add visual indicators for player boundaries */
@@ -994,13 +994,7 @@ body {
   font-size: 1.2em;
 }
 
-.gold {
-  color: #ffd700;
-}
-
-.essence {
-  color: #00ddff;
-}
+/* Resource colors removed */
 
 .shop-items {
   display: grid;

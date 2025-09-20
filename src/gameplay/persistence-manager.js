@@ -4,6 +4,7 @@
  */
 
 import { LeaderboardSystem } from './leaderboard-system.js';
+import { parseWasmJson } from '../utils/wasm-string.js';
 import { initializePersistenceUI } from '../ui/persistence-ui.js';
 
 export class PersistenceManager {
@@ -353,7 +354,12 @@ export class PersistenceManager {
       for (let i = 0; i < newlyUnlockedCount; i++) {
         const achievementId = this.wasmManager.exports.get_newly_unlocked_id(i);
         const achievementInfo = this.wasmManager.exports.get_achievement_info_json(achievementId);
-        const achievement = JSON.parse(achievementInfo);
+        const achievement = parseWasmJson(this.wasmManager.exports, achievementInfo, {
+          onError: (error) => console.warn(`Failed to parse unlocked achievement ${achievementId} JSON:`, error)
+        });
+        if (!achievement) {
+          continue;
+        }
         
         // Dispatch achievement unlocked event
         window.dispatchEvent(new CustomEvent('achievementUnlocked', {
@@ -835,7 +841,11 @@ export class PersistenceManager {
     // Get achievement data
     if (this.wasmManager?.exports?.get_achievements_summary_json) {
       try {
-        data.achievements = JSON.parse(this.wasmManager.exports.get_achievements_summary_json());
+        const summaryValue = this.wasmManager.exports.get_achievements_summary_json();
+        const parsedAchievements = parseWasmJson(this.wasmManager.exports, summaryValue);
+        if (parsedAchievements) {
+          data.achievements = parsedAchievements;
+        }
       } catch (error) {
         console.warn('Failed to export achievements:', error);
       }
@@ -849,7 +859,11 @@ export class PersistenceManager {
     // Get statistics data
     if (this.wasmManager?.exports?.get_session_stats) {
       try {
-        data.statistics = JSON.parse(this.wasmManager.exports.get_session_stats());
+        const statsValue = this.wasmManager.exports.get_session_stats();
+        const parsedStatistics = parseWasmJson(this.wasmManager.exports, statsValue);
+        if (parsedStatistics) {
+          data.statistics = parsedStatistics;
+        }
       } catch (error) {
         console.warn('Failed to export statistics:', error);
       }

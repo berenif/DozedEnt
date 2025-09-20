@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Debug - DozedEnt</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .debug-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .debug-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success { background: #4CAF50; }
+        .status.error { background: #f44336; }
+        .status.info { background: #2196F3; }
+        .status.warning { background: #ff9800; }
+        
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #357abd;
+        }
+        
+        .canvas-test {
+            border: 2px solid #00ff00;
+            background: #000;
+            margin: 10px 0;
+        }
+        
+        .code-block {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 DozedEnt Canvas Debug Tool</h1>
+        
+        <div class="debug-section">
+            <h2>Canvas Elements Check</h2>
+            <div id="canvasElementsResult"></div>
+            <button onclick="checkCanvasElements()">Check Canvas Elements</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>CSS Classes Check</h2>
+            <div id="cssClassesResult"></div>
+            <button onclick="checkCSSClasses()">Check CSS Classes</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>WASM Loading Check</h2>
+            <div id="wasmLoadingResult"></div>
+            <button onclick="checkWASMLoading()">Check WASM Loading</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Game Initialization Check</h2>
+            <div id="gameInitResult"></div>
+            <button onclick="checkGameInitialization()">Check Game Initialization</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Canvas Visibility Test</h2>
+            <canvas id="testCanvas" class="canvas-test" width="400" height="200"></canvas>
+            <div id="visibilityTestResult"></div>
+            <button onclick="testCanvasVisibility()">Test Canvas Visibility</button>
+            <button onclick="forceShowCanvas()">Force Show Canvas</button>
+        </div>
+        
+        <div class="debug-section">
+            <h2>Quick Fixes</h2>
+            <div id="quickFixesResult"></div>
+            <button onclick="applyQuickFixes()">Apply Quick Fixes</button>
+            <button onclick="resetCanvas()">Reset Canvas</button>
+        </div>
+    </div>
+
+    <script>
+        function checkCanvasElements() {
+            const result = document.getElementById('canvasElementsResult');
+            let html = '<div class="status info">ℹ️ Canvas Elements Check:</div>';
+            
+            // Check for canvas elements
+            const gameCanvas = document.getElementById('gameCanvas');
+            const canvas = document.getElementById('canvas');
+            
+            html += '<div class="code-block">';
+            html += `gameCanvas found: ${gameCanvas ? '✅ Yes' : '❌ No'}\n`;
+            html += `canvas found: ${canvas ? '✅ Yes' : '❌ No'}\n`;
+            
+            if (gameCanvas) {
+                html += `gameCanvas dimensions: ${gameCanvas.width}x${gameCanvas.height}\n`;
+                html += `gameCanvas style: ${gameCanvas.style.cssText || 'no inline styles'}\n`;
+                html += `gameCanvas computed style: ${getComputedStyle(gameCanvas).display}\n`;
+            }
+            
+            if (canvas) {
+                html += `canvas dimensions: ${canvas.offsetWidth}x${canvas.offsetHeight}\n`;
+                html += `canvas style: ${canvas.style.cssText || 'no inline styles'}\n`;
+            }
+            
+            html += '</div>';
+            
+            result.innerHTML = html;
+        }
+        
+        function checkCSSClasses() {
+            const result = document.getElementById('cssClassesResult');
+            let html = '<div class="status info">ℹ️ CSS Classes Check:</div>';
+            
+            html += '<div class="code-block">';
+            html += `Body classes: ${document.body.className || 'none'}\n`;
+            html += `game-started class present: ${document.body.classList.contains('game-started') ? '✅ Yes' : '❌ No'}\n`;
+            
+            // Check viewport element
+            const viewport = document.getElementById('viewport');
+            if (viewport) {
+                html += `viewport display: ${getComputedStyle(viewport).display}\n`;
+                html += `viewport opacity: ${getComputedStyle(viewport).opacity}\n`;
+            }
+            
+            // Check loading screen
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                html += `loadingScreen display: ${getComputedStyle(loadingScreen).display}\n`;
+                html += `loadingScreen opacity: ${getComputedStyle(loadingScreen).opacity}\n`;
+            }
+            
+            html += '</div>';
+            
+            result.innerHTML = html;
+        }
+        
+        function checkWASMLoading() {
+            const result = document.getElementById('wasmLoadingResult');
+            let html = '<div class="status info">ℹ️ WASM Loading Check:</div>';
+            
+            html += '<div class="code-block">';
+            
+            // Check if WebAssembly is supported
+            html += `WebAssembly supported: ${typeof WebAssembly !== 'undefined' ? '✅ Yes' : '❌ No'}\n`;
+            
+            // Check for WASM files
+            fetch('game.wasm', { method: 'HEAD' })
+                .then(response => {
+                    html += `game.wasm accessible: ${response.ok ? '✅ Yes' : '❌ No'}\n`;
+                    result.innerHTML = html;
+                })
+                .catch(error => {
+                    html += `game.wasm accessible: ❌ No (${error.message})\n`;
+                    result.innerHTML = html;
+                });
+            
+            // Check for game app
+            html += `window.gameApp exists: ${typeof window.gameApp !== 'undefined' ? '✅ Yes' : '❌ No'}\n`;
+            
+            if (window.gameApp) {
+                html += `gameApp.wasmManager exists: ${window.gameApp.wasmManager ? '✅ Yes' : '❌ No'}\n`;
+                html += `gameApp.gameCanvas exists: ${window.gameApp.gameCanvas ? '✅ Yes' : '❌ No'}\n`;
+            }
+            
+            html += '</div>';
+            
+            result.innerHTML = html;
+        }
+        
+        function checkGameInitialization() {
+            const result = document.getElementById('gameInitResult');
+            let html = '<div class="status info">ℹ️ Game Initialization Check:</div>';
+            
+            html += '<div class="code-block">';
+            
+            if (window.gameApp) {
+                html += `Game app initialized: ✅ Yes\n`;
+                html += `WASM manager: ${window.gameApp.wasmManager ? '✅ Initialized' : '❌ Not initialized'}\n`;
+                html += `Game canvas: ${window.gameApp.gameCanvas ? '✅ Available' : '❌ Not available'}\n`;
+                html += `Game renderer: ${window.gameApp.gameRenderer ? '✅ Initialized' : '❌ Not initialized'}\n`;
+                
+                if (window.gameApp.gameCanvas) {
+                    const ctx = window.gameApp.gameCanvas.getContext('2d');
+                    html += `Canvas context: ${ctx ? '✅ Available' : '❌ Not available'}\n`;
+                }
+            } else {
+                html += `Game app initialized: ❌ No\n`;
+            }
+            
+            html += '</div>';
+            
+            result.innerHTML = html;
+        }
+        
+        function testCanvasVisibility() {
+            const canvas = document.getElementById('testCanvas');
+            const result = document.getElementById('visibilityTestResult');
+            
+            try {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw test pattern
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(10, 10, 100, 50);
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.font = '16px Arial';
+                ctx.fillText('Canvas Test', 120, 40);
+                
+                ctx.strokeStyle = '#0000ff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(5, 5, 390, 190);
+                
+                result.innerHTML = '<div class="status success">✅ Canvas visibility test passed - you should see green rectangle, red text, and blue border</div>';
+            } catch (error) {
+                result.innerHTML = `<div class="status error">❌ Canvas test failed: ${error.message}</div>`;
+            }
+        }
+        
+        function forceShowCanvas() {
+            document.body.classList.add('game-started');
+            document.getElementById('visibilityTestResult').innerHTML = '<div class="status success">✅ Forced canvas visibility - game-started class added to body</div>';
+        }
+        
+        function applyQuickFixes() {
+            const result = document.getElementById('quickFixesResult');
+            let fixes = [];
+            
+            // Fix 1: Add game-started class
+            if (!document.body.classList.contains('game-started')) {
+                document.body.classList.add('game-started');
+                fixes.push('Added game-started class to body');
+            }
+            
+            // Fix 2: Ensure viewport is visible
+            const viewport = document.getElementById('viewport');
+            if (viewport) {
+                viewport.style.display = 'block';
+                viewport.style.opacity = '1';
+                fixes.push('Made viewport visible');
+            }
+            
+            // Fix 3: Hide loading screen
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.visibility = 'hidden';
+                loadingScreen.style.pointerEvents = 'none';
+                fixes.push('Hidden loading screen');
+            }
+            
+            // Fix 4: Ensure canvas is visible
+            const gameCanvas = document.getElementById('gameCanvas');
+            if (gameCanvas) {
+                gameCanvas.style.display = 'block';
+                gameCanvas.style.visibility = 'visible';
+                gameCanvas.style.opacity = '1';
+                fixes.push('Made game canvas visible');
+            }
+            
+            if (fixes.length > 0) {
+                result.innerHTML = '<div class="status success">✅ Applied fixes:<br>' + fixes.join('<br>') + '</div>';
+            } else {
+                result.innerHTML = '<div class="status info">ℹ️ No fixes needed - canvas should already be visible</div>';
+            }
+        }
+        
+        function resetCanvas() {
+            document.body.classList.remove('game-started');
+            document.getElementById('quickFixesResult').innerHTML = '<div class="status info">ℹ️ Reset canvas visibility - removed game-started class</div>';
+        }
+        
+        // Auto-run checks when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                checkCanvasElements();
+                checkCSSClasses();
+                checkWASMLoading();
+                checkGameInitialization();
+                testCanvasVisibility();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

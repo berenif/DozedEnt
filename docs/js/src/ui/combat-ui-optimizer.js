@@ -438,7 +438,6 @@ export class CombatUIOptimizer {
             '.minimap-container',
             '.objective-breadcrumb',
             '.info-cluster:not(.survival-cluster)',
-            '.status-effects:not(.priority-status-effects)',
             '.damage-numbers:not(.critical-damage)',
             '.notification:not(.critical-notification)'
         ];

@@ -236,19 +236,6 @@
   animation-duration: 1.2s !important;
 }
 
-/* Status Effects Enhancement */
-.combat-mode-active .priority-status-effects {
-  background: rgba(0, 0, 0, 0.9) !important;
-  border-radius: 8px !important;
-  padding: 8px !important;
-  backdrop-filter: blur(4px) !important;
-}
-
-.combat-mode-active .status-effect {
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 6px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-}
 
 /* Low Priority Updates */
 .low-priority-updates {

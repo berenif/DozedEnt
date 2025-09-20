@@ -2141,3 +2141,4 @@
     Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
+//# sourceMappingURL=wolf-animation.umd.js.map

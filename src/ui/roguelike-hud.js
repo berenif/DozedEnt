@@ -80,13 +80,6 @@ export class RoguelikeHUD {
       
       <!-- Left Side Panel -->
       <div class="hud-left-panel">
-        <!-- Status Effects -->
-        <div class="status-effects-panel">
-          <div class="panel-title">Status Effects</div>
-          <div id="status-effects-container" class="status-effects-grid">
-            <!-- Status effects will be populated dynamically -->
-          </div>
-        </div>
         
         <!-- Quick Inventory -->
         <div class="quick-inventory-panel">
@@ -114,19 +107,10 @@ export class RoguelikeHUD {
       <!-- Right Side Panel -->
       <div class="hud-right-panel">
         
-        <!-- Currency and Resources -->
-        <div class="resources-panel">
-          <div class="panel-title">Resources</div>
-          <div class="resource-item">
-            <div class="resource-icon">🔶</div>
-            <div class="resource-label">Gold</div>
-            <div class="resource-value" id="gold-value">0</div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-icon">🔷</div>
-            <div class="resource-label">Essence</div>
-            <div class="resource-value" id="essence-value">0</div>
-          </div>
+        <!-- Status Panel -->
+        <div class="status-panel">
+          <div class="panel-title">Status</div>
+          <!-- Status information can be added here if needed -->
         </div>
       </div>
       
@@ -223,7 +207,7 @@ export class RoguelikeHUD {
     this.updatePhaseInfo();
     this.updateMinimap();
     this.updateStatusEffects();
-    this.updateResources();
+    this.updateStatus();
   }
 
   /**
@@ -360,48 +344,48 @@ export class RoguelikeHUD {
    * Update status effects display
    */
   updateStatusEffects() {
-    const container = document.getElementById('status-effects-container');
-    if (!container) {return;}
-    
-    // Clear existing effects
-    container.innerHTML = '';
-    
-    const effects = this.wasmManager.getStatusEffects ? this.wasmManager.getStatusEffects() : [];
-    effects.forEach(effect => this.addStatusEffect(container, effect));
+    // Get status effects from WASM if available
+    let effects = [];
+    if (this.wasmManager.getStatusEffects) {
+      try {
+        effects = this.wasmManager.getStatusEffects() || [];
+      } catch (error) {
+        console.warn('Error getting status effects from WASM:', error);
+      }
+    }
+
+    // Update status effects in the UI
+    const statusPanel = document.querySelector('.status-panel');
+    if (!statusPanel) return;
+
+    // Clear existing status effects
+    const existingEffects = statusPanel.querySelectorAll('.status-effect');
+    existingEffects.forEach(effect => effect.remove());
+
+    // Add current status effects
+    effects.forEach(effect => {
+      const effectElement = document.createElement('div');
+      effectElement.className = 'status-effect';
+      effectElement.innerHTML = `
+        <div class="effect-icon">${effect.icon || '⚡'}</div>
+        <div class="effect-name">${effect.name || 'Unknown Effect'}</div>
+        <div class="effect-duration">${effect.duration || ''}</div>
+      `;
+      
+      // Add effect-specific styling
+      if (effect.type) {
+        effectElement.classList.add(`effect-${effect.type}`);
+      }
+      
+      statusPanel.appendChild(effectElement);
+    });
   }
 
   /**
-   * Add a status effect to the display
+   * Update status displays (resource display removed)
    */
-  addStatusEffect(container, effect) {
-    const effectEl = document.createElement('div');
-    effectEl.className = `status-effect ${effect.type}`;
-    effectEl.title = `${effect.name}: ${effect.description}`;
-    
-    effectEl.innerHTML = `
-      <div class="effect-icon">${effect.icon}</div>
-      <div class="effect-name">${effect.name}</div>
-      ${effect.duration > 0 ? `<div class="effect-duration">${Math.ceil(effect.duration)}s</div>` : ''}
-    `;
-    
-    container.appendChild(effectEl);
-  }
-
-
-  /**
-   * Update resource displays
-   */
-  updateResources() {
-    const goldValue = document.getElementById('gold-value');
-    const essenceValue = document.getElementById('essence-value');
-    
-    if (goldValue && this.wasmManager.getGold) {
-      goldValue.textContent = this.wasmManager.getGold();
-    }
-    
-    if (essenceValue && this.wasmManager.getEssence) {
-      essenceValue.textContent = this.wasmManager.getEssence();
-    }
+  updateStatus() {
+    // Status update logic can be added here if needed
   }
 
 

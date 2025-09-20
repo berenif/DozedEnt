@@ -94,10 +94,6 @@ export class ModernRogueliteUI {
               </div>
             </div>
             
-            <!-- Status Effects -->
-            <div class="status-effects-container" id="status-effects">
-              <!-- Dynamically populated status effects -->
-            </div>
           </div>
           
           <!-- Top-Right: Minimap + Objective -->

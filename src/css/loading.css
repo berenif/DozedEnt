@@ -16,8 +16,8 @@
 
 /* Hide game elements during loading */
 #viewport {
-    display: none;
-    opacity: 0;
+    display: block;
+    opacity: 0.3;
     transition: opacity 0.5s ease-in;
 }
 
@@ -53,6 +53,29 @@ body.game-started #loadingScreen {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+}
+
+/* Emergency canvas visibility override */
+#gameCanvas {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#viewport {
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* Hide loading screen after 5 seconds regardless */
+body:not(.game-started) #loadingScreen {
+    animation: fadeOutAfterDelay 5s ease-out forwards;
+}
+
+@keyframes fadeOutAfterDelay {
+    0% { opacity: 1; visibility: visible; }
+    99% { opacity: 1; visibility: visible; }
+    100% { opacity: 0; visibility: hidden; pointer-events: none; }
 }
 
 .loading-spinner {

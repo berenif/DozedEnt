@@ -24,6 +24,8 @@ export default {
       file: 'dist/player-animator.min.js',
       format: 'es',
       compact: true,
+      sourcemap: true,
+      sourcemapFile: 'dist/player-animator.min.js.map',
       plugins: [
         terser({
           compress: {

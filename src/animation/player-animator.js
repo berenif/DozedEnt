@@ -152,12 +152,12 @@ export class AnimatedPlayer {
     
     setupAnimations() {
         // Add all animations to the controller
-        Object.values(this.animations).forEach(animation => {
-            this.animator.controller.addAnimation(animation)
+        Object.entries(this.animations).forEach(([name, animation]) => {
+            this.animator.addAnimation(name, animation)
         })
         
         // Start with idle animation
-        this.animator.controller.play('idle')
+        this.animator.play('idle')
     }
     
     update(deltaTime, input = {}) {

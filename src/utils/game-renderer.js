@@ -556,11 +556,13 @@ export class GameRenderer {
         const playableHeight = this.world.height / 3
         const offsetX = this.world.width / 3
         const offsetY = this.world.height / 3
+        const horizontalTravel = Math.max(0, playableWidth - this.camera.width)
+        const verticalTravel = Math.max(0, playableHeight - this.camera.height)
 
-        this.camera.bounds.minX = offsetX + this.camera.width / 2
-        this.camera.bounds.minY = offsetY + this.camera.height / 2
-        this.camera.bounds.maxX = offsetX + playableWidth - this.camera.width / 2
-        this.camera.bounds.maxY = offsetY + playableHeight - this.camera.height / 2
+        this.camera.bounds.minX = offsetX
+        this.camera.bounds.minY = offsetY
+        this.camera.bounds.maxX = offsetX + horizontalTravel
+        this.camera.bounds.maxY = offsetY + verticalTravel
     }
     
     // Update camera to follow target

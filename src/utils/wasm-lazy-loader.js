@@ -93,61 +93,94 @@ export class WasmLazyLoader {
    * Clear source map references from WASM instance
    * @private
    */
-  clearSourceMapReferences(instance) {
-    if (!instance) {
+  clearSourceMapReferences(instance, moduleRef = null) {
+    if (!instance && !moduleRef) {
       return;
     }
     
     try {
-      // Clear all possible source map properties
-      const sourceMapProps = ['sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap'];
+      const sourceMapProps = [
+        'sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap',
+        'sourceMappingURL', '_sourceMappingURL', 'sourceMapData', '_sourceMapData',
+        'debugInfo', '_debugInfo', 'debugSymbols', '_debugSymbols'
+      ];
       
-      sourceMapProps.forEach(prop => {
-        if (instance[prop]) {
-          delete instance[prop];
-        }
-        if (instance.module && instance.module[prop]) {
-          delete instance.module[prop];
-        }
-      });
-      
-      // Also clear any nested source map references
-      if (instance.exports && typeof instance.exports === 'object') {
-        sourceMapProps.forEach(prop => {
-          if (instance.exports[prop]) {
-            delete instance.exports[prop];
+      const safeDelete = (target, prop) => {
+        if (target && prop in target) {
+          try {
+            delete target[prop];
+          } catch (error) {
+            // Ignore deletion errors
           }
-        });
-      }
-      
-      // Clear any WebAssembly.Module source map references that might cause URL constructor errors
-      if (instance.module) {
-        // Remove any source map URL that might be invalid
-        if (instance.module.sourceMapURL === null || instance.module.sourceMapURL === '') {
-          delete instance.module.sourceMapURL;
         }
-        // Clear any other potential source map references
-        if (instance.module._sourceMapURL) {
-          delete instance.module._sourceMapURL;
-        }
-      }
+      };
       
-      // Clear any global source map references that might interfere with devtools
-      if (typeof window !== 'undefined' && window.WebAssembly) {
-        // Ensure no global source map state is left
+      const scrubTarget = (target) => {
+        if (!target || typeof target !== 'object') {
+          return;
+        }
+        
+        sourceMapProps.forEach(prop => safeDelete(target, prop));
+        
+        if ('sourceMapURL' in target && (target.sourceMapURL === null || target.sourceMapURL === '' || target.sourceMapURL === undefined)) {
+          safeDelete(target, 'sourceMapURL');
+        }
+      };
+      
+      const moduleTarget = (moduleRef && typeof moduleRef === 'object')
+        ? moduleRef
+        : (instance && typeof instance.module === 'object' ? instance.module : null);
+      
+      scrubTarget(instance);
+      if (instance && typeof instance.exports === 'object') {
+        scrubTarget(instance.exports);
+      }
+      scrubTarget(moduleTarget);
+      
+      if (moduleTarget && typeof moduleTarget === 'object') {
         try {
-          if (window.WebAssembly.Module.prototype.sourceMapURL === null) {
-            delete window.WebAssembly.Module.prototype.sourceMapURL;
-          }
+          Object.keys(moduleTarget).forEach(key => {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('source') || lowerKey.includes('map') || lowerKey.includes('debug')) {
+              safeDelete(moduleTarget, key);
+            }
+          });
+        } catch (e) {
+          // Ignore key iteration errors
+        }
+      }
+      
+      if (typeof window !== 'undefined' && window.WebAssembly && window.WebAssembly.Module) {
+        try {
+          const prototype = window.WebAssembly.Module.prototype;
+          sourceMapProps.forEach(prop => {
+            if (prototype[prop] === null || prototype[prop] === '' || prototype[prop] === undefined) {
+              safeDelete(prototype, prop);
+            }
+          });
         } catch (prototypeError) {
           // Ignore prototype modification errors
         }
       }
+      
+      if (typeof window !== 'undefined' && window.WebAssembly && window.WebAssembly.Instance) {
+        try {
+          const prototype = window.WebAssembly.Instance.prototype;
+          sourceMapProps.forEach(prop => {
+            if (prototype[prop] === null || prototype[prop] === '' || prototype[prop] === undefined) {
+              safeDelete(prototype, prop);
+            }
+          });
+        } catch (prototypeError) {
+          // Ignore prototype modification errors
+        }
+      }
+      
     } catch (e) {
-      // Ignore errors when clearing source map references
       console.debug('Source map cleanup warning:', e.message);
     }
   }
+
 
   /**
    * Perform the actual lazy loading with retry logic
@@ -167,6 +200,7 @@ export class WasmLazyLoader {
         
         // Use streaming compilation if available for better performance
         let instance;
+        let compiledModule = null;
         if (typeof WebAssembly.instantiate === 'function') {
           // Direct instantiation from buffer (more efficient than compile + instantiate)
           // Wrap in timeout to prevent browser hanging
@@ -176,52 +210,26 @@ export class WasmLazyLoader {
             `WASM instantiation timeout for ${moduleName}`
           );
           instance = result.instance;
-          
+          compiledModule = result.module || null;
+
           // Immediately clear any source map references to prevent devtools issues
-          this.clearSourceMapReferences(instance);
-          
-          // Clear any source map references to prevent null URL errors
-          if (instance && typeof instance.exports === 'object') {
-            // Ensure no source map URLs are attached that could cause issues
-            try {
-              // Remove any potential source map references from the instance
-              if (instance.sourceMapURL) {
-                delete instance.sourceMapURL;
-              }
-              // Also clear any WebAssembly.Module source map references
-              if (instance.module && instance.module.sourceMapURL) {
-                delete instance.module.sourceMapURL;
-              }
-            } catch (e) {
-              // Ignore errors when clearing source map references
-              console.debug('Source map cleanup warning:', e.message);
-            }
-          }
+          this.clearSourceMapReferences(instance, compiledModule);
         } else {
           // Fallback to two-step process with timeout protection
-          const module = await this.withTimeout(
+          compiledModule = await this.withTimeout(
             WebAssembly.compile(arrayBuffer),
             this.config.loadTimeout / 2,
             `WASM compilation timeout for ${moduleName}`
           );
           instance = await this.withTimeout(
-            WebAssembly.instantiate(module, imports),
+            WebAssembly.instantiate(compiledModule, imports),
             this.config.loadTimeout / 2,
             `WASM instantiation timeout for ${moduleName}`
           );
-          
-          // Clear any source map references to prevent null URL errors
-          if (instance && typeof instance.exports === 'object') {
-            try {
-              if (instance.sourceMapURL) {
-                delete instance.sourceMapURL;
-              }
-            } catch (e) {
-              // Ignore errors when clearing source map references
-            }
-          }
+
+          this.clearSourceMapReferences(instance, compiledModule);
         }
-        
+
         return instance;
 
       } catch (error) {
@@ -741,12 +749,59 @@ export class WasmLazyLoader {
   }
 }
 
+// Global source map cleanup function to prevent URL constructor errors
+export function cleanupGlobalSourceMaps() {
+  try {
+    // Clear any global source map references that might cause issues
+    if (typeof window !== 'undefined' && window.WebAssembly) {
+      // Clear from WebAssembly.Module prototype
+      if (window.WebAssembly.Module && window.WebAssembly.Module.prototype) {
+        const moduleProps = ['sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap'];
+        moduleProps.forEach(prop => {
+          if (window.WebAssembly.Module.prototype[prop] === null || 
+              window.WebAssembly.Module.prototype[prop] === '' || 
+              window.WebAssembly.Module.prototype[prop] === undefined) {
+            delete window.WebAssembly.Module.prototype[prop];
+          }
+        });
+      }
+      
+      // Clear from WebAssembly.Instance prototype
+      if (window.WebAssembly.Instance && window.WebAssembly.Instance.prototype) {
+        const instanceProps = ['sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap'];
+        instanceProps.forEach(prop => {
+          if (window.WebAssembly.Instance.prototype[prop] === null || 
+              window.WebAssembly.Instance.prototype[prop] === '' || 
+              window.WebAssembly.Instance.prototype[prop] === undefined) {
+            delete window.WebAssembly.Instance.prototype[prop];
+          }
+        });
+      }
+    }
+    
+    // Clear any global source map variables
+    if (typeof globalThis !== 'undefined') {
+      const globalProps = ['sourceMapURL', '_sourceMapURL', 'sourceMap', '_sourceMap'];
+      globalProps.forEach(prop => {
+        if (globalThis[prop] === null || globalThis[prop] === '' || globalThis[prop] === undefined) {
+          delete globalThis[prop];
+        }
+      });
+    }
+  } catch (e) {
+    console.debug('Global source map cleanup warning:', e.message);
+  }
+}
+
 // Global lazy loader instance
 export const globalWasmLoader = new WasmLazyLoader();
 
 // Auto-preload critical modules when available
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
+    // Clean up source maps before loading modules
+    cleanupGlobalSourceMaps();
+    
     globalWasmLoader.preloadCriticalModules().catch(error => {
       console.warn('Failed to preload critical WASM modules:', error);
     });
