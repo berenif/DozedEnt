@@ -3,251 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Working Multiplayer Demo - Trystero</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .demo-header {
-            text-align: center;
-            margin-bottom: 40px;
-            animation: glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-            0%, 100% { text-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
-            50% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
-        }
-        
-        h1 {
-            font-size: 36px;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
-        }
-        
-        .subtitle {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 20px;
-        }
-        
-        .demo-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            width: 100%;
-            margin-bottom: 40px;
-        }
-        
-        .control-section {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-        }
-        
-        .control-section h3 {
-            font-size: 16px;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-            padding-bottom: 5px;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid #00ff00;
-            color: #00ff00;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-family: inherit;
-            font-size: 12px;
-        }
-        
-        .btn:hover {
-            background: rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            transform: translateY(-2px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn.danger {
-            border-color: #ff0000;
-            color: #ff0000;
-            background: rgba(255, 0, 0, 0.1);
-        }
-        
-        .btn.danger:hover {
-            background: rgba(255, 0, 0, 0.2);
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-        }
-        
-        .btn.primary {
-            background: rgba(0, 255, 0, 0.2);
-            font-weight: bold;
-        }
-        
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .status-panel {
-            max-width: 1200px;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .status-item {
-            text-align: center;
-            padding: 10px;
-            background: rgba(0, 255, 0, 0.05);
-            border-radius: 4px;
-        }
-        
-        .status-label {
-            font-size: 10px;
-            opacity: 0.7;
-            text-transform: uppercase;
-        }
-        
-        .status-value {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        
-        .log-panel {
-            max-width: 1200px;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .log-entry {
-            font-size: 12px;
-            margin: 5px 0;
-            padding: 5px;
-            border-left: 2px solid rgba(0, 255, 0, 0.5);
-            padding-left: 10px;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { 
-                transform: translateX(-20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .log-entry.error {
-            border-color: #ff0000;
-            color: #ff0000;
-        }
-        
-        .log-entry.success {
-            border-color: #00ff00;
-            color: #00ff00;
-        }
-        
-        .log-entry.info {
-            border-color: #00ffff;
-            color: #00ffff;
-        }
-        
-        .timestamp {
-            opacity: 0.5;
-            margin-right: 10px;
-        }
-        
-        input[type="text"], input[type="number"], select {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            color: #00ff00;
-            font-family: inherit;
-            font-size: 12px;
-        }
-        
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            outline: none;
-            border-color: #00ff00;
-            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
-        }
-        
-        label {
-            display: block;
-            font-size: 11px;
-            margin-top: 10px;
-            opacity: 0.8;
-            text-transform: uppercase;
-        }
-        
-        .peer-list {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        
-        .peer-item {
-            padding: 5px;
-            margin: 2px 0;
-            background: rgba(0, 255, 0, 0.05);
-            border-radius: 3px;
-            font-size: 11px;
-        }
-    </style>
+    <title>Multiplayer Demo - DozedEnt</title>
+    <link rel="stylesheet" href="src/css/common.css">
+    <link rel="stylesheet" href="src/css/working-multiplayer-demo.css">
 </head>
 <body>
     <div class="demo-header">
         <h1>🌐 WORKING MULTIPLAYER DEMO</h1>
-        <div class="subtitle">Real Trystero P2P Networking • WebRTC • Serverless</div>
+        <div class="subtitle">P2P Networking • WebRTC • Serverless</div>
     </div>
     
     <div class="status-panel">
@@ -258,33 +21,23 @@
                 <div class="status-value" id="room-id">Not Connected</div>
             </div>
             <div class="status-item">
-                <div class="status-label">Connected Peers</div>
+                <div class="status-label">Connected Players</div>
                 <div class="status-value" id="peer-count">0</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Messages Sent</div>
-                <div class="status-value" id="messages-sent">0</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Messages Received</div>
-                <div class="status-value" id="messages-received">0</div>
             </div>
             <div class="status-item">
                 <div class="status-label">Connection Quality</div>
                 <div class="status-value" id="connection-quality">Unknown</div>
             </div>
             <div class="status-item">
-                <div class="status-label">Your Peer Name</div>
+                <div class="status-label">Your Player Name</div>
                 <div class="status-value" id="peer-name">Generating...</div>
             </div>
         </div>
     </div>
     
     <div class="demo-controls">
-        <div class="control-section">
+        <div class="control-section" id="tile-room-management">
             <h3>🏠 Room Management</h3>
-            <label>Room ID</label>
-            <input type="text" id="room-id-input" placeholder="Enter room ID or leave empty for random" value="">
             <label>Network Provider</label>
             <select id="network-provider">
                 <option value="torrent">Torrent (BitTorrent)</option>
@@ -294,30 +47,70 @@
                 <option value="nostr">Nostr</option>
                 <option value="supabase">Supabase</option>
             </select>
+            <label>Room ID</label>
             <button class="btn primary" onclick="createRoom()">Create Room</button>
             <button class="btn" onclick="joinRoom()">Join Room</button>
             <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
+            <input type="text" id="room-id-input" placeholder="Enter room ID to join" value="">
+
+            <!-- Unified Rooms toolbar and list -->
+            <div class="rooms-toolbar">
+                <div class="rooms-toolbar-left">Nearby Rooms</div>
+                <div class="rooms-toolbar-right">
+                    <button class="btn sm" onclick="discoverRooms()">Discover</button>
+                    <button class="btn sm" onclick="refreshRoomList()">Refresh</button>
+                </div>
+            </div>
+            <div class="room-list" id="room-list">
+                <div class="room-item">No rooms discovered yet</div>
+            </div>
+            <div class="rooms-hint">Tip: Click a room to fill the ID, then use Join.</div>
+
         </div>
         
         <div class="control-section">
-            <h3>💬 Chat System</h3>
-            <label>Message</label>
-            <input type="text" id="chat-message" placeholder="Type your message here...">
-            <button class="btn" onclick="sendMessage()">Send Message</button>
-            <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
-            <button class="btn" onclick="clearChat()">Clear Chat</button>
+            <h3>🔍 Available Rooms</h3>
+            <div class="room-list" id="room-list-old">
+                <div class="room-item">No rooms discovered yet</div>
+            </div>
+            <button class="btn" onclick="refreshRoomList()">Refresh Room List</button>
+            <button class="btn" onclick="discoverRooms()">Discover Rooms</button>
         </div>
         
-        <div class="control-section">
-            <h3>👥 Connected Peers</h3>
+  
+        
+        <div class="control-section" id="tile-connected-players" style="display: none;">
+            <h3>👥 Connected Players</h3>
+            <div style="margin-bottom: 10px; display: flex; gap: 8px;">
+                <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
+            </div>
             <div class="peer-list" id="peer-list">
                 <div class="peer-item">No peers connected</div>
             </div>
             <button class="btn" onclick="refreshPeers()">Refresh Peers</button>
             <button class="btn" onclick="pingAllPeers()">Ping All Peers</button>
+            <!-- Integrated chat controls -->
+            <div class="chat-controls" style="margin-top: 12px;">
+                <label>Message</label>
+                <input type="text" id="chat-message" placeholder="Type your message here...">
+                <div>
+                    <button class="btn" onclick="sendMessage()">Send Message</button>
+                    <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
+                    <button class="btn" onclick="clearChat()">Clear Chat</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>💬 Chat System</h3>
+            <label>Message</label>
+            <input type="text" id="chat-message-legacy" placeholder="Type your message here..." disabled>
+            <button class="btn" onclick="sendMessage()">Send Message</button>
+            <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
+            <button class="btn" onclick="clearChat()">Clear Chat</button>
         </div>
         
-        <div class="control-section">
+        <div class="control-section" style="display: none;">
             <h3>📊 Network Diagnostics</h3>
             <button class="btn" onclick="showNetworkStats()">Show Network Stats</button>
             <button class="btn" onclick="testConnection()">Test Connection</button>
@@ -334,7 +127,10 @@
     <script type="module">
         import NetworkProviderManager from '../src/netcode/network-provider-manager.js'
         import { peerNameGenerator } from '../src/utils/peer-name-generator.js'
+        import { ProviderRoomStore } from '../src/utils/provider-room-store.js'
         
+        const networkProviderSelect = document.getElementById('network-provider')
+
         // Global variables
         let networkManager = null
         let room = null
@@ -342,13 +138,76 @@
         let sendPing = null
         let sendPeerInfo = null
         let getPeerInfo = null
+        let sendRoomInfo = null
+        let getRoomInfo = null
+        let sendRoomDiscovery = null
+        let getRoomDiscovery = null
         let currentPeerName = null
         let peerNames = new Map() // Map of peerId -> peerName
+        const roomStore = new ProviderRoomStore()
+        let selectedProviderId = networkProviderSelect.value
         let stats = {
             messagesSent: 0,
             messagesReceived: 0
         }
+
+        // Persistent client identifier for de-duplication of our own rooms
+        let selfClientId = null
+        try {
+            selfClientId = localStorage.getItem('self-client-id')
+            if (!selfClientId) {
+                selfClientId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+                localStorage.setItem('self-client-id', selfClientId)
+            }
+        } catch (_) {
+            selfClientId = Math.random().toString(36).slice(2)
+        }
+
+        // Suppress discovery immediately after leaving to avoid list flood
+        let suppressDiscoveryUntil = 0
+
+        // Track the most recently left room so it remains visible in the lobby
+        let lastLeftRoomId = null
+        let lastLeftRoomProviderId = null
+        let lastLeftRoomInfo = null
+        let lastLeftTime = 0
         
+        // Room creation tracking
+        let isInRoom = false // Track if player is currently in a room
+        let isHostingRoom = false // Track if player is hosting (created) the current room
+        let hasCreatedRoom = false // Track if player has created a room in this session
+        let roomCreationCooldown = null // Track cooldown timer
+        let cooldownEndTime = null // When the cooldown ends
+        const ROOM_CREATION_COOLDOWN_DURATION = 30000 // 30 seconds cooldown
+        
+        // Room joining tracking
+        let roomJoinCooldown = null // Track join cooldown timer
+        let joinCooldownEndTime = null // When the join cooldown ends
+        const ROOM_JOIN_COOLDOWN_DURATION = 10000 // 10 seconds cooldown for joining
+        
+        // Discovery state management
+        let lastLobbyBroadcast = 0 // Prevent too frequent broadcasts
+        let broadcastChannel = null // Global BroadcastChannel for room discovery
+
+        networkProviderSelect.addEventListener('change', (event) => {
+            handleProviderSelectionChange(event.target.value)
+        })
+
+        // Toggle tiles: show Room Management when not in a room,
+        // show Connected Players when in a room
+        function updateTileVisibility() {
+            const roomTile = document.getElementById('tile-room-management')
+            const playersTile = document.getElementById('tile-connected-players')
+            if (!roomTile || !playersTile) return
+            if (isInRoom) {
+                roomTile.style.display = 'none'
+                playersTile.style.display = ''
+            } else {
+                roomTile.style.display = ''
+                playersTile.style.display = 'none'
+            }
+        }
+
         // Add log entry
         function addLog(message, type = 'info') {
             const log = document.getElementById('event-log')
@@ -363,92 +222,429 @@
                 log.removeChild(log.lastChild)
             }
         }
+
+        // Alert spam protection
+        let lastAlertTime = 0
+        let activeAlerts = 0
+        const ALERT_COOLDOWN = 2000 // 2 seconds between alerts
+        const MAX_ACTIVE_ALERTS = 3 // Maximum 3 alerts at once
         
-        // Initialize Network Provider Manager
-        async function initializeNetworkManager() {
-            try {
-                addLog('Initializing Network Provider Manager...', 'info')
-                
-                const provider = document.getElementById('network-provider').value
-                addLog(`Using network provider: ${provider}`, 'info')
-                
-                // Create network manager instance
-                networkManager = new NetworkProviderManager()
-                
-                // Set up event handlers
-                networkManager.on('onProviderChanged', (providerId) => {
-                    addLog(`Provider changed to: ${providerId}`, 'info')
-                })
-                
-                networkManager.on('onRoomCreated', (roomId, providerId) => {
-                    addLog(`Room created: ${roomId} with ${providerId}`, 'success')
-                })
-                
-                networkManager.on('onRoomJoined', (roomId, providerId) => {
-                    addLog(`Joined room: ${roomId} with ${providerId}`, 'success')
-                })
-                
-                networkManager.on('onRoomLeft', () => {
-                    addLog('Left room', 'info')
-                })
-                
-                networkManager.on('onPeerJoined', (peerId) => {
-                    addLog(`Peer joined: ${peerId}`, 'success')
-                    updatePeerList()
-                    updateStatus()
-                })
-                
-                networkManager.on('onPeerLeft', (peerId) => {
-                    addLog(`Peer left: ${peerId}`, 'info')
-                    updatePeerList()
-                    updateStatus()
-                })
-                
-                networkManager.on('onError', (error) => {
-                    addLog(`Network error: ${error.message}`, 'error')
-                    console.error('Network error:', error)
-                })
-                
-                // Initialize the provider
-                const success = await networkManager.initializeProvider(provider)
+        // Custom UI alert function
+        function showAlert(message, type = 'error') {
+            const now = Date.now()
+            
+            // Check cooldown - prevent spam
+            if (now - lastAlertTime < ALERT_COOLDOWN) {
+                console.log('Alert blocked due to cooldown')
+                addLog('Alert blocked - too frequent (2s cooldown)', 'info')
+                return
+            }
+            
+            // Check maximum active alerts
+            if (activeAlerts >= MAX_ACTIVE_ALERTS) {
+                console.log('Alert blocked - too many active alerts')
+                addLog('Alert blocked - too many active alerts (max 3)', 'info')
+                return
+            }
+            
+            lastAlertTime = now
+            activeAlerts++
+            // Create notification container in top right
+            const notification = document.createElement('div')
+            notification.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                background: linear-gradient(145deg, rgba(44, 24, 16, 0.95), rgba(26, 15, 8, 0.9)) !important;
+                border: 2px solid ${type === 'error' ? '#dc143c' : '#daa520'} !important;
+                border-radius: 12px !important;
+                padding: 16px 20px !important;
+                max-width: 380px !important;
+                min-width: 300px !important;
+                box-shadow: 
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    0 0 20px ${type === 'error' ? 'rgba(220, 20, 60, 0.3)' : 'rgba(218, 165, 32, 0.3)'},
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+                font-family: 'Crimson Text', serif !important;
+                z-index: 99999 !important;
+                transform: translateX(100%);
+                transition: transform 0.3s ease-out;
+                position: fixed !important;
+                overflow: hidden !important;
+            `
+            
+            // Add parchment texture overlay
+            const textureOverlay = document.createElement('div')
+            textureOverlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: 
+                    radial-gradient(circle at 20% 20%, rgba(218, 165, 32, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
+                border-radius: 12px;
+                pointer-events: none;
+            `
+            notification.appendChild(textureOverlay)
+            
+            // Add CSS animations if not already added
+            if (!document.getElementById('gameAlertStyles')) {
+                const style = document.createElement('style')
+                style.id = 'gameAlertStyles'
+                style.textContent = `
+                    @keyframes slideInRight {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOutRight {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                    @keyframes mysticalPulse {
+                        0%, 100% { 
+                            text-shadow: 
+                                0 0 8px ${type === 'error' ? 'rgba(220, 20, 60, 0.6)' : 'rgba(218, 165, 32, 0.6)'},
+                                0 0 16px ${type === 'error' ? 'rgba(255, 107, 107, 0.4)' : 'rgba(255, 215, 0, 0.4)'};
+                        }
+                        50% { 
+                            text-shadow: 
+                                0 0 12px ${type === 'error' ? 'rgba(220, 20, 60, 0.8)' : 'rgba(218, 165, 32, 0.8)'},
+                                0 0 20px ${type === 'error' ? 'rgba(255, 107, 107, 0.6)' : 'rgba(255, 215, 0, 0.6)'};
+                        }
+                    }
+                `
+                document.head.appendChild(style)
+            }
+            
+            // Create notification content
+            notification.innerHTML = `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 12px;
+                    position: relative;
+                    z-index: 1;
+                ">
+                    <div style="
+                        font-size: 18px; 
+                        font-weight: bold; 
+                        color: ${type === 'error' ? '#ff6b6b' : '#daa520'};
+                        margin-right: 10px;
+                        animation: mysticalPulse 2s ease-in-out infinite;
+                    ">
+                        ${type === 'error' ? '⚠️' : 'ℹ️'}
+                    </div>
+                    <div style="
+                        font-size: 16px; 
+                        font-weight: bold; 
+                        color: ${type === 'error' ? '#ff6b6b' : '#daa520'};
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        font-family: 'Cinzel', serif;
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                    ">
+                        ${type === 'error' ? 'SYSTEM ERROR' : 'SYSTEM INFO'}
+                    </div>
+                </div>
+                <div style="
+                    color: #e8d5b7;
+                    line-height: 1.5;
+                    font-size: 14px;
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                    position: relative;
+                    z-index: 1;
+                    font-family: 'Crimson Text', serif;
+                ">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+            `
+            
+            // Add to page
+            document.body.appendChild(notification)
+            
+            // Slide in animation
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)'
+            }, 10)
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)'
+                notification.style.transition = 'transform 0.3s ease-in'
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove()
+                        activeAlerts-- // Decrement counter when alert is removed
+                    }
+                }, 300)
+            }, 3000)
+        }
+
+        // Nearby rooms scanning visibility/enablement
+        function updateNearbyRoomsUI() {
+            // Hide/disable scanning UI when player is in ANY room (not just when hosting)
+            const shouldHide = isInRoom
+
+            // Primary nearby rooms UI
+            document.querySelectorAll('.rooms-toolbar, .rooms-hint').forEach(el => {
+                if (el) el.style.display = shouldHide ? 'none' : ''
+            })
+            const roomListEl = document.getElementById('room-list')
+            if (roomListEl) roomListEl.style.display = shouldHide ? 'none' : ''
+
+            // Legacy/secondary room list UI - hide the entire section
+            const oldListEl = document.getElementById('room-list-old')
+            if (oldListEl) {
+                const sectionEl = oldListEl.closest('.control-section')
+                if (sectionEl) {
+                    sectionEl.style.display = shouldHide ? 'none' : ''
+                }
+            }
+
+            // Disable all scan-related buttons
+            const actionButtons = document.querySelectorAll(
+                'button[onclick="discoverRooms()"], button[onclick="refreshRoomList()"]'
+            )
+            actionButtons.forEach(btn => {
+                if (!btn) return
+                btn.disabled = shouldHide
+                btn.style.opacity = shouldHide ? '0.6' : '1'
+                btn.style.cursor = shouldHide ? 'not-allowed' : 'pointer'
+                // If hiding, also remove focus to avoid accidental keyboard activation
+                if (shouldHide && document.activeElement === btn) btn.blur()
+            })
+        }
+        
+        // Function to clear all active alerts
+        window.clearAllAlerts = function() {
+            const alerts = document.querySelectorAll('[style*="z-index: 99999"]')
+            alerts.forEach(alert => {
+                if (alert.parentElement) {
+                    alert.remove()
+                }
+            })
+            activeAlerts = 0
+            addLog('All alerts cleared', 'info')
+        }
+        
+        // Function to show alert status
+        window.showAlertStatus = function() {
+            const now = Date.now()
+            const timeSinceLastAlert = now - lastAlertTime
+            const cooldownRemaining = Math.max(0, ALERT_COOLDOWN - timeSinceLastAlert)
+            
+            addLog('=== Alert System Status ===', 'success')
+            addLog(`Active alerts: ${activeAlerts}/${MAX_ACTIVE_ALERTS}`)
+            addLog(`Cooldown remaining: ${Math.ceil(cooldownRemaining / 1000)}s`)
+            addLog(`Last alert: ${Math.ceil(timeSinceLastAlert / 1000)}s ago`)
+        }
+        
+        // Network manager helpers
+        function setupNetworkManagerIfNeeded() {
+            if (networkManager) {return networkManager}
+            networkManager = new NetworkProviderManager()
+            networkManager.on('onProviderChanged', (providerId) => {
+                selectedProviderId = providerId
+                networkProviderSelect.value = providerId
+                addLog(`Provider changed to: ${providerId}`, 'info')
+                updateRoomList()
+                updateStatus()
+            })
+            networkManager.on('onRoomCreated', (roomId, providerId) => {
+                addLog(`Room created: ${roomId} with ${providerId}`, 'success')
+                updateStatus()
+            })
+            networkManager.on('onRoomJoined', (roomId, providerId) => {
+                addLog(`Joined room: ${roomId} with ${providerId}`, 'success')
+                updateStatus()
+            })
+            networkManager.on('onRoomLeft', () => {
+                addLog('Left room', 'info')
+                updateStatus()
+            })
+            networkManager.on('onPeerJoined', (peerId) => {
+                addLog(`Peer joined: ${peerId}`, 'success')
+                // Broadcast our peer info to the new peer
+                if (sendPeerInfo && currentPeerName) {
+                    const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
+                    sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                    addLog(`Sent peer info to new peer: ${peerId}`, 'info')
+                }
+                updatePeerList()
+                updateStatus()
+            })
+            networkManager.on('onPeerLeft', (peerId) => {
+                addLog(`Peer left: ${peerId}`, 'info')
+                updatePeerList()
+                updateStatus()
+            })
+            networkManager.on('onError', (error) => {
+                addLog(`Network error: ${error.message}`, 'error')
+                console.error('Network error:', error)
+            })
+            return networkManager
+        }
+
+        async function ensureProviderIsReady(providerId) {
+            const manager = setupNetworkManagerIfNeeded()
+            const currentProvider = manager.getCurrentProvider()
+            if (!currentProvider || currentProvider.id !== providerId) {
+                const success = await manager.initializeProvider(providerId)
                 if (!success) {
                     throw new Error('Failed to initialize network provider')
                 }
-                
-                addLog('Network Provider Manager initialized successfully!', 'success')
-                updateStatus()
-                
-            } catch (error) {
-                addLog(`Failed to initialize Network Manager: ${error.message}`, 'error')
-                console.error('Network Manager initialization error:', error)
             }
+            return manager
         }
-        
-        // Room management functions
+
+        function handleProviderSelectionChange(providerId) {
+            setupNetworkManagerIfNeeded()
+            if (!providerId) {return}
+            if (room) {
+                addLog('Leaving current room before switching provider', 'info')
+                window.leaveRoom()
+            }
+            selectedProviderId = providerId
+            networkProviderSelect.value = providerId
+            
+            // Update BroadcastChannel for new provider
+            if (broadcastChannel) {
+                broadcastChannel.close()
+            }
+            if (typeof BroadcastChannel !== 'undefined') {
+                try {
+                    broadcastChannel = new BroadcastChannel(`room-discovery-${providerId}`)
+                    broadcastChannel.addEventListener('message', (event) => {
+                        if (event.data.type === 'room-broadcast') {
+                            const stored = recordDiscoveredRoom(providerId, event.data.roomInfo)
+                            if (stored) {
+                                addLog(`Discovered room via BroadcastChannel: ${stored.name}`, 'info')
+                                updateRoomList()
+                            }
+                        } else if (event.data.type === 'discovery-request') {
+                            // Respond to discovery requests if we're in a room
+                            if (room && sendRoomInfo && currentPeerName) {
+                                const currentRoomId = document.getElementById('room-id').textContent
+                                if (currentRoomId && currentRoomId !== 'Not Connected') {
+                                    const peers = networkManager.getPeers()
+                                    const roomInfo = {
+                                        id: currentRoomId,
+                                        roomId: currentRoomId,
+                                        roomName: `Room ${currentRoomId}`,
+                                        name: `Room ${currentRoomId}`,
+                                        playerCount: Object.keys(peers).length + 1,
+                                        maxPlayers: 8,
+                                        hostName: currentPeerName,
+                                        providerId: providerId,
+                                        creatorId: selfClientId,
+                                        broadcastTime: Date.now(),
+                                        expiresAt: Date.now() + (60 * 1000)
+                                    }
+                                    broadcastChannel.postMessage({
+                                        type: 'room-broadcast',
+                                        roomInfo: roomInfo,
+                                        timestamp: Date.now()
+                                    })
+                                    addLog(`Responded to discovery request with room: ${currentRoomId}`, 'info')
+                                }
+                            }
+                        }
+                    })
+                    addLog(`BroadcastChannel updated for provider: ${providerId}`, 'info')
+                } catch (error) {
+                    addLog(`BroadcastChannel update failed: ${error.message}`, 'error')
+                }
+            }
+            
+            addLog(`Selected network provider: ${getProviderLabel(providerId)}`, 'info')
+            updateRoomList()
+            updateStatus()
+        }
+
+        function recordDiscoveredRoom(providerId, info) {
+            if (!providerId) {return null}
+            // Ignore discovery while suppressed or if it's our own broadcast
+            const now = Date.now()
+            if (now < suppressDiscoveryUntil) { return null }
+            // Allow the most-recently-left room even if it's ours (for a short window)
+            const isRecentlyLeft = info && lastLeftRoomId && info.id === lastLeftRoomId && (now - lastLeftTime) < 60000
+            if (!isRecentlyLeft && info && (info.creatorId === selfClientId || info.hostPeerId === selfClientId)) { return null }
+            const stored = roomStore.upsert(providerId, info)
+            if (stored && providerId === selectedProviderId) {
+                updateRoomList()
+            }
+            return stored
+        }
+
+        function getProviderLabel(providerId) {
+            const option = Array.from(networkProviderSelect.options).find(opt => opt.value === providerId)
+            return option ? option.textContent : providerId
+        }
+
+        function getCurrentProviderId() {
+            const active = networkManager ? networkManager.getCurrentProvider() : null
+            return active ? active.id : selectedProviderId
+        }
+
+// Room management functions
         window.createRoom = async function() {
             try {
+                // Check if player is on cooldown from creating a room
+                if (roomCreationCooldown && cooldownEndTime && Date.now() < cooldownEndTime) {
+                    const remainingTime = Math.ceil((cooldownEndTime - Date.now()) / 1000)
+                    const minutes = Math.floor(remainingTime / 60)
+                    const seconds = remainingTime % 60
+                    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+                    
+                    const alertMessage = `🚫 ROOM CREATION TIMEOUT\n\nYou recently created a room and are in a cooldown period.\n\n⏰ Time remaining: ${timeString}\n\nThis timeout prevents room spam and ensures fair play.\nPlease wait before creating another room.`
+                    showAlert(alertMessage, 'error')
+                    addLog(`Room creation blocked - ${timeString} remaining in cooldown period`, 'error')
+                    return
+                }
+
+                // Check if player has already created a room in this session (only if not in timeout)
+                if (hasCreatedRoom && (!roomCreationCooldown || !cooldownEndTime || Date.now() >= cooldownEndTime)) {
+                    addLog('You have already created a room in this session. Please leave your current room first.', 'error')
+                    return
+                }
+
+                // Check if player is already in a room
+                if (isInRoom) {
+                    addLog('You are already in a room. Please leave your current room before creating a new one.', 'error')
+                    return
+                }
+
                 const roomId = document.getElementById('room-id-input').value || 
                     Math.random().toString(36).substring(2, 8)
-                
-                addLog(`Creating room: ${roomId}`, 'info')
-                
-                if (!networkManager) {
-                    await initializeNetworkManager()
-                }
-                
+
+                const providerId = selectedProviderId
+                const providerLabel = getProviderLabel(providerId)
+
+                addLog(`Creating room: ${roomId} on ${providerLabel}`, 'info')
+
+                await ensureProviderIsReady(providerId)
+
                 // Create room using network manager
                 room = await networkManager.createRoom(roomId)
-                
+
                 // Set up actions
                 const [sendMessageAction, getMessageAction] = networkManager.createAction('message')
                 const [sendPingAction, getPingAction] = networkManager.createAction('ping')
                 const [sendPeerInfoAction, getPeerInfoAction] = networkManager.createAction('peerInfo')
-                
+                const [sendRoomInfoAction, getRoomInfoAction] = networkManager.createAction('roomInfo')
+                const [sendRoomDiscoveryAction, getRoomDiscoveryAction] = networkManager.createAction('roomDisc')
+
                 sendMessage = sendMessageAction
                 sendPing = sendPingAction
                 sendPeerInfo = sendPeerInfoAction
                 getPeerInfo = getPeerInfoAction
-                
+                sendRoomInfo = sendRoomInfoAction
+                getRoomInfo = getRoomInfoAction
+                sendRoomDiscovery = sendRoomDiscoveryAction
+                getRoomDiscovery = getRoomDiscoveryAction
+
                 // Set up message handlers
                 getMessageAction(message => {
                     stats.messagesReceived++
@@ -456,63 +652,177 @@
                     addLog(`Message from peer: ${message}`, 'info')
                     updateStatus()
                 })
-                
+
                 getPingAction(pingData => {
                     addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
                 })
-                
+
                 getPeerInfoAction(peerInfo => {
                     const { peerId, peerName } = peerInfo
                     peerNames.set(peerId, peerName)
                     addLog(`Peer info received: [${peerId.substring(0, 4)}] ${peerName}`, 'info')
                     updatePeerList()
                 })
-                
+
+                getRoomInfoAction(roomInfo => {
+                    const providerForRoom = roomInfo.providerId || getCurrentProviderId()
+                    const stored = recordDiscoveredRoom(providerForRoom, roomInfo)
+                    if (stored) {
+                        addLog(`Room discovered: ${stored.name} (${stored.playerCount}/${stored.maxPlayers}) by ${stored.hostName}`, 'info')
+                    }
+                })
+
+                getRoomDiscoveryAction(discoveryRequest => {
+                    // Handle room discovery requests
+                    if (discoveryRequest.type === 'request' && room && currentPeerName) {
+                        const providerId = getCurrentProviderId()
+                        const currentRoomId = document.getElementById('room-id').textContent
+                        
+                        if (currentRoomId && currentRoomId !== 'Not Connected') {
+                            const peers = networkManager.getPeers()
+                            const roomInfo = {
+                                id: currentRoomId,
+                                roomId: currentRoomId,
+                                roomName: `Room ${currentRoomId}`,
+                                name: `Room ${currentRoomId}`,
+                                playerCount: Object.keys(peers).length + 1,
+                                maxPlayers: 8,
+                                hostName: currentPeerName,
+                                providerId
+                            }
+                            // Send room info back to the requester
+                            sendRoomInfo(roomInfo)
+                            addLog(`Responded to room discovery request with room: ${currentRoomId}`, 'info')
+                        }
+                    }
+                })
+
                 document.getElementById('room-id').textContent = roomId
-                addLog(`Room created successfully: ${roomId}`, 'success')
+                addLog(`Room created successfully: ${roomId} on ${providerLabel}`, 'success')
                 
+                // Update room tracking variables
+                isInRoom = true
+                isHostingRoom = true
+                hasCreatedRoom = true
+
+                // Start cooldown timer
+                cooldownEndTime = Date.now() + ROOM_CREATION_COOLDOWN_DURATION
+                if (roomCreationCooldown) {
+                    clearInterval(roomCreationCooldown)
+                }
+                roomCreationCooldown = setInterval(() => {
+                    if (Date.now() >= cooldownEndTime) {
+                        clearInterval(roomCreationCooldown)
+                        roomCreationCooldown = null
+                        cooldownEndTime = null
+                        addLog('Room creation cooldown has ended', 'info')
+                    }
+                }, 1000)
+
+                // Update UI visibility for hosting state
+                updateButtonVisibility()
+                updateNearbyRoomsUI()
+                updateTileVisibility()
+
+                // Broadcast room info to help with discovery
+                if (sendRoomInfo && currentPeerName) {
+                    const peers = networkManager.getPeers()
+                    const roomInfo = {
+                        id: roomId,
+                        roomId: roomId,
+                        roomName: `Room ${roomId}`,
+                        name: `Room ${roomId}`,
+                        playerCount: Object.keys(peers).length + 1,
+                        maxPlayers: 8,
+                        hostName: currentPeerName,
+                        providerId,
+                        creatorId: selfClientId
+                    }
+                    recordDiscoveredRoom(providerId, roomInfo)
+                    sendRoomInfo(roomInfo)
+                    
+                    // Broadcast to lobby after a delay to avoid conflicts
+                    setTimeout(() => broadcastToLobby(providerId, roomInfo), 5000)
+                }
+
                 // Broadcast our peer info
                 if (sendPeerInfo && currentPeerName) {
-                    // Get our actual peer ID from the room
                     const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
                     sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
                 }
-                
+
                 updateStatus()
-                
+
             } catch (error) {
-                addLog(`Failed to create room: ${error.message}`, 'error')
+                let errorMessage = error.message
+                
+                // Provide helpful guidance for MQTT CONNACK timeout issues
+                if (errorMessage.includes('connack') || errorMessage.includes('Connection timeout')) {
+                    errorMessage += '\n\n💡 MQTT Connection Tips:\n'
+                    errorMessage += '• This may be due to Node.js 20+ compatibility issues with MQTT.js\n'
+                    errorMessage += '• Try switching to a different network provider (Torrent, Firebase, IPFS)\n'
+                    errorMessage += '• Check your internet connection and firewall settings\n'
+                    errorMessage += '• MQTT brokers may be temporarily unavailable'
+                }
+                
+                addLog(`Failed to create room: ${errorMessage}`, 'error')
             }
         }
         
         window.joinRoom = async function() {
             try {
-                const roomId = document.getElementById('room-id-input').value
-                
-                if (!roomId) {
-                    addLog('Please enter a room ID to join', 'error')
+                // Check if player is on cooldown from joining a room
+                if (roomJoinCooldown && joinCooldownEndTime && Date.now() < joinCooldownEndTime) {
+                    const remainingTime = Math.ceil((joinCooldownEndTime - Date.now()) / 1000)
+                    const minutes = Math.floor(remainingTime / 60)
+                    const seconds = remainingTime % 60
+                    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+                    
+                    const alertMessage = `🚫 ROOM JOIN TIMEOUT\n\nYou recently left a room and are in a cooldown period.\n\n⏰ Time remaining: ${timeString}\n\nThis timeout prevents room hopping and ensures stable connections.\nPlease wait before joining another room.`
+                    showAlert(alertMessage, 'error')
+                    addLog(`Room join blocked - ${timeString} remaining in cooldown period`, 'error')
                     return
                 }
-                
-                addLog(`Joining room: ${roomId}`, 'info')
-                
-                if (!networkManager) {
-                    await initializeNetworkManager()
+
+                const roomId = document.getElementById('room-id-input').value.trim()
+
+                if (!roomId) {
+                    showAlert('Please enter a room ID to join.\n\nYou can get room IDs from the "Available Rooms" list below.', 'error')
+                    addLog('Please enter a room ID to join. You can get room IDs from the "Available Rooms" list below.', 'error')
+                    return
                 }
-                
+
+                const providerId = selectedProviderId
+                const providerLabel = getProviderLabel(providerId)
+
+                addLog(`Joining room: ${roomId} on ${providerLabel}`, 'info')
+
+                if (room) {
+                    addLog('Leaving current room before joining another room', 'info')
+                    window.leaveRoom()
+                }
+
+                await ensureProviderIsReady(providerId)
+
                 // Join room using network manager
                 room = await networkManager.joinRoom(roomId)
-                
+
                 // Set up actions
                 const [sendMessageAction, getMessageAction] = networkManager.createAction('message')
                 const [sendPingAction, getPingAction] = networkManager.createAction('ping')
                 const [sendPeerInfoAction, getPeerInfoAction] = networkManager.createAction('peerInfo')
-                
+                const [sendRoomInfoAction, getRoomInfoAction] = networkManager.createAction('roomInfo')
+                const [sendRoomDiscoveryAction, getRoomDiscoveryAction] = networkManager.createAction('roomDisc')
+
                 sendMessage = sendMessageAction
                 sendPing = sendPingAction
                 sendPeerInfo = sendPeerInfoAction
                 getPeerInfo = getPeerInfoAction
-                
+                sendRoomInfo = sendRoomInfoAction
+                getRoomInfo = getRoomInfoAction
+                sendRoomDiscovery = sendRoomDiscoveryAction
+                getRoomDiscovery = getRoomDiscoveryAction
+
                 // Set up message handlers
                 getMessageAction(message => {
                     stats.messagesReceived++
@@ -520,50 +830,194 @@
                     addLog(`Message from peer: ${message}`, 'info')
                     updateStatus()
                 })
-                
+
                 getPingAction(pingData => {
                     addLog(`Ping received: ${JSON.stringify(pingData)}`, 'info')
                 })
-                
+
                 getPeerInfoAction(peerInfo => {
                     const { peerId, peerName } = peerInfo
                     peerNames.set(peerId, peerName)
                     addLog(`Peer info received: [${peerId.substring(0, 4)}] ${peerName}`, 'info')
                     updatePeerList()
                 })
-                
+
+                getRoomInfoAction(roomInfo => {
+                    const providerForRoom = roomInfo.providerId || getCurrentProviderId()
+                    const stored = recordDiscoveredRoom(providerForRoom, roomInfo)
+                    if (stored) {
+                        addLog(`Room discovered: ${stored.name} (${stored.playerCount}/${stored.maxPlayers}) by ${stored.hostName}`, 'info')
+                    }
+                })
+
+                getRoomDiscoveryAction(discoveryRequest => {
+                    // Handle room discovery requests
+                    if (discoveryRequest.type === 'request' && room && currentPeerName) {
+                        const providerId = getCurrentProviderId()
+                        const currentRoomId = document.getElementById('room-id').textContent
+                        
+                        if (currentRoomId && currentRoomId !== 'Not Connected') {
+                            const peers = networkManager.getPeers()
+                            const roomInfo = {
+                                id: currentRoomId,
+                                roomId: currentRoomId,
+                                roomName: `Room ${currentRoomId}`,
+                                name: `Room ${currentRoomId}`,
+                                playerCount: Object.keys(peers).length + 1,
+                                maxPlayers: 8,
+                                hostName: currentPeerName,
+                                providerId
+                            }
+                            // Send room info back to the requester
+                            sendRoomInfo(roomInfo)
+                            addLog(`Responded to room discovery request with room: ${currentRoomId}`, 'info')
+                        }
+                    }
+                })
+
                 document.getElementById('room-id').textContent = roomId
-                addLog(`Joined room: ${roomId}`, 'success')
+                addLog(`Joined room: ${roomId} on ${providerLabel}`, 'success')
                 
+                // Update room tracking variables
+                isInRoom = true
+                isHostingRoom = false // Joined an existing room, not hosting
+
+                // Start join cooldown timer
+                joinCooldownEndTime = Date.now() + ROOM_JOIN_COOLDOWN_DURATION
+                if (roomJoinCooldown) {
+                    clearInterval(roomJoinCooldown)
+                }
+                roomJoinCooldown = setInterval(() => {
+                    if (Date.now() >= joinCooldownEndTime) {
+                        clearInterval(roomJoinCooldown)
+                        roomJoinCooldown = null
+                        joinCooldownEndTime = null
+                        addLog('Room join cooldown has ended', 'info')
+                    }
+                }, 1000)
+
+                // Update UI visibility for room state
+                updateButtonVisibility()
+                updateNearbyRoomsUI()
+                updateTileVisibility()
+
+                const peers = networkManager.getPeers()
+                recordDiscoveredRoom(providerId, {
+                    id: roomId,
+                    roomId: roomId,
+                    roomName: `Room ${roomId}`,
+                    name: `Room ${roomId}`,
+                    playerCount: Object.keys(peers).length + 1,
+                    maxPlayers: 8,
+                    hostName: 'Unknown',
+                    providerId
+                })
+
                 // Broadcast our peer info
                 if (sendPeerInfo && currentPeerName) {
-                    // Get our actual peer ID from the room
                     const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
                     sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
                 }
-                
+
+                // Send room discovery request to find existing rooms
+                if (sendRoomDiscovery) {
+                    setTimeout(() => {
+                        const discoveryRequest = {
+                            type: 'request',
+                            requesterId: currentPeerName || 'unknown',
+                            timestamp: Date.now()
+                        }
+                        sendRoomDiscovery(discoveryRequest)
+                        addLog('Sent initial room discovery request', 'info')
+                    }, 1000) // Wait 1 second after joining
+                }
+
                 updateStatus()
-                
+
             } catch (error) {
-                addLog(`Failed to join room: ${error.message}`, 'error')
+                let errorMessage = error.message
+                
+                // Provide helpful guidance for MQTT CONNACK timeout issues
+                if (errorMessage.includes('connack') || errorMessage.includes('Connection timeout')) {
+                    errorMessage += '\n\n💡 MQTT Connection Tips:\n'
+                    errorMessage += '• This may be due to Node.js 20+ compatibility issues with MQTT.js\n'
+                    errorMessage += '• Try switching to a different network provider (Torrent, Firebase, IPFS)\n'
+                    errorMessage += '• Check your internet connection and firewall settings\n'
+                    errorMessage += '• MQTT brokers may be temporarily unavailable'
+                }
+                
+                addLog(`Failed to join room: ${errorMessage}`, 'error')
             }
         }
         
         window.leaveRoom = function() {
             if (networkManager) {
+                // Capture room id before resetting UI
+                const prevRoomId = document.getElementById('room-id').textContent
                 networkManager.leaveRoom()
                 room = null
                 sendMessage = null
                 sendPing = null
                 sendPeerInfo = null
                 getPeerInfo = null
+                sendRoomDiscovery = null
+                getRoomDiscovery = null
                 peerNames.clear()
+                
+                // Reset room tracking variables
+                isInRoom = false
+                isHostingRoom = false
+                // Note: hasCreatedRoom remains true to prevent creating multiple rooms in same session
+                // Note: cooldown timer persists even after leaving room to prevent spam
+                
+                // Update UI visibility
+                updateButtonVisibility()
+                updateNearbyRoomsUI()
+                updateTileVisibility()
+                
                 addLog('Left room', 'info')
                 document.getElementById('room-id').textContent = 'Not Connected'
                 updatePeerList()
                 updateStatus()
+                
+                // Clear discovered rooms and suppress discovery briefly to avoid list flood
+                try {
+                    suppressDiscoveryUntil = Date.now() + 5000
+                    // Capture the room we just left so it remains visible in lobby
+                    const providerId = getCurrentProviderId() || selectedProviderId
+                    const leftRoomId = (prevRoomId && prevRoomId !== 'Not Connected') ? prevRoomId : (document.getElementById('room-id-input').value || '')
+                    const peers = networkManager ? networkManager.getPeers() : {}
+                    const info = {
+                        id: leftRoomId,
+                        roomId: leftRoomId,
+                        roomName: `Room ${leftRoomId}`,
+                        name: `Room ${leftRoomId}`,
+                        playerCount: Math.max(0, Object.keys(peers || {}).length),
+                        maxPlayers: 8,
+                        hostName: 'Unknown',
+                        providerId,
+                        creatorId: selfClientId,
+                        broadcastTime: Date.now(),
+                        expiresAt: Date.now() + (60 * 1000)
+                    }
+
+                    lastLeftRoomId = leftRoomId
+                    lastLeftRoomProviderId = providerId
+                    lastLeftRoomInfo = info
+                    lastLeftTime = Date.now()
+
+                    // Reset store to reduce clutter, then keep only the just-left room
+                    roomStore.clearProvider(providerId)
+                    roomStore.upsert(providerId, info)
+                    updateRoomList()
+
+                    // Replace localStorage cache with only the just-left room (short TTL)
+                    const discoveryKey = `room-discovery-${providerId}`
+                    localStorage.setItem(discoveryKey, JSON.stringify([{...info}]))
+                } catch (_) {}
             }
         }
+        
         
         // Chat functions
         window.sendMessage = function() {
@@ -656,15 +1110,19 @@
             
             const networkStats = networkManager.getStats()
             const currentProvider = networkManager.getCurrentProvider()
+            const selectedProviderLabel = getProviderLabel(selectedProviderId)
             
             addLog('=== Network Statistics ===', 'success')
-            addLog(`Provider: ${currentProvider ? currentProvider.name : 'None'}`)
+            addLog(`Selected Provider: ${selectedProviderLabel}`)
+            addLog(`Active Provider: ${currentProvider ? currentProvider.name : 'None (not initialized)'}`)
             addLog(`Messages sent: ${networkStats.messagesSent}`)
             addLog(`Messages received: ${networkStats.messagesReceived}`)
             addLog(`Connected peers: ${networkStats.peerCount}`)
             addLog(`Connections established: ${networkStats.connectionsEstablished}`)
             addLog(`Errors: ${networkStats.errors}`)
             addLog(`Room ID: ${document.getElementById('room-id').textContent}`)
+            addLog(`In Room: ${isInRoom ? 'Yes' : 'No'}`)
+            addLog(`Hosting Room: ${isHostingRoom ? 'Yes' : 'No'}`)
         }
         
         window.testConnection = function() {
@@ -701,6 +1159,277 @@
             updateStatus()
         }
         
+        // Room discovery functions
+        window.refreshRoomList = async function() {
+            const providerId = selectedProviderId
+            const providerLabel = getProviderLabel(providerId)
+            
+            addLog(`Refreshing room list for ${providerLabel}`, 'info')
+            
+            // Always show cached rooms first
+            updateRoomList()
+            
+            // Suppress active discovery if we're within the suppression window
+            if (Date.now() < suppressDiscoveryUntil) { return }
+            
+            // If we're connected to a room, use the existing discovery mechanism
+            if (networkManager && room && sendRoomDiscovery) {
+                const discoveryRequest = {
+                    type: 'request',
+                    requesterId: currentPeerName || 'unknown',
+                    timestamp: Date.now()
+                }
+                sendRoomDiscovery(discoveryRequest)
+                addLog('Sent room discovery request to connected peers', 'info')
+            }
+            
+            // If we're connected to a room, broadcast our room info
+            if (networkManager && room && sendRoomInfo && currentPeerName) {
+                const currentProviderId = getCurrentProviderId()
+                const currentRoomId = document.getElementById('room-id').textContent
+
+                if (currentRoomId && currentRoomId !== 'Not Connected') {
+                    const peers = networkManager.getPeers()
+                const roomInfo = {
+                    id: currentRoomId,
+                    roomId: currentRoomId,
+                    roomName: `Room ${currentRoomId}`,
+                    name: `Room ${currentRoomId}`,
+                    playerCount: Object.keys(peers).length + 1,
+                    maxPlayers: 8,
+                    hostName: currentPeerName,
+                    providerId: currentProviderId,
+                    creatorId: selfClientId
+                }
+                    recordDiscoveredRoom(currentProviderId, roomInfo)
+                    sendRoomInfo(roomInfo)
+                    addLog('Broadcasted current room info', 'info')
+                }
+            }
+            
+            // Try to discover rooms by joining a temporary discovery room
+            if (!room && networkManager) {
+                try {
+                    addLog(`Attempting global room discovery for ${providerLabel}...`, 'info')
+                    await performGlobalRoomDiscovery(providerId)
+                } catch (error) {
+                    addLog(`Global discovery failed: ${error.message}`, 'error')
+                }
+            }
+        }
+        
+        // Global room discovery using alternative mechanisms (no room joining required)
+        async function performGlobalRoomDiscovery(providerId) {
+            if (!networkManager) {
+                throw new Error('Network manager not initialized')
+            }
+            if (Date.now() < suppressDiscoveryUntil) { return }
+            
+            // Ensure the provider is initialized for discovery
+            try {
+                await ensureProviderIsReady(providerId)
+            } catch (error) {
+                addLog(`Provider initialization failed: ${error.message}`, 'error')
+                return
+            }
+            
+            try {
+                addLog(`Starting global room discovery for ${providerId} using alternative methods`, 'info')
+                
+                // Method 1: Read from localStorage
+                const discoveryKey = `room-discovery-${providerId}`
+                const storedRooms = JSON.parse(localStorage.getItem(discoveryKey) || '[]')
+                const now = Date.now()
+                
+                // Filter out expired rooms
+                const activeRooms = storedRooms.filter(r => now < r.expiresAt)
+                
+                // Add discovered rooms to our store
+                activeRooms.forEach(roomData => {
+                    const stored = recordDiscoveredRoom(providerId, roomData)
+                    if (stored) {
+                        addLog(`Discovered room via localStorage: ${stored.name}`, 'info')
+                    }
+                })
+                
+                // Method 2: Listen for BroadcastChannel messages
+                if (typeof BroadcastChannel !== 'undefined') {
+                    try {
+                        const channel = new BroadcastChannel(`room-discovery-${providerId}`)
+                        
+                        // Set up a temporary listener
+                        const messageHandler = (event) => {
+                            if (event.data.type === 'room-broadcast') {
+                                const stored = recordDiscoveredRoom(providerId, event.data.roomInfo)
+                                if (stored) {
+                                    addLog(`Discovered room via BroadcastChannel: ${stored.name}`, 'info')
+                                }
+                            }
+                        }
+                        
+                        channel.addEventListener('message', messageHandler)
+                        
+                        // Request room broadcasts from other tabs
+                        channel.postMessage({
+                            type: 'discovery-request',
+                            requesterId: currentPeerName || 'unknown',
+                            timestamp: now
+                        })
+                        
+                        // Wait for responses
+                        await new Promise(resolve => setTimeout(resolve, 2000))
+                        
+                        // Clean up
+                        channel.removeEventListener('message', messageHandler)
+                        channel.close()
+                        
+                    } catch (error) {
+                        addLog(`BroadcastChannel discovery failed: ${error.message}`, 'info')
+                    }
+                }
+                
+                // Method 3: Use existing room connections for P2P discovery
+                if (room && sendRoomDiscovery) {
+                    try {
+                        const discoveryRequest = {
+                            type: 'request',
+                            requesterId: currentPeerName || 'unknown',
+                            timestamp: now
+                        }
+                        sendRoomDiscovery(discoveryRequest)
+                        addLog('Sent P2P discovery request to connected peers', 'info')
+                        
+                        // Wait for responses
+                        await new Promise(resolve => setTimeout(resolve, 2000))
+                        
+                    } catch (error) {
+                        addLog(`P2P discovery failed: ${error.message}`, 'info')
+                    }
+                }
+                
+                // Update the room list with discoveries
+                updateRoomList()
+                addLog(`Global room discovery completed for ${providerId}`, 'success')
+                
+            } catch (error) {
+                addLog(`Global discovery failed: ${error.message}`, 'error')
+            }
+        }
+        
+        window.discoverRooms = async function() {
+            const providerId = selectedProviderId
+            const providerLabel = getProviderLabel(providerId)
+            
+            if (!networkManager) {
+                addLog('Network manager not initialized', 'error')
+                return
+            }
+            
+            if (room && sendRoomDiscovery) {
+                // We're already in a room, use existing discovery
+                const discoveryRequest = {
+                    type: 'request',
+                    requesterId: currentPeerName || 'unknown',
+                    timestamp: Date.now()
+                }
+                sendRoomDiscovery(discoveryRequest)
+                addLog('Sent room discovery request to connected peers', 'info')
+            } else {
+                // Not in a room, try global discovery
+                try {
+                    addLog(`Starting global room discovery for ${providerLabel}...`, 'info')
+                    await performGlobalRoomDiscovery(providerId)
+                    addLog('Global room discovery completed', 'success')
+                } catch (error) {
+                    addLog(`Global discovery failed: ${error.message}`, 'error')
+                }
+            }
+        }
+        
+        
+        window.selectRoom = function(roomId) {
+            document.getElementById('room-id-input').value = roomId
+            addLog(`Selected room: ${roomId}`, 'info')
+        }
+        
+        window.joinSelectedRoom = function(roomId) {
+            window.selectRoom(roomId)
+            window.joinRoom()
+        }
+        
+        // Button visibility management
+        function updateButtonVisibility() {
+            const joinButton = document.querySelector('button[onclick="joinRoom()"]');
+            const leaveButton = document.querySelector('button[onclick="leaveRoom()"]');
+            const createButton = document.querySelector('button[onclick="createRoom()"]');
+            
+            // Handle join and leave buttons based on room status
+            if (isInRoom) {
+                // Player is in a room - hide join button, show leave button
+                if (joinButton) joinButton.style.display = 'none';
+                if (leaveButton) leaveButton.style.display = 'inline-block';
+            } else {
+                // Player is not in a room - show join button, hide leave button
+                if (joinButton) {
+                    // Check if player is on join cooldown
+                    if (roomJoinCooldown && joinCooldownEndTime && Date.now() < joinCooldownEndTime) {
+                        const remainingTime = Math.ceil((joinCooldownEndTime - Date.now()) / 1000);
+                        const minutes = Math.floor(remainingTime / 60);
+                        const seconds = remainingTime % 60;
+                        const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                        joinButton.textContent = `⏰ Join Timeout: ${timeString}`;
+                        joinButton.style.display = 'inline-block';
+                        joinButton.style.opacity = '0.6';
+                        joinButton.style.cursor = 'not-allowed';
+                        // Keep button enabled so clicking shows the timeout alert
+                        joinButton.disabled = false;
+                    } else {
+                        // Normal join button
+                        joinButton.textContent = 'Join Room';
+                        joinButton.style.display = 'inline-block';
+                        joinButton.style.opacity = '1';
+                        joinButton.style.cursor = 'pointer';
+                        joinButton.disabled = false;
+                    }
+                }
+                if (leaveButton) leaveButton.style.display = 'none';
+            }
+            
+            // Handle create button - hide when in room, show timeout status when not in room
+            if (isInRoom) {
+                // Hide create button when player is in a room
+                if (createButton) {
+                    createButton.style.display = 'none';
+                }
+            } else {
+                // Show create button when not in room
+                if (roomCreationCooldown && cooldownEndTime && Date.now() < cooldownEndTime) {
+                    // Show cooldown status on create button
+                    if (createButton) {
+                        const remainingTime = Math.ceil((cooldownEndTime - Date.now()) / 1000);
+                        const minutes = Math.floor(remainingTime / 60);
+                        const seconds = remainingTime % 60;
+                        const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                        createButton.textContent = `⏰ Timeout: ${timeString}`;
+                        createButton.style.display = 'inline-block';
+                        createButton.style.opacity = '0.6';
+                        createButton.style.cursor = 'not-allowed';
+                        // Keep button enabled so clicking shows the timeout alert
+                        createButton.disabled = false;
+                    }
+                } else {
+                    // Normal create button
+                    if (createButton) {
+                        createButton.textContent = 'Create Room';
+                        createButton.style.display = 'inline-block';
+                        createButton.style.opacity = '1';
+                        createButton.style.cursor = 'pointer';
+                        createButton.disabled = false;
+                    }
+                }
+            }
+        }
+
         // Update functions
         function updatePeerList() {
             const peerList = document.getElementById('peer-list')
@@ -716,17 +1445,150 @@
                     return `<div class="peer-item">[${shortId}] ${peerName}</div>`
                 }).join('')
             }
+            
+            // Also add ourselves to the list if we have a name
+            if (currentPeerName && peers.length > 0) {
+                const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
+                const ourShortId = ourPeerId.substring(0, 4)
+                const ourDisplay = `<div class="peer-item self">[${ourShortId}] ${currentPeerName} (You)</div>`
+                peerList.innerHTML = ourDisplay + peerList.innerHTML
+            }
+        }
+        
+        function updateRoomList() {
+            const roomList = document.getElementById('room-list')
+            const rooms = roomStore.getRooms(selectedProviderId)
+            const providerLabel = getProviderLabel(selectedProviderId)
+
+            if (rooms.length === 0) {
+                roomList.innerHTML = `
+                    <div class="room-item no-rooms">
+                        <div class="room-name">No rooms discovered for ${providerLabel}</div>
+                        <div class="room-details">
+                            <span class="room-hint">Try "Discover Rooms" or "Refresh Room List"</span>
+                        </div>
+                    </div>
+                `
+            } else {
+                roomList.innerHTML = rooms.map(room => {
+                    const isFull = room.playerCount >= room.maxPlayers
+                    const statusClass = isFull ? 'full' : 'available'
+                    const timeAgo = getTimeAgo(room.lastSeen)
+                    return `
+                        <div class="room-item ${statusClass}" onclick="selectRoom('${room.id}')">
+                            <div class="room-row">
+                                <div class="room-main">
+                                    <div class="room-name">${room.name}</div>
+                                    <div class="room-details">
+                                        <span class="room-id">ID: ${room.id}</span>
+                                        <span class="room-players">${room.playerCount}/${room.maxPlayers}</span>
+                                        <span class="room-time">Seen: ${timeAgo}</span>
+                                    </div>
+                                </div>
+                                <button class="btn sm join-btn" onclick="joinSelectedRoom('${room.id}'); event.stopPropagation();" ${isFull ? 'disabled' : ''}>Join</button>
+                            </div>
+                        </div>
+                    `
+                }).join('')
+            }
+        }
+        
+        function getTimeAgo(timestamp) {
+            const now = Date.now()
+            const diff = now - timestamp
+            const seconds = Math.floor(diff / 1000)
+            const minutes = Math.floor(seconds / 60)
+            const hours = Math.floor(minutes / 60)
+            
+            if (seconds < 60) return `${seconds}s ago`
+            if (minutes < 60) return `${minutes}m ago`
+            if (hours < 24) return `${hours}h ago`
+            return 'long ago'
+        }
+        
+        // Broadcast room info using alternative mechanisms (no room joining required)
+        async function broadcastToLobby(providerId, roomInfo) {
+            if (!networkManager) return
+            
+            // Prevent too frequent broadcasts (max once per 5 seconds)
+            const now = Date.now()
+            if (now - lastLobbyBroadcast < 5000) {
+                addLog(`Lobby broadcast throttled for ${providerId}`, 'info')
+                return
+            }
+            
+            lastLobbyBroadcast = now
+            
+            try {
+                addLog(`Broadcasting room ${roomInfo.id} using alternative discovery`, 'info')
+                
+                // Method 1: Store room info in localStorage for cross-tab discovery
+                const discoveryKey = `room-discovery-${providerId}`
+                const existingRooms = JSON.parse(localStorage.getItem(discoveryKey) || '[]')
+                
+                // Remove old entries for this room
+                const filteredRooms = existingRooms.filter(r => r.id !== roomInfo.id)
+                
+                // Add current room info with timestamp
+                const roomWithTimestamp = {
+                    ...roomInfo,
+                    broadcastTime: now,
+                    // Shorter TTL to reduce stale rooms in lobby
+                    expiresAt: now + (60 * 1000) // 60 seconds
+                }
+                filteredRooms.push(roomWithTimestamp)
+                
+                // Keep only recent rooms (last 10 minutes)
+                const recentRooms = filteredRooms.filter(r => now - r.broadcastTime < (10 * 60 * 1000))
+                
+                localStorage.setItem(discoveryKey, JSON.stringify(recentRooms))
+                
+                // Method 2: Use BroadcastChannel API for same-origin discovery
+                if (typeof BroadcastChannel !== 'undefined') {
+                    try {
+                        const channel = new BroadcastChannel(`room-discovery-${providerId}`)
+                        channel.postMessage({
+                            type: 'room-broadcast',
+                            roomInfo: { ...roomWithTimestamp, creatorId: selfClientId },
+                            timestamp: now
+                        })
+                        channel.close()
+                        addLog(`Broadcasted room ${roomInfo.id} via BroadcastChannel`, 'info')
+                    } catch (error) {
+                        addLog(`BroadcastChannel failed: ${error.message}`, 'info')
+                    }
+                }
+                
+                // Method 3: Use WebRTC DataChannel for P2P discovery (if available)
+                if (room && room.makeAction) {
+                    try {
+                        // Create a temporary discovery action
+                        const [sendDiscoveryAction] = room.makeAction('roomDiscovery')
+                        sendDiscoveryAction({
+                            type: 'room-announcement',
+                            roomInfo: roomWithTimestamp,
+                            timestamp: now
+                        })
+                        addLog(`Broadcasted room ${roomInfo.id} via P2P discovery`, 'info')
+                    } catch (error) {
+                        addLog(`P2P discovery failed: ${error.message}`, 'info')
+                    }
+                }
+                
+                addLog(`Successfully broadcasted room ${roomInfo.id} using multiple methods`, 'success')
+                
+            } catch (error) {
+                addLog(`Failed to broadcast room: ${error.message}`, 'error')
+            }
         }
         
         function updateStatus() {
-            const peersObj = networkManager ? networkManager.getPeers() : {}
             const networkStats = networkManager ? networkManager.getStats() : { messagesSent: 0, messagesReceived: 0, peerCount: 0 }
             const currentProvider = networkManager ? networkManager.getCurrentProvider() : null
-            
+            const providerLabel = currentProvider ? currentProvider.name : (selectedProviderId ? getProviderLabel(selectedProviderId) : 'None')
+
             document.getElementById('peer-count').textContent = networkStats.peerCount
-            document.getElementById('messages-sent').textContent = networkStats.messagesSent
-            document.getElementById('messages-received').textContent = networkStats.messagesReceived
-            document.getElementById('connection-quality').textContent = networkManager && room ? 'Good' : 'Unknown'
+            document.getElementById('connection-quality').textContent = networkManager && room ? 'Good' : `Selected: ${providerLabel}`
         }
         
         // Peer name management functions
@@ -736,6 +1598,12 @@
             
             document.getElementById('peer-name').textContent = currentPeerName
             
+            // Store our own name in the peerNames map
+            if (room && room.getSelfId) {
+                const ourPeerId = room.getSelfId()
+                peerNames.set(ourPeerId, currentPeerName)
+            }
+            
             if (oldName) {
                 peerNameGenerator.releaseName(oldName)
                 addLog(`Peer name changed from "${oldName}" to "${currentPeerName}"`, 'info')
@@ -744,6 +1612,7 @@
             }
             
             updateStatus()
+            updatePeerList()
         }
         
         window.showPeerNameStats = function() {
@@ -756,17 +1625,187 @@
             addLog(`Current name: "${currentPeerName}"`)
         }
         
+        // Debug function to clear cooldown (for testing)
+        window.clearCooldown = function() {
+            if (roomCreationCooldown) {
+                clearInterval(roomCreationCooldown)
+                roomCreationCooldown = null
+                cooldownEndTime = null
+                addLog('Room creation cooldown manually cleared', 'success')
+                updateButtonVisibility()
+            } else {
+                addLog('No active creation cooldown to clear', 'info')
+            }
+        }
+        
+        // Debug function to clear join cooldown (for testing)
+        window.clearJoinCooldown = function() {
+            if (roomJoinCooldown) {
+                clearInterval(roomJoinCooldown)
+                roomJoinCooldown = null
+                joinCooldownEndTime = null
+                addLog('Room join cooldown manually cleared', 'success')
+                updateButtonVisibility()
+            } else {
+                addLog('No active join cooldown to clear', 'info')
+            }
+        }
+        
+        // Function to check current timeout status
+        window.checkTimeoutStatus = function() {
+            const now = Date.now()
+            let hasAnyTimeout = false
+            let timeoutMessages = []
+            
+            // Check creation timeout
+            if (roomCreationCooldown && cooldownEndTime && now < cooldownEndTime) {
+                const remainingTime = Math.ceil((cooldownEndTime - now) / 1000)
+                const minutes = Math.floor(remainingTime / 60)
+                const seconds = remainingTime % 60
+                const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+                timeoutMessages.push(`Room Creation: ${timeString} remaining`)
+                hasAnyTimeout = true
+            }
+            
+            // Check join timeout
+            if (roomJoinCooldown && joinCooldownEndTime && now < joinCooldownEndTime) {
+                const remainingTime = Math.ceil((joinCooldownEndTime - now) / 1000)
+                const minutes = Math.floor(remainingTime / 60)
+                const seconds = remainingTime % 60
+                const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+                timeoutMessages.push(`Room Join: ${timeString} remaining`)
+                hasAnyTimeout = true
+            }
+            
+            if (hasAnyTimeout) {
+                const statusMessage = `⏰ TIMEOUT STATUS\n\nYou are currently in timeout periods:\n\n${timeoutMessages.join('\n')}\n\nThese timeouts prevent spam and ensure stable connections.`
+                showAlert(statusMessage, 'error')
+                addLog(`Timeout status: ${timeoutMessages.join(', ')}`, 'info')
+            } else {
+                const statusMessage = `✅ NO TIMEOUTS\n\nYou are not currently in any timeout periods.\n\nYou can create or join rooms freely.`
+                showAlert(statusMessage, 'info')
+                addLog('No active timeouts - room operations allowed', 'info')
+            }
+        }
+        
         // Initialize demo
         addLog('Working Multiplayer Demo initialized', 'success')
         addLog('Select a network provider and create/join a room to start', 'info')
+        addLog('💡 Tip: "Create Room" generates a room ID if none provided. "Join Room" requires a specific room ID.', 'info')
+        
+        // Initialize network manager immediately
+        setupNetworkManagerIfNeeded()
+        addLog('Network manager initialized', 'success')
         
         // Generate initial peer name
         generateNewPeerName()
         
-        updateStatus()
+        // Set up BroadcastChannel for room discovery
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                broadcastChannel = new BroadcastChannel(`room-discovery-${selectedProviderId}`)
+                broadcastChannel.addEventListener('message', (event) => {
+                    if (event.data.type === 'room-broadcast') {
+                        const stored = recordDiscoveredRoom(selectedProviderId, event.data.roomInfo)
+                        if (stored) {
+                            addLog(`Discovered room via BroadcastChannel: ${stored.name}`, 'info')
+                            updateRoomList()
+                        }
+                    } else if (event.data.type === 'discovery-request') {
+                        // Respond to discovery requests if we're in a room
+                        if (room && sendRoomInfo && currentPeerName) {
+                            const currentRoomId = document.getElementById('room-id').textContent
+                        if (currentRoomId && currentRoomId !== 'Not Connected') {
+                            const peers = networkManager.getPeers()
+                            const roomInfo = {
+                                id: currentRoomId,
+                                roomId: currentRoomId,
+                                roomName: `Room ${currentRoomId}`,
+                                name: `Room ${currentRoomId}`,
+                                playerCount: Object.keys(peers).length + 1,
+                                maxPlayers: 8,
+                                hostName: currentPeerName,
+                                providerId: selectedProviderId,
+                                creatorId: selfClientId,
+                                broadcastTime: Date.now(),
+                                expiresAt: Date.now() + (60 * 1000)
+                            }
+                            broadcastChannel.postMessage({
+                                type: 'room-broadcast',
+                                roomInfo: roomInfo,
+                                timestamp: Date.now()
+                            })
+                                addLog(`Responded to discovery request with room: ${currentRoomId}`, 'info')
+                            }
+                        }
+                    }
+                })
+                addLog('BroadcastChannel initialized for room discovery', 'success')
+            } catch (error) {
+                addLog(`BroadcastChannel initialization failed: ${error.message}`, 'error')
+            }
+        }
         
-        // Auto-refresh status
+        updateStatus()
+        updateRoomList()
+        updateButtonVisibility()
+        updateNearbyRoomsUI()
+        updateTileVisibility()
+        
+        // Auto-refresh status and room list
         setInterval(updateStatus, 2000)
+        setInterval(updateButtonVisibility, 1000) // Update button visibility every second for cooldown countdown
+        setInterval(() => {
+            if (networkManager && room && sendRoomInfo && currentPeerName) {
+                const providerId = getCurrentProviderId()
+                const currentRoomId = document.getElementById('room-id').textContent
+
+                if (currentRoomId && currentRoomId !== 'Not Connected') {
+                    const peers = networkManager.getPeers()
+                    const roomInfo = {
+                        id: currentRoomId,
+                        roomId: currentRoomId,
+                        roomName: `Room ${currentRoomId}`,
+                        name: `Room ${currentRoomId}`,
+                        playerCount: Object.keys(peers).length + 1,
+                        maxPlayers: 8,
+                        hostName: currentPeerName,
+                        providerId,
+                        creatorId: selfClientId
+                    }
+                    recordDiscoveredRoom(providerId, roomInfo)
+                    sendRoomInfo(roomInfo)
+                    
+                    // Also broadcast to lobby periodically (less frequently)
+                    broadcastToLobby(providerId, roomInfo)
+                }
+            }
+        }, 30000) // Broadcast every 30 seconds (reduced frequency)
+        
+        // Periodic peer info broadcast to ensure all peers know each other's names
+        setInterval(() => {
+            if (networkManager && room && sendPeerInfo && currentPeerName) {
+                const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
+                sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+            }
+        }, 5000) // Broadcast peer info every 5 seconds
+        
+        // Clean up old room discoveries (shorter TTL when not in a room)
+        setInterval(() => {
+            const ttl = isInRoom ? 30000 : 10000
+            const removed = roomStore.cleanup(ttl)
+            if (removed) {
+                updateRoomList()
+            }
+        }, 5000) // Clean up every 5 seconds
+        
+        // Clean up BroadcastChannel on page unload
+        window.addEventListener('beforeunload', () => {
+            if (broadcastChannel) {
+                broadcastChannel.close()
+            }
+        })
     </script>
 </body>
 </html>
+
