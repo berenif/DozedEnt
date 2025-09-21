@@ -2,7 +2,7 @@
 // Provides a complete player character with roll, attack, block, and hurt animations
 
 import { CharacterAnimator, AnimationPresets } from './animation-system.js'
-import RealisticProceduralAnimator from './realistic-procedural-animator.js'
+import PlayerProceduralAnimator from './player/procedural/player-procedural-animator.js'
 // SoundSystem and ParticleSystem imports removed - not used in this file
 
 export class AnimatedPlayer {
@@ -17,6 +17,8 @@ export class AnimatedPlayer {
         this.maxHealth = options.maxHealth || 100
         this.stamina = options.stamina || 100
         this.maxStamina = options.maxStamina || 100
+        this._cachedHealth = this.health
+        this._cachedStamina = this.stamina
         this.speed = options.speed || 250 // Base speed, actual speed is WASM-driven
         this.rollSpeed = options.rollSpeed || 500 // Base roll speed, actual speed is WASM-driven
         
@@ -70,14 +72,9 @@ export class AnimatedPlayer {
         this.animations = AnimationPresets.createPlayerAnimations()
         this.setupAnimations()
         
-        // Realistic Procedural Animator - NEW!
-        this.proceduralAnimator = new RealisticProceduralAnimator({
-            ikEnabled: options.enableIK !== false,
-            renderSkeleton: options.debugMode || false,
-            renderIKTargets: options.debugMode || false,
-            renderSecondaryMotion: options.debugMode || false,
-            enableOptimizations: options.enableOptimizations !== false
-        })
+        // Player procedural animation orchestrator
+        const proceduralOptions = options.proceduralOptions || options.proceduralConfig || options.proceduralModules || {}
+        this.proceduralAnimator = new PlayerProceduralAnimator(proceduralOptions)
         
         // Action cooldowns - now WASM-driven
         this.attackCooldown = 0
@@ -135,19 +132,40 @@ export class AnimatedPlayer {
     }
 
     loadSpriteSheet() {
-        // Try to load sprite sheet
+        // Try to load sprite sheet with multiple possible paths
         this.sprite = new Image()
-        this.sprite.src = './src/images/player-sprites.png'
+        
+        // Try different possible paths based on where the demo is running from
+        const possiblePaths = [
+            './src/images/player-sprites.png',  // From demos/ directory
+            '../src/images/player-sprites.png', // From docs/ directory
+            '../../src/images/player-sprites.png' // From deeper nested directories
+        ]
+        
+        let currentPathIndex = 0
+        
+        const tryNextPath = () => {
+            if (currentPathIndex < possiblePaths.length) {
+                this.sprite.src = possiblePaths[currentPathIndex]
+                currentPathIndex++
+            } else {
+                console.warn('Player sprite sheet not found at any expected location, using fallback rendering')
+                console.log('To fix this: Run "node scripts/generate-sprite-sheet.js" or use create-sprite-sheet.html')
+                this.sprite = null
+            }
+        }
 
         this.sprite.onload = () => {
-            console.log('Player sprite sheet loaded successfully')
+            console.log(`Player sprite sheet loaded successfully from ${this.sprite.src}`)
         }
 
         this.sprite.onerror = () => {
-            console.warn('Player sprite sheet not found at ./src/images/player-sprites.png, using fallback rendering')
-            console.log('To fix this: Run "node scripts/generate-sprite-sheet.js" or use create-sprite-sheet.html')
-            this.sprite = null
+            console.warn(`Player sprite sheet not found at ${this.sprite.src}, trying next path...`)
+            tryNextPath()
         }
+        
+        // Start with the first path
+        tryNextPath()
     }
     
     setupAnimations() {
@@ -187,22 +205,25 @@ export class AnimatedPlayer {
         this.updateIK(deltaTime)
 
         // 1. Forward inputs to WASM - 5-button combat system
-        let inputX = 0; let inputY = 0
-        if (input.left) {inputX -= 1}
-        if (input.right) {inputX += 1}
-        if (input.up) {inputY -= 1}
-        if (input.down) {inputY += 1}
-        
-        // New 5-button combat system: A1(light), A2(heavy), Block, Roll, Special
-        globalThis.wasmExports?.set_player_input?.(
-            inputX, inputY, 
-            input.roll ? 1 : 0, 
-            input.jump ? 1 : 0, 
-            input.lightAttack ? 1 : 0, 
-            input.heavyAttack ? 1 : 0, 
-            input.block ? 1 : 0, 
-            input.special ? 1 : 0
-        )
+        // Only send to WASM if not being managed externally (e.g., by GameStateManager)
+        if (!globalThis.wasmInputManagedExternally) {
+            let inputX = 0; let inputY = 0
+            if (input.left) {inputX -= 1}
+            if (input.right) {inputX += 1}
+            if (input.up) {inputY -= 1}
+            if (input.down) {inputY += 1}
+            
+            // New 5-button combat system: A1(light), A2(heavy), Block, Roll, Special
+            globalThis.wasmExports?.set_player_input?.(
+                inputX, inputY, 
+                input.roll ? 1 : 0, 
+                input.jump ? 1 : 0, 
+                input.lightAttack ? 1 : 0, 
+                input.heavyAttack ? 1 : 0, 
+                input.block ? 1 : 0, 
+                input.special ? 1 : 0
+            )
+        }
 
         // 2. Read state for rendering
         // Assuming 800x600 canvas for now. Convert WASM's 0-1 range to world coordinates.
@@ -246,23 +267,16 @@ export class AnimatedPlayer {
             this.setState(this.getAnimStateName(wasmAnimState), true) // Pass true to indicate WASM-driven state
         }
 
+        const velocityX = Number.isFinite(fx) ? fx : 0
+        const velocityY = Number.isFinite(fy) ? fy : 0
+
         const baseTransform = this.animator.update(
             deltaTime,
             { x: this.x, y: this.y },
-            // Pass WASM-driven velocity to CharacterAnimator
-            { x: globalThis.wasmExports?.get_vel_x?.() ?? 0, y: globalThis.wasmExports?.get_vel_y?.() ?? 0 },
+            { x: velocityX, y: velocityY },
             this.isGrounded
         ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 }
-        
-        // Update realistic procedural animator with WASM data
-        const proceduralTransform = this.proceduralAnimator.update(deltaTime, {
-            // Pass any additional context the procedural animator might need
-            playerState: this.state,
-            inputState: input,
-            debugMode: this.debugMode
-        });
-        
-        // Prefer WASM-driven overlay when available; fallback to local
+
         const overlay = (globalThis.wasmExports && typeof wx === 'number') ? {
             scaleX: wsx,
             scaleY: wsy,
@@ -270,17 +284,62 @@ export class AnimatedPlayer {
             offsetX: wx,
             offsetY: wy
         } : this.computePoseOverlay(input)
-        
-        // Combine all transforms: base + procedural + overlay
+
+        const legLiftLeft = globalThis.wasmExports?.get_anim_leg_lift_left?.() ?? 0
+        const legLiftRight = globalThis.wasmExports?.get_anim_leg_lift_right?.() ?? 0
+        const breathing = globalThis.wasmExports?.get_anim_breathing_intensity?.() ?? 1
+        const fatigue = globalThis.wasmExports?.get_anim_fatigue_factor?.() ?? 0
+        const windResponse = globalThis.wasmExports?.get_anim_wind_response?.() ?? 0
+        const groundAdapt = globalThis.wasmExports?.get_anim_ground_adapt?.() ?? 0
+        const temperatureShiver = globalThis.wasmExports?.get_anim_temperature_shiver?.() ?? 0
+        const clothSway = globalThis.wasmExports?.get_anim_cloth_sway?.() ?? 0
+        const hairBounce = globalThis.wasmExports?.get_anim_hair_bounce?.() ?? 0
+        const equipmentJiggle = globalThis.wasmExports?.get_anim_equipment_jiggle?.() ?? 0
+        const momentumX = globalThis.wasmExports?.get_anim_momentum_x?.() ?? velocityX
+        const momentumY = globalThis.wasmExports?.get_anim_momentum_y?.() ?? velocityY
+
+        const normalizedTime = this.getNormalizedTime()
+
+        const currentHealth = globalThis.wasmExports?.get_hp?.() ?? globalThis.wasmExports?.get_health?.() ?? this.health
+        const currentStamina = globalThis.wasmExports?.get_stamina?.() ?? this.stamina
+        this._cachedHealth = currentHealth
+        this._cachedStamina = currentStamina
+
+        const proceduralTransform = this.proceduralAnimator.update(deltaTime, {
+            playerState: this.state,
+            facing: this.facing,
+            velocity: { x: velocityX, y: velocityY },
+            momentum: { x: momentumX, y: momentumY },
+            normalizedTime,
+            isGrounded: this.isGrounded,
+            pelvisOffset: wpelvis,
+            breathing,
+            fatigue,
+            legLiftLeft,
+            legLiftRight,
+            groundOffset: groundAdapt,
+            wind: windResponse,
+            temperatureShiver,
+            clothSway,
+            hairBounce,
+            equipmentJiggle,
+            staminaRatio: this.maxStamina ? currentStamina / this.maxStamina : 1,
+            healthRatio: this.maxHealth ? currentHealth / this.maxHealth : 1,
+            attackStrength: this._currentAttackType === 'heavy' ? 1.35 : 1,
+            attackType: this._currentAttackType,
+            inputState: input,
+            maxSpeed: this.speed,
+            stridePhase: this.stridePhase,
+            overlay
+        })
+
         this.currentTransform = {
-            scaleX: baseTransform.scaleX * overlay.scaleX * proceduralTransform.scaleX,
-            scaleY: baseTransform.scaleY * overlay.scaleY * proceduralTransform.scaleY,
-            rotation: baseTransform.rotation + overlay.rotation + proceduralTransform.rotation,
-            offsetX: baseTransform.offsetX + overlay.offsetX + proceduralTransform.offsetX,
-            offsetY: baseTransform.offsetY + overlay.offsetY + proceduralTransform.offsetY,
+            scaleX: baseTransform.scaleX * (proceduralTransform.scaleX ?? 1),
+            scaleY: baseTransform.scaleY * (proceduralTransform.scaleY ?? 1),
+            rotation: baseTransform.rotation + (proceduralTransform.rotation ?? 0),
+            offsetX: baseTransform.offsetX + (proceduralTransform.offsetX ?? 0),
+            offsetY: baseTransform.offsetY + (proceduralTransform.offsetY ?? 0),
             trails: baseTransform.trails || [],
-            
-            // Enhanced data from procedural animator
             skeleton: proceduralTransform.skeleton,
             secondaryMotion: proceduralTransform.secondaryMotion,
             environmental: proceduralTransform.environmental,
@@ -732,7 +791,7 @@ export class AnimatedPlayer {
         ctx.fillRect(screenX - barWidth/2, barY, barWidth, barHeight)
         
         // Health - get from WASM
-        const currentHealth = globalThis.wasmExports?.get_hp?.() ?? globalThis.wasmExports?.get_health?.() ?? this.health;
+        const currentHealth = Number.isFinite(this._cachedHealth) ? this._cachedHealth : (globalThis.wasmExports?.get_hp?.() ?? globalThis.wasmExports?.get_health?.() ?? this.health);
         const maxHealth = this.maxHealth; // Max health can still be local or WASM-driven if dynamic
         const healthPercent = currentHealth / maxHealth
         ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : 
@@ -744,7 +803,7 @@ export class AnimatedPlayer {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
         ctx.fillRect(screenX - barWidth/2, staminaY, barWidth, 2)
         
-        const currentStamina = globalThis.wasmExports?.get_stamina?.() ?? this.stamina;
+        const currentStamina = Number.isFinite(this._cachedStamina) ? this._cachedStamina : (globalThis.wasmExports?.get_stamina?.() ?? this.stamina);
         const maxStamina = this.maxStamina; // Max stamina can still be local or WASM-driven if dynamic
         const staminaPercent = currentStamina / maxStamina
         ctx.fillStyle = '#00aaff'
@@ -935,6 +994,11 @@ export class AnimatedPlayer {
             default: return 0
         }
     }
+
+    // Get animation state code for WASM integration
+    getAnimationStateCode() {
+        return this.stateNameToNumber(this.state);
+    }
     
     // Get current animation info for debugging
     getAnimationInfo() {
@@ -1115,3 +1179,9 @@ AnimatedPlayer.attachDebugToggle = function(playerInstance, key = 'F3') {
         // Ignore debug handler attachment errors
     }
 }
+
+
+
+
+
+
