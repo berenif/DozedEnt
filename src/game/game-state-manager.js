@@ -191,6 +191,17 @@ export class GameStateManager {
       
       // Send all input to WASM before update
       if (this.wasmManager.exports?.set_player_input) {
+        // Debug logging for ALL input (including zero values)
+        console.log('Setting WASM input:', {
+          x: safeInputState.direction.x,
+          y: safeInputState.direction.y,
+          roll: safeInputState.roll,
+          lightAttack: safeInputState.lightAttack,
+          heavyAttack: safeInputState.heavyAttack,
+          block: safeInputState.block,
+          special: safeInputState.special
+        });
+        
         this.wasmManager.exports.set_player_input(
           safeInputState.direction.x,
           safeInputState.direction.y,
@@ -201,31 +212,31 @@ export class GameStateManager {
           safeInputState.block ? 1 : 0,
           safeInputState.special ? 1 : 0
         );
+      } else {
+        console.warn('WASM set_player_input function not available');
       }
       
       // Now update WASM with correct signature
-      // Prefer canonical API: update(dirX, dirY, isRolling, dtSeconds)
+      // The WASM update function signature is: update(float dtSeconds)
+      // Input must be set via set_player_input() first, then update() processes it
       const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime > 0 ? Math.min(deltaTime, 0.05) : 0.016;
       const wasmUpdate = this.wasmManager.exports?.update;
       if (typeof wasmUpdate === 'function') {
         try {
-          const arity = Number.isInteger(wasmUpdate.length) ? wasmUpdate.length : 0;
-          if (arity >= 4) {
-            // Canonical signature
-            wasmUpdate(
-              safeInputState.direction.x,
-              safeInputState.direction.y,
-              safeInputState.roll ? 1 : 0,
-              safeDeltaTime
-            );
-          } else {
-            // Legacy signature (dtSeconds only) with input already set via set_player_input
-            wasmUpdate(safeDeltaTime);
+          // Always use the single-parameter signature: update(dtSeconds)
+          wasmUpdate(safeDeltaTime);
+          
+          // Debug: Check position after WASM update
+          const posX = this.wasmManager.exports?.get_x?.();
+          const posY = this.wasmManager.exports?.get_y?.();
+          if (typeof posX === 'number' && typeof posY === 'number' && (posX !== 0.5 || posY !== 0.5)) {
+            console.log('WASM position after update:', posX, posY);
           }
         } catch (e) {
-          // Fallback to legacy call if arity detection fails
-          try { wasmUpdate(safeDeltaTime); } catch {}
+          console.warn('WASM update failed:', e);
         }
+      } else {
+        console.warn('WASM update function not available');
       }
 
       // Read updated state from WASM using batched calls

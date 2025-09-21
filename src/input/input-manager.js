@@ -648,6 +648,31 @@ export class InputManager {
     }
     
     /**
+     * Reset input state for frame-based actions
+     * This should be called after each frame to clear actions that shouldn't persist
+     */
+    resetFrameInput() {
+        // Reset frame-based actions (not movement, which is state-based)
+        this.inputState.lightAttack = false;
+        this.inputState.heavyAttack = false;
+        this.inputState.block = false;
+        this.inputState.roll = false;
+        this.inputState.special = false;
+        
+        // Reset pointer state
+        this.inputState.pointer.down = false;
+    }
+    
+    /**
+     * Reset movement input to zero
+     * This should be called when no movement keys are pressed
+     */
+    resetMovementInput() {
+        this.inputState.direction.x = 0;
+        this.inputState.direction.y = 0;
+    }
+    
+    /**
      * Cleanup
      */
     destroy() {

@@ -108,7 +108,42 @@ export class WasmManager {
         globalThis.wasmExports = this.exports;
 
         if (typeof this.exports.start === 'function') {
+          console.log('Calling WASM start() function...');
           this.exports.start();
+          
+          // Check position immediately after start
+          const posX = this.exports.get_x?.();
+          const posY = this.exports.get_y?.();
+          console.log('WASM position immediately after start():', posX, posY);
+          
+          // Check if we can call other functions
+          const stamina = this.exports.get_stamina?.();
+          const hp = this.exports.get_hp?.();
+          console.log('WASM other values after start():', { stamina, hp });
+          
+          // Test setting input
+          if (typeof this.exports.set_player_input === 'function') {
+            console.log('Testing set_player_input...');
+            this.exports.set_player_input(0, 1, 0, 0, 0, 0, 0, 0);
+            
+            // Check position after setting input
+            const posXAfterInput = this.exports.get_x?.();
+            const posYAfterInput = this.exports.get_y?.();
+            console.log('WASM position after setting input:', posXAfterInput, posYAfterInput);
+            
+            // Test update
+            if (typeof this.exports.update === 'function') {
+              console.log('Testing WASM update...');
+              this.exports.update(0.016);
+              
+              // Check position after update
+              const posXAfterUpdate = this.exports.get_x?.();
+              const posYAfterUpdate = this.exports.get_y?.();
+              console.log('WASM position after update:', posXAfterUpdate, posYAfterUpdate);
+            }
+          }
+        } else {
+          console.warn('WASM start function not available in exports');
         }
 
         this.initializeGameRun();
@@ -153,8 +188,12 @@ export class WasmManager {
       const candidatePaths = [
         'game.wasm',
         'dist/game.wasm',
-        'src/wasm/game.wasm'
+        'src/wasm/game.wasm',
+        '../docs/game.wasm',
+        '../game.wasm'
       ];
+      
+      console.log('WASM candidate paths:', candidatePaths);
 
       // On GitHub Pages, ensure we also try with the repo prefix explicitly
       try {

@@ -238,6 +238,16 @@ export class AnimatedPlayer {
             console.log('WASM position update:', rx, ry);
         }
         
+        // Debug logging for NaN values
+        if (typeof rx !== 'number' || typeof ry !== 'number' || !Number.isFinite(rx) || !Number.isFinite(ry)) {
+            console.warn('WASM position returned invalid values:', { rx, ry, typeX: typeof rx, typeY: typeof ry });
+            console.warn('WASM exports available:', !!globalThis.wasmExports);
+            if (globalThis.wasmExports) {
+                console.warn('WASM get_x function:', typeof globalThis.wasmExports.get_x);
+                console.warn('WASM get_y function:', typeof globalThis.wasmExports.get_y);
+            }
+        }
+        
         this.x = (typeof rx === 'number' && Number.isFinite(rx)) ? rx : 0.5
         this.y = (typeof ry === 'number' && Number.isFinite(ry)) ? ry : 0.5
 

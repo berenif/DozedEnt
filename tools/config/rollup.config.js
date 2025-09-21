@@ -5,6 +5,7 @@ import terser from '@rollup/plugin-terser'
 
 const ecma = 2019
 const nodeEnv = '"production"'
+const isDev = process.env.NODE_ENV === 'development'
 
 const ignoreCodes = new Set(['THIS_IS_UNDEFINED', 'CIRCULAR_DEPENDENCY'])
 
@@ -17,35 +18,57 @@ const baseConfig = {
   onwarn,
   context: 'globalThis',
   output: {
-    compact: true,
+    compact: !isDev,
     format: 'es',
     inlineDynamicImports: true,
-    sourcemap: false  // Disable source maps for production builds
+    sourcemap: isDev, // Enable source maps in development
+    sourcemapFile: isDev ? undefined : false
   },
   plugins: [
-    resolve({browser: true, preferBuiltins: false}),
-    commonJs(),
+    resolve({
+      browser: true, 
+      preferBuiltins: false,
+      exportConditions: ['browser', 'module', 'import', 'default']
+    }),
+    commonJs({
+      include: ['node_modules/**'],
+      transformMixedEsModules: true
+    }),
     replace({
       'process.env.NODE_ENV': nodeEnv,
       'process?.env?.NODE_ENV': nodeEnv,
       preventAssignment: true
     }),
-    terser({
-      compress: {
-        ecma,
-        drop_console: ['log', 'info'],
-        keep_fargs: false,
-        module: true,
-        toplevel: true,
-        unsafe: true,
-        unsafe_arrows: true,
-        unsafe_methods: true,
-        unsafe_proto: true,
-        unsafe_symbols: true
-      },
-      format: {comments: false, ecma},
-      mangle: {module: true, toplevel: true}
-    })
+    ...(isDev ? [] : [
+      terser({
+        compress: {
+          ecma,
+          drop_console: ['log', 'info', 'debug'],
+          drop_debugger: true,
+          keep_fargs: false,
+          module: true,
+          toplevel: true,
+          unsafe: true,
+          unsafe_arrows: true,
+          unsafe_methods: true,
+          unsafe_proto: true,
+          unsafe_symbols: true,
+          passes: 2 // Multiple passes for better optimization
+        },
+        format: {
+          comments: false, 
+          ecma,
+          beautify: false
+        },
+        mangle: {
+          module: true, 
+          toplevel: true,
+          properties: {
+            regex: /^_/
+          }
+        }
+      })
+    ])
   ]
 }
 
@@ -55,7 +78,7 @@ export default ['firebase', 'ipfs', 'mqtt', 'supabase', 'torrent', 'wasm'].map(
     input: name === 'wasm' ? `src/utils/${name}.js` : `src/netcode/${name}.js`,
     output: {
       ...baseConfig.output,
-      file: `dist/trystero-${name}.min.js`
+      file: `dist/core/trystero-${name}.min.js`
     }
   })
 )

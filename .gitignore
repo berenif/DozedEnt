@@ -40,3 +40,29 @@ Thumbs.db
 core
 core.*
 *.core
+
+# Temporary and test files
+*.tmp
+*.temp
+test-*.html
+*-test.html
+*-demo.html
+*-working.html
+*-final.html
+*-fallback.html
+
+# Legacy and duplicate directories
+/demos/
+/assets/
+/docs/js/
+/docs/data/
+
+# Build reports and artifacts
+BUILD_REPORT.json
+*.log
+*.report
+
+# Unused utility files
+rewrite_script.py
+simple-test.js
+test-loading.js
