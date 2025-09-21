@@ -184,6 +184,11 @@ export class GameStateManager {
         special: Boolean(inputState?.special)
       };
       
+      // Debug logging for WASM input
+      if (safeInputState.direction.x !== 0 || safeInputState.direction.y !== 0) {
+        console.log('Sending movement to WASM:', safeInputState.direction);
+      }
+      
       // Send all input to WASM before update
       if (this.wasmManager.exports?.set_player_input) {
         this.wasmManager.exports.set_player_input(

@@ -37,7 +37,6 @@ describe('NetworkProviderManager', () => {
       expect(providerIds).to.include('firebase')
       expect(providerIds).to.include('ipfs')
       expect(providerIds).to.include('mqtt')
-      expect(providerIds).to.include('nostr')
       expect(providerIds).to.include('supabase')
     })
 

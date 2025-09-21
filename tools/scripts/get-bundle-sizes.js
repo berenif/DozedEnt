@@ -1,7 +1,7 @@
 import {readFile} from 'fs/promises'
 import {brotliCompress} from 'zlib'
 
-const pkgs = ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent']
+const pkgs = ['firebase', 'ipfs', 'mqtt', 'supabase', 'torrent']
 const longest = pkgs.sort((a, b) => b.length - a.length)[0].length
 
 Promise.all(

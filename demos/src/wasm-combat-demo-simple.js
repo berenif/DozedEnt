@@ -34,8 +34,18 @@ export class WASMCombatSystemsDemo {
         this.wasmManager = new WasmManager();
         await this.wasmManager.initialize();
         
+        // Debug logging for WASM initialization
+        console.log('WASM Manager initialized:', this.wasmManager.isLoaded);
+        console.log('WASM Exports available:', !!this.wasmManager.exports);
+        if (this.wasmManager.exports) {
+            console.log('Available WASM functions:', Object.keys(this.wasmManager.exports));
+        }
+        
         // Set flag to indicate WASM input is managed externally
         globalThis.wasmInputManagedExternally = true;
+        
+        // Initialize WASM systems (sets globalThis.wasmExports)
+        this.initializeWASMSystems();
         
         // Initialize other systems after WASM is ready
         this.initializePlayer();
@@ -62,10 +72,13 @@ export class WASMCombatSystemsDemo {
         this.gameStateManager = new GameStateManager();
         this.gameStateManager.initialize(this.wasmManager);
         
+        // Start the game
+        this.gameStateManager.startGame();
+        
         // Initialize InputManager
         this.inputManager = new InputManager(this.wasmManager);
         
-        console.log('✓ Game Systems initialized');
+        console.log('✓ Game Systems initialized and started');
     }
     
     initializePlayer() {
@@ -129,6 +142,11 @@ export class WASMCombatSystemsDemo {
         // Get input from InputManager
         const inputState = this.inputManager.getInputState();
         
+        // Debug logging for movement
+        if (inputState.direction.x !== 0 || inputState.direction.y !== 0) {
+            console.log('Movement input detected:', inputState.direction);
+        }
+        
         // Convert InputManager format to AnimatedPlayer format
         const playerInput = {
             // Convert direction.x/y to left/right/up/down booleans
@@ -149,11 +167,21 @@ export class WASMCombatSystemsDemo {
             jump: false
         };
         
+        // Debug logging for converted input
+        if (playerInput.left || playerInput.right || playerInput.up || playerInput.down) {
+            console.log('Converted player input:', playerInput);
+        }
+        
         // Update GameStateManager (handles WASM communication)
         this.gameStateManager.update(deltaTime, inputState);
         
         // Update player with converted input (but don't let it send to WASM again)
         this.player.update(deltaTime, playerInput);
+        
+        // Debug logging for player position
+        if (this.player.x !== 0.5 || this.player.y !== 0.5) {
+            console.log('Player position:', this.player.x, this.player.y);
+        }
         
         // Update UI
         this.updateUI();

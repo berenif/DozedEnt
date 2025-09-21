@@ -3,7 +3,7 @@
  * Handles room creation, listing, joining, and authority management
  */
 
-import { joinRoom as joinNostrRoom, selfId } from '../netcode/nostr.js'
+import { joinRoom as joinMqttRoom, selfId } from '../netcode/mqtt.js'
 import { toJson, fromJson, genId } from './utils.js'
 
 const ROOM_ANNOUNCE_INTERVAL = 5000 // 5 seconds
@@ -40,7 +40,7 @@ class RoomManager {
     // Use a special lobby room ID for room announcements
     const lobbyRoomId = `${this.appId}_lobby`
     
-    this.lobbyRoom = joinNostrRoom(
+    this.lobbyRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       lobbyRoomId
     )
@@ -111,7 +111,7 @@ class RoomManager {
     this.isHost = true
     
     // Connect to the game room
-    this.gameRoom = joinNostrRoom(
+    this.gameRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       roomId
     )
@@ -146,7 +146,7 @@ class RoomManager {
     this.isHost = false
     
     // Connect to the game room
-    this.gameRoom = joinNostrRoom(
+    this.gameRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       roomId
     )

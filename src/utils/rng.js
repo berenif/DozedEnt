@@ -27,12 +27,26 @@ const streams = new Map()
 
 /** Derive a per-stream seed from baseSeed and name via FNV-1a-64 */
 function deriveSeed(name) {
+  // Safety checks to prevent timeout issues
+  if (!name || typeof name !== 'string') {
+    name = 'default'
+  }
+  
+  // Limit name length to prevent excessive processing
+  if (name.length > 1000) {
+    name = name.substring(0, 1000)
+  }
+  
   let h = 0xcbf29ce484222325n // FNV offset basis
   const p = 0x100000001b3n // FNV prime
-  for (let i = 0; i < name.length; i++) {
+  
+  // Add timeout protection - limit iterations
+  const maxIterations = Math.min(name.length, 1000)
+  for (let i = 0; i < maxIterations; i++) {
     h ^= BigInt(name.charCodeAt(i) & 0xff)
     h = (h * p) & 0xffffffffffffffffn
   }
+  
   // mix with baseSeed
   const mixed = (h ^ baseSeed) & 0xffffffffffffffffn
   // ensure non-zero
@@ -40,8 +54,30 @@ function deriveSeed(name) {
 }
 
 function getStream(name = 'default') {
+  // Safety checks for stream name
+  if (!name || typeof name !== 'string') {
+    name = 'default'
+  }
+  
+  // Limit stream name length and sanitize
+  if (name.length > 200) {
+    name = name.substring(0, 200)
+  }
+  
+  // Remove any potentially problematic characters
+  name = name.replace(/[^\w\-:.]/g, '_')
+  
   let r = streams.get(name)
-  if (!r) { r = new XorShift64Star(deriveSeed(name)); streams.set(name, r) }
+  if (!r) { 
+    try {
+      r = new XorShift64Star(deriveSeed(name))
+      streams.set(name, r) 
+    } catch (error) {
+      console.warn('Failed to create RNG stream, using default:', error)
+      r = new XorShift64Star(deriveSeed('default'))
+      streams.set('default', r)
+    }
+  }
   return r
 }
 
@@ -93,25 +129,45 @@ export function syncSeedFromWasm() {
 
 /** Float in [0,1) from a named stream */
 export function randFloat(stream = 'default') {
-  return getStream(stream).nextFloat01()
+  try {
+    return getStream(stream).nextFloat01()
+  } catch (error) {
+    console.warn('RNG error in randFloat, using fallback:', error)
+    return Math.random()
+  }
 }
 
 /** Integer in [0, max) from a named stream */
 export function randInt(max, stream = 'default') {
   if (!Number.isFinite(max) || max <= 0) { return 0 }
-  const f = getStream(stream).nextFloat01()
-  return Math.floor(f * max)
+  try {
+    const f = getStream(stream).nextFloat01()
+    return Math.floor(f * max)
+  } catch (error) {
+    console.warn('RNG error in randInt, using fallback:', error)
+    return Math.floor(Math.random() * max)
+  }
 }
 
 /** Choose an element from an array via named stream */
 export function randChoice(arr, stream = 'default') {
   if (!arr || arr.length === 0) { return void 0 }
-  return arr[randInt(arr.length, stream)]
+  try {
+    return arr[randInt(arr.length, stream)]
+  } catch (error) {
+    console.warn('RNG error in randChoice, using fallback:', error)
+    return arr[Math.floor(Math.random() * arr.length)]
+  }
 }
 
 /** Float in [min,max) from a named stream */
 export function randRange(min, max, stream = 'default') {
-  return min + (max - min) * randFloat(stream)
+  try {
+    return min + (max - min) * randFloat(stream)
+  } catch (error) {
+    console.warn('RNG error in randRange, using fallback:', error)
+    return min + (max - min) * Math.random()
+  }
 }
 
 /** Create a dedicated RNG stream object for advanced usage */

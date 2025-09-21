@@ -47,7 +47,6 @@ export class RoomForge {
                         <option value="firebase">Firebase</option>
                         <option value="ipfs">IPFS</option>
                         <option value="mqtt" selected>MQTT</option>
-                        <option value="nostr">Nostr</option>
                         <option value="supabase">Supabase</option>
                     </select>
                     <p class="field-hint">Each provider shifts how quickly explorers uncover your shard.</p>

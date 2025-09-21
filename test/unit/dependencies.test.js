@@ -167,7 +167,6 @@ describe('Dependency Management', () => {
         'src/netcode/firebase.js',
         'src/netcode/ipfs.js',
         'src/netcode/mqtt.js',
-        'src/netcode/nostr.js',
         'src/netcode/supabase.js',
         'src/netcode/torrent.js',
         'src/utils/wasm.js'

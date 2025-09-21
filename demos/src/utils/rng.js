@@ -27,12 +27,31 @@ const streams = new Map()
 
 /** Derive a per-stream seed from baseSeed and name via FNV-1a-64 */
 function deriveSeed(name) {
+  // Validate and limit input to prevent timeouts
+  if (!name || typeof name !== 'string') {
+    name = 'default'
+  }
+  
+  // Limit name length to prevent excessive processing
+  if (name.length > 1000) {
+    name = name.substring(0, 1000)
+  }
+  
   let h = 0xcbf29ce484222325n // FNV offset basis
   const p = 0x100000001b3n // FNV prime
-  for (let i = 0; i < name.length; i++) {
-    h ^= BigInt(name.charCodeAt(i) & 0xff)
+  
+  // Process characters with timeout protection
+  const maxIterations = Math.min(name.length, 1000)
+  for (let i = 0; i < maxIterations; i++) {
+    const charCode = name.charCodeAt(i)
+    // Skip invalid characters that might cause issues
+    if (charCode < 0 || charCode > 0x10FFFF) {
+      continue
+    }
+    h ^= BigInt(charCode & 0xff)
     h = (h * p) & 0xffffffffffffffffn
   }
+  
   // mix with baseSeed
   const mixed = (h ^ baseSeed) & 0xffffffffffffffffn
   // ensure non-zero

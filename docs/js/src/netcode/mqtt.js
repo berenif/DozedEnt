@@ -10,15 +10,30 @@ const getClientId = ({options}) => options.host + options.path
 export const joinRoom = strategy({
   init: config =>
     getRelays(config, defaultRelayUrls, defaultRedundancy).map(url => {
+      // Generate a more unique client ID to avoid conflicts
+      const timestamp = Date.now()
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const sessionId = Math.random().toString(36).substring(2, 15)
+      const mqttClientId = `trystero-${timestamp}-${randomId}-${sessionId}`
+      
       const client = mqtt.connect(url, {
-        clientId: `trystero-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        clientId: mqttClientId,
         clean: true,
-        connectTimeout: 8000, // Increased from 4000ms
-        reconnectPeriod: 2000, // Increased from 1000ms
-        keepalive: 30,
+        connectTimeout: 10000, // Increased timeout for better reliability
+        reconnectPeriod: 3000, // Increased reconnection period
+        keepalive: 60, // Increased keepalive interval
         protocolVersion: 4, // Force MQTT 3.1.1 to avoid compatibility issues
         reschedulePings: true,
-        queueQoSZero: false
+        queueQoSZero: false,
+        // Add additional connection parameters for better compatibility
+        username: undefined, // No authentication required for public brokers
+        password: undefined,
+        will: {
+          topic: `trystero/disconnect/${mqttClientId}`,
+          payload: JSON.stringify({ clientId: mqttClientId, timestamp: Date.now() }),
+          qos: 0,
+          retain: false
+        }
       })
       const clientId = getClientId(client)
 
@@ -55,9 +70,16 @@ export const joinRoom = strategy({
         client.on('error', (err) => {
           clearTimeout(timeout)
           console.error(`MQTT connection error for ${url}:`, err.message || err)
-          // Provide more specific error information
+          
+          // Provide more specific error information and suggestions
           if (err.message && err.message.includes('connack')) {
             rej(new Error(`MQTT CONNACK timeout for ${url} - try using a different network provider or check your internet connection`))
+          } else if (err.message && err.message.includes('Not authorized')) {
+            console.warn(`MQTT broker ${url} rejected connection - this broker may require authentication or have connection limits`)
+            rej(new Error(`MQTT broker ${url} rejected connection (Not authorized) - trying next broker...`))
+          } else if (err.message && err.message.includes('Connection refused')) {
+            console.warn(`MQTT broker ${url} refused connection - broker may be down or overloaded`)
+            rej(new Error(`MQTT broker ${url} refused connection - trying next broker...`))
           } else {
             rej(err)
           }
@@ -106,8 +128,9 @@ export const getRelaySockets = () => ({...sockets})
 export {selfId} from '../utils/utils.js'
 
 export const defaultRelayUrls = [
-  'test.mosquitto.org:8081/mqtt',
-  'broker.emqx.io:8084/mqtt',
-  'broker.hivemq.com:8884/mqtt',
-  'broker-cn.emqx.io:8084/mqtt'
+  'mqtt.eclipseprojects.io:443/mqtt', // Preferred: stable WSS on 443
+  'broker.emqx.io:8084/mqtt', // Solid public EMQX endpoint
+  'broker-cn.emqx.io:8084/mqtt', // EMQX CN region
+  'broker.hivemq.com:8884/mqtt', // Public HiveMQ
+  'test.mosquitto.org:8081/mqtt' // Last: often overloaded
 ].map(url => 'wss://' + url)

@@ -68,21 +68,29 @@ export class NetworkErrorRecovery {
       'ping_test',
       'reconnect_current',
       'switch_relay'
-    ];
+    ]
     
-    // Delayed strategies (try after backoff)
+    // Delayed strategies (try after a short delay)
     this.recoveryStrategies.delayed = [
       'full_reconnect',
       'peer_discovery',
-      'fallback_server'
-    ];
+      'switch_network_provider'
+    ]
     
     // Fallback strategies (last resort)
     this.recoveryStrategies.fallback = [
+      'fallback_server',
       'offline_mode',
       'local_simulation',
       'error_notification'
-    ];
+    ]
+  }
+
+  /**
+   * Handle network connection error (alias for handleConnectionDrop)
+   */
+  async handleConnectionError(error, context = {}) {
+    return this.handleConnectionDrop(error, context);
   }
 
   /**
@@ -210,6 +218,9 @@ export class NetworkErrorRecovery {
       
       case 'error_notification':
         return this.showErrorNotification();
+      
+      case 'switch_network_provider':
+        return this.switchNetworkProvider(context);
       
       default:
         throw new Error(`Unknown recovery strategy: ${strategy}`);
@@ -369,6 +380,57 @@ export class NetworkErrorRecovery {
       
     } catch (error) {
       this.logger.error('Fallback server connection failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Switch to alternative network provider
+   */
+  async switchNetworkProvider(context) {
+    try {
+      if (!context.networkManager) {
+        return { success: false, error: 'No network manager available' };
+      }
+      
+      // Get available providers
+      const availableProviders = context.networkManager.getAvailableProviders();
+      const currentProvider = context.networkManager.getCurrentProvider();
+      
+      // Define provider priority order (excluding current provider)
+      const providerPriority = ['mqtt', 'firebase', 'ipfs', 'supabase', 'torrent'];
+      const alternativeProviders = providerPriority.filter(p => 
+        p !== currentProvider?.id && availableProviders.some(ap => ap.id === p)
+      );
+      
+      this.logger.info(`Attempting to switch from ${currentProvider?.id} to alternative providers:`, alternativeProviders);
+      
+      // Try each alternative provider
+      for (const providerId of alternativeProviders) {
+        try {
+          this.logger.info(`Trying provider: ${providerId}`);
+          
+          // Initialize the new provider
+          const success = await context.networkManager.initializeProvider(providerId);
+          if (success) {
+            this.logger.info(`Successfully switched to provider: ${providerId}`);
+            return { 
+              success: true, 
+              action: 'provider_switched', 
+              provider: providerId,
+              previousProvider: currentProvider?.id
+            };
+          }
+        } catch (providerError) {
+          this.logger.warn(`Provider ${providerId} failed:`, providerError.message);
+          continue;
+        }
+      }
+      
+      return { success: false, error: 'All alternative providers failed' };
+      
+    } catch (error) {
+      this.logger.error('Network provider switch failed:', error);
       return { success: false, error: error.message };
     }
   }

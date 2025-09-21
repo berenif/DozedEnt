@@ -363,7 +363,6 @@ export class MultiplayerDemoUI {
             firebase: 'Firebase',
             ipfs: 'IPFS',
             mqtt: 'MQTT',
-            nostr: 'Nostr',
             supabase: 'Supabase'
         }
         return labels[providerId] || providerId

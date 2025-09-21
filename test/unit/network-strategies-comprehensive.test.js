@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { setupBrowserMocks, cleanupBrowserMocks } from '../setup-browser-mocks.js';
 
 describe('Network Strategies - Comprehensive Integration Tests', () => {
-  let mockFirebase, mockIPFS, mockMQTT, mockNostr, mockSupabase, mockTorrent;
+  let mockFirebase, mockIPFS, mockMQTT, mockSupabase, mockTorrent;
 
   before(() => {
     setupBrowserMocks();
@@ -64,30 +64,6 @@ describe('Network Strategies - Comprehensive Integration Tests', () => {
       })
     };
 
-    // Mock Nostr
-    mockNostr = {
-      SimplePool: class MockSimplePool {
-        constructor() {
-          this.subscriptions = new Map();
-        }
-        sub(relays, filters) {
-          const subId = Math.random().toString(36);
-          this.subscriptions.set(subId, { relays, filters });
-          return {
-            on: sinon.stub(),
-            unsub: sinon.stub()
-          };
-        }
-        publish(relays, event) {
-          return Promise.resolve();
-        }
-        close() {}
-      },
-      getPublicKey: sinon.stub().returns('mock-public-key'),
-      getSignature: sinon.stub().returns('mock-signature'),
-      validateEvent: sinon.stub().returns(true),
-      verifySignature: sinon.stub().returns(true)
-    };
 
     // Mock Supabase
     mockSupabase = {
@@ -179,7 +155,6 @@ describe('Network Strategies - Comprehensive Integration Tests', () => {
       'firebase/auth': mockFirebase,
       'ipfs-core': mockIPFS,
       'mqtt': mockMQTT,
-      'nostr-tools': mockNostr,
       '@supabase/supabase-js': mockSupabase,
       'webtorrent': mockTorrent
     };
@@ -340,64 +315,6 @@ describe('Network Strategies - Comprehensive Integration Tests', () => {
     });
   });
 
-  describe('Nostr Strategy', () => {
-    it('should create Nostr pool correctly', () => {
-      const pool = new mockNostr.SimplePool();
-      
-      expect(pool).to.be.instanceOf(mockNostr.SimplePool);
-      expect(pool.subscriptions).to.be.instanceOf(Map);
-    });
-
-    it('should handle Nostr subscriptions', () => {
-      const pool = new mockNostr.SimplePool();
-      const relays = ['wss://relay1.example.com', 'wss://relay2.example.com'];
-      const filters = [{ kinds: [1], authors: ['mock-author'] }];
-      
-      const sub = pool.sub(relays, filters);
-      
-      expect(sub.on).to.exist;
-      expect(sub.unsub).to.exist;
-      expect(pool.subscriptions.size).to.equal(1);
-    });
-
-    it('should handle Nostr event publishing', async () => {
-      const pool = new mockNostr.SimplePool();
-      const relays = ['wss://relay1.example.com'];
-      const event = {
-        kind: 1,
-        content: 'test message',
-        tags: [],
-        created_at: Math.floor(Date.now() / 1000)
-      };
-      
-      await pool.publish(relays, event);
-      // Mock implementation always resolves
-      expect(true).to.be.true;
-    });
-
-    it('should handle Nostr key operations', () => {
-      const publicKey = mockNostr.getPublicKey();
-      const signature = mockNostr.getSignature();
-      
-      expect(publicKey).to.equal('mock-public-key');
-      expect(signature).to.equal('mock-signature');
-    });
-
-    it('should validate Nostr events', () => {
-      const event = {
-        kind: 1,
-        content: 'test',
-        tags: [],
-        created_at: Date.now(),
-        pubkey: 'mock-pubkey',
-        id: 'mock-id',
-        sig: 'mock-signature'
-      };
-      
-      const isValid = mockNostr.validateEvent(event);
-      expect(isValid).to.be.true;
-    });
-  });
 
   describe('Supabase Strategy', () => {
     it('should create Supabase client correctly', () => {
@@ -513,7 +430,7 @@ describe('Network Strategies - Comprehensive Integration Tests', () => {
   describe('Cross-Strategy Integration', () => {
     it('should handle strategy fallbacks', () => {
       // Test that when one strategy fails, another can be used
-      const strategies = ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent'];
+      const strategies = ['firebase', 'ipfs', 'mqtt', 'supabase', 'torrent'];
       
       strategies.forEach(strategy => {
         expect(strategy).to.be.a('string');
@@ -545,7 +462,6 @@ describe('Network Strategies - Comprehensive Integration Tests', () => {
         firebase: { apiKey: 'test', authDomain: 'test.firebaseapp.com' },
         ipfs: { repo: 'ipfs-repo', config: { Bootstrap: [] } },
         mqtt: { host: 'mqtt.example.com', port: 1883 },
-        nostr: { relays: ['wss://relay.example.com'] },
         supabase: { url: 'https://test.supabase.co', key: 'test-key' },
         torrent: { tracker: { announce: ['wss://tracker.example.com'] } }
       };

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movement Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #2c3e50;
+            color: white;
+        }
+        canvas {
+            border: 2px solid #3498db;
+            background: #27ae60;
+        }
+        .controls {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(52, 73, 94, 0.8);
+            border-radius: 5px;
+        }
+        .debug {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Movement Test</h1>
+    
+    <div class="controls">
+        <p><strong>Controls:</strong> WASD or Arrow Keys to move</p>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="debug">
+        <div>Position: <span id="position">X: 0, Y: 0</span></div>
+        <div>Input: <span id="input">None</span></div>
+        <div>WASM Status: <span id="wasmStatus">Not loaded</span></div>
+    </div>
+
+    <script type="module">
+        class SimpleMovementTest {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Simple player state
+                this.player = {
+                    x: 400,
+                    y: 300,
+                    width: 32,
+                    height: 32,
+                    speed: 200
+                };
+                
+                // Input state
+                this.keys = {};
+                
+                this.setupInput();
+                this.gameLoop();
+            }
+            
+            setupInput() {
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+            }
+            
+            update(deltaTime) {
+                // Simple movement without WASM
+                let dx = 0, dy = 0;
+                
+                if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
+                if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
+                if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
+                if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
+                
+                // Normalize diagonal movement
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.707;
+                    dy *= 0.707;
+                }
+                
+                // Update position
+                this.player.x += dx * this.player.speed * deltaTime;
+                this.player.y += dy * this.player.speed * deltaTime;
+                
+                // Keep player on screen
+                this.player.x = Math.max(0, Math.min(this.canvas.width - this.player.width, this.player.x));
+                this.player.y = Math.max(0, Math.min(this.canvas.height - this.player.height, this.player.y));
+                
+                // Update debug info
+                this.updateDebug(dx, dy);
+            }
+            
+            updateDebug(dx, dy) {
+                document.getElementById('position').textContent = 
+                    `X: ${Math.round(this.player.x)}, Y: ${Math.round(this.player.y)}`;
+                
+                const inputText = dx !== 0 || dy !== 0 ? 
+                    `X: ${dx.toFixed(2)}, Y: ${dy.toFixed(2)}` : 'None';
+                document.getElementById('input').textContent = inputText;
+            }
+            
+            render() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw grid
+                this.ctx.strokeStyle = 'rgba(46, 204, 113, 0.3)';
+                this.ctx.lineWidth = 1;
+                
+                for (let x = 0; x < this.canvas.width; x += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                for (let y = 0; y < this.canvas.height; y += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+                
+                // Draw player
+                this.ctx.fillStyle = '#3498db';
+                this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+                
+                // Draw player center
+                this.ctx.fillStyle = '#e74c3c';
+                this.ctx.fillRect(this.player.x + this.player.width/2 - 2, this.player.y + this.player.height/2 - 2, 4, 4);
+            }
+            
+            gameLoop(currentTime = 0) {
+                const deltaTime = currentTime - (this.lastTime || 0);
+                this.lastTime = currentTime;
+                
+                this.update(deltaTime / 1000); // Convert to seconds
+                this.render();
+                
+                requestAnimationFrame((time) => this.gameLoop(time));
+            }
+        }
+        
+        // Start the test
+        window.addEventListener('load', () => {
+            new SimpleMovementTest();
+            document.getElementById('wasmStatus').textContent = 'Not needed for this test';
+        });
+    </script>
+</body>
+</html>

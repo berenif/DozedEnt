@@ -33,7 +33,7 @@ export default (strategy, config) =>
     }
 
     const isRelayStrategy =
-      strategy === 'torrent' || strategy === 'nostr' || strategy === 'mqtt'
+      strategy === 'torrent' || strategy === 'mqtt'
 
     const roomConfig = {
       appId: `trystero-test-${Math.random()}`,
@@ -441,7 +441,6 @@ export default (strategy, config) =>
   })
 
 const emojis = {
-  nostr: '🐦',
   mqtt: '📡',
   torrent: '🌊',
   supabase: '⚡️',

@@ -10,6 +10,7 @@ import {
     TerrainType, 
     PackRole,
     EnhancedWolfBehavior,
+    WolfAnatomy,
     createWolfAnimComponent,
     updateWolfAnimation 
 } from './wolf-procedural.js'
@@ -24,33 +25,7 @@ export const EnhancedWolfGait = Object.freeze({
 })
 
 // Enhanced behavioral states for realistic wolf behavior
-// Note: EnhancedWolfBehavior is imported from wolf-procedural.js to avoid duplicate exports
-
-// Realistic wolf anatomy constants based on real wolf measurements
-export const WolfAnatomy = Object.freeze({
-    // Body proportions (relative to shoulder height = 1.0)
-    shoulderHeight: 1.0,
-    bodyLength: 1.6,      // Nose to tail base
-    legLength: 0.75,      // Ground to shoulder
-    neckLength: 0.4,
-    headLength: 0.25,
-    tailLength: 0.5,
-    
-    // Joint constraints (radians)
-    spineMaxBend: 0.3,    // Maximum spine curvature
-    neckMaxPitch: 1.2,    // Head up/down range
-    neckMaxYaw: 1.0,      // Head left/right range
-    shoulderRange: 0.8,   // Front leg swing range
-    hipRange: 0.9,        // Hind leg swing range
-    
-    // Weight distribution
-    frontWeightRatio: 0.4, // 40% weight on front legs
-    hindWeightRatio: 0.6,  // 60% weight on hind legs
-    
-    // Muscle power ratios
-    hindLegPower: 1.0,     // Hind legs provide main propulsion
-    frontLegPower: 0.6     // Front legs mainly for steering/balance
-})
+// Note: EnhancedWolfBehavior and WolfAnatomy are imported from wolf-procedural.js to avoid duplicate exports
 
 // Enhanced component factory with biomechanical properties
 export function createEnhancedWolfAnimComponent(overrides = {}) {

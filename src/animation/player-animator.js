@@ -232,6 +232,12 @@ export class AnimatedPlayer {
         // WASM provides normalized coordinates; guard against NaN/Infinity
         const rx = globalThis.wasmExports?.get_x?.()
         const ry = globalThis.wasmExports?.get_y?.()
+        
+        // Debug logging for WASM position updates
+        if (typeof rx === 'number' && typeof ry === 'number' && (rx !== 0.5 || ry !== 0.5)) {
+            console.log('WASM position update:', rx, ry);
+        }
+        
         this.x = (typeof rx === 'number' && Number.isFinite(rx)) ? rx : 0.5
         this.y = (typeof ry === 'number' && Number.isFinite(ry)) ? ry : 0.5
 

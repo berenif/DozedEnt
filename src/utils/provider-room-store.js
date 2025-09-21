@@ -66,6 +66,14 @@ export class ProviderRoomStore {
 
     return changed
   }
+
+  /**
+   * Notify that the room store has been updated
+   * This is a placeholder method that can be overridden by the coordinator
+   */
+  notifyUpdate() {
+    // This method can be overridden by the coordinator to handle updates
+  }
 }
 
 function normalizeRoom(providerId, rawRoom) {

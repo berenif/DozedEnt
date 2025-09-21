@@ -155,7 +155,11 @@ export class EnhancedWolfBody {
 
     // Generate unique fur pattern for this wolf
     generateFurPattern() {
-        const stream = `wolf-fur:${this.wolf?.id || 'unknown'}`
+        // Ensure wolf ID is valid and not too long
+        const wolfId = this.wolf?.id || 'unknown'
+        const safeId = typeof wolfId === 'string' && wolfId.length <= 50 ? wolfId : 'unknown'
+        const stream = `wolf-fur:${safeId}`
+        
         this.furPattern = {
             seed: randInt(1000, stream),
             markings: this.generateFurMarkings(stream),
@@ -166,6 +170,19 @@ export class EnhancedWolfBody {
 
     // Generate natural fur markings
     generateFurMarkings(stream = `wolf-fur:${this.wolf?.id || 'unknown'}`) {
+        // Ensure stream name is safe and sanitized
+        if (!stream || typeof stream !== 'string') {
+            stream = 'wolf-fur:unknown'
+        }
+        
+        // Limit stream name length and sanitize
+        if (stream.length > 100) {
+            stream = stream.substring(0, 100)
+        }
+        
+        // Remove problematic characters
+        stream = stream.replace(/[^\w\-:.]/g, '_')
+        
         const markings = []
         const numMarkings = randInt(3, `${stream}:count`) + 1
 
@@ -188,6 +205,19 @@ export class EnhancedWolfBody {
 
     // Generate fur texture properties
     generateFurTexture(stream = `wolf-fur:${this.wolf?.id || 'unknown'}`) {
+        // Ensure stream name is safe and sanitized
+        if (!stream || typeof stream !== 'string') {
+            stream = 'wolf-fur:unknown'
+        }
+        
+        // Limit stream name length and sanitize
+        if (stream.length > 100) {
+            stream = stream.substring(0, 100)
+        }
+        
+        // Remove problematic characters
+        stream = stream.replace(/[^\w\-:.]/g, '_')
+        
         return {
             coarseness: randRange(0.7, 1.0, `${stream}:coarse`),
             length: randRange(0.015, 0.025, `${stream}:len`),

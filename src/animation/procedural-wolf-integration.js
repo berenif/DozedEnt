@@ -3,13 +3,16 @@
 // Provides a unified interface for realistic wolf animation
 
 import { 
-    createEnhancedWolfAnimComponent, 
-    updateEnhancedWolfAnimation,
     EnhancedWolfBehavior,
     WolfAnatomy,
-    getWolfBehaviorName,
     createRealisticWolfPersonality
 } from './wolf-procedural.js'
+
+import { 
+    createEnhancedWolfAnimComponent, 
+    updateEnhancedWolfAnimation,
+    getWolfBehaviorName
+} from './enhanced-wolf-procedural.js'
 
 import RealisticWolfPhysics, { WolfPhysicsConstants } from './realistic-wolf-physics.js'
 import EnhancedWolfBody from './enhanced-wolf-body.js'

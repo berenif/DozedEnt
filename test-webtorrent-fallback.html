@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebTorrent Fallback Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success { background-color: #2d5a2d; }
+        .status.error { background-color: #5a2d2d; }
+        .status.warning { background-color: #5a4d2d; }
+        .status.info { background-color: #2d4d5a; }
+        button {
+            background-color: #4a4a4a;
+            color: white;
+            border: 1px solid #666;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #5a5a5a;
+        }
+        .log {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 WebTorrent Fallback System Test</h1>
+    
+    <div class="test-section">
+        <h2>📡 Network Provider Status</h2>
+        <div id="provider-status" class="status info">Initializing...</div>
+        <button onclick="testProviders()">Test All Providers</button>
+        <button onclick="simulateWebTorrentFailure()">Simulate WebTorrent Failure</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Fallback System Test</h2>
+        <div id="fallback-status" class="status info">Ready to test</div>
+        <button onclick="testFallbackSystem()">Test Fallback System</button>
+        <button onclick="testProviderSwitch()">Test Provider Switch</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Test Log</h2>
+        <div id="test-log" class="log">Test log will appear here...</div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script type="module">
+        import { NetworkProviderManager } from './src/netcode/network-provider-manager.js';
+        import { NetworkErrorRecovery } from './src/utils/network-error-recovery.js';
+        import { showWebTorrentError } from './src/ui/alert-system.js';
+
+        // Initialize systems
+        let networkManager = null;
+        let errorRecovery = null;
+
+        async function initializeSystems() {
+            try {
+                log('🔧 Initializing NetworkProviderManager...');
+                networkManager = new NetworkProviderManager();
+                
+                log('🔧 Initializing NetworkErrorRecovery...');
+                errorRecovery = new NetworkErrorRecovery();
+                
+                // Set up global references for the fallback system
+                window.networkManager = networkManager;
+                window.gameDebug = { networkErrorRecovery: errorRecovery };
+                window.showWebTorrentError = showWebTorrentError;
+                
+                log('✅ Systems initialized successfully');
+                log('📋 Available methods: ' + Object.getOwnPropertyNames(errorRecovery).filter(name => typeof errorRecovery[name] === 'function').join(', '));
+                updateProviderStatus();
+            } catch (error) {
+                log('❌ Failed to initialize systems: ' + error.message);
+                log('🔍 Error details: ' + error.stack);
+            }
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = 'Test log cleared...\n';
+        }
+
+        function updateProviderStatus() {
+            if (!networkManager) return;
+            
+            const providers = networkManager.getAvailableProviders();
+            const currentProvider = networkManager.getCurrentProvider();
+            
+            let statusHtml = '<strong>Available Providers:</strong><br>';
+            providers.forEach(provider => {
+                const isCurrent = currentProvider && provider.id === currentProvider.id;
+                statusHtml += `${isCurrent ? '🟢' : '⚪'} ${provider.name} (${provider.id})<br>`;
+            });
+            
+            if (currentProvider) {
+                statusHtml += `<br><strong>Current:</strong> ${currentProvider.name}`;
+            }
+            
+            document.getElementById('provider-status').innerHTML = statusHtml;
+        }
+
+        async function testProviders() {
+            log('🧪 Testing all network providers...');
+            
+            const providers = ['torrent', 'mqtt', 'firebase', 'ipfs', 'supabase'];
+            
+            for (const providerId of providers) {
+                try {
+                    log(`Testing ${providerId}...`);
+                    const success = await networkManager.initializeProvider(providerId);
+                    if (success) {
+                        log(`✅ ${providerId} initialized successfully`);
+                    } else {
+                        log(`❌ ${providerId} failed to initialize`);
+                    }
+                } catch (error) {
+                    if (error.message.includes('randomPrivateKey')) {
+                        log(`⚠️ ${providerId} requires dependency update: ${error.message}`);
+                    } else {
+                        log(`❌ ${providerId} error: ${error.message}`);
+                    }
+                }
+            }
+            
+            updateProviderStatus();
+        }
+
+        async function simulateWebTorrentFailure() {
+            log('🎭 Simulating WebTorrent tracker failure...');
+            
+            // Simulate the error that would occur
+            const trackerUrl = 'wss://tracker.webtorrent.dev/';
+            const errorMessage = 'Connection refused';
+            
+            try {
+                // Trigger the error handling
+                if (window.showWebTorrentError) {
+                    showWebTorrentError(trackerUrl, errorMessage);
+                    log('📢 WebTorrent error notification shown');
+                }
+                
+                // Also trigger the recovery system
+                if (errorRecovery) {
+                    if (typeof errorRecovery.handleConnectionError === 'function') {
+                        const result = await errorRecovery.handleConnectionError(new Error(`Tracker ${trackerUrl} failed: ${errorMessage}`), {
+                            networkManager: networkManager,
+                            provider: 'torrent',
+                            tracker: trackerUrl
+                        });
+                        log('🔄 Recovery system triggered: ' + (result.success ? 'Success' : 'Failed'));
+                    } else {
+                        log('❌ handleConnectionError method not found. Available methods: ' + Object.getOwnPropertyNames(errorRecovery).filter(name => typeof errorRecovery[name] === 'function').join(', '));
+                    }
+                }
+            } catch (error) {
+                log('❌ Error in simulation: ' + error.message);
+            }
+        }
+
+        async function testFallbackSystem() {
+            log('🔄 Testing fallback system...');
+            
+            if (!errorRecovery) {
+                log('❌ Error recovery system not initialized');
+                return;
+            }
+            
+            try {
+                // Test immediate strategies
+                log('Testing immediate strategies...');
+                for (const strategy of errorRecovery.recoveryStrategies.immediate) {
+                    const result = await errorRecovery.executeRecoveryStrategy(strategy, {
+                        networkManager: networkManager
+                    });
+                    log(`${strategy}: ${result.success ? '✅ Success' : '❌ Failed'}`);
+                }
+                
+                // Test delayed strategies
+                log('Testing delayed strategies...');
+                for (const strategy of errorRecovery.recoveryStrategies.delayed) {
+                    const result = await errorRecovery.executeRecoveryStrategy(strategy, {
+                        networkManager: networkManager
+                    });
+                    log(`${strategy}: ${result.success ? '✅ Success' : '❌ Failed'}`);
+                }
+                
+            } catch (error) {
+                log('❌ Fallback system test failed: ' + error.message);
+            }
+        }
+
+        async function testProviderSwitch() {
+            log('🔄 Testing provider switch...');
+            
+            if (!errorRecovery || !networkManager) {
+                log('❌ Systems not initialized');
+                return;
+            }
+            
+            try {
+                const result = await errorRecovery.executeRecoveryStrategy('switch_network_provider', {
+                    networkManager: networkManager
+                });
+                
+                if (result.success) {
+                    log(`✅ Successfully switched to provider: ${result.provider}`);
+                    log(`Previous provider: ${result.previousProvider}`);
+                } else {
+                    log(`❌ Provider switch failed: ${result.error}`);
+                }
+                
+                updateProviderStatus();
+                
+            } catch (error) {
+                log('❌ Provider switch test failed: ' + error.message);
+            }
+        }
+
+        // Make functions globally available
+        window.testProviders = testProviders;
+        window.simulateWebTorrentFailure = simulateWebTorrentFailure;
+        window.testFallbackSystem = testFallbackSystem;
+        window.testProviderSwitch = testProviderSwitch;
+        window.clearLog = clearLog;
+
+        // Initialize on page load
+        initializeSystems();
+    </script>
+</body>
+</html>

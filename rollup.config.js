@@ -49,7 +49,7 @@ const baseConfig = {
   ]
 }
 
-export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent', 'wasm'].map(
+export default ['firebase', 'ipfs', 'mqtt', 'supabase', 'torrent', 'wasm'].map(
   name => ({
     ...baseConfig,
     input: name === 'wasm' ? `src/utils/${name}.js` : `src/netcode/${name}.js`,

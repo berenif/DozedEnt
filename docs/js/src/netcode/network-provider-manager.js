@@ -47,14 +47,6 @@ export class NetworkProviderManager {
           password: null
         }
       },
-      nostr: {
-        name: 'Nostr',
-        module: null,
-        config: {
-          appId: 'working-multiplayer-demo',
-          password: null
-        }
-      },
       supabase: {
         name: 'Supabase',
         module: null,
@@ -132,9 +124,6 @@ export class NetworkProviderManager {
         case 'mqtt':
           trysteroModule = await import('../../dist/trystero-mqtt.min.js')
           break
-        case 'nostr':
-          trysteroModule = await import('../../dist/trystero-nostr.min.js')
-          break
         case 'supabase':
           trysteroModule = await import('../../dist/trystero-supabase.min.js')
           break
@@ -160,8 +149,20 @@ export class NetworkProviderManager {
       this.logger.error(`Failed to initialize provider ${providerId}:`, error)
       this.stats.errors++
       
+      // Provide specific error messages for common issues
+      let errorMessage = error.message;
+      if (error.message.includes('randomPrivateKey')) {
+        errorMessage = `Nostr provider requires @noble/secp256k1 v3+. Please update dependencies.`;
+      } else if (error.message.includes('Cannot resolve module')) {
+        errorMessage = `Provider ${providerId} module not found. Check if dist/trystero-${providerId}.min.js exists.`;
+      }
+      
+      const enhancedError = new Error(errorMessage);
+      enhancedError.originalError = error;
+      enhancedError.providerId = providerId;
+      
       if (this.eventHandlers.onError) {
-        this.eventHandlers.onError(error)
+        this.eventHandlers.onError(enhancedError)
       }
       
       return false

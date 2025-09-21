@@ -7,7 +7,7 @@
 
 import RollbackNetcode from './rollback-netcode.js'
 import RollbackP2P from './rollback-p2p.js'
-import { joinRoom as joinNostrRoom } from './nostr.js'
+import { joinRoom as joinMqttRoom } from './mqtt.js'
 import { createLogger } from '../logger.js'
 import { toJson, fromJson, genId } from '../utils.js'
 
@@ -70,7 +70,7 @@ class RollbackLobby {
   _connectToLobbyDiscovery() {
     const discoveryRoomId = `${this.appId}_rollback_lobby`
     
-    this.signalingRoom = joinNostrRoom(
+    this.signalingRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       discoveryRoomId
     )
@@ -374,7 +374,7 @@ class RollbackLobby {
   _setupDedicatedHostSignaling() {
     const gameRoomId = this._getGameRoomId()
     
-    this.gameRoom = joinNostrRoom(
+    this.gameRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       gameRoomId
     )
@@ -423,7 +423,7 @@ class RollbackLobby {
   _setupMeshP2PSignaling() {
     const gameRoomId = this._getGameRoomId()
     
-    this.gameRoom = joinNostrRoom(
+    this.gameRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       gameRoomId
     )
@@ -480,7 +480,7 @@ class RollbackLobby {
    * Join game room (for clients)
    */
   async _joinGameRoom(gameRoomId) {
-    this.gameRoom = joinNostrRoom(
+    this.gameRoom = joinMqttRoom(
       { ...this.config, appId: this.appId },
       gameRoomId
     )

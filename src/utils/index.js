@@ -1,4 +1,4 @@
-export {getRelaySockets, joinRoom, selfId} from '../netcode/nostr.js'
+export {getRelaySockets, joinRoom, selfId} from '../netcode/mqtt.js'
 export {default as RoomManager} from './room-manager.js'
 export {default as HostAuthority} from '../host-authority.js'
 export {default as RoomLobbyUI} from '../netcode/room-lobby-ui.js'

@@ -133,11 +133,13 @@
         import ProceduralWolfSystem from './src/animation/procedural-wolf-integration.js';
         import { EnhancedWolfBehavior } from './src/animation/wolf-procedural.js';
         import { getWolfBehaviorName } from './src/animation/enhanced-wolf-procedural.js';
+        import { WasmManager } from '../src/wasm/wasm-manager.js';
 
         // Global variables
         let wolfSystem = null;
         let canvas = null;
         let ctx = null;
+        let wasmManager = null;
         let camera = { x: 0, y: 0, zoom: 1 };
         let lastTime = 0;
         let isPaused = false;
@@ -163,6 +165,14 @@
                 canvas = document.getElementById('gameCanvas');
                 ctx = canvas.getContext('2d');
                 
+                // Initialize WASM manager
+                wasmManager = new WasmManager();
+                const wasmLoaded = await wasmManager.initialize();
+                
+                if (!wasmLoaded) {
+                    console.warn('⚠️ WASM failed to load, running in fallback mode');
+                }
+                
                 // Initialize wolf system
                 wolfSystem = new ProceduralWolfSystem({
                     enablePhysics: true,
@@ -171,6 +181,11 @@
                     enableEnvironmentalEffects: true,
                     maxWolves: 20
                 });
+                
+                // Set WASM module for wolf system
+                if (wasmManager.isLoaded) {
+                    wolfSystem.setWasmModule(wasmManager.exports);
+                }
 
                 // Setup event listeners
                 setupEventListeners();

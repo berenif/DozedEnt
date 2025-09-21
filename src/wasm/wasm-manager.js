@@ -94,6 +94,10 @@ export class WasmManager {
           }
         });
         
+        if (!wasmInstance || !wasmInstance.exports) {
+          throw new Error('Lazy loader returned invalid WASM instance');
+        }
+        
         this.exports = wasmInstance.exports;
         this.isLoaded = true;
         this.isFallbackMode = false;
@@ -128,6 +132,11 @@ export class WasmManager {
         return true;
       } catch (lazyLoadError) {
         console.warn('⚠️ Lazy loader failed, falling back to traditional loading:', lazyLoadError.message);
+        console.warn('Lazy loader error details:', {
+          message: lazyLoadError.message,
+          name: lazyLoadError.name,
+          stack: lazyLoadError.stack?.split('\n').slice(0, 3).join('\n')
+        });
       }
 
       // Fallback to traditional loading

@@ -59,11 +59,17 @@ export class WasmLazyLoader {
         return await this.loadingPromises.get(moduleName);
       }
 
-      // Create loading promise
+      // Create loading promise with timeout
       const loadingPromise = this.performLazyLoad(moduleName, options);
-      this.loadingPromises.set(moduleName, loadingPromise);
+      const timeoutPromise = this.withTimeout(
+        loadingPromise,
+        this.config.loadTimeout,
+        `WASM module '${moduleName}' loading timeout`
+      );
+      
+      this.loadingPromises.set(moduleName, timeoutPromise);
 
-      const instance = await loadingPromise;
+      const instance = await timeoutPromise;
       
       // Cache the loaded module
       if (this.config.cacheModules) {
@@ -253,9 +259,14 @@ export class WasmLazyLoader {
     const paths = this.resolveModulePaths(moduleName);
     let lastError = null;
 
+    console.log(`🔍 Resolving paths for WASM module '${moduleName}':`, paths);
+
     for (const path of paths) {
       try {
+        console.log(`📥 Attempting to load WASM from: ${path}`);
         const arrayBuffer = await this.fetchWithTimeout(path, options);
+        
+        console.log(`✅ Successfully loaded WASM from: ${path} (${arrayBuffer.byteLength} bytes)`);
         
         // Check if compression is beneficial
         if (this.config.enableCompression && arrayBuffer.byteLength > this.config.compressionThreshold) {
@@ -270,6 +281,7 @@ export class WasmLazyLoader {
       }
     }
 
+    console.error(`❌ All module paths failed for '${moduleName}':`, paths);
     throw new Error(`All module paths failed for '${moduleName}': ${lastError?.message || 'Unknown error'}`);
   }
 
@@ -374,7 +386,20 @@ export class WasmLazyLoader {
       baseUrl = new URL(window.location.href);
     }
     
-    const paths = [
+    // Check if we're in the docs directory (GitHub Pages)
+    const isInDocs = baseUrl.pathname.includes('/docs/') || baseUrl.pathname.endsWith('/docs');
+    
+    const paths = isInDocs ? [
+      // For docs directory, prioritize local paths
+      `${moduleName}.wasm`,
+      `wasm/${moduleName}.wasm`,
+      `js/src/wasm/${moduleName}.wasm`,
+      `../${moduleName}.wasm`,
+      `../src/wasm/${moduleName}.wasm`,
+      `../docs/${moduleName}.wasm`,
+      `../docs/wasm/${moduleName}.wasm`
+    ] : [
+      // For root directory
       `${moduleName}.wasm`,
       `dist/${moduleName}.wasm`,
       `src/wasm/${moduleName}.wasm`,

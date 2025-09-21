@@ -113,13 +113,6 @@ describe('Build System', () => {
       expect(stats.size).to.be.greaterThan(0, 'MQTT bundle should not be empty');
     });
 
-    it('should generate nostr bundle', () => {
-      const filePath = path.join(distDir, 'trystero-nostr.min.js');
-      expect(fs.existsSync(filePath)).to.be.true;
-      
-      const stats = fs.statSync(filePath);
-      expect(stats.size).to.be.greaterThan(0, 'Nostr bundle should not be empty');
-    });
 
     it('should generate supabase bundle', () => {
       const filePath = path.join(distDir, 'trystero-supabase.min.js');
@@ -245,7 +238,6 @@ describe('Build System', () => {
         'src/netcode/firebase.js',
         'src/netcode/ipfs.js',
         'src/netcode/mqtt.js',
-        'src/netcode/nostr.js',
         'src/netcode/supabase.js',
         'src/netcode/torrent.js',
         'src/utils/wasm.js',
@@ -277,7 +269,6 @@ describe('Build System', () => {
       expect(packageJson.exports).to.have.property('./firebase');
       expect(packageJson.exports).to.have.property('./ipfs');
       expect(packageJson.exports).to.have.property('./mqtt');
-      expect(packageJson.exports).to.have.property('./nostr');
       expect(packageJson.exports).to.have.property('./supabase');
       expect(packageJson.exports).to.have.property('./torrent');
       expect(packageJson.exports).to.have.property('./wasm');

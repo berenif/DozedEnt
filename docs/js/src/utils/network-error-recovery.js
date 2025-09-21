@@ -86,6 +86,13 @@ export class NetworkErrorRecovery {
   }
 
   /**
+   * Handle network connection error (alias for handleConnectionDrop)
+   */
+  async handleConnectionError(error, context = {}) {
+    return this.handleConnectionDrop(error, context);
+  }
+
+  /**
    * Handle network connection drop
    */
   async handleConnectionDrop(error, context = {}) {

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #2c3e50;
+            color: white;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { border-left: 4px solid #27ae60; }
+        .error { border-left: 4px solid #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>WASM Loading Test</h1>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        async function testWasmLoading() {
+            const resultsDiv = document.getElementById('results');
+            
+            function addResult(message, isSuccess = true) {
+                const div = document.createElement('div');
+                div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+                div.textContent = message;
+                resultsDiv.appendChild(div);
+            }
+            
+            try {
+                // Test 1: Load WASM helper module
+                addResult('Testing WASM helper module loading...');
+                const wasmHelper = await import('../src/utils/wasm.js');
+                addResult('✓ WASM helper module loaded successfully');
+                
+                // Test 2: Try to load the WASM file directly
+                addResult('Testing direct WASM file loading...');
+                const wasmUrl = './game.wasm';
+                addResult(`Attempting to load: ${wasmUrl}`);
+                
+                const result = await wasmHelper.loadWasm(wasmUrl);
+                addResult('✓ WASM file loaded successfully');
+                
+                // Test 3: Check exports
+                if (result.exports) {
+                    addResult(`✓ WASM exports available: ${Object.keys(result.exports).length} functions`);
+                    addResult(`Available functions: ${Object.keys(result.exports).join(', ')}`);
+                } else {
+                    addResult('✗ No WASM exports found', false);
+                }
+                
+                // Test 4: Try to call a simple function if available
+                if (result.exports && typeof result.exports.get_x === 'function') {
+                    try {
+                        const x = result.exports.get_x();
+                        addResult(`✓ get_x() returned: ${x}`);
+                    } catch (error) {
+                        addResult(`✗ get_x() failed: ${error.message}`, false);
+                    }
+                }
+                
+            } catch (error) {
+                addResult(`✗ WASM loading failed: ${error.message}`, false);
+                console.error('WASM loading error:', error);
+            }
+        }
+        
+        // Run the test when page loads
+        window.addEventListener('load', testWasmLoading);
+    </script>
+</body>
+</html>

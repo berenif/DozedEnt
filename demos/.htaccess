@@ -1,0 +1,3 @@
+# Fix MIME type for JavaScript modules
+AddType application/javascript .js
+AddType text/javascript .js

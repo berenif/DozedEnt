@@ -69,6 +69,24 @@ export const joinRoom = strategy({
 
         if (errMsg) {
           warn(url, errMsg, true)
+          
+          // Trigger network error recovery for tracker failures
+          if (typeof window !== 'undefined') {
+            // Show user-friendly error notification
+            if (window.showWebTorrentError) {
+              window.showWebTorrentError(url, errMsg);
+            }
+            
+            // Trigger automatic recovery
+            if (window.gameDebug && window.gameDebug.networkErrorRecovery) {
+              window.gameDebug.networkErrorRecovery.handleConnectionError(new Error(`Tracker ${url} failed: ${errMsg}`), {
+                networkManager: window.networkManager,
+                provider: 'torrent',
+                tracker: url
+              });
+            }
+          }
+          
           return
         }
 
@@ -177,7 +195,8 @@ export const getRelaySockets = socketGetter(clients)
 export {selfId} from '../utils/utils.js'
 
 export const defaultRelayUrls = [
-  'tracker.webtorrent.dev',
   'tracker.openwebtorrent.com',
-  'tracker.files.fm:7073/announce'
+  'tracker.files.fm:7073/announce',
+  'tracker.webtorrent.dev',
+  'tracker.btorrent.xyz'
 ].map(url => 'wss://' + url)

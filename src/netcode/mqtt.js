@@ -1,24 +1,43 @@
 import mqtt from 'mqtt'
 import strategy from '../utils/strategy.js'
 import {getRelays, selfId, toJson} from '../utils/utils.js'
+import MQTTBrokerHealthMonitor from '../utils/mqtt-broker-health.js'
 
 const sockets = {}
 const defaultRedundancy = 4
 const msgHandlers = {}
 const getClientId = ({options}) => options.host + options.path
 
+// Initialize broker health monitor
+const brokerHealthMonitor = new MQTTBrokerHealthMonitor()
+
 export const joinRoom = strategy({
   init: config =>
     getRelays(config, defaultRelayUrls, defaultRedundancy).map(url => {
+      // Generate a more unique client ID to avoid conflicts
+      const timestamp = Date.now()
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const sessionId = Math.random().toString(36).substring(2, 15)
+      const mqttClientId = `trystero-${timestamp}-${randomId}-${sessionId}`
+      
       const client = mqtt.connect(url, {
-        clientId: `trystero-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        clientId: mqttClientId,
         clean: true,
-        connectTimeout: 8000, // Increased from 4000ms
-        reconnectPeriod: 2000, // Increased from 1000ms
-        keepalive: 30,
+        connectTimeout: 8000, // Optimized timeout for faster failover
+        reconnectPeriod: 2000, // Faster reconnection attempts
+        keepalive: 30, // Balanced keepalive interval
         protocolVersion: 4, // Force MQTT 3.1.1 to avoid compatibility issues
         reschedulePings: true,
-        queueQoSZero: false
+        queueQoSZero: false,
+        // Add additional connection parameters for better compatibility
+        username: undefined, // No authentication required for public brokers
+        password: undefined,
+        will: {
+          topic: `trystero/disconnect/${mqttClientId}`,
+          payload: JSON.stringify({ clientId: mqttClientId, timestamp: Date.now() }),
+          qos: 0,
+          retain: false
+        }
       })
       const clientId = getClientId(client)
 
@@ -42,9 +61,9 @@ export const joinRoom = strategy({
 
       return new Promise((res, rej) => {
         const timeout = setTimeout(() => {
-          console.warn(`MQTT connection timeout for ${url} - this may be due to Node.js 20+ compatibility issues with MQTT.js 5.13.0`)
+          console.warn(`MQTT connection timeout for ${url} - trying next broker`)
           rej(new Error(`Connection timeout for ${url}`))
-        }, 15000) // Increased timeout to 15 seconds
+        }, 10000) // Optimized timeout for faster broker failover
         
         client.on('connect', () => {
           clearTimeout(timeout)
@@ -55,9 +74,16 @@ export const joinRoom = strategy({
         client.on('error', (err) => {
           clearTimeout(timeout)
           console.error(`MQTT connection error for ${url}:`, err.message || err)
-          // Provide more specific error information
+          
+          // Provide more specific error information and suggestions
           if (err.message && err.message.includes('connack')) {
             rej(new Error(`MQTT CONNACK timeout for ${url} - try using a different network provider or check your internet connection`))
+          } else if (err.message && err.message.includes('Not authorized')) {
+            console.warn(`MQTT broker ${url} rejected connection - this broker may require authentication or have connection limits`)
+            rej(new Error(`MQTT broker ${url} rejected connection (Not authorized) - trying next broker...`))
+          } else if (err.message && err.message.includes('Connection refused')) {
+            console.warn(`MQTT broker ${url} refused connection - broker may be down or overloaded`)
+            rej(new Error(`MQTT broker ${url} refused connection - trying next broker...`))
           } else {
             rej(err)
           }
@@ -105,9 +131,28 @@ export const getRelaySockets = () => ({...sockets})
 
 export {selfId} from '../utils/utils.js'
 
+/**
+ * Get broker health information
+ * @returns {Object} Broker health statistics
+ */
+export const getBrokerHealth = () => brokerHealthMonitor.getHealthStats()
+
+/**
+ * Get recommended healthy brokers
+ * @returns {Array} Array of healthy broker URLs
+ */
+export const getHealthyBrokers = () => brokerHealthMonitor.getHealthyBrokers()
+
+/**
+ * Perform broker health check
+ * @returns {Promise<Object>} Health check results
+ */
+export const performBrokerHealthCheck = () => brokerHealthMonitor.performHealthCheck(mqtt)
+
 export const defaultRelayUrls = [
-  'test.mosquitto.org:8081/mqtt',
-  'broker.emqx.io:8084/mqtt',
-  'broker.hivemq.com:8884/mqtt',
-  'broker-cn.emqx.io:8084/mqtt'
+  'broker.emqx.io:8084/mqtt', // Most reliable: EMQX Global
+  'broker-cn.emqx.io:8084/mqtt', // Backup: EMQX China region
+  'broker.hivemq.com:8884/mqtt', // Solid: HiveMQ public broker
+  'test.mosquitto.org:8081/mqtt', // Fallback: Mosquitto test broker
+  'mqtt.eclipseprojects.io:443/mqtt' // Last resort: Eclipse IoT (often problematic)
 ].map(url => 'wss://' + url)

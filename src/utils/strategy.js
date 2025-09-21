@@ -246,15 +246,23 @@ export default ({init, subscribe, announce}) => {
     const announceIntervals = initPromises.map(() => announceIntervalMs)
     const announceTimeouts = []
 
-    const unsubFns = initPromises.map(async (relayP, i) =>
-      subscribe(
-        await relayP,
-        await rootTopicP,
-        await selfTopicP,
-        handleMessage(i),
-        getOffers
-      )
-    )
+    const unsubFns = initPromises.map(async (relayP, i) => {
+      try {
+        const relay = await relayP
+        if (!relay) throw new Error('relay not available')
+
+        return subscribe(
+          relay,
+          await rootTopicP,
+          await selfTopicP,
+          handleMessage(i),
+          getOffers
+        )
+      } catch (err) {
+        logger?.warn?.(`Relay #${i} failed to initialize: ${err?.message || err}`)
+        return () => {}
+      }
+    })
 
     all([rootTopicP, selfTopicP]).then(([rootTopic, selfTopic]) => {
       const queueAnnounce = async (relay, i) => {
@@ -271,8 +279,11 @@ export default ({init, subscribe, announce}) => {
       }
 
       unsubFns.forEach(async (didSub, i) => {
-        await didSub
-        queueAnnounce(await initPromises[i], i)
+        try {
+          await didSub
+          const relay = await initPromises[i].catch(() => null)
+          if (relay) queueAnnounce(relay, i)
+        } catch {}
       })
     })
 

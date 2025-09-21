@@ -68,7 +68,7 @@ This is the live deployment of **DozedEnt**, a cutting-edge WebAssembly-first mu
 - **Analytics Dashboard** - Real-time game statistics
 
 ### 🔗 P2P Networking
-- **Multiple Backends** - Firebase, IPFS, MQTT, Nostr, Supabase, BitTorrent
+- **Multiple Backends** - Firebase, IPFS, MQTT, Supabase, BitTorrent
 - **Host Migration** - Seamless leadership transitions
 - **Rollback Netcode** - Smooth gameplay despite network latency
 - **Desync Detection** - Automatic error recovery

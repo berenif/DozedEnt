@@ -355,3 +355,42 @@ export function showAlertStatus() {
         globalAlertSystem.showStatus();
     }
 }
+
+/**
+ * Show WebTorrent tracker connection error with fallback options
+ */
+export function showWebTorrentError(trackerUrl, errorMessage) {
+    if (!globalAlertSystem) {
+        globalAlertSystem = initializeGlobalAlertSystem();
+    }
+    
+    return globalAlertSystem.showAlert({
+        type: 'warning',
+        title: 'WebTorrent Tracker Unavailable',
+        message: `Cannot connect to tracker: ${trackerUrl}. This may be due to network restrictions or tracker downtime.`,
+        duration: 0,
+        actions: [
+            {
+                text: 'Try Alternative Provider',
+                action: () => {
+                    globalAlertSystem.hideAlert();
+                    if (typeof window !== 'undefined' && window.gameDebug && window.gameDebug.networkErrorRecovery) {
+                        window.gameDebug.networkErrorRecovery.executeRecoveryStrategy('switch_network_provider', {
+                            networkManager: window.networkManager,
+                            reason: 'webtorrent_tracker_failure'
+                        });
+                    }
+                }
+            },
+            {
+                text: 'Continue Offline',
+                action: () => {
+                    globalAlertSystem.hideAlert();
+                    if (typeof window !== 'undefined' && window.gameDebug && window.gameDebug.networkErrorRecovery) {
+                        window.gameDebug.networkErrorRecovery.executeRecoveryStrategy('offline_mode');
+                    }
+                }
+            }
+        ]
+    });
+}
