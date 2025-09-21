@@ -4,111 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplayer Demo - DozedEnt</title>
-    <link rel="stylesheet" href="src/css/common.css">
-    <link rel="stylesheet" href="src/css/working-multiplayer-demo.css">
+    <link rel="stylesheet" href="../src/css/common.css">
+    <link rel="stylesheet" href="../src/css/working-multiplayer-demo.css">
 </head>
 <body>
-    <div class="demo-header">
-        <h1>🌐 WORKING MULTIPLAYER DEMO</h1>
-        <div class="subtitle">P2P Networking • WebRTC • Serverless</div>
-    </div>
+    <div class="demo-container">
+        <header class="demo-header">
+            <div class="hero-intro">
+                <h1>MULTIPLAYER DEMO</h1>
+                <p class="subtitle">Link your fireteam, sync the labyrinth, and feel every strike in real time.</p>
+            </div>
+        </header>
     
-    <div class="status-panel">
-        <h3>Connection Status</h3>
-        <div class="status-grid">
-            <div class="status-item">
-                <div class="status-label">Room ID</div>
-                <div class="status-value" id="room-id">Not Connected</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Connected Players</div>
-                <div class="status-value" id="peer-count">0</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Connection Quality</div>
-                <div class="status-value" id="connection-quality">Unknown</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Your Player Name</div>
-                <div class="status-value" id="peer-name">Generating...</div>
-            </div>
-        </div>
-    </div>
+    <div class="ui-toast-stack" id="toast-stack" aria-live="assertive" aria-atomic="true"></div>
     
     <div class="demo-controls">
         <div class="control-section" id="tile-room-management">
-            <h3>🏠 Room Management</h3>
-            <label>Network Provider</label>
-            <select id="network-provider">
-                <option value="torrent">Torrent (BitTorrent)</option>
-                <option value="firebase">Firebase</option>
-                <option value="ipfs">IPFS</option>
-                <option value="mqtt">MQTT</option>
-                <option value="nostr">Nostr</option>
-                <option value="supabase">Supabase</option>
-            </select>
-            <label>Room ID</label>
-            <button class="btn primary" onclick="createRoom()">Create Room</button>
-            <button class="btn" onclick="joinRoom()">Join Room</button>
-            <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
-            <input type="text" id="room-id-input" placeholder="Enter room ID to join" value="">
-
-            <!-- Unified Rooms toolbar and list -->
+            <h3>ROOM FORGE</h3>
+            <p class="section-hint">Select a realm, forge your gate, and rally allies.</p>
+            <div class="field-group">
+                <label for="network-provider" class="field-label">NETWORK PROVIDER</label>
+                <select id="network-provider">
+                    <option value="torrent">Torrent (BitTorrent)</option>
+                    <option value="firebase">Firebase</option>
+                    <option value="ipfs">IPFS</option>
+                    <option value="mqtt" selected>MQTT</option>
+                    <option value="nostr">Nostr</option>
+                    <option value="supabase">Supabase</option>
+                </select>
+                <p class="field-hint">Each provider shifts how quickly explorers uncover your shard.</p>
+            </div>
+            <div class="field-group">
+                <label for="room-id-input" class="field-label">ROOM ID</label>
+                <input type="text" id="room-id-input" placeholder="Enter room ID to join" value="8x99xr">
+            </div>
+            <div class="button-row primary-actions">
+                <button class="btn primary" onclick="createRoom()">CREATE ROOM</button>
+                <button class="btn" onclick="joinRoom()">JOIN ROOM</button>
+                <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
+            </div>
             <div class="rooms-toolbar">
-                <div class="rooms-toolbar-left">Nearby Rooms</div>
+                <div class="rooms-toolbar-left">Nearby Gateways</div>
                 <div class="rooms-toolbar-right">
-                    <button class="btn sm" onclick="discoverRooms()">Discover</button>
-                    <button class="btn sm" onclick="refreshRoomList()">Refresh</button>
+                    <button class="btn sm" onclick="discoverRooms()">DISCOVER</button>
+                    <button class="btn sm" onclick="refreshRoomList()">REFRESH</button>
                 </div>
             </div>
             <div class="room-list" id="room-list">
-                <div class="room-item">No rooms discovered yet</div>
+                <div class="room-item no-rooms">
+                    <div class="room-name">No rooms discovered for MQTT</div>
+                    <div class="room-details">
+                        <span class="room-hint">Try "Discover Rooms" or "Refresh Room List"</span>
+                    </div>
+                </div>
             </div>
-            <div class="rooms-hint">Tip: Click a room to fill the ID, then use Join.</div>
+            <div class="rooms-hint">Tip: Tap a gateway to engulf the code, then press Join.</div>
 
         </div>
         
-        <div class="control-section">
-            <h3>🔍 Available Rooms</h3>
-            <div class="room-list" id="room-list-old">
-                <div class="room-item">No rooms discovered yet</div>
+        <div class="control-section" id="tile-signal-status">
+            <h3>SIGNAL STATUS</h3>
+            <p class="section-hint">Monitor your link before the next descent.</p>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">ROOM ID</div>
+                    <div class="status-value" id="room-id">Not Connected</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">CONNECTED PLAYERS</div>
+                    <div class="status-value" id="peer-count">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">NETWORK PROVIDER</div>
+                    <div class="status-value" id="connection-quality">Link idle - MQTT</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">YOUR PLAYER NAME</div>
+                    <div class="status-value" id="peer-name">BoldChick</div>
+                </div>
             </div>
-            <button class="btn" onclick="refreshRoomList()">Refresh Room List</button>
-            <button class="btn" onclick="discoverRooms()">Discover Rooms</button>
         </div>
         
-  
-        
         <div class="control-section" id="tile-connected-players" style="display: none;">
-            <h3>👥 Connected Players</h3>
-            <div style="margin-bottom: 10px; display: flex; gap: 8px;">
+            <h3>Squad Roster</h3>
+            <p class="section-hint">Keep your allies in formation and ready for descent.</p>
+            <div class="button-row subtle-actions">
                 <button class="btn danger" onclick="leaveRoom()">Leave Room</button>
             </div>
-            <div class="peer-list" id="peer-list">
-                <div class="peer-item">No peers connected</div>
-            </div>
-            <button class="btn" onclick="refreshPeers()">Refresh Peers</button>
-            <button class="btn" onclick="pingAllPeers()">Ping All Peers</button>
-            <!-- Integrated chat controls -->
-            <div class="chat-controls" style="margin-top: 12px;">
-                <label>Message</label>
-                <input type="text" id="chat-message" placeholder="Type your message here...">
-                <div>
-                    <button class="btn" onclick="sendMessage()">Send Message</button>
-                    <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
-                    <button class="btn" onclick="clearChat()">Clear Chat</button>
+            
+            <!-- Enhanced Squad Roster with Chat Integration -->
+            <div class="squad-roster-container" role="region" aria-labelledby="squad-title" aria-describedby="squad-description">
+                <div class="squad-header">
+                    <div class="squad-title" id="squad-title">
+                        <span class="squad-icon" aria-hidden="true">⚔️</span>
+                        <span class="squad-name">Active Squad</span>
+                        <span class="squad-count" id="squad-count" aria-label="Squad member count">0/8</span>
+                    </div>
+                    <div class="squad-actions" role="toolbar" aria-label="Squad management actions">
+                        <button class="btn-icon" onclick="refreshPeers()" title="Refresh Squad" aria-label="Refresh squad roster" type="button">
+                            <span class="icon-refresh" aria-hidden="true">🔄</span>
+                        </button>
+                        <button class="btn-icon" onclick="pingAllPeers()" title="Ping All" aria-label="Ping all squad members" type="button">
+                            <span class="icon-ping" aria-hidden="true">📡</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="squad-members" id="squad-members" role="list" aria-label="Squad members list">
+                    <div class="squad-member empty" role="listitem" aria-label="No squad members connected">
+                        <div class="member-avatar" aria-hidden="true">👤</div>
+                        <div class="member-info">
+                            <div class="member-name">No allies connected</div>
+                            <div class="member-status">Awaiting reinforcements</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Message Integration -->
+                <div class="chat-integration" role="region" aria-labelledby="chat-title" aria-describedby="chat-description">
+                    <div class="chat-header">
+                        <span class="chat-title" id="chat-title">Squad Communications</span>
+                        <div class="chat-status" id="chat-status" role="status" aria-live="polite">
+                            <span class="status-indicator" aria-hidden="true"></span>
+                            <span class="status-text">Ready</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chat-messages" role="log" aria-label="Squad chat messages" aria-live="polite" aria-atomic="false">
+                        <div class="chat-message system" role="listitem">
+                            <div class="message-avatar" aria-hidden="true">⚡</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">System</span>
+                                    <span class="message-time" aria-label="Message timestamp">Just now</span>
+                                </div>
+                                <div class="message-text">Squad communications established. All clear for battle chatter.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <label for="chat-message" class="sr-only">Type your message to the squad</label>
+                            <input type="text" id="chat-message" placeholder="Send message to squad..." maxlength="200" aria-describedby="chat-help">
+                            <button class="btn-send" onclick="sendMessage()" title="Send Message" aria-label="Send message to squad" type="button">
+                                <span class="send-icon" aria-hidden="true">📤</span>
+                            </button>
+                        </div>
+                        <div class="chat-quick-actions" role="toolbar" aria-label="Chat quick actions">
+                            <button class="btn-quick" onclick="sendRandomMessage()" title="Send Random Message" aria-label="Send a random message to squad" type="button">
+                                <span class="quick-icon" aria-hidden="true">🎲</span>
+                                Random
+                            </button>
+                            <button class="btn-quick" onclick="clearChat()" title="Clear Chat" aria-label="Clear all chat messages" type="button">
+                                <span class="quick-icon" aria-hidden="true">🗑️</span>
+                                Clear
+                            </button>
+                            <button class="btn-quick" onclick="toggleChatMute()" title="Toggle Chat Mute" aria-label="Toggle chat mute" id="chat-mute-btn" type="button">
+                                <span class="quick-icon" aria-hidden="true">🔇</span>
+                                Mute
+                            </button>
+                        </div>
+                        <div id="chat-help" class="sr-only">Press Enter to send message. Use quick actions for common commands.</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="control-section">
-            <h3>💬 Chat System</h3>
-            <label>Message</label>
-            <input type="text" id="chat-message-legacy" placeholder="Type your message here..." disabled>
-            <button class="btn" onclick="sendMessage()">Send Message</button>
-            <button class="btn" onclick="sendRandomMessage()">Send Random Message</button>
-            <button class="btn" onclick="clearChat()">Clear Chat</button>
-        </div>
         
         <div class="control-section" style="display: none;">
             <h3>📊 Network Diagnostics</h3>
@@ -119,17 +181,47 @@
         </div>
     </div>
     
-    <div class="log-panel">
-        <h3>📝 Event Log</h3>
-        <div id="event-log"></div>
-    </div>
+    <section class="log-panel">
+        <h3>Expedition Log</h3>
+        <p class="section-hint">Signals, discoveries, and warnings appear here in real time.</p>
+        <div id="event-log" class="log-feed">
+            <div class="log-entry info">
+                <span class="log-icon info">+</span>
+                <span class="timestamp">[00:10:17]</span>
+                <span class="log-message">BroadcastChannel initialized for room discovery</span>
+            </div>
+            <div class="log-entry info">
+                <span class="log-icon info">+</span>
+                <span class="timestamp">[00:10:17]</span>
+                <span class="log-message">Generated new peer name: "BoldChick"</span>
+            </div>
+            <div class="log-entry info">
+                <span class="log-icon info">+</span>
+                <span class="timestamp">[00:10:17]</span>
+                <span class="log-message">Network manager initialized</span>
+            </div>
+        </div>
+    </section>
     
     <script type="module">
         import NetworkProviderManager from '../src/netcode/network-provider-manager.js'
         import { peerNameGenerator } from '../src/utils/peer-name-generator.js'
         import { ProviderRoomStore } from '../src/utils/provider-room-store.js'
+        import { AlertSystem, AlertTypes, initializeGlobalAlertSystem, showAlert, clearAllAlerts, showAlertStatus } from '../src/ui/alert-system.js'
         
         const networkProviderSelect = document.getElementById('network-provider')
+        const journeySteps = Array.from(document.querySelectorAll('.journey-step'))
+        const LOG_ICONS = { info: 'i', success: '+', warning: '!', error: 'x' }
+        
+        // Initialize global alert system
+        const alertSystem = initializeGlobalAlertSystem({
+            containerId: 'toast-stack',
+            toastLifetime: 4800,
+            alertCooldown: 2000,
+            maxActiveAlerts: 3,
+            enableSpamProtection: true,
+            enableAccessibility: true
+        })
 
         // Global variables
         let networkManager = null
@@ -206,239 +298,121 @@
                 roomTile.style.display = ''
                 playersTile.style.display = 'none'
             }
+            updateJourneyProgress()
+        }
+
+        function escapeForHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+        }
+
+        function formatMessageForDisplay(value) {
+            return escapeForHtml(value).replace(/\r?\n/g, '<br>')
+        }
+
+        function updateJourneyProgress() {
+            if (!journeySteps.length) return
+
+            const peerMap = networkManager && typeof networkManager.getPeers === 'function'
+                ? networkManager.getPeers()
+                : {}
+            const remotePeerCount = peerMap ? Object.keys(peerMap).length : 0
+
+            journeySteps.forEach(step => {
+                step.classList.remove('is-active', 'is-complete')
+            })
+
+            const [firstStep, secondStep, thirdStep] = journeySteps
+
+            if (firstStep) {
+                firstStep.classList.add('is-complete')
+            }
+
+            if (secondStep) {
+                if (isInRoom) {
+                    secondStep.classList.add('is-complete')
+                } else {
+                    secondStep.classList.add('is-active')
+                }
+            }
+
+            if (thirdStep) {
+                if (isInRoom && remotePeerCount > 0) {
+                    thirdStep.classList.add('is-complete')
+                } else if (isInRoom) {
+                    thirdStep.classList.add('is-active')
+                }
+            }
         }
 
         // Add log entry
         function addLog(message, type = 'info') {
             const log = document.getElementById('event-log')
+            if (!log) return
+
             const entry = document.createElement('div')
             entry.className = `log-entry ${type}`
-            const time = new Date().toLocaleTimeString()
-            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`
+            entry.dataset.type = type
+            entry.setAttribute('role', 'log')
+
+            const icon = document.createElement('span')
+            icon.className = `log-icon ${type}`
+            icon.textContent = LOG_ICONS[type] || LOG_ICONS.info
+
+            const time = document.createElement('span')
+            time.className = 'timestamp'
+            time.textContent = `[${new Date().toLocaleTimeString()}]`
+
+            const messageNode = document.createElement('span')
+            messageNode.className = 'log-message'
+            messageNode.innerHTML = formatMessageForDisplay(message)
+
+            entry.append(icon, time, messageNode)
             log.insertBefore(entry, log.firstChild)
-            
-            // Keep only last 50 entries
+
             while (log.children.length > 50) {
                 log.removeChild(log.lastChild)
             }
         }
 
-        // Alert spam protection
-        let lastAlertTime = 0
-        let activeAlerts = 0
-        const ALERT_COOLDOWN = 2000 // 2 seconds between alerts
-        const MAX_ACTIVE_ALERTS = 3 // Maximum 3 alerts at once
-        
-        // Custom UI alert function
-        function showAlert(message, type = 'error') {
-            const now = Date.now()
-            
-            // Check cooldown - prevent spam
-            if (now - lastAlertTime < ALERT_COOLDOWN) {
-                console.log('Alert blocked due to cooldown')
-                addLog('Alert blocked - too frequent (2s cooldown)', 'info')
-                return
-            }
-            
-            // Check maximum active alerts
-            if (activeAlerts >= MAX_ACTIVE_ALERTS) {
-                console.log('Alert blocked - too many active alerts')
-                addLog('Alert blocked - too many active alerts (max 3)', 'info')
-                return
-            }
-            
-            lastAlertTime = now
-            activeAlerts++
-            // Create notification container in top right
-            const notification = document.createElement('div')
-            notification.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                background: linear-gradient(145deg, rgba(44, 24, 16, 0.95), rgba(26, 15, 8, 0.9)) !important;
-                border: 2px solid ${type === 'error' ? '#dc143c' : '#daa520'} !important;
-                border-radius: 12px !important;
-                padding: 16px 20px !important;
-                max-width: 380px !important;
-                min-width: 300px !important;
-                box-shadow: 
-                    0 8px 16px rgba(0, 0, 0, 0.4),
-                    0 0 20px ${type === 'error' ? 'rgba(220, 20, 60, 0.3)' : 'rgba(218, 165, 32, 0.3)'},
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-                font-family: 'Crimson Text', serif !important;
-                z-index: 99999 !important;
-                transform: translateX(100%);
-                transition: transform 0.3s ease-out;
-                position: fixed !important;
-                overflow: hidden !important;
-            `
-            
-            // Add parchment texture overlay
-            const textureOverlay = document.createElement('div')
-            textureOverlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: 
-                    radial-gradient(circle at 20% 20%, rgba(218, 165, 32, 0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
-                border-radius: 12px;
-                pointer-events: none;
-            `
-            notification.appendChild(textureOverlay)
-            
-            // Add CSS animations if not already added
-            if (!document.getElementById('gameAlertStyles')) {
-                const style = document.createElement('style')
-                style.id = 'gameAlertStyles'
-                style.textContent = `
-                    @keyframes slideInRight {
-                        from { transform: translateX(100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOutRight {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                    @keyframes mysticalPulse {
-                        0%, 100% { 
-                            text-shadow: 
-                                0 0 8px ${type === 'error' ? 'rgba(220, 20, 60, 0.6)' : 'rgba(218, 165, 32, 0.6)'},
-                                0 0 16px ${type === 'error' ? 'rgba(255, 107, 107, 0.4)' : 'rgba(255, 215, 0, 0.4)'};
-                        }
-                        50% { 
-                            text-shadow: 
-                                0 0 12px ${type === 'error' ? 'rgba(220, 20, 60, 0.8)' : 'rgba(218, 165, 32, 0.8)'},
-                                0 0 20px ${type === 'error' ? 'rgba(255, 107, 107, 0.6)' : 'rgba(255, 215, 0, 0.6)'};
-                        }
-                    }
-                `
-                document.head.appendChild(style)
-            }
-            
-            // Create notification content
-            notification.innerHTML = `
-                <div style="
-                    display: flex;
-                    align-items: center;
-                    margin-bottom: 12px;
-                    position: relative;
-                    z-index: 1;
-                ">
-                    <div style="
-                        font-size: 18px; 
-                        font-weight: bold; 
-                        color: ${type === 'error' ? '#ff6b6b' : '#daa520'};
-                        margin-right: 10px;
-                        animation: mysticalPulse 2s ease-in-out infinite;
-                    ">
-                        ${type === 'error' ? '⚠️' : 'ℹ️'}
-                    </div>
-                    <div style="
-                        font-size: 16px; 
-                        font-weight: bold; 
-                        color: ${type === 'error' ? '#ff6b6b' : '#daa520'};
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        font-family: 'Cinzel', serif;
-                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-                    ">
-                        ${type === 'error' ? 'SYSTEM ERROR' : 'SYSTEM INFO'}
-                    </div>
-                </div>
-                <div style="
-                    color: #e8d5b7;
-                    line-height: 1.5;
-                    font-size: 14px;
-                    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-                    position: relative;
-                    z-index: 1;
-                    font-family: 'Crimson Text', serif;
-                ">
-                    ${message.replace(/\n/g, '<br>')}
-                </div>
-            `
-            
-            // Add to page
-            document.body.appendChild(notification)
-            
-            // Slide in animation
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)'
-            }, 10)
-            
-            // Auto-remove after 3 seconds
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)'
-                notification.style.transition = 'transform 0.3s ease-in'
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove()
-                        activeAlerts-- // Decrement counter when alert is removed
-                    }
-                }, 300)
-            }, 3000)
-        }
+        // Alert system is now handled by the imported AlertSystem class
 
         // Nearby rooms scanning visibility/enablement
         function updateNearbyRoomsUI() {
-            // Hide/disable scanning UI when player is in ANY room (not just when hosting)
             const shouldHide = isInRoom
 
-            // Primary nearby rooms UI
-            document.querySelectorAll('.rooms-toolbar, .rooms-hint').forEach(el => {
-                if (el) el.style.display = shouldHide ? 'none' : ''
+            const primarySelectors = ['.rooms-toolbar', '.rooms-hint']
+            primarySelectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(el => {
+                    el.style.display = shouldHide ? 'none' : ''
+                })
             })
+
             const roomListEl = document.getElementById('room-list')
             if (roomListEl) roomListEl.style.display = shouldHide ? 'none' : ''
 
-            // Legacy/secondary room list UI - hide the entire section
-            const oldListEl = document.getElementById('room-list-old')
-            if (oldListEl) {
-                const sectionEl = oldListEl.closest('.control-section')
-                if (sectionEl) {
-                    sectionEl.style.display = shouldHide ? 'none' : ''
-                }
-            }
 
-            // Disable all scan-related buttons
-            const actionButtons = document.querySelectorAll(
-                'button[onclick="discoverRooms()"], button[onclick="refreshRoomList()"]'
-            )
-            actionButtons.forEach(btn => {
-                if (!btn) return
+            document.querySelectorAll("button[onclick='discoverRooms()'], button[onclick='refreshRoomList()']").forEach(btn => {
                 btn.disabled = shouldHide
                 btn.style.opacity = shouldHide ? '0.6' : '1'
                 btn.style.cursor = shouldHide ? 'not-allowed' : 'pointer'
-                // If hiding, also remove focus to avoid accidental keyboard activation
-                if (shouldHide && document.activeElement === btn) btn.blur()
-            })
-        }
-        
-        // Function to clear all active alerts
-        window.clearAllAlerts = function() {
-            const alerts = document.querySelectorAll('[style*="z-index: 99999"]')
-            alerts.forEach(alert => {
-                if (alert.parentElement) {
-                    alert.remove()
+                if (shouldHide && document.activeElement === btn) {
+                    btn.blur()
                 }
             })
-            activeAlerts = 0
+        }
+
+        // Function to clear all active alerts
+        window.clearAllAlerts = function() {
+            clearAllAlerts()
             addLog('All alerts cleared', 'info')
         }
         
         // Function to show alert status
         window.showAlertStatus = function() {
-            const now = Date.now()
-            const timeSinceLastAlert = now - lastAlertTime
-            const cooldownRemaining = Math.max(0, ALERT_COOLDOWN - timeSinceLastAlert)
-            
-            addLog('=== Alert System Status ===', 'success')
-            addLog(`Active alerts: ${activeAlerts}/${MAX_ACTIVE_ALERTS}`)
-            addLog(`Cooldown remaining: ${Math.ceil(cooldownRemaining / 1000)}s`)
-            addLog(`Last alert: ${Math.ceil(timeSinceLastAlert / 1000)}s ago`)
+            showAlertStatus()
         }
         
         // Network manager helpers
@@ -466,12 +440,21 @@
             })
             networkManager.on('onPeerJoined', (peerId) => {
                 addLog(`Peer joined: ${peerId}`, 'success')
-                // Broadcast our peer info to the new peer
+                // Broadcast our peer info to the new peer immediately
                 if (sendPeerInfo && currentPeerName) {
                     const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
                     sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
                     addLog(`Sent peer info to new peer: ${peerId}`, 'info')
                 }
+                // Also request peer info from the new peer by sending our info again
+                // This helps ensure bidirectional name exchange
+                setTimeout(() => {
+                    if (sendPeerInfo && currentPeerName) {
+                        const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
+                        sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                        addLog(`Re-sent peer info to ensure name exchange with: ${peerId}`, 'info')
+                    }
+                }, 1000) // Wait 1 second then resend
                 updatePeerList()
                 updateStatus()
             })
@@ -599,7 +582,7 @@
                     const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
                     
                     const alertMessage = `🚫 ROOM CREATION TIMEOUT\n\nYou recently created a room and are in a cooldown period.\n\n⏰ Time remaining: ${timeString}\n\nThis timeout prevents room spam and ensures fair play.\nPlease wait before creating another room.`
-                    showAlert(alertMessage, 'error')
+                    showAlert(alertMessage, AlertTypes.ERROR)
                     addLog(`Room creation blocked - ${timeString} remaining in cooldown period`, 'error')
                     return
                 }
@@ -650,6 +633,7 @@
                     stats.messagesReceived++
                     networkManager.updateMessageStats('received')
                     addLog(`Message from peer: ${message}`, 'info')
+                    handleIncomingMessage(message)
                     updateStatus()
                 })
 
@@ -779,7 +763,7 @@
                     const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
                     
                     const alertMessage = `🚫 ROOM JOIN TIMEOUT\n\nYou recently left a room and are in a cooldown period.\n\n⏰ Time remaining: ${timeString}\n\nThis timeout prevents room hopping and ensures stable connections.\nPlease wait before joining another room.`
-                    showAlert(alertMessage, 'error')
+                    showAlert(alertMessage, AlertTypes.ERROR)
                     addLog(`Room join blocked - ${timeString} remaining in cooldown period`, 'error')
                     return
                 }
@@ -787,7 +771,7 @@
                 const roomId = document.getElementById('room-id-input').value.trim()
 
                 if (!roomId) {
-                    showAlert('Please enter a room ID to join.\n\nYou can get room IDs from the "Available Rooms" list below.', 'error')
+                    showAlert('Please enter a room ID to join.\n\nYou can get room IDs from the "Available Rooms" list below.', AlertTypes.ERROR)
                     addLog('Please enter a room ID to join. You can get room IDs from the "Available Rooms" list below.', 'error')
                     return
                 }
@@ -828,6 +812,7 @@
                     stats.messagesReceived++
                     networkManager.updateMessageStats('received')
                     addLog(`Message from peer: ${message}`, 'info')
+                    handleIncomingMessage(message)
                     updateStatus()
                 })
 
@@ -1040,6 +1025,10 @@
                     networkManager.updateMessageStats('sent')
                 }
                 addLog(`Sent: ${messageWithName}`, 'info')
+                
+                // Add message to chat UI
+                addChatMessage(currentPeerName, message, false, true)
+                
                 document.getElementById('chat-message').value = ''
                 updateStatus()
             } catch (error) {
@@ -1061,7 +1050,11 @@
                 'P2P networking is awesome!',
                 'Trystero is great!',
                 'Anyone want to play?',
-                'Connection is stable!'
+                'Connection is stable!',
+                'Ready for battle!',
+                'Squad formation complete!',
+                'All systems operational!',
+                'Let\'s do this!'
             ]
             
             const randomMessage = messages[Math.floor(Math.random() * messages.length)]
@@ -1072,11 +1065,28 @@
                 networkManager.updateMessageStats('sent')
             }
             addLog(`Sent random message: ${messageWithName}`, 'info')
+            
+            // Add message to chat UI
+            addChatMessage(currentPeerName, randomMessage, false, true)
+            
             updateStatus()
         }
         
         window.clearChat = function() {
             document.getElementById('event-log').innerHTML = ''
+            const chatMessages = document.getElementById('chat-messages')
+            chatMessages.innerHTML = `
+                <div class="chat-message system">
+                    <div class="message-avatar">⚡</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-sender">System</span>
+                            <span class="message-time">Just now</span>
+                        </div>
+                        <div class="message-text">Chat cleared. Squad communications ready.</div>
+                    </div>
+                </div>
+            `
             addLog('Chat cleared', 'info')
         }
         
@@ -1430,31 +1440,196 @@
             }
         }
 
-        // Update functions
-        function updatePeerList() {
-            const peerList = document.getElementById('peer-list')
+        // Enhanced Squad Roster Functions
+        function updateSquadRoster() {
+            const squadMembers = document.getElementById('squad-members')
+            const squadCount = document.getElementById('squad-count')
             const peersObj = networkManager ? networkManager.getPeers() : {}
             const peers = Object.keys(peersObj)
-            
-            if (peers.length === 0) {
-                peerList.innerHTML = '<div class="peer-item">No peers connected</div>'
+            const totalMembers = peers.length + (isInRoom ? 1 : 0)
+
+            // Update squad count
+            squadCount.textContent = `${totalMembers}/8`
+
+            if (peers.length === 0 && !isInRoom) {
+                squadMembers.innerHTML = `
+                    <div class="squad-member empty">
+                        <div class="member-avatar">👤</div>
+                        <div class="member-info">
+                            <div class="member-name">No allies connected</div>
+                            <div class="member-status">Awaiting reinforcements</div>
+                        </div>
+                    </div>
+                `
             } else {
-                peerList.innerHTML = peers.map(peerId => {
+                let membersHTML = ''
+
+                // Add current player first
+                if (isInRoom && currentPeerName) {
+                    const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
+                    const ourShortId = ourPeerId.substring(0, 4)
+                    membersHTML += `
+                        <div class="squad-member self" role="listitem" aria-label="Squad leader: ${currentPeerName}">
+                            <div class="member-avatar" aria-hidden="true">👑</div>
+                            <div class="member-info">
+                                <div class="member-name">${currentPeerName} (You)</div>
+                                <div class="member-status">Squad Leader</div>
+                            </div>
+                        </div>
+                    `
+                }
+
+                // Add other squad members
+                peers.forEach(peerId => {
                     const shortId = peerId.substring(0, 4)
-                    const peerName = peerNames.get(peerId) || 'Unknown'
-                    return `<div class="peer-item">[${shortId}] ${peerName}</div>`
-                }).join('')
+                    let peerName = peerNames.get(peerId)
+                    
+                    // If we don't have the peer name yet, request it and show a temporary name
+                    if (!peerName) {
+                        peerName = `Ally ${shortId}`
+                        // Request peer info if we have the capability
+                        if (sendPeerInfo && currentPeerName) {
+                            // Send a request for peer info by sending our own info
+                            const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
+                            sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                        }
+                    }
+                    
+                    const status = getPeerStatus(peerId)
+                    
+                    membersHTML += `
+                        <div class="squad-member" role="listitem" aria-label="Squad member: ${peerName}, status: ${status}">
+                            <div class="member-avatar" aria-hidden="true">⚔️</div>
+                            <div class="member-info">
+                                <div class="member-name">${peerName}</div>
+                                <div class="member-status">${status}</div>
+                            </div>
+                        </div>
+                    `
+                })
+
+                squadMembers.innerHTML = membersHTML
             }
+
+            updateJourneyProgress()
+        }
+
+        function getPeerStatus(peerId) {
+            // This could be enhanced with actual connection quality data
+            const statuses = [
+                'Ready for battle',
+                'Standing by',
+                'Combat ready',
+                'Awaiting orders',
+                'In position'
+            ]
+            return statuses[Math.floor(Math.random() * statuses.length)]
+        }
+
+        // Enhanced Chat Functions
+        function addChatMessage(sender, message, isSystem = false, isSelf = false) {
+            const chatMessages = document.getElementById('chat-messages')
+            const messageElement = document.createElement('div')
+            const timestamp = new Date().toLocaleTimeString()
             
-            // Also add ourselves to the list if we have a name
-            if (currentPeerName && peers.length > 0) {
-                const ourPeerId = room && room.getSelfId ? room.getSelfId() : 'self'
-                const ourShortId = ourPeerId.substring(0, 4)
-                const ourDisplay = `<div class="peer-item self">[${ourShortId}] ${currentPeerName} (You)</div>`
-                peerList.innerHTML = ourDisplay + peerList.innerHTML
+            let avatar = '⚔️'
+            let senderClass = ''
+            
+            if (isSystem) {
+                avatar = '⚡'
+                senderClass = 'system'
+            } else if (isSelf) {
+                avatar = '👑'
+                senderClass = 'self'
+            }
+
+            messageElement.className = `chat-message ${senderClass}`
+            messageElement.setAttribute('role', 'listitem')
+            messageElement.setAttribute('aria-label', `Message from ${sender}: ${message}`)
+            messageElement.innerHTML = `
+                <div class="message-avatar" aria-hidden="true">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-sender">${sender}</span>
+                        <span class="message-time" aria-label="Message timestamp">${timestamp}</span>
+                    </div>
+                    <div class="message-text">${escapeForHtml(message)}</div>
+                </div>
+            `
+
+            chatMessages.insertBefore(messageElement, chatMessages.firstChild)
+
+            // Keep only last 50 messages
+            while (chatMessages.children.length > 50) {
+                chatMessages.removeChild(chatMessages.lastChild)
+            }
+
+            // Auto-scroll to show new message
+            chatMessages.scrollTop = 0
+        }
+
+        function updateChatStatus(status) {
+            const statusIndicator = document.querySelector('.status-indicator')
+            const statusText = document.querySelector('.status-text')
+            
+            statusIndicator.className = 'status-indicator'
+            statusText.textContent = status
+            
+            switch (status) {
+                case 'Connected':
+                    statusIndicator.classList.add('connected')
+                    break
+                case 'Disconnected':
+                    statusIndicator.classList.add('disconnected')
+                    break
+                case 'Muted':
+                    statusIndicator.classList.add('muted')
+                    break
             }
         }
-        
+
+        // Chat mute functionality
+        let chatMuted = false
+        window.toggleChatMute = function() {
+            chatMuted = !chatMuted
+            const muteBtn = document.getElementById('chat-mute-btn')
+            const muteIcon = muteBtn.querySelector('.quick-icon')
+            
+            if (chatMuted) {
+                muteIcon.textContent = '🔊'
+                muteBtn.title = 'Unmute Chat'
+                updateChatStatus('Muted')
+                addChatMessage('System', 'Chat muted. You will not receive new messages.', true)
+            } else {
+                muteIcon.textContent = '🔇'
+                muteBtn.title = 'Toggle Chat Mute'
+                updateChatStatus('Connected')
+                addChatMessage('System', 'Chat unmuted. You will receive new messages.', true)
+            }
+        }
+
+        // Enhanced message handling
+        function handleIncomingMessage(message) {
+            if (chatMuted) return
+            
+            // Parse message format: [sender]: message
+            const match = message.match(/^\[([^\]]+)\]:\s*(.+)$/)
+            if (match) {
+                const [, sender, content] = match
+                const isSelf = sender === currentPeerName
+                addChatMessage(sender, content, false, isSelf)
+            } else {
+                // Fallback for non-formatted messages
+                addChatMessage('Unknown', message)
+            }
+        }
+
+        // Update functions
+        function updatePeerList() {
+            // Legacy function for backward compatibility
+            updateSquadRoster()
+        }
+
         function updateRoomList() {
             const roomList = document.getElementById('room-list')
             const rooms = roomStore.getRooms(selectedProviderId)
@@ -1583,14 +1758,38 @@
         }
         
         function updateStatus() {
-            const networkStats = networkManager ? networkManager.getStats() : { messagesSent: 0, messagesReceived: 0, peerCount: 0 }
-            const currentProvider = networkManager ? networkManager.getCurrentProvider() : null
+            const currentProvider = networkManager && typeof networkManager.getCurrentProvider === 'function'
+                ? networkManager.getCurrentProvider()
+                : null
             const providerLabel = currentProvider ? currentProvider.name : (selectedProviderId ? getProviderLabel(selectedProviderId) : 'None')
+            const peersObj = networkManager && typeof networkManager.getPeers === 'function'
+                ? networkManager.getPeers()
+                : {}
+            const remotePeerCount = peersObj ? Object.keys(peersObj).length : 0
+            const totalPlayers = remotePeerCount + (isInRoom ? 1 : 0)
 
-            document.getElementById('peer-count').textContent = networkStats.peerCount
-            document.getElementById('connection-quality').textContent = networkManager && room ? 'Good' : `Selected: ${providerLabel}`
+            document.getElementById('peer-count').textContent = totalPlayers
+
+            const connectionEl = document.getElementById('connection-quality')
+            if (!room) {
+                connectionEl.textContent = providerLabel ? `Link idle - ${providerLabel}` : 'Link idle'
+            } else if (remotePeerCount > 0) {
+                const allyLabel = remotePeerCount === 1 ? 'ally' : 'allies'
+                connectionEl.textContent = `Synced with ${remotePeerCount} ${allyLabel}`
+            } else {
+                connectionEl.textContent = 'Gate open - awaiting allies'
+            }
+
+            const subline = document.querySelector('.status-subline')
+            if (subline) {
+                subline.textContent = room
+                    ? `Active on ${providerLabel || 'Unknown provider'}`
+                    : `Preparing link via ${providerLabel || 'No provider selected'}`
+            }
+
+            updateJourneyProgress()
         }
-        
+
         // Peer name management functions
         window.generateNewPeerName = function() {
             const oldName = currentPeerName
@@ -1679,11 +1878,11 @@
             
             if (hasAnyTimeout) {
                 const statusMessage = `⏰ TIMEOUT STATUS\n\nYou are currently in timeout periods:\n\n${timeoutMessages.join('\n')}\n\nThese timeouts prevent spam and ensure stable connections.`
-                showAlert(statusMessage, 'error')
+                showAlert(statusMessage, AlertTypes.ERROR)
                 addLog(`Timeout status: ${timeoutMessages.join(', ')}`, 'info')
             } else {
                 const statusMessage = `✅ NO TIMEOUTS\n\nYou are not currently in any timeout periods.\n\nYou can create or join rooms freely.`
-                showAlert(statusMessage, 'info')
+                showAlert(statusMessage, AlertTypes.INFO)
                 addLog('No active timeouts - room operations allowed', 'info')
             }
         }
@@ -1692,6 +1891,18 @@
         addLog('Working Multiplayer Demo initialized', 'success')
         addLog('Select a network provider and create/join a room to start', 'info')
         addLog('💡 Tip: "Create Room" generates a room ID if none provided. "Join Room" requires a specific room ID.', 'info')
+        
+        // Initialize chat status
+        updateChatStatus('Ready')
+        
+        // Add keyboard support for chat input
+        document.addEventListener('keydown', function(event) {
+            const chatInput = document.getElementById('chat-message')
+            if (event.key === 'Enter' && chatInput && document.activeElement === chatInput) {
+                event.preventDefault()
+                sendMessage()
+            }
+        })
         
         // Initialize network manager immediately
         setupNetworkManagerIfNeeded()
@@ -1783,10 +1994,18 @@
         }, 30000) // Broadcast every 30 seconds (reduced frequency)
         
         // Periodic peer info broadcast to ensure all peers know each other's names
+        // More frequent initially, then reduce frequency
+        let peerInfoBroadcastCount = 0
         setInterval(() => {
             if (networkManager && room && sendPeerInfo && currentPeerName) {
                 const ourPeerId = room.getSelfId ? room.getSelfId() : 'self'
                 sendPeerInfo({ peerId: ourPeerId, peerName: currentPeerName })
+                peerInfoBroadcastCount++
+                
+                // Log less frequently to avoid spam
+                if (peerInfoBroadcastCount % 6 === 0) { // Every 30 seconds
+                    addLog(`Periodic peer info broadcast (${peerInfoBroadcastCount}th)`, 'info')
+                }
             }
         }, 5000) // Broadcast peer info every 5 seconds
         
@@ -1806,6 +2025,7 @@
             }
         })
     </script>
+    </div> <!-- Close demo-container -->
 </body>
 </html>
 

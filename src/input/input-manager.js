@@ -151,7 +151,7 @@ export class InputManager {
         // Mouse wheel for future use
         document.addEventListener('wheel', (event) => {
             this.handleMouseWheel(event);
-        });
+        }, { passive: false });
     }
     
     /**
@@ -226,10 +226,13 @@ export class InputManager {
             event.preventDefault();
         }
         
-        // Handle movement
+        // Handle movement - accumulate multiple keys instead of overwriting
         if (this.keyMappings.movement[event.code]) {
             const mapping = this.keyMappings.movement[event.code];
-            this.inputState.direction[mapping.axis] = mapping.value;
+            // Add to existing value instead of overwriting
+            this.inputState.direction[mapping.axis] += mapping.value;
+            // Clamp to [-1, 1] range
+            this.inputState.direction[mapping.axis] = Math.max(-1, Math.min(1, this.inputState.direction[mapping.axis]));
         }
         
         // Handle combat
@@ -248,13 +251,13 @@ export class InputManager {
      * Handle keyboard key up
      */
     handleKeyUp(event) {
-        // Handle movement
+        // Handle movement - subtract the key value instead of resetting
         if (this.keyMappings.movement[event.code]) {
             const mapping = this.keyMappings.movement[event.code];
-            // Only reset if this key was the one setting the direction
-            if (this.inputState.direction[mapping.axis] === mapping.value) {
-                this.inputState.direction[mapping.axis] = 0;
-            }
+            // Subtract the key value from the current direction
+            this.inputState.direction[mapping.axis] -= mapping.value;
+            // Clamp to [-1, 1] range
+            this.inputState.direction[mapping.axis] = Math.max(-1, Math.min(1, this.inputState.direction[mapping.axis]));
         }
         
         // Handle combat

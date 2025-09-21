@@ -704,7 +704,8 @@ export class PersistenceUI {
     try {
       // Get achievement summary (create from individual functions if get_achievements_summary_json doesn't exist)
       let summary = null;
-      if (typeof this.wasmManager.exports.get_achievements_summary_json === 'function') {
+      if (typeof this.wasmManager.exports.get_achievements_summary_json === 'function' && 
+          !this.wasmManager.isFallbackMode) {
         const summaryValue = this.wasmManager.exports.get_achievements_summary_json();
         summary = parseWasmJson(this.wasmManager.exports, summaryValue, {
           onError: (error) => console.warn('Failed to parse achievement summary from WASM:', error)
@@ -722,9 +723,14 @@ export class PersistenceUI {
       // Clear and rebuild grid
       achievementsGrid.innerHTML = '';
       
-      // Check if the achievement functions exist
-      if (typeof this.wasmManager.exports.get_achievement_count !== 'function') {
-        console.warn('Achievement functions not available in WASM module');
+      // Check if the achievement functions exist and WASM is not in fallback mode
+      if (typeof this.wasmManager.exports.get_achievement_count !== 'function' || 
+          this.wasmManager.isFallbackMode) {
+        if (this.wasmManager.isFallbackMode) {
+          console.log('Achievement system not available - WASM running in fallback mode');
+        } else {
+          console.warn('Achievement functions not available in WASM module');
+        }
         achievementsGrid.innerHTML = '<p class="warning">Achievement system not available</p>';
         return;
       }
@@ -804,7 +810,8 @@ export class PersistenceUI {
     
     try {
       // Get total achievements count
-      if (typeof this.wasmManager.exports.get_achievement_count === 'function') {
+      if (typeof this.wasmManager.exports.get_achievement_count === 'function' && 
+          !this.wasmManager.isFallbackMode) {
         totalAchievements = this.wasmManager.exports.get_achievement_count();
       }
       
@@ -813,6 +820,7 @@ export class PersistenceUI {
         try {
           const achievementId = this.wasmManager.exports.get_achievement_id(i);
           if (typeof this.wasmManager.exports.is_achievement_unlocked === 'function' && 
+              !this.wasmManager.isFallbackMode &&
               this.wasmManager.exports.is_achievement_unlocked(achievementId)) {
             unlockedAchievements++;
           }
@@ -822,7 +830,8 @@ export class PersistenceUI {
       }
       
       // Get total score if available
-      if (typeof this.wasmManager.exports.get_total_achievement_score === 'function') {
+      if (typeof this.wasmManager.exports.get_total_achievement_score === 'function' && 
+          !this.wasmManager.isFallbackMode) {
         totalScore = this.wasmManager.exports.get_total_achievement_score();
       }
       
@@ -1086,7 +1095,8 @@ export class PersistenceUI {
     try {
       // Get statistics data from WASM
       let sessionData = null;
-      if (typeof this.wasmManager.exports.get_session_stats === 'function') {
+      if (typeof this.wasmManager.exports.get_session_stats === 'function' && 
+          !this.wasmManager.isFallbackMode) {
         const sessionValue = this.wasmManager.exports.get_session_stats();
         sessionData = parseWasmJson(this.wasmManager.exports, sessionValue, {
           onError: (error) => console.warn('Failed to parse session statistics from WASM:', error)
@@ -1128,9 +1138,14 @@ export class PersistenceUI {
       // Update statistics grid
       statisticsGrid.innerHTML = '';
       
-      // Check if the statistics functions exist
-      if (typeof this.wasmManager.exports.get_statistic_count !== 'function') {
-        console.warn('Statistics functions not available in WASM module');
+      // Check if the statistics functions exist and WASM is not in fallback mode
+      if (typeof this.wasmManager.exports.get_statistic_count !== 'function' || 
+          this.wasmManager.isFallbackMode) {
+        if (this.wasmManager.isFallbackMode) {
+          console.log('Statistics system not available - WASM running in fallback mode');
+        } else {
+          console.warn('Statistics functions not available in WASM module');
+        }
         statisticsGrid.innerHTML = '<p class="warning">Statistics system not available</p>';
         return;
       }

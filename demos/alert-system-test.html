@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert System Test - DozedEnt</title>
+    <link rel="stylesheet" href="../src/css/common.css">
+    <link rel="stylesheet" href="../src/css/working-multiplayer-demo.css">
+</head>
+<body>
+    <div class="demo-container">
+        <header class="demo-header">
+            <div class="hero-intro">
+                <h1>ALERT SYSTEM TEST</h1>
+                <p class="subtitle">Testing the refactored alert system functionality.</p>
+            </div>
+        </header>
+    
+        <div class="ui-toast-stack" id="toast-stack" aria-live="assertive" aria-atomic="true"></div>
+        
+        <div class="demo-controls">
+            <div class="control-section">
+                <h3>Alert System Tests</h3>
+                <p class="section-hint">Test different alert types and functionality.</p>
+                
+                <div class="button-row primary-actions">
+                    <button class="btn primary" onclick="testInfoAlert()">Info Alert</button>
+                    <button class="btn success" onclick="testSuccessAlert()">Success Alert</button>
+                    <button class="btn warning" onclick="testWarningAlert()">Warning Alert</button>
+                    <button class="btn danger" onclick="testErrorAlert()">Error Alert</button>
+                </div>
+                
+                <div class="button-row">
+                    <button class="btn" onclick="testSpamProtection()">Test Spam Protection</button>
+                    <button class="btn" onclick="testMultipleAlerts()">Multiple Alerts</button>
+                    <button class="btn" onclick="testHtmlContent()">HTML Content</button>
+                </div>
+                
+                <div class="button-row">
+                    <button class="btn" onclick="clearAllAlerts()">Clear All Alerts</button>
+                    <button class="btn" onclick="showAlertStatus()">Show Status</button>
+                </div>
+            </div>
+        </div>
+        
+        <section class="log-panel">
+            <h3>Test Log</h3>
+            <p class="section-hint">Alert system events and test results appear here.</p>
+            <div id="event-log" class="log-feed">
+                <div class="log-entry info">
+                    <span class="log-icon info">+</span>
+                    <span class="timestamp">[00:00:00]</span>
+                    <span class="log-message">Alert System Test initialized</span>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <script type="module">
+        import { AlertSystem, AlertTypes, initializeGlobalAlertSystem, showAlert, clearAllAlerts, showAlertStatus } from '../src/ui/alert-system.js'
+        
+        const LOG_ICONS = { info: 'i', success: '+', warning: '!', error: 'x' }
+        
+        // Initialize global alert system
+        const alertSystem = initializeGlobalAlertSystem({
+            containerId: 'toast-stack',
+            toastLifetime: 4800,
+            alertCooldown: 2000,
+            maxActiveAlerts: 3,
+            enableSpamProtection: true,
+            enableAccessibility: true
+        })
+        
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('event-log')
+            if (!log) return
+
+            const entry = document.createElement('div')
+            entry.className = `log-entry ${type}`
+            entry.dataset.type = type
+            entry.setAttribute('role', 'log')
+
+            const icon = document.createElement('span')
+            icon.className = `log-icon ${type}`
+            icon.textContent = LOG_ICONS[type] || LOG_ICONS.info
+
+            const time = document.createElement('span')
+            time.className = 'timestamp'
+            time.textContent = `[${new Date().toLocaleTimeString()}]`
+
+            const messageNode = document.createElement('span')
+            messageNode.className = 'log-message'
+            messageNode.textContent = message
+
+            entry.append(icon, time, messageNode)
+            log.insertBefore(entry, log.firstChild)
+
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild)
+            }
+        }
+        
+        // Test functions
+        window.testInfoAlert = function() {
+            const result = showAlert('This is an info alert with some useful information.', AlertTypes.INFO)
+            addLog(`Info alert ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+        }
+        
+        window.testSuccessAlert = function() {
+            const result = showAlert('Operation completed successfully! Great job!', AlertTypes.SUCCESS)
+            addLog(`Success alert ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+        }
+        
+        window.testWarningAlert = function() {
+            const result = showAlert('Warning: This is a test warning message.', AlertTypes.WARNING)
+            addLog(`Warning alert ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+        }
+        
+        window.testErrorAlert = function() {
+            const result = showAlert('Error: Something went wrong! This is a test error.', AlertTypes.ERROR)
+            addLog(`Error alert ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+        }
+        
+        window.testSpamProtection = function() {
+            addLog('Testing spam protection - sending 5 rapid alerts...', 'info')
+            for (let i = 1; i <= 5; i++) {
+                setTimeout(() => {
+                    const result = showAlert(`Spam test alert ${i}`, AlertTypes.INFO)
+                    addLog(`Spam alert ${i} ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+                }, i * 100) // 100ms apart
+            }
+        }
+        
+        window.testMultipleAlerts = function() {
+            addLog('Testing multiple alerts simultaneously...', 'info')
+            const alerts = [
+                { message: 'First alert', type: AlertTypes.INFO },
+                { message: 'Second alert', type: AlertTypes.SUCCESS },
+                { message: 'Third alert', type: AlertTypes.WARNING },
+                { message: 'Fourth alert', type: AlertTypes.ERROR },
+                { message: 'Fifth alert', type: AlertTypes.INFO }
+            ]
+            
+            alerts.forEach((alert, index) => {
+                setTimeout(() => {
+                    const result = showAlert(alert.message, alert.type)
+                    addLog(`Multiple alert ${index + 1} ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+                }, index * 200) // 200ms apart
+            })
+        }
+        
+        window.testHtmlContent = function() {
+            const htmlMessage = 'This alert contains <strong>HTML content</strong> with line breaks:\n\n• Line 1\n• Line 2\n• Line 3'
+            const result = showAlert(htmlMessage, AlertTypes.INFO)
+            addLog(`HTML content alert ${result ? 'shown' : 'suppressed'}`, result ? 'success' : 'warning')
+        }
+        
+        window.clearAllAlerts = function() {
+            clearAllAlerts()
+            addLog('All alerts cleared', 'info')
+        }
+        
+        window.showAlertStatus = function() {
+            showAlertStatus()
+            addLog('Alert system status displayed in console', 'info')
+        }
+        
+        // Initialize test
+        addLog('Alert System Test initialized', 'success')
+        addLog('Click buttons to test different alert functionality', 'info')
+    </script>
+</body>
+</html>

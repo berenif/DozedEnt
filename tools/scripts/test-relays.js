@@ -1,14 +1,14 @@
 import WebSocket from 'ws'
 import chalk from 'chalk'
 import mqtt from 'mqtt'
-import {genId} from '../src/utils/utils.js'
-import {defaultRelayUrls as mqttRelays} from '../src/netcode/mqtt.js'
+import {genId} from '../../src/utils/utils.js'
+import {defaultRelayUrls as mqttRelays} from '../../src/netcode/mqtt.js'
 import {
   createEvent,
   defaultRelayUrls as nostrRelays,
   subscribe
-} from '../src/netcode/nostr.js'
-import {defaultRelayUrls as torrentRelays} from '../src/netcode/torrent.js'
+} from '../../src/netcode/nostr.js'
+import {defaultRelayUrls as torrentRelays} from '../../src/netcode/torrent.js'
 
 const timeLimit = 5000
 

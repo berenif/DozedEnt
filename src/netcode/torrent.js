@@ -179,6 +179,5 @@ export {selfId} from '../utils/utils.js'
 export const defaultRelayUrls = [
   'tracker.webtorrent.dev',
   'tracker.openwebtorrent.com',
-  'tracker.btorrent.xyz',
   'tracker.files.fm:7073/announce'
 ].map(url => 'wss://' + url)

@@ -4,267 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WASM-First Combat Systems Demo - Complete Implementation</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #2c3e50;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        h1 {
-            color: #ecf0f1;
-            margin: 10px 0;
-            font-size: 1.5em;
-        }
-
-        #gameContainer {
-            border: 3px solid #34495e;
-            border-radius: 10px;
-            background-color: #34495e;
-            padding: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-
-        #gameCanvas {
-            background-color: #27ae60;
-            border: 2px solid #2ecc71;
-            border-radius: 5px;
-            display: block;
-        }
-
-        /* Mobile Controls Styles */
-        .mobile-controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 200px;
-            background: linear-gradient(to top, rgba(44, 62, 80, 0.95), transparent);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 20px;
-            z-index: 100;
-        }
-
-        /* Joystick Styles */
-        #joystick {
-            position: relative;
-            width: 120px;
-            height: 120px;
-        }
-
-        #joystick-base {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(52, 73, 94, 0.8), rgba(52, 73, 94, 0.4));
-            border: 3px solid rgba(236, 240, 241, 0.3);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #joystick-base.active {
-            border-color: rgba(46, 204, 113, 0.8);
-            box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
-        }
-
-        #joystick-knob {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #ecf0f1, #bdc3c7);
-            border: 2px solid #95a5a6;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            transition: background 0.1s ease;
-        }
-
-        .direction-indicator {
-            position: absolute;
-            color: rgba(236, 240, 241, 0.4);
-            font-size: 10px;
-            font-weight: bold;
-            top: 50%;
-            left: 50%;
-            user-select: none;
-        }
-
-        /* Action Buttons */
-        #actions {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: flex-end;
-        }
-
-        .action-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(236, 240, 241, 0.3);
-            background: radial-gradient(circle, var(--btn-color, #3498db), rgba(0, 0, 0, 0.2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            user-select: none;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.1s ease;
-        }
-
-        .action-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(var(--btn-color, #3498db), 0.4);
-        }
-
-        .action-btn.pressed {
-            transform: scale(0.95);
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .action-btn.on-cooldown {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .cooldown-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(transparent 0deg, var(--btn-color) 0deg);
-            opacity: 0.7;
-        }
-
-        .press-feedback {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
-        /* Desktop Controls */
-        .desktop-controls {
-            margin-top: 20px;
-            text-align: center;
-            display: block;
-        }
-
-        .desktop-controls p {
-            margin: 5px 0;
-            color: #bdc3c7;
-        }
-
-        /* Stats Panel */
-        .stats {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: rgba(52, 73, 94, 0.9);
-            padding: 15px;
-            border-radius: 10px;
-            min-width: 200px;
-            z-index: 50;
-        }
-
-        .stats div {
-            margin: 5px 0;
-            color: #ecf0f1;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            h1 { font-size: 1.2em; margin: 5px 0; }
-            .desktop-controls { display: none; }
-            .stats { 
-                position: fixed; 
-                top: 10px; 
-                right: 10px; 
-                font-size: 0.9em;
-                padding: 10px;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .mobile-controls { display: none; }
-        }
-
-        .landscape .mobile-controls {
-            height: 160px;
-        }
-
-        .small-screen .action-btn {
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-        }
-
-        .small-screen #joystick {
-            width: 100px;
-            height: 100px;
-        }
-
-        .small-screen #joystick-knob {
-            width: 35px;
-            height: 35px;
-        }
-
-        /* Gesture Indicators */
-        .swipe-indicator, .long-press-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            z-index: 200;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Animation State Indicator */
-        .animation-state {
-            position: fixed;
-            top: 50px;
-            left: 20px;
-            background: rgba(52, 73, 94, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            z-index: 50;
-        }
-    </style>
+    <link rel="stylesheet" href="src/css/common.css">
+    <link rel="stylesheet" href="src/css/roguelike-components.css">
+    <link rel="stylesheet" href="src/css/roguelike-hud.css">
+    <link rel="stylesheet" href="src/css/simple-player-demo.css">
 </head>
 <body>
-    <h1>WASM-First Combat Systems Demo - Complete Implementation</h1>
+    <!-- Parchment texture overlay -->
+    <div class="hud-parchment-overlay"></div>
+    
+    <!-- Roguelike HUD Elements -->
+    <div class="health-bar-container">
+        <div class="health-bar" style="width: 100%;">
+            <div class="health-text">100/100</div>
+        </div>
+    </div>
+    
+    <div class="stamina-bar-container">
+        <div class="stamina-bar" style="width: 100%;"></div>
+    </div>
+    
+    <div class="action-bar">
+        <div class="action-button">⚔️</div>
+        <div class="action-button">🛡️</div>
+        <div class="action-button">🏃</div>
+        <div class="action-button">🧪</div>
+        <div class="action-button">✨</div>
+    </div>
+
+    <h1>⚔️ WASM-First Combat Systems Demo</h1>
     
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -340,6 +108,10 @@
         <div>Breathing: <span id="breathingInfo">-</span></div>
         <div>Momentum: <span id="momentumInfo">-</span></div>
         <div>Squash/Stretch: <span id="squashStretchInfo">-</span></div>
+        <div style="margin-top: 8px;"><strong>Idle Animations:</strong></div>
+        <div>Look Around: <span id="lookAroundInfo">-</span></div>
+        <div>Weight Shift: <span id="weightShiftInfo">-</span></div>
+        <div>Micro Movements: <span id="microMovementsInfo">-</span></div>
         <div>Anticipation: <span id="anticipationInfo">-</span></div>
         <div>Wobble: <span id="wobbleInfo">-</span></div>
         <div>Secondary Motion: <span id="secondaryMotionInfo">-</span></div>
@@ -387,6 +159,9 @@
                     createWobble() { return { impulse() {}, update() { return { scaleX: 1, scaleY: 1, rotation: 0 }; }, displacement: 0, velocity: 0 }; }
                     createSecondaryMotion() { return { initialize() {}, update() { return []; } }; }
                     createTrailEffect() { return { clear() {}, update() { return []; } }; }
+                    createIdleLookAround() { return { update() { return { headRotation: 0, headOffsetX: 0, headOffsetY: 0 }; }, reset() {} }; }
+                    createIdleWeightShift() { return { update() { return { weightOffsetX: 0, weightOffsetY: 0, bodyLean: 0 }; }, reset() {} }; }
+                    createIdleMicroMovements() { return { update() { return { handOffsetX: 0, handOffsetY: 0, shoulderRotation: 0 }; }, reset() {} }; }
                 };
             }
         }
@@ -1499,14 +1274,36 @@
                 // Initialize the standard procedural animator for basic effects
                 this.proceduralAnimator = new ProceduralAnimator();
                 
-                // Create enhanced breathing animation
+                // Create enhanced breathing animation with idle-specific features
                 this.breathingAnimation = this.proceduralAnimator.createBreathingAnimation({
                     baseScale: 1.0,
                     intensity: 0.018,
                     speed: 1.8,
                     depthVariation: 0.4,
                     asymmetry: 0.25,
-                    heartRateSync: true
+                    heartRateSync: true,
+                    idleVariations: true,
+                    microMovements: true
+                });
+                
+                // Create idle-specific procedural animations
+                this.idleLookAround = this.proceduralAnimator.createIdleLookAround({
+                    frequency: 0.3, // How often to look around
+                    duration: 2.0,   // How long each look lasts
+                    intensity: 0.8  // How far to turn head
+                });
+                
+                this.idleWeightShift = this.proceduralAnimator.createIdleWeightShift({
+                    frequency: 0.4,
+                    intensity: 0.6,
+                    asymmetry: 0.3
+                });
+                
+                this.idleMicroMovements = this.proceduralAnimator.createIdleMicroMovements({
+                    handFidget: true,
+                    footTap: true,
+                    shoulderAdjust: true,
+                    intensity: 0.2
                 });
                 
                 // Create momentum system for realistic movement
@@ -1944,9 +1741,30 @@
                 // Update realistic procedural animator
                 this.realisticTransform = this.realisticAnimator.update(dt, wasmData);
                 
-                // Update breathing animation with state modulation
+                // Update breathing animation with state modulation and environmental factors
                 this.breathingAnimation.modulateForState(this.player.state);
+                
+                // Add environmental responses to breathing
+                const environmentalFactors = {
+                    windResponse: Math.sin(Date.now() * 0.001) * 0.5,
+                    temperatureShiver: Math.sin(Date.now() * 0.002) * 0.3,
+                    stressLevel: this.player.health < 50 ? 0.5 : 0.1
+                };
+                
+                this.breathingAnimation.modulateForEnvironment(environmentalFactors);
                 this.breathingResult = this.breathingAnimation.update(dt);
+                
+                // Update idle-specific animations when in idle state
+                if (this.player.state === 'idle') {
+                    this.idleLookAroundResult = this.idleLookAround.update(dt);
+                    this.idleWeightShiftResult = this.idleWeightShift.update(dt);
+                    this.idleMicroMovementsResult = this.idleMicroMovements.update(dt);
+                } else {
+                    // Reset idle animations when not idle
+                    this.idleLookAround.reset();
+                    this.idleWeightShift.reset();
+                    this.idleMicroMovements.reset();
+                }
                 
                 // Update momentum system
                 this.momentumResult = this.momentumSystem.update(dt, this.player.vx, this.player.vy, true);
@@ -2214,6 +2032,22 @@
                 if (this.squashStretchResult) {
                     document.getElementById('squashStretchInfo').textContent = 
                         `X: ${this.squashStretchResult.scaleX.toFixed(3)}, Y: ${this.squashStretchResult.scaleY.toFixed(3)}`;
+                }
+                
+                // Update idle animation info
+                if (this.idleLookAroundResult) {
+                    document.getElementById('lookAroundInfo').textContent = 
+                        `Head: ${(this.idleLookAroundResult.headRotation * 180 / Math.PI).toFixed(1)}°, Looking: ${this.idleLookAround.isLooking ? 'Yes' : 'No'}`;
+                }
+                
+                if (this.idleWeightShiftResult) {
+                    document.getElementById('weightShiftInfo').textContent = 
+                        `Offset: ${this.idleWeightShiftResult.weightOffsetX.toFixed(1)}, Shifting: ${this.idleWeightShift.isShifting ? 'Yes' : 'No'}`;
+                }
+                
+                if (this.idleMicroMovementsResult) {
+                    document.getElementById('microMovementsInfo').textContent = 
+                        `Hand: ${this.idleMicroMovementsResult.handOffsetX.toFixed(1)}, Shoulder: ${(this.idleMicroMovementsResult.shoulderRotation * 180 / Math.PI).toFixed(1)}°`;
                 }
                 
                 // Update anticipation info
@@ -2706,11 +2540,42 @@
                 let offsetX = 0.0;
                 let offsetY = 0.0;
                 
-                // Apply breathing
-                if (this.breathingResult) {
-                    scaleX *= this.breathingResult.scaleX;
-                    scaleY *= this.breathingResult.scaleY;
-                    offsetY += this.breathingResult.offsetY;
+                // Apply idle-specific transforms when in idle state
+                if (this.player.state === 'idle') {
+                    // Apply breathing animation
+                    if (this.breathingResult) {
+                        scaleX *= this.breathingResult.scaleX;
+                        scaleY *= this.breathingResult.scaleY;
+                        offsetY += this.breathingResult.offsetY;
+                    }
+                    
+                    // Apply look around animation
+                    if (this.idleLookAroundResult) {
+                        rotation += this.idleLookAroundResult.headRotation;
+                        offsetX += this.idleLookAroundResult.headOffsetX;
+                        offsetY += this.idleLookAroundResult.headOffsetY;
+                    }
+                    
+                    // Apply weight shift animation
+                    if (this.idleWeightShiftResult) {
+                        offsetX += this.idleWeightShiftResult.weightOffsetX;
+                        offsetY += this.idleWeightShiftResult.weightOffsetY;
+                        rotation += this.idleWeightShiftResult.bodyLean;
+                    }
+                    
+                    // Apply micro movements
+                    if (this.idleMicroMovementsResult) {
+                        offsetX += this.idleMicroMovementsResult.handOffsetX;
+                        offsetY += this.idleMicroMovementsResult.handOffsetY;
+                        rotation += this.idleMicroMovementsResult.shoulderRotation;
+                    }
+                } else {
+                    // Apply breathing animation for non-idle states
+                    if (this.breathingResult) {
+                        scaleX *= this.breathingResult.scaleX;
+                        scaleY *= this.breathingResult.scaleY;
+                        offsetY += this.breathingResult.offsetY;
+                    }
                 }
                 
                 // Apply momentum effects
@@ -3419,5 +3284,6 @@
             }
         });
     </script>
+    <script src="src/js/roguelike-ui.js"></script>
 </body>
 </html>

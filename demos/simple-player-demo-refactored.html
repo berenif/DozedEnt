@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM-First Combat Systems Demo - Refactored</title>
+    <link rel="stylesheet" href="src/css/common.css">
+    <link rel="stylesheet" href="src/css/roguelike-components.css">
+    <link rel="stylesheet" href="src/css/roguelike-hud.css">
+    <link rel="stylesheet" href="src/css/simple-player-demo.css">
+</head>
+<body>
+    <!-- Parchment texture overlay -->
+    <div class="hud-parchment-overlay"></div>
+    
+    <!-- Roguelike HUD Elements -->
+    <div class="health-bar-container">
+        <div class="health-bar" style="width: 100%;">
+            <div class="health-text">100/100</div>
+        </div>
+    </div>
+    
+    <div class="stamina-bar-container">
+        <div class="stamina-bar" style="width: 100%;"></div>
+    </div>
+    
+    <div class="action-bar">
+        <div class="action-button">⚔️</div>
+        <div class="action-button">🛡️</div>
+        <div class="action-button">🏃</div>
+        <div class="action-button">🧪</div>
+        <div class="action-button">✨</div>
+    </div>
+
+    <h1>⚔️ WASM-First Combat Systems Demo - Refactored</h1>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <!-- Virtual Joystick -->
+        <div id="joystick">
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div id="actions">
+            <!-- Actions will be dynamically created -->
+        </div>
+    </div>
+    
+    <!-- Desktop Controls -->
+    <div class="desktop-controls">
+        <p><strong>Desktop Controls:</strong></p>
+        <p>WASD or Arrow Keys to move</p>
+        <p>J/1 - Light Attack, K/2 - Heavy Attack</p>
+        <p>Shift/3 - Block, Ctrl/4 - Roll, L/5 - Special</p>
+        <p>Mouse wheel - Adjust speed</p>
+        <p><strong>F3 - Toggle Debug Mode (Skeletal Animation)</strong></p>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="stats">
+        <div><strong>Character:</strong> <span id="characterType">Warden</span></div>
+        <div>Position: <span id="playerPos">X: 0, Y: 0</span></div>
+        <div>State: <span id="playerState">idle</span></div>
+        <div>Health: <span id="playerHealth">100</span>/<span id="maxHealth">100</span></div>
+        <div>Stamina: <span id="playerStamina">100</span>/<span id="maxStamina">100</span></div>
+        <div>Poise: <span id="playerPoise">100</span>/<span id="maxPoise">100</span></div>
+        <div>Flow: <span id="flowMomentum">0</span>%</div>
+        <div>FPS: <span id="fps">0</span></div>
+    </div>
+
+    <!-- Systems Control Panel -->
+    <div class="systems-panel" style="position: fixed; top: 20px; left: 20px; background: rgba(52, 73, 94, 0.95); padding: 15px; border-radius: 10px; font-size: 12px; z-index: 60; max-width: 280px;">
+        <h4 style="margin: 0 0 10px 0; color: #ecf0f1;">WASM Combat Systems</h4>
+        <div><strong>Character:</strong> 
+            <select id="characterSelect" style="background: #34495e; color: #ecf0f1; border: 1px solid #7f8c8d; padding: 2px;">
+                <option value="warden">Warden - Balanced</option>
+                <option value="raider">Raider - Momentum</option>
+                <option value="kensei">Kensei - Flow</option>
+            </select>
+        </div>
+        <div style="margin-top: 8px;"><strong>Combat State:</strong> <span id="combatState">IDLE</span></div>
+        <div>Input Buffer: <span id="inputBuffer">Empty</span></div>
+        <div>Parry Window: <span id="parryWindow">0ms</span></div>
+        <div>I-Frames: <span id="iFrames">0ms</span></div>
+        <div style="margin-top: 8px;"><strong>World Systems:</strong></div>
+        <div>Weather: <span id="weatherState">Clear</span></div>
+        <div>Physics: <span id="physicsState">Active</span></div>
+        <div>Chemistry: <span id="chemistryState">Neutral</span></div>
+    </div>
+
+    <!-- Animation State Indicator -->
+    <div class="animation-state">
+        <div>Animation: <span id="currentAnimation">idle</span></div>
+        <div>Frame: <span id="currentFrame">0</span></div>
+        <div>Progress: <span id="animationProgress">0%</span></div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" style="position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 10px; font-size: 12px; z-index: 60; max-width: 250px; color: white;">
+        <h4 style="margin: 0 0 10px 0; color: #e74c3c;">Debug Info</h4>
+        <div>WASM Frame: <span id="wasmFrame">0</span></div>
+        <div>Checksum: <span id="wasmChecksum">0</span></div>
+        <div>Deterministic: <span id="deterministic">✓</span></div>
+        <div style="margin-top: 8px;"><strong>Performance:</strong></div>
+        <div>Update Time: <span id="updateTime">0ms</span></div>
+        <div>Render Time: <span id="renderTime">0ms</span></div>
+        <div>Memory: <span id="memoryUsage">0MB</span></div>
+    </div>
+
+    <!-- Long Press Indicator -->
+    <div class="long-press-indicator" style="position: fixed; bottom: 50%; left: 50%; transform: translate(-50%, 50%); background: rgba(231, 76, 60, 0.9); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 100; display: none;">
+        <div class="long-press-text">Hold to activate</div>
+    </div>
+
+    <!-- Import the refactored JavaScript modules -->
+    <script type="module">
+        import { WASMCombatSystemsDemo } from './src/wasm-combat-demo-simple.js';
+        import { initializeAnimationModules } from './src/animation-initializer.js';
+
+        // Start the WASM Combat Systems demo when page loads
+        window.addEventListener('load', async () => {
+            try {
+                // Initialize animation modules first
+                await initializeAnimationModules();
+                
+                // Create and initialize the demo with real WASM
+                const demo = new WASMCombatSystemsDemo();
+                await demo.initialize();
+                
+                // Setup character selection
+                const characterSelect = document.getElementById('characterSelect');
+                if (characterSelect) {
+                    characterSelect.addEventListener('change', (e) => {
+                        demo.switchCharacter(e.target.value);
+                    });
+                }
+                
+                console.log('🎮 Refactored WASM Combat Systems Demo loaded successfully with real WASM!');
+                
+            } catch (error) {
+                console.error('Failed to initialize demo:', error);
+                
+                // Show error message to user
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(231, 76, 60, 0.95);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    z-index: 1000;
+                    text-align: center;
+                `;
+                errorDiv.innerHTML = `
+                    <h3>Demo Loading Error</h3>
+                    <p>Failed to load the refactored demo.</p>
+                    <p>Check console for details.</p>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #c0392b; color: white; border: none; border-radius: 5px; cursor: pointer;">Reload Page</button>
+                `;
+                document.body.appendChild(errorDiv);
+            }
+        });
+    </script>
+    
+    <!-- Import the roguelike UI system -->
+    <script src="src/js/roguelike-ui.js"></script>
+</body>
+</html>

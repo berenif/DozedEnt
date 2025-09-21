@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Discovery Test - DozedEnt</title>
+    <link rel="stylesheet" href="src/css/common.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-result {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        .info { border-left: 4px solid #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 Room Discovery Test</h1>
+        <p>This test demonstrates the fixed room discovery functionality.</p>
+        
+        <div class="test-section">
+            <h2>📋 Test Instructions</h2>
+            <ol>
+                <li>Open the <a href="working-multiplayer-demo.html" target="_blank">Working Multiplayer Demo</a> in two browser tabs/windows</li>
+                <li>In both tabs, select the same network provider (e.g., "Torrent")</li>
+                <li>In Tab 1: Create a room with ID "test-room-1"</li>
+                <li>In Tab 2: Click "Discover Rooms" or "Refresh Room List"</li>
+                <li>Tab 2 should now see "test-room-1" in the available rooms list</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 What Was Fixed</h2>
+            <div class="test-result info">
+                <strong>Problem:</strong> Room discovery only worked within the same room, creating a chicken-and-egg problem where you needed to be in a room to discover other rooms.
+            </div>
+            <div class="test-result success">
+                <strong>Solution:</strong> Implemented global room discovery using a shared lobby room (`lobby-{provider}`) that all clients join to discover rooms across the entire provider network.
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>✨ New Features</h2>
+            <ul>
+                <li><strong>Global Discovery:</strong> Uses shared lobby rooms (`lobby-torrent`, `lobby-firebase`, etc.) for cross-room discovery</li>
+                <li><strong>Provider Scoping:</strong> Rooms are properly scoped by network provider</li>
+                <li><strong>Enhanced UI:</strong> Room list shows host name, last seen time, and helpful hints</li>
+                <li><strong>Automatic Broadcasting:</strong> Room hosts automatically broadcast room info to the lobby</li>
+                <li><strong>Automatic Cleanup:</strong> Old room discoveries are automatically cleaned up</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 Expected Results</h2>
+            <div class="test-result success">
+                ✅ Room discovery now works across the entire provider network<br>
+                ✅ You can see existing rooms with the same network provider<br>
+                ✅ Room list shows detailed information about each room<br>
+                ✅ Discovery works even when not connected to any room
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🚀 Try It Now</h2>
+            <p>Click the button below to open the demo and test the room discovery:</p>
+            <button class="btn primary" onclick="window.open('working-multiplayer-demo.html', '_blank')">
+                Open Working Multiplayer Demo
+            </button>
+        </div>
+    </div>
+</body>
+</html>

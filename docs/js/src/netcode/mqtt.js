@@ -13,9 +13,12 @@ export const joinRoom = strategy({
       const client = mqtt.connect(url, {
         clientId: `trystero-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         clean: true,
-        connectTimeout: 4000,
-        reconnectPeriod: 1000,
-        keepalive: 30
+        connectTimeout: 8000, // Increased from 4000ms
+        reconnectPeriod: 2000, // Increased from 1000ms
+        keepalive: 30,
+        protocolVersion: 4, // Force MQTT 3.1.1 to avoid compatibility issues
+        reschedulePings: true,
+        queueQoSZero: false
       })
       const clientId = getClientId(client)
 
@@ -39,17 +42,38 @@ export const joinRoom = strategy({
 
       return new Promise((res, rej) => {
         const timeout = setTimeout(() => {
+          console.warn(`MQTT connection timeout for ${url} - this may be due to Node.js 20+ compatibility issues with MQTT.js 5.13.0`)
           rej(new Error(`Connection timeout for ${url}`))
-        }, 10000)
+        }, 15000) // Increased timeout to 15 seconds
         
         client.on('connect', () => {
           clearTimeout(timeout)
+          console.log(`MQTT connected successfully to ${url}`)
           res(client)
         })
         
         client.on('error', (err) => {
           clearTimeout(timeout)
-          rej(err)
+          console.error(`MQTT connection error for ${url}:`, err.message || err)
+          // Provide more specific error information
+          if (err.message && err.message.includes('connack')) {
+            rej(new Error(`MQTT CONNACK timeout for ${url} - try using a different network provider or check your internet connection`))
+          } else {
+            rej(err)
+          }
+        })
+        
+        // Add additional event handlers for better debugging
+        client.on('close', () => {
+          console.log(`MQTT connection closed for ${url}`)
+        })
+        
+        client.on('offline', () => {
+          console.log(`MQTT client offline for ${url}`)
+        })
+        
+        client.on('reconnect', () => {
+          console.log(`MQTT client reconnecting to ${url}`)
         })
       })
     }),
