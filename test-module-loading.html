@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Trystero Module Loading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .module {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        .success {
+            background: #1a3a1a;
+            border-color: #2a5a2a;
+        }
+        .error {
+            background: #3a1a1a;
+            border-color: #5a2a2a;
+        }
+        .loading {
+            background: #2a2a1a;
+            border-color: #4a4a4a;
+        }
+        button {
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a5a5a;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trystero Module Loading Test</h1>
+    <p>Current URL: <code id="current-url"></code></p>
+    <p>Is GitHub Pages: <code id="is-github"></code></p>
+    <p>Base Path: <code id="base-path"></code></p>
+    
+    <div>
+        <button onclick="testAllModules()">Test All Modules</button>
+        <button onclick="testWithNetworkProvider()">Test with NetworkProviderManager</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script type="module">
+        // Display current environment
+        document.getElementById('current-url').textContent = window.location.href;
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        document.getElementById('is-github').textContent = isGitHubPages;
+        
+        // Determine base path
+        const basePath = isGitHubPages ? '/DozedEnt/dist' : './dist';
+        document.getElementById('base-path').textContent = basePath;
+        
+        // Make functions available globally
+        window.testAllModules = async function() {
+            const modules = ['torrent', 'firebase', 'ipfs', 'mqtt', 'supabase', 'wasm'];
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Direct Import Test Results:</h2>';
+            
+            for (const moduleName of modules) {
+                const moduleDiv = document.createElement('div');
+                moduleDiv.className = 'module loading';
+                moduleDiv.innerHTML = `<strong>${moduleName}:</strong> Loading...`;
+                resultsDiv.appendChild(moduleDiv);
+                
+                try {
+                    const modulePath = `${basePath}/trystero-${moduleName}.min.js`;
+                    console.log(`Attempting to load: ${modulePath}`);
+                    
+                    const module = await import(modulePath);
+                    
+                    moduleDiv.className = 'module success';
+                    moduleDiv.innerHTML = `
+                        <strong>${moduleName}:</strong> ✅ Loaded successfully
+                        <br>Exports: ${Object.keys(module).join(', ') || 'default'}
+                    `;
+                    
+                    console.log(`${moduleName} module loaded:`, module);
+                } catch (error) {
+                    moduleDiv.className = 'module error';
+                    moduleDiv.innerHTML = `
+                        <strong>${moduleName}:</strong> ❌ Failed to load
+                        <br>Error: ${error.message}
+                        <br>Path tried: ${basePath}/trystero-${moduleName}.min.js
+                    `;
+                    
+                    console.error(`Failed to load ${moduleName}:`, error);
+                }
+            }
+        };
+        
+        window.testWithNetworkProvider = async function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>NetworkProviderManager Test Results:</h2>';
+            
+            try {
+                // Import the NetworkProviderManager
+                const npmPath = isGitHubPages 
+                    ? '/DozedEnt/js/src/netcode/network-provider-manager.js'
+                    : './src/netcode/network-provider-manager.js';
+                    
+                const { NetworkProviderManager } = await import(npmPath);
+                
+                const manager = new NetworkProviderManager();
+                const providers = manager.getAvailableProviders();
+                
+                resultsDiv.innerHTML += `
+                    <div class="module success">
+                        <strong>NetworkProviderManager:</strong> ✅ Loaded successfully
+                        <br>Available providers: ${providers.map(p => p.name).join(', ')}
+                    </div>
+                `;
+                
+                // Test initializing each provider
+                for (const provider of providers) {
+                    const providerDiv = document.createElement('div');
+                    providerDiv.className = 'module loading';
+                    providerDiv.innerHTML = `<strong>${provider.name}:</strong> Initializing...`;
+                    resultsDiv.appendChild(providerDiv);
+                    
+                    try {
+                        const success = await manager.initializeProvider(provider.id);
+                        
+                        if (success) {
+                            providerDiv.className = 'module success';
+                            providerDiv.innerHTML = `
+                                <strong>${provider.name}:</strong> ✅ Initialized successfully
+                            `;
+                        } else {
+                            providerDiv.className = 'module error';
+                            providerDiv.innerHTML = `
+                                <strong>${provider.name}:</strong> ❌ Failed to initialize
+                            `;
+                        }
+                    } catch (error) {
+                        providerDiv.className = 'module error';
+                        providerDiv.innerHTML = `
+                            <strong>${provider.name}:</strong> ❌ Error during initialization
+                            <br>Error: ${error.message}
+                        `;
+                    }
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="module error">
+                        <strong>NetworkProviderManager:</strong> ❌ Failed to load
+                        <br>Error: ${error.message}
+                    </div>
+                `;
+                console.error('Failed to load NetworkProviderManager:', error);
+            }
+        };
+    </script>
+</body>
+</html>

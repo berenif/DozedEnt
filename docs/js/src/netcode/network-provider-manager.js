@@ -109,23 +109,30 @@ export class NetworkProviderManager {
       
       this.logger.info(`Initializing provider: ${providerId}`)
       
+      // Determine the base path for imports
+      // Check if we're on GitHub Pages or local development
+      const isGitHubPages = window.location.hostname.includes('github.io')
+      const basePath = isGitHubPages 
+        ? '/DozedEnt/dist' 
+        : '../../dist'
+      
       // Import the appropriate Trystero module
       let trysteroModule
       switch (providerId) {
         case 'torrent':
-          trysteroModule = await import('../../dist/trystero-torrent.min.js')
+          trysteroModule = await import(`${basePath}/trystero-torrent.min.js`)
           break
         case 'firebase':
-          trysteroModule = await import('../../dist/trystero-firebase.min.js')
+          trysteroModule = await import(`${basePath}/trystero-firebase.min.js`)
           break
         case 'ipfs':
-          trysteroModule = await import('../../dist/trystero-ipfs.min.js')
+          trysteroModule = await import(`${basePath}/trystero-ipfs.min.js`)
           break
         case 'mqtt':
-          trysteroModule = await import('../../dist/trystero-mqtt.min.js')
+          trysteroModule = await import(`${basePath}/trystero-mqtt.min.js`)
           break
         case 'supabase':
-          trysteroModule = await import('../../dist/trystero-supabase.min.js')
+          trysteroModule = await import(`${basePath}/trystero-supabase.min.js`)
           break
         default:
           throw new Error(`Unknown provider: ${providerId}`)
