@@ -113,19 +113,19 @@ export class NetworkProviderManager {
       let trysteroModule
       switch (providerId) {
         case 'torrent':
-          trysteroModule = await import('../../dist/trystero-torrent.min.js')
+          trysteroModule = await import('../../demos/dist/trystero-torrent.min.js')
           break
         case 'firebase':
-          trysteroModule = await import('../../dist/trystero-firebase.min.js')
+          trysteroModule = await import('../../demos/dist/trystero-firebase.min.js')
           break
         case 'ipfs':
-          trysteroModule = await import('../../dist/trystero-ipfs.min.js')
+          trysteroModule = await import('../../demos/dist/trystero-ipfs.min.js')
           break
         case 'mqtt':
-          trysteroModule = await import('../../dist/trystero-mqtt.min.js')
+          trysteroModule = await import('../../demos/dist/trystero-mqtt.min.js')
           break
         case 'supabase':
-          trysteroModule = await import('../../dist/trystero-supabase.min.js')
+          trysteroModule = await import('../../demos/dist/trystero-supabase.min.js')
           break
         default:
           throw new Error(`Unknown provider: ${providerId}`)
