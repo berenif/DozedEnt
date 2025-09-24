@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Module Test</title>
+</head>
+<body>
+    <h1>Comprehensive Module Loading Test</h1>
+    <div id="status">Loading...</div>
+    <div id="details"></div>
+    
+    <script type="module">
+        const status = document.getElementById('status');
+        const details = document.getElementById('details');
+        
+        async function testModule(name, importPath) {
+            try {
+                console.log(`Testing ${name}...`);
+                const module = await import(importPath);
+                console.log(`✅ ${name} loaded successfully:`, module);
+                return { name, success: true, module };
+            } catch (error) {
+                console.error(`❌ ${name} failed:`, error);
+                return { name, success: false, error: error.message };
+            }
+        }
+        
+        async function runTests() {
+            const tests = [
+                ['MultiplayerDemoCoordinator', '../src/multiplayer/multiplayer-demo-coordinator.js'],
+                ['roomCodeManager', '../src/utils/room-code-manager.js'],
+                ['AlertTypes', '../src/ui/alert-system.js'],
+                ['NetworkProviderManager', '../src/netcode/network-provider-manager.js'],
+                ['peerNameGenerator', '../src/utils/peer-name-generator.js'],
+                ['ProviderRoomStore', '../src/utils/provider-room-store.js'],
+                ['broadcastManager', '../src/utils/broadcast-manager.js'],
+                ['peerLatencyManager', '../src/utils/peer-latency-manager.js'],
+                ['roomDiscoveryManager', '../src/utils/room-discovery-manager.js'],
+                ['logger', '../src/utils/logger.js']
+            ];
+            
+            const results = [];
+            
+            for (const [name, path] of tests) {
+                const result = await testModule(name, path);
+                results.push(result);
+            }
+            
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            status.innerHTML = `✅ ${successCount}/${totalCount} modules loaded successfully`;
+            
+            const detailsHtml = results.map(r => 
+                `<div style="margin: 5px 0; padding: 5px; border: 1px solid ${r.success ? 'green' : 'red'};">
+                    <strong>${r.name}:</strong> ${r.success ? '✅ Success' : `❌ ${r.error}`}
+                </div>`
+            ).join('');
+            
+            details.innerHTML = detailsHtml;
+            
+            // Test Trystero module loading
+            try {
+                console.log('Testing Trystero module...');
+                const trysteroModule = await import('./dist/trystero-torrent.min.js');
+                console.log('✅ Trystero module loaded:', trysteroModule);
+                
+                const trysteroDiv = document.createElement('div');
+                trysteroDiv.style.margin = '5px 0';
+                trysteroDiv.style.padding = '5px';
+                trysteroDiv.style.border = '1px solid green';
+                trysteroDiv.innerHTML = '<strong>Trystero Module:</strong> ✅ Success';
+                details.appendChild(trysteroDiv);
+                
+            } catch (error) {
+                console.error('❌ Trystero module failed:', error);
+                const trysteroDiv = document.createElement('div');
+                trysteroDiv.style.margin = '5px 0';
+                trysteroDiv.style.padding = '5px';
+                trysteroDiv.style.border = '1px solid red';
+                trysteroDiv.innerHTML = `<strong>Trystero Module:</strong> ❌ ${error.message}`;
+                details.appendChild(trysteroDiv);
+            }
+        }
+        
+        runTests().catch(error => {
+            console.error('Test runner failed:', error);
+            status.innerHTML = `❌ Test runner failed: ${error.message}`;
+        });
+    </script>
+</body>
+</html>
