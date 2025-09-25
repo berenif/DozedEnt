@@ -56,22 +56,31 @@ jobs:
       - name: Setup Emscripten SDK
         run: |
           # Clone and setup Emscripten SDK
-          if [ ! -d "emsdk" ]; then
-            git clone https://github.com/emscripten-core/emsdk.git
-          fi
+          echo "Installing Emscripten SDK..."
+          git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
           source ./emsdk_env.sh
           cd ..
-          echo "Emscripten version:"
-          emcc --version
+          # Add emsdk to PATH for subsequent steps
+          echo "${PWD}/emsdk" >> $GITHUB_PATH
+          echo "${PWD}/emsdk/upstream/emscripten" >> $GITHUB_PATH
+          echo "${PWD}/emsdk/node/$(ls emsdk/node)/bin" >> $GITHUB_PATH
+          
+      - name: Verify Emscripten Installation
+        run: |
+          # Verify em++ is available
+          which em++ || echo "em++ not in PATH"
+          em++ --version || echo "em++ not working"
       
       - name: Generate balance data
         run: npm run balance:gen
         
       - name: Build WASM modules
         run: |
+          # Source emsdk environment for this step
+          source ./emsdk/emsdk_env.sh
           # Build all WASM modules
           npm run wasm:build:all
           echo "WASM files built:"

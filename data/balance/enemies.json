@@ -1,0 +1,40 @@
+{
+  "enemy": {
+    "baseSpeed": 0.18,
+    "circleRadius": 0.08,
+    "seekRange": 0.45,
+    "harassRange": 0.11,
+    "accel": 1.1,
+    "friction": 2.0,
+    "maxSpeed": 0.26,
+    "lungeRange": 0.125,
+    "lungeSpeed": 0.42,
+    "lungeDuration": 0.16,
+    "lungeCooldown": 1.5,
+    "feintProb": 0.3,
+    "feintDuration": 0.25,
+    "minChaseBeforeLunge": 0.8,
+    "latchDuration": 1.2,
+    "latchDragSpeed": 0.05,
+    "preyConeCos": 0.7,
+    "preyConeWeight": 1.5,
+    "fatigueLungeBonus": 0.15,
+    "fatiguePerSpeed": 0.08,
+    "fatigueRecoveryPerSec": 0.2,
+    "commRange": 0.3
+  },
+  "radii": {
+    "enemyRadius": 0.015
+  },
+  "pack": {
+    "maxPacks": 3,
+    "respawnDelay": 5.0
+  },
+  "spawn": {
+    "minSpawnDistance": 0.2,
+    "maxSpawnDistance": 0.4,
+    "howlMaxSpawnDistance": 0.6,
+    "spread": 0.1,
+    "spawnMargin": 0.05
+  }
+}
