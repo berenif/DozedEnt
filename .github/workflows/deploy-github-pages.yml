@@ -55,7 +55,8 @@ jobs:
           source ./emsdk_env.sh
           cd ..
           
-          # Build the WASM module
+          # Source emsdk environment and build WASM module
+          source ./emsdk/emsdk_env.sh
           npm run wasm:build
           
       - name: Build project

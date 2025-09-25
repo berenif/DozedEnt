@@ -1,0 +1,64 @@
+{
+  "player": {
+    "baseSpeed": 0.3,
+    "rollSpeedMultiplier": 2.6,
+    "acceleration": 12.0,
+    "friction": 9.0,
+    "jumpPower": -0.45,
+    "gravity": 1.2,
+    "maxJumps": 2,
+    "radius": 0.012
+  },
+  "stamina": {
+    "regenPerSec": 0.35,
+    "blockDrainPerSec": 0.25,
+    "rollDrainPerSec": 0.3,
+    "rollStartCost": 0.15,
+    "blockStartCost": 0.05,
+    "attackCost": 0.1
+  },
+  "timing": {
+    "inputBufferTime": 0.12,
+    "parryWindow": 0.12,
+    "parryStunDuration": 0.3,
+    "rollIFrameDuration": 0.3,
+    "attackCooldown": 0.25,
+    "rollDuration": 0.4,
+    "rollCooldown": 0.5
+  },
+  "combat": {
+    "attackRange": 0.055,
+    "backAttackCosThreshold": -0.3,
+    "blockFacingCosThreshold": 0.5,
+    "attackArcCosThreshold": 0.7,
+    "attackDamage": 20,
+    "attackStunSec": 0.15,
+    "attackKnockback": 0.02
+  },
+  "lightAttack": {
+    "windup": 0.05,
+    "active": 0.08,
+    "recovery": 0.12,
+    "damage": 15
+  },
+  "heavyAttack": {
+    "windup": 0.15,
+    "active": 0.12,
+    "recovery": 0.25,
+    "damage": 35
+  },
+  "specialAttack": {
+    "windup": 0.1,
+    "active": 0.15,
+    "recovery": 0.2,
+    "damage": 25
+  },
+  "roll": {
+    "slideDuration": 0.2,
+    "slideFriction": 5.0
+  },
+  "world": {
+    "wallCenterX": 0.5,
+    "wallHalfWidth": 0.45
+  }
+}

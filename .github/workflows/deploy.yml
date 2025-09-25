@@ -30,11 +30,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Setup Emscripten SDK
+        run: |
+          echo "Installing Emscripten SDK..."
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          cd ..
+        
       - name: Build project
         run: npm run build
         
       - name: Build WASM modules
-        run: npm run wasm:build:all
+        run: |
+          source ./emsdk/emsdk_env.sh
+          npm run wasm:build:all
         
       - name: Build docs and prepare deployment
         run: npm run build:docs
