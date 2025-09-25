@@ -56,13 +56,16 @@ jobs:
           cd ..
           echo "Emscripten version:"
           emcc --version
+          echo "EMSDK_ROOT=$PWD/emsdk" >> $GITHUB_ENV
+          echo "PATH=$PWD/emsdk:$PATH" >> $GITHUB_ENV
       
       - name: Generate balance data
         run: npm run balance:gen
         
       - name: Build WASM modules
         run: |
-          # Build all WASM modules
+          # Source Emscripten environment and build all WASM modules
+          source ./emsdk/emsdk_env.sh
           npm run wasm:build:all
           echo "WASM files built:"
           ls -la *.wasm || echo "No WASM files in root"

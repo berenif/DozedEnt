@@ -30,11 +30,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Install PowerShell Core
+        run: |
+          # Install PowerShell Core on Ubuntu
+          wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+          pwsh --version
+      
+      - name: Setup Emscripten SDK
+        run: |
+          # Clone and setup Emscripten SDK
+          if [ ! -d "emsdk" ]; then
+            git clone https://github.com/emscripten-core/emsdk.git
+          fi
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          cd ..
+          echo "Emscripten version:"
+          emcc --version
+          echo "EMSDK_ROOT=$PWD/emsdk" >> $GITHUB_ENV
+          echo "PATH=$PWD/emsdk:$PATH" >> $GITHUB_ENV
+      
+      - name: Generate balance data
+        run: npm run balance:gen
+        
       - name: Build project
         run: npm run build
         
       - name: Build WASM modules
-        run: npm run wasm:build:all
+        run: |
+          # Source Emscripten environment and build all WASM modules
+          source ./emsdk/emsdk_env.sh
+          npm run wasm:build:all
         
       - name: Build docs and prepare deployment
         run: npm run build:docs
