@@ -1,11 +1,11 @@
-/* Loading Screen */
-#loadingScreen {
+/* Loading Screen Styles */
+.loading-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: #0a0a0a;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -14,98 +14,56 @@
     transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
 
-/* Hide game elements during loading */
-#viewport {
-    display: block;
-    opacity: 0.3;
-    transition: opacity 0.5s ease-in;
+.loading-container {
+    text-align: center;
+    color: white;
+    max-width: 500px;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
 }
 
-.ui-overlay {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in 0.2s;
-}
-
-.mobile-controls {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in 0.2s;
-}
-
-/* Show game elements when loading is complete */
-body.game-started #viewport {
-    display: block;
-    opacity: 1;
-}
-
-body.game-started .ui-overlay {
-    display: block;
-    opacity: 1;
-}
-
-body.game-started .mobile-controls {
-    display: block;
-    opacity: 1;
-}
-
-body.game-started #loadingScreen {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-/* Emergency canvas visibility override */
-#gameCanvas {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-#viewport {
-    display: block !important;
-    opacity: 1 !important;
-}
-
-/* Hide loading screen after 5 seconds regardless */
-body:not(.game-started) #loadingScreen {
-    animation: fadeOutAfterDelay 5s ease-out forwards;
-}
-
-@keyframes fadeOutAfterDelay {
-    0% { opacity: 1; visibility: visible; }
-    99% { opacity: 1; visibility: visible; }
-    100% { opacity: 0; visibility: hidden; pointer-events: none; }
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid #333;
-    border-top: 3px solid #4a90e2;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+.loading-container .logo {
+    font-size: 3em;
     margin-bottom: 20px;
 }
 
+.loading-container h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.loading-container p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin: 20px 0;
+}
+
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    to { transform: rotate(360deg); }
 }
 
 .loading-text {
     color: #fff;
     font-size: 18px;
     text-align: center;
+    margin-bottom: 20px;
 }
 
-.loading-text:nth-child(3) {
-    font-size: 14px;
-    margin-top: 10px;
-}
-
-/* Start Game Button */
-#start-game-btn {
+.start-button {
     margin-top: 20px;
     padding: 12px 24px;
     background: #666;
@@ -115,13 +73,37 @@ body:not(.game-started) #loadingScreen {
     font-size: 16px;
     cursor: not-allowed;
     transition: background 0.2s ease;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-#start-game-btn:not(:disabled) {
+.start-button:not(:disabled) {
     background: #4a90e2;
     cursor: pointer;
 }
 
-#start-game-btn:not(:disabled):hover {
+.start-button:not(:disabled):hover {
     background: #357abd;
+    transform: scale(1.05);
+}
+
+.start-button:not(:disabled):active {
+    transform: scale(0.95);
+}
+
+/* Hide loading screen when game starts */
+body.game-started .loading-screen {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Show game interface when game starts */
+.game-interface {
+    display: none;
+}
+
+body.game-started .game-interface {
+    display: block;
 }

@@ -11,7 +11,7 @@ export default [
       'coverage/**/*',
       'dist/**/*',
       '**/*.min.js',
-      'docs/js/src/**/*',
+      'public/js/src/**/*',
       'tools/scripts/validate-github-pages.js'
     ]
   },

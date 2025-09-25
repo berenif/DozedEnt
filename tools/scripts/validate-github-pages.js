@@ -1,270 +1,291 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import chalk from 'chalk';
+/**
+ * GitHub Pages Deployment Validation Script
+ * 
+ * This script validates that all required files are present for GitHub Pages deployment
+ * and checks that the deployment structure is correct.
+ */
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
-const docsDir = path.join(rootDir, 'docs'); // Deploy to docs folder for GitHub Pages
-const demoDir = path.join(rootDir, 'demo');
-const distDir = path.join(rootDir, 'dist');
+import { readFileSync, existsSync, statSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+import chalk from 'chalk'
 
-let errors = [];
-let warnings = [];
-let successes = [];
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const projectRoot = join(__dirname, '..', '..')
+const docsPath = join(projectRoot, 'docs')
 
-console.log(chalk.blue.bold('\n🔍 Validating GitHub Pages Deployment...\n'));
+console.log(chalk.bold.blue('\n🔍 Validating GitHub Pages Deployment...\n'))
 
-// Check if root directory is ready for deployment
-function checkDocsFolder() {
-  console.log('Checking root directory for deployment...');
-  if (!fs.existsSync(rootDir)) {
-    errors.push('❌ Root directory does not exist.');
-    return false;
+class GitHubPagesValidator {
+  constructor() {
+    this.errors = []
+    this.warnings = []
+    this.requiredFiles = [
+      'index.html',
+      'favicon.ico',
+      'game.wasm',
+      'game-host.wasm'
+    ]
+    this.requiredDirectories = [
+      'dist',
+      'core',
+      'animations',
+      'assets',
+      'images'
+    ]
+    this.optionalFiles = [
+      'site.js',
+      'serve-modules.js',
+      'trystero-wasm.min.js'
+    ]
   }
-  successes.push('✓ Root directory exists and ready for deployment');
-  return true;
-}
 
-// Check for index.html
-function checkIndexFile() {
-  console.log('Checking index.html...');
-  const indexPath = path.join(rootDir, 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    errors.push('❌ index.html is missing');
-    return false;
+  /**
+   * Run complete validation
+   */
+  async validate() {
+    console.log(chalk.blue('📁 Checking docs directory structure...'))
+    await this.checkDirectoryStructure()
+    
+    console.log(chalk.blue('📄 Checking required files...'))
+    await this.checkRequiredFiles()
+    
+    console.log(chalk.blue('📦 Checking dist folder contents...'))
+    await this.checkDistFolder()
+    
+    console.log(chalk.blue('🌐 Checking WASM files...'))
+    await this.checkWasmFiles()
+    
+    console.log(chalk.blue('🔧 Checking Jekyll configuration...'))
+    await this.checkJekyllConfig()
+    
+    console.log(chalk.blue('📊 Checking file sizes...'))
+    await this.checkFileSizes()
+    
+    this.displayResults()
+    return this.errors.length === 0
   }
-  
-  const content = fs.readFileSync(indexPath, 'utf8');
-  
-  // Check for localhost references
-  if (content.includes('localhost:') || content.includes('127.0.0.1')) {
-    warnings.push('⚠️  index.html contains localhost references');
-  }
-  
-  // Check for proper HTML structure
-  if (!content.includes('<!DOCTYPE html>')) {
-    errors.push('❌ index.html missing DOCTYPE declaration');
-  }
-  
-  // Check for essential content (demos were removed)
-  if (!content.includes('Trystero')) {
-    warnings.push(`⚠️  index.html missing Trystero branding`);
-  }
-  
-  successes.push('✓ index.html exists and has proper structure');
-  return true;
-}
 
-// Check for .nojekyll file
-function checkNoJekyll() {
-  console.log('Checking .nojekyll file...');
-  const nojekyllPath = path.join(rootDir, '.nojekyll');
-  if (!fs.existsSync(nojekyllPath)) {
-    errors.push('❌ .nojekyll file is missing in docs folder');
-    return false;
-  }
-  successes.push('✓ .nojekyll file exists');
-  return true;
-}
-
-// Check for built assets
-function checkBuiltAssets() {
-  console.log('Checking built assets...');
-  const docsDistPath = path.join(rootDir, 'dist');
-  
-  if (!fs.existsSync(docsDistPath)) {
-    errors.push('❌ dist folder is missing in root');
-    return false;
-  }
-  
-  // Check for specific bundles
-  const requiredBundles = [
-    'trystero-firebase.min.js',
-    'trystero-ipfs.min.js',
-    'trystero-mqtt.min.js',
-    'player-animator.min.js',
-    'wolf-animation.min.js'
-  ];
-  
-  const missingBundles = [];
-  requiredBundles.forEach(bundle => {
-    const bundlePath = path.join(docsDistPath, bundle);
-    if (!fs.existsSync(bundlePath)) {
-      missingBundles.push(bundle);
+  /**
+   * Check directory structure
+   */
+  async checkDirectoryStructure() {
+    if (!existsSync(docsPath)) {
+      this.errors.push('docs/ directory does not exist')
+      return
     }
-  });
-  
-  if (missingBundles.length > 0) {
-    errors.push(`❌ Missing bundles in dist: ${missingBundles.join(', ')}`);
-    return false;
-  }
-  
-  successes.push('✓ All required bundles are present in dist');
-  return true;
-}
 
-// Check for game files
-function checkProjectFiles() {
-  console.log('Checking essential project files...');
-  
-  const essentialFiles = [
-    'game.wasm',
-    'API.md',
-    'GETTING_STARTED.md'
-  ];
-  
-  const missingFiles = [];
-  essentialFiles.forEach(file => {
-    const filePath = path.join(rootDir, file);
-    if (!fs.existsSync(filePath)) {
-      missingFiles.push(file);
-    }
-  });
-  
-  if (missingFiles.length > 0) {
-    errors.push(`❌ Missing essential files: ${missingFiles.join(', ')}`);
-    return false;
-  }
-  
-  successes.push('✓ All essential project files are present');
-  return true;
-}
-
-// Check for supporting files
-function checkSupportingFiles() {
-  console.log('Checking supporting files...');
-  
-  // Check for main site.js if it exists
-  const siteJsPath = path.join(rootDir, 'site.js');
-  if (fs.existsSync(siteJsPath)) {
-    successes.push('✓ Main site.js file is present');
-  }
-  
-  // No required supporting files since demos were removed
-  successes.push('✓ Supporting files check complete');
-  
-  return true;
-}
-
-// Check file sizes to ensure they're not empty
-function checkFileSizes() {
-  console.log('Checking file sizes...');
-  
-  const filesToCheck = [
-    'index.html',
-    'dist/trystero-firebase.min.js'
-  ];
-  
-  const emptyFiles = [];
-  filesToCheck.forEach(file => {
-    const filePath = path.join(rootDir, file);
-    if (fs.existsSync(filePath)) {
-      const stats = fs.statSync(filePath);
-      if (stats.size === 0) {
-        emptyFiles.push(file);
+    for (const dir of this.requiredDirectories) {
+      const dirPath = join(docsPath, dir)
+      if (!existsSync(dirPath)) {
+        this.warnings.push(`docs/${dir}/ directory missing`)
+      } else {
+        console.log(chalk.green(`  ✅ docs/${dir}/ exists`))
       }
     }
-  });
-  
-  if (emptyFiles.length > 0) {
-    errors.push(`❌ Empty files detected: ${emptyFiles.join(', ')}`);
-    return false;
   }
-  
-  successes.push('✓ All files have content');
-  return true;
+
+  /**
+   * Check required files
+   */
+  async checkRequiredFiles() {
+    for (const file of this.requiredFiles) {
+      const filePath = join(docsPath, file)
+      if (!existsSync(filePath)) {
+        this.errors.push(`Required file docs/${file} is missing`)
+      } else {
+        console.log(chalk.green(`  ✅ docs/${file} exists`))
+      }
+    }
+
+    for (const file of this.optionalFiles) {
+      const filePath = join(docsPath, file)
+      if (existsSync(filePath)) {
+        console.log(chalk.green(`  ✅ docs/${file} exists`))
+      } else {
+        console.log(chalk.yellow(`  ⚠️  docs/${file} missing (optional)`))
+      }
+    }
+  }
+
+  /**
+   * Check dist folder contents
+   */
+  async checkDistFolder() {
+    const distPath = join(docsPath, 'dist')
+    if (!existsSync(distPath)) {
+      this.errors.push('docs/dist/ directory is missing')
+      return
+    }
+
+    const expectedDistContents = [
+      'core',
+      'animations',
+      'wasm',
+      'sourcemaps',
+      'reports',
+      'index.js',
+      'README.md'
+    ]
+
+    for (const item of expectedDistContents) {
+      const itemPath = join(distPath, item)
+      if (!existsSync(itemPath)) {
+        this.warnings.push(`docs/dist/${item} missing`)
+      } else {
+        console.log(chalk.green(`  ✅ docs/dist/${item} exists`))
+      }
+    }
+  }
+
+  /**
+   * Check WASM files
+   */
+  async checkWasmFiles() {
+    const wasmFiles = ['game.wasm', 'game-host.wasm']
+    
+    for (const wasmFile of wasmFiles) {
+      const wasmPath = join(docsPath, wasmFile)
+      if (existsSync(wasmPath)) {
+        const stats = statSync(wasmPath)
+        const sizeKB = Math.round(stats.size / 1024)
+        console.log(chalk.green(`  ✅ docs/${wasmFile} exists (${sizeKB}KB)`))
+        
+        if (stats.size === 0) {
+          this.errors.push(`docs/${wasmFile} is empty`)
+        }
+      } else {
+        this.errors.push(`docs/${wasmFile} is missing`)
+      }
+    }
+
+    // Check dist/wasm folder
+    const distWasmPath = join(docsPath, 'dist', 'wasm')
+    if (existsSync(distWasmPath)) {
+      console.log(chalk.green(`  ✅ docs/dist/wasm/ exists`))
+    } else {
+      this.warnings.push('docs/dist/wasm/ directory missing')
+    }
+  }
+
+  /**
+   * Check Jekyll configuration
+   */
+  async checkJekyllConfig() {
+    const configPath = join(docsPath, '_config.yml')
+    if (!existsSync(configPath)) {
+      this.errors.push('docs/_config.yml is missing')
+      return
+    }
+
+    try {
+      const configContent = readFileSync(configPath, 'utf8')
+      
+      // Check for required configurations
+      const requiredConfigs = [
+        'title:',
+        'description:',
+        'baseurl:',
+        'include:',
+        'defaults:'
+      ]
+
+      for (const config of requiredConfigs) {
+        if (configContent.includes(config)) {
+          console.log(chalk.green(`  ✅ _config.yml contains ${config}`))
+        } else {
+          this.warnings.push(`_config.yml missing ${config}`)
+        }
+      }
+
+      // Check for WASM MIME type configuration
+      if (configContent.includes('application/wasm')) {
+        console.log(chalk.green(`  ✅ _config.yml has WASM MIME type configuration`))
+      } else {
+        this.warnings.push('_config.yml missing WASM MIME type configuration')
+      }
+
+    } catch (error) {
+      this.errors.push(`Error reading _config.yml: ${error.message}`)
+    }
+  }
+
+  /**
+   * Check file sizes
+   */
+  async checkFileSizes() {
+    const filesToCheck = [
+      { path: 'index.html', maxSize: 100 }, // 100KB
+      { path: 'game.wasm', minSize: 10 },   // 10KB minimum
+      { path: 'game-host.wasm', minSize: 10 } // 10KB minimum
+    ]
+
+    for (const file of filesToCheck) {
+      const filePath = join(docsPath, file.path)
+      if (existsSync(filePath)) {
+        const stats = statSync(filePath)
+        const sizeKB = Math.round(stats.size / 1024)
+        
+        if (file.maxSize && sizeKB > file.maxSize) {
+          this.warnings.push(`docs/${file.path} is large (${sizeKB}KB > ${file.maxSize}KB)`)
+        } else if (file.minSize && sizeKB < file.minSize) {
+          this.warnings.push(`docs/${file.path} is small (${sizeKB}KB < ${file.minSize}KB)`)
+        } else {
+          console.log(chalk.green(`  ✅ docs/${file.path} size OK (${sizeKB}KB)`))
+        }
+      }
+    }
+  }
+
+  /**
+   * Display validation results
+   */
+  displayResults() {
+    console.log(chalk.bold.blue('\n📊 Validation Results:\n'))
+
+    if (this.errors.length === 0 && this.warnings.length === 0) {
+      console.log(chalk.green.bold('✅ All checks passed! Deployment is ready.'))
+    } else {
+      if (this.errors.length > 0) {
+        console.log(chalk.red.bold('❌ Errors found:'))
+        this.errors.forEach(error => {
+          console.log(chalk.red(`  • ${error}`))
+        })
+      }
+
+      if (this.warnings.length > 0) {
+        console.log(chalk.yellow.bold('\n⚠️  Warnings:'))
+        this.warnings.forEach(warning => {
+          console.log(chalk.yellow(`  • ${warning}`))
+        })
+      }
+    }
+
+    console.log(chalk.blue('\n📋 Deployment Checklist:'))
+    console.log(chalk.blue('  □ GitHub Pages enabled in repository settings'))
+    console.log(chalk.blue('  □ GitHub Actions permissions configured'))
+    console.log(chalk.blue('  □ Workflow file exists (.github/workflows/deploy.yml)'))
+    console.log(chalk.blue('  □ All required files present in docs/'))
+    console.log(chalk.blue('  □ WASM files have correct MIME types'))
+    console.log(chalk.blue('  □ Jekyll configuration is valid'))
+
+    if (this.errors.length === 0) {
+      console.log(chalk.green.bold('\n🚀 Ready for deployment!'))
+      console.log(chalk.blue('Push to main branch to trigger automatic deployment.'))
+    } else {
+      console.log(chalk.red.bold('\n❌ Fix errors before deploying'))
+    }
+  }
 }
 
-// Check for test files (they shouldn't be in docs)
-function checkForTestFiles() {
-  console.log('Checking for test files...');
-  
-  const testPatterns = ['test-', '.test.', '.spec.'];
-  const docsFiles = fs.existsSync(docsDir) ? fs.readdirSync(docsDir) : [];
-  const testFilesInDocs = docsFiles.filter(file => 
-    testPatterns.some(pattern => file.includes(pattern))
-  );
-  
-  if (testFilesInDocs.length > 0) {
-    warnings.push(`⚠️  Test files found in docs (consider removing): ${testFilesInDocs.join(', ')}`);
-  } else {
-    successes.push('✓ No test files in production docs');
-  }
-  
-  return true;
+// Run validation if called directly
+if (process.argv[1] && process.argv[1].endsWith('validate-github-pages.js')) {
+  const validator = new GitHubPagesValidator()
+  const success = await validator.validate()
+  process.exit(success ? 0 : 1)
 }
 
-// Check dependencies
-function checkDependencies() {
-  console.log('Checking dependencies...');
-  
-  if (!fs.existsSync(path.join(rootDir, 'node_modules'))) {
-    errors.push('❌ node_modules not found. Run npm install first.');
-    return false;
-  }
-  
-  if (!fs.existsSync(path.join(rootDir, 'package-lock.json'))) {
-    warnings.push('⚠️  package-lock.json not found');
-  }
-  
-  successes.push('✓ Dependencies are installed');
-  return true;
-}
-
-// Main validation function
-function validate() {
-  // Run all checks
-  checkDependencies();
-  
-  if (checkDocsFolder()) {
-    checkIndexFile();
-    checkNoJekyll();
-    checkBuiltAssets();
-    checkProjectFiles();
-    checkSupportingFiles();
-    checkFileSizes();
-    checkForTestFiles();
-  }
-  
-  // Print results
-  console.log('\n' + chalk.blue.bold('📊 Validation Results:\n'));
-  
-  if (successes.length > 0) {
-    console.log(chalk.green.bold('Successes:'));
-    successes.forEach(msg => console.log(chalk.green(msg)));
-  }
-  
-  if (warnings.length > 0) {
-    console.log('\n' + chalk.yellow.bold('Warnings:'));
-    warnings.forEach(msg => console.log(chalk.yellow(msg)));
-  }
-  
-  if (errors.length > 0) {
-    console.log('\n' + chalk.red.bold('Errors:'));
-    errors.forEach(msg => console.log(chalk.red(msg)));
-  }
-  
-  // Summary
-  console.log('\n' + chalk.blue.bold('Summary:'));
-  console.log(`  ✓ ${chalk.green(successes.length)} checks passed`);
-  console.log(`  ⚠ ${chalk.yellow(warnings.length)} warnings`);
-  console.log(`  ✗ ${chalk.red(errors.length)} errors`);
-  
-  if (errors.length === 0) {
-    console.log('\n' + chalk.green.bold('✅ GitHub Pages deployment is ready!'));
-    console.log(chalk.gray('Push to GitHub and enable Pages in repository settings.'));
-    process.exit(0);
-  } else {
-    console.log('\n' + chalk.red.bold('❌ Deployment validation failed!'));
-    console.log(chalk.gray('Fix the errors above and run validation again.'));
-    process.exit(1);
-  }
-}
-
-// Run validation
-validate();
+export { GitHubPagesValidator }

@@ -28,10 +28,10 @@ This guide provides step-by-step instructions for deploying your enhanced Tryste
 | File | Purpose | Location |
 |------|---------|----------|
 | `deploy-gh-pages.yml` | GitHub Actions workflow | `.github/workflows/` |
-| `_config.yml` | Jekyll configuration | `docs/` |
+| `_config.yml` | Jekyll configuration | `public/` |
 | `package.json` | Build scripts | Root directory |
-| `index.html` | Main documentation page | `docs/` |
-| `game.wasm` | WebAssembly module | `docs/` |
+| `index.html` | Main documentation page | `public/` |
+| `game.wasm` | WebAssembly module | `public/` |
 
 ## 🔧 Setup Instructions
 
@@ -111,7 +111,7 @@ npx serve docs
 
 ### 🔗 Setting Up Your Domain
 
-1. Add a `CNAME` file to the `docs/` folder with your domain:
+1. Add a `CNAME` file to the `public/` folder with your domain:
    ```
    example.com
    ```
@@ -147,7 +147,7 @@ npx serve docs
 
 #### 🟡 404 Errors
 
-- If using a subdomain path, update `baseurl` in `docs/_config.yml`:
+- If using a subdomain path, update `baseurl` in `public/_config.yml`:
   ```yaml
   baseurl: "/repository-name"
   ```
@@ -157,7 +157,7 @@ npx serve docs
 
 The Jekyll configuration is set to properly serve WASM files. If issues persist:
 - Check browser console for CORS errors
-- Verify WASM file exists in `docs/` folder
+- Verify WASM file exists in `public/` folder
 - Ensure proper MIME type is set (handled by Jekyll config)
 
 ## 🔄 Updating Your Site
@@ -199,7 +199,7 @@ For manual control over deployment:
 ### ⚙️ Technical Details
 - WASM files preserved with correct MIME types
 - Jekyll processes Markdown but uses custom HTML/CSS
-- All assets in `docs/` folder are deployed
+- All assets in `public/` folder are deployed
 - Supports modern browsers with WebAssembly
 
 ## 👥 Support & Resources

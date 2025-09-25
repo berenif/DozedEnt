@@ -1,0 +1,174 @@
+name: Deploy DozedEnt to GitHub Pages (Public Folder) (DEPRECATED - Use deploy-build-only.yml)
+
+on:
+  # DISABLED - This workflow is deprecated
+  # Use deploy-build-only.yml instead
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install PowerShell Core
+        run: |
+          # Install PowerShell Core on Ubuntu
+          wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+          pwsh --version
+      
+      - name: Setup Emscripten SDK
+        run: |
+          # Clone and setup Emscripten SDK
+          if [ ! -d "emsdk" ]; then
+            git clone https://github.com/emscripten-core/emsdk.git
+          fi
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          cd ..
+          echo "Emscripten version:"
+          emcc --version
+      
+      - name: Generate balance data
+        run: npm run balance:gen
+        
+      - name: Build WASM modules
+        run: |
+          # Build all WASM modules
+          npm run wasm:build:all
+          echo "WASM files built:"
+          ls -la *.wasm || echo "No WASM files in root"
+          ls -la dist/wasm/ || echo "No WASM files in dist/wasm"
+      
+      - name: Build project
+        run: |
+          # Build the complete project
+          npm run build:all
+          echo "Build completed. Dist folder contents:"
+          ls -la dist/ || echo "No dist folder found"
+      
+      - name: Build public folder for deployment
+        run: |
+          # Run the public folder build script
+          node tools/scripts/build-public.js
+          echo "Public folder built. Contents:"
+          ls -la public/ || echo "No public folder found"
+      
+      - name: Validate public folder structure
+        run: |
+          echo "🔍 Validating public folder structure..."
+          
+          # Check essential files
+          test -f public/index.html && echo "✅ public/index.html exists" || echo "❌ public/index.html missing"
+          test -f public/game.wasm && echo "✅ public/game.wasm exists" || echo "❌ public/game.wasm missing"
+          test -f public/game-host.wasm && echo "✅ public/game-host.wasm exists" || echo "❌ public/game-host.wasm missing"
+          test -f public/favicon.ico && echo "✅ public/favicon.ico exists" || echo "❌ public/favicon.ico missing"
+          test -f public/_config.yml && echo "✅ public/_config.yml exists" || echo "❌ public/_config.yml missing"
+          test -f public/.nojekyll && echo "✅ public/.nojekyll exists" || echo "❌ public/.nojekyll missing"
+          
+          # Check essential directories
+          test -d public/dist && echo "✅ public/dist directory exists" || echo "❌ public/dist directory missing"
+          test -d public/core && echo "✅ public/core directory exists" || echo "❌ public/core directory missing"
+          test -d public/animations && echo "✅ public/animations directory exists" || echo "❌ public/animations directory missing"
+          test -d public/assets && echo "✅ public/assets directory exists" || echo "❌ public/assets directory missing"
+          test -d public/images && echo "✅ public/images directory exists" || echo "❌ public/images directory missing"
+          
+          # Check file sizes
+          echo "📊 File sizes:"
+          du -h public/*.wasm || echo "No WASM files found"
+          du -h public/dist/ || echo "No dist folder found"
+          
+          # Run comprehensive validation
+          npm run validate:public-deployment || echo "Validation script not found, continuing..."
+      
+      - name: Run deployment validation
+        run: |
+          echo "🚀 Running comprehensive deployment validation..."
+          
+          # Check if all required files are present and not empty
+          for file in public/index.html public/game.wasm public/game-host.wasm public/favicon.ico; do
+            if [ -f "$file" ] && [ -s "$file" ]; then
+              echo "✅ $file exists and is not empty"
+            else
+              echo "❌ $file missing or empty"
+              exit 1
+            fi
+          done
+          
+          # Check if dist folder has content
+          if [ -d "public/dist" ] && [ "$(ls -A public/dist)" ]; then
+            echo "✅ public/dist has content"
+          else
+            echo "❌ public/dist is empty or missing"
+            exit 1
+          fi
+          
+          echo "✅ All validation checks passed!"
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
+      - name: Output deployment information
+        run: |
+          echo "🚀 Deployment completed successfully!"
+          echo "🌐 Site URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "🎮 Game available at: ${{ steps.deployment.outputs.page_url }}"
+          echo "📁 Assets served from: ${{ steps.deployment.outputs.page_url }}/dist/"
+          echo "🔧 WASM files available at: ${{ steps.deployment.outputs.page_url }}/*.wasm"
+          echo "🌐 Core modules available at: ${{ steps.deployment.outputs.page_url }}/core/"
+          echo "🎭 Animation modules available at: ${{ steps.deployment.outputs.page_url }}/animations/"
+          echo "🎵 Assets available at: ${{ steps.deployment.outputs.page_url }}/assets/"
+          echo ""
+          echo "📋 Deployment Summary:"
+          echo "  - Complete /dist folder deployed to /dist/"
+          echo "  - WASM modules deployed to root and /wasm/"
+          echo "  - Core networking modules deployed to /core/"
+          echo "  - Animation modules deployed to /animations/"
+          echo "  - All assets and data deployed to respective folders"
+          echo "  - Source files available at /src/ for debugging"
+          echo "  - Jekyll configuration optimized for GitHub Pages"

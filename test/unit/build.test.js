@@ -60,7 +60,6 @@ describe('Build System', () => {
       expect(packageJson.scripts).to.have.property('build:animations');
       expect(packageJson.scripts).to.have.property('build:wolf');
       expect(packageJson.scripts).to.have.property('build:all');
-      expect(packageJson.scripts).to.have.property('build:docs');
     });
   });
 

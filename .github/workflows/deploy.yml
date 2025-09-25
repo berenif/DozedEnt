@@ -25,12 +25,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
         
-      - name: Build docs
+      - name: Build project
+        run: npm run build
+        
+      - name: Build WASM modules
+        run: npm run wasm:build:all
+        
+      - name: Build docs and prepare deployment
         run: npm run build:docs
+        
+      - name: Copy dist assets to docs
+        run: |
+          # Copy dist folder contents to docs/dist
+          cp -r dist/* docs/dist/ || true
+          # Copy WASM files to docs root for easy access
+          cp dist/wasm/*.wasm docs/ || true
+          # Copy core modules to docs for networking
+          cp -r dist/core docs/ || true
+          # Copy animations to docs
+          cp -r dist/animations docs/ || true
+          # Ensure all required files are present
+          ls -la docs/
+          ls -la docs/dist/ || echo "No dist folder in docs"
+          ls -la docs/*.wasm || echo "No WASM files in docs root"
+
+      - name: Validate deployment files
+        run: |
+          echo "🔍 Validating deployment files..."
+          # Check if essential files exist
+          test -f docs/index.html && echo "✅ docs/index.html exists" || echo "❌ docs/index.html missing"
+          test -f docs/game.wasm && echo "✅ docs/game.wasm exists" || echo "❌ docs/game.wasm missing"
+          test -f docs/game-host.wasm && echo "✅ docs/game-host.wasm exists" || echo "❌ docs/game-host.wasm missing"
+          test -f docs/favicon.ico && echo "✅ docs/favicon.ico exists" || echo "❌ docs/favicon.ico missing"
+          test -d docs/dist && echo "✅ docs/dist directory exists" || echo "❌ docs/dist directory missing"
+          test -d docs/core && echo "✅ docs/core directory exists" || echo "❌ docs/core directory missing"
+          test -d docs/animations && echo "✅ docs/animations directory exists" || echo "❌ docs/animations directory missing"
+          
+          # Check file sizes
+          echo "📊 File sizes:"
+          du -h docs/*.wasm || echo "No WASM files found"
+          du -h docs/dist/ || echo "No dist folder found"
+
+      - name: Run comprehensive deployment validation
+        run: npm run validate:github-pages
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -38,7 +80,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: docs
 
   deploy:
     needs: build
@@ -50,5 +92,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        
+      - name: Output deployment URL
+        run: |
+          echo "🚀 Deployed to: ${{ steps.deployment.outputs.page_url }}"
+          echo "🎮 Game available at: ${{ steps.deployment.outputs.page_url }}"
+          echo "📁 Assets served from: ${{ steps.deployment.outputs.page_url }}/dist/"
 
 

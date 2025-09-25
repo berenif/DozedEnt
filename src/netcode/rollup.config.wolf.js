@@ -4,7 +4,7 @@ import terser from '@rollup/plugin-terser'
 const ecma = 2019
 
 export default {
-  input: 'src/wolf-animation.js',
+  input: 'src/animation/enemy/wolf-animation.js',
   output: [
     {
       file: 'dist/wolf-animation.js',

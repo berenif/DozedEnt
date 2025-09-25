@@ -8,8 +8,8 @@ pnpm-debug.log*
 node_modules/
 
 # Build artifacts
-/dist/
 /build/
+/dist/
 /coverage/
 /.nyc_output/
 playwright-report/
@@ -17,8 +17,6 @@ test-results/
 .rpt2_cache/
 .rollup.cache/
 
-# Emscripten SDK and caches
-emsdk/
 
 # OS
 .DS_Store

@@ -27,7 +27,7 @@ exclude:
 # Include specific files/folders
 include:
   - index.html
-  - docs/
+  - public/
   - site.css
   - site.js
   - game.wasm

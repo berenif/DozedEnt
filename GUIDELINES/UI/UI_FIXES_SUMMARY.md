@@ -10,7 +10,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Elements were overlapping and misaligned due to conflicting z-index values and positioning.
 
 **Solution**:
-- Added comprehensive CSS custom properties for z-index layering in `docs/js/src/css/base.css`
+- Added comprehensive CSS custom properties for z-index layering in `public/js/src/css/base.css`
 - Defined proper UI layer hierarchy:
   - `--z-game-canvas: 1` (Game rendering layer)
   - `--z-game-ui: 100` (Basic UI elements)
@@ -26,7 +26,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Modern Roguelite UI, Enhanced UI, and existing HUD were conflicting and duplicating elements.
 
 **Solution**:
-- Created `UICoordinator` system (`docs/js/src/ui/ui-coordinator.js`) to manage UI system conflicts
+- Created `UICoordinator` system (`public/js/src/ui/ui-coordinator.js`) to manage UI system conflicts
 - Implemented conflict resolution strategies for overlapping systems
 - Added system registration and priority management
 - Automatically hides duplicate elements when higher-priority systems are active
@@ -36,8 +36,8 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Mobile controls weren't displaying properly and responsive design was broken.
 
 **Solution**:
-- Fixed mobile controls z-index in `docs/js/src/css/mobile.css`
-- Updated responsive CSS in `docs/js/src/css/responsive.css` with proper media queries
+- Fixed mobile controls z-index in `public/js/src/css/mobile.css`
+- Updated responsive CSS in `public/js/src/css/responsive.css` with proper media queries
 - Added responsive UI coordination classes (`.mobile`, `.tablet`, `.desktop`)
 - Fixed mobile controls display from `block` to `flex` for proper layout
 - Ensured mobile controls appear correctly on tablets and phones
@@ -55,7 +55,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Phase overlays weren't displaying correctly and had broken interactions.
 
 **Solution**:
-- Created dedicated `PhaseOverlayManager` (`docs/js/src/ui/phase-overlay-manager.js`)
+- Created dedicated `PhaseOverlayManager` (`public/js/src/ui/phase-overlay-manager.js`)
 - Implemented proper phase change detection and overlay management
 - Fixed all phase overlay interactions (choice selection, risk escape, shop purchases)
 - Added proper event handling and WASM integration
@@ -65,7 +65,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Multiple UI systems were creating redundant elements and causing performance issues.
 
 **Solution**:
-- Created `UIPerformanceOptimizer` (`docs/js/src/ui/ui-performance-optimizer.js`)
+- Created `UIPerformanceOptimizer` (`public/js/src/ui/ui-performance-optimizer.js`)
 - Implemented element virtualization for damage numbers and particle effects
 - Added object pooling to prevent DOM bloat
 - Created update batching to reduce DOM thrashing
@@ -142,19 +142,19 @@ The UI system is now fully functional and optimized. Future enhancements could i
 ## 📝 Files Modified
 
 ### Core Files
-- `docs/js/site.js` - Main application integration
-- `docs/js/src/css/base.css` - CSS architecture and variables
-- `docs/js/src/css/ui.css` - Core UI styling fixes
-- `docs/js/src/css/mobile.css` - Mobile controls fixes
-- `docs/js/src/css/responsive.css` - Responsive design improvements
-- `docs/js/src/css/phases.css` - Phase overlay styling
-- `docs/js/src/css/loading.css` - Loading screen fixes
-- `docs/js/src/css/game-viewport.css` - Game viewport styling
+- `public/js/site.js` - Main application integration
+- `public/js/src/css/base.css` - CSS architecture and variables
+- `public/js/src/css/ui.css` - Core UI styling fixes
+- `public/js/src/css/mobile.css` - Mobile controls fixes
+- `public/js/src/css/responsive.css` - Responsive design improvements
+- `public/js/src/css/phases.css` - Phase overlay styling
+- `public/js/src/css/loading.css` - Loading screen fixes
+- `public/js/src/css/game-viewport.css` - Game viewport styling
 
 ### New Components
-- `docs/js/src/ui/ui-coordinator.js` - UI system coordination
-- `docs/js/src/ui/phase-overlay-manager.js` - Phase overlay management
-- `docs/js/src/ui/ui-performance-optimizer.js` - Performance optimization
+- `public/js/src/ui/ui-coordinator.js` - UI system coordination
+- `public/js/src/ui/phase-overlay-manager.js` - Phase overlay management
+- `public/js/src/ui/ui-performance-optimizer.js` - Performance optimization
 
 ## 🎉 Result
 

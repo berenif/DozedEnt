@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DozedEnt - WASM-First Multiplayer Survival Game</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    
+    <!-- CSS Styles -->
+    <link rel="stylesheet" href="src/css/base.css">
+    <link rel="stylesheet" href="src/css/site.css">
+    <link rel="stylesheet" href="src/css/game-viewport.css">
+    <link rel="stylesheet" href="src/css/ui.css">
+    <link rel="stylesheet" href="src/css/mobile.css">
+    <link rel="stylesheet" href="src/css/roguelike-hud.css">
+    
+    <script>window.__BUILD__ = {
+  "buildTime": "2025-09-21T20:22:42.813Z",
+  "version": "1.0.0",
+  "deploymentType": "github-pages-symlinks",
+  "structure": {
+    "mainFiles": [
+      "index.html",
+      "site.js",
+      "favicon.ico"
+    ],
+    "symlinks": [
+      "dist/",
+      "core/",
+      "animations/",
+      "wasm/",
+      "src/",
+      "assets/",
+      "data/",
+      "images/"
+    ],
+    "wasmFiles": [
+      "game.wasm",
+      "game-host.wasm"
+    ]
+  },
+  "notes": [
+    "All dist/ folder contents are symlinked from ../dist/",
+    "WASM files are symlinked from root level and dist/wasm/",
+    "Core networking modules are symlinked from dist/core/",
+    "Animation modules are symlinked from dist/animations/",
+    "Source files are symlinked from ../src/ for debugging",
+    "Assets and data are symlinked from ../assets/ and ../data/",
+    "No file duplication - all files reference original sources"
+  ]
+};</script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-container">
+            <div class="logo">🎮</div>
+            <h1>DozedEnt</h1>
+            <p>Powered by Trystero - P2P Survival Game</p>
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Initializing WASM game engine...</div>
+            <button id="start-game-btn" class="start-button" disabled>
+                <span class="button-text">Initializing...</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Game Interface -->
+    <div id="game-interface" class="game-interface" style="display: none;">
+        <!-- Viewport Container -->
+        <div class="viewport-container">
+            <!-- Main Game Canvas -->
+            <canvas id="canvas" width="3840" height="2160"></canvas>
+            
+            <!-- Game Renderer Canvas -->
+            <canvas id="gameCanvas" width="1280" height="720"></canvas>
+            
+            <!-- Game Boundary Indicator -->
+            <div class="game-boundary"></div>
+        </div>
+
+        <!-- Status UI -->
+        <div id="status" class="status-ui">
+            <div id="peer-count">Players: 1</div>
+            <div id="connection-status" class="status-connecting">Ready</div>
+        </div>
+
+        <!-- Debug HUD -->
+        <div id="debug-hud" class="debug-hud"></div>
+
+        <!-- Enhanced UI Toggle -->
+        <button id="enhanced-ui-toggle" class="ui-toggle-button" title="Switch to Enhanced UI">
+            <span class="toggle-icon">⚙️</span>
+        </button>
+
+        <!-- Mobile Controls -->
+        <div id="joystick" class="mobile-joystick" hidden>
+            <div id="joystick-base">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+
+        <div id="actions" class="mobile-actions" hidden>
+            <button id="roll-button" class="action-button">Roll</button>
+            <button id="attack-button" class="action-button">Attack</button>
+            <button id="block-button" class="action-button">Block</button>
+            <button id="special-button" class="action-button">Special</button>
+        </div>
+
+        <!-- Desktop Controls Tooltip -->
+        <div id="controls-tip" class="controls-tooltip">
+            <strong>Controls:</strong>
+            <ul>
+                <li>WASD / Arrow Keys: Move</li>
+                <li>Space: Jump</li>
+                <li>J: Light Attack</li>
+                <li>K: Heavy Attack</li>
+                <li>L: Block</li>
+                <li>Shift: Roll</li>
+                <li>U: Special</li>
+            </ul>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="main-menu">
+            <div class="menu-container">
+                <h2>Main Menu</h2>
+                <div class="menu-options">
+                    <button class="menu-button" data-action="new-game">New Game</button>
+                    <button class="menu-button" data-action="continue">Continue</button>
+                    <button class="menu-button" data-action="join-online">Join Online</button>
+                    <button class="menu-button" data-action="settings">Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Panel -->
+        <div id="lobbyPanel" class="lobby-panel" style="display: none;">
+            <div class="lobby-container">
+                <h3>Multiplayer Lobby</h3>
+                <div class="lobby-tabs">
+                    <button class="tab-button active" data-tab="rooms">Rooms</button>
+                    <button class="tab-button" data-tab="create">Create Room</button>
+                    <button class="tab-button" data-tab="chat">Chat</button>
+                </div>
+                
+                <div class="tab-content" id="rooms-tab">
+                    <div class="rooms-list" id="rooms-list">
+                        <div class="room-item">
+                            <span class="room-name">Quick Play Room</span>
+                            <span class="room-players">2/4</span>
+                            <button class="join-button" onclick="joinRoom('quick-play')">Join</button>
+                        </div>
+                    </div>
+                    <button class="quick-play-button" onclick="quickPlay()">Quick Play</button>
+                </div>
+                
+                <div class="tab-content" id="create-tab" style="display: none;">
+                    <div class="create-room-form">
+                        <input type="text" id="roomName" placeholder="Room Name" value="My Room">
+                        <select id="gameMode">
+                            <option value="default">Default</option>
+                            <option value="survival">Survival</option>
+                            <option value="pvp">PvP</option>
+                        </select>
+                        <button onclick="createRoom()">Create Room</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="chat-tab" style="display: none;">
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Type a message...">
+                        <button onclick="sendChat()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase Overlays -->
+        <div id="choice-overlay" class="phase-overlay" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Choose Your Path</h3>
+                <p class="overlay-msg">Select your next action:</p>
+                <div class="choices">
+                    <button class="choice-button" data-choice="explore">Explore</button>
+                    <button class="choice-button" data-choice="fight">Fight</button>
+                    <button class="choice-button" data-choice="rest">Rest</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Phase Overlay -->
+        <div id="risk-overlay" class="phase-overlay risk-phase" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Risk Phase</h3>
+                <div class="risk-info">
+                    <div class="risk-multiplier">Risk Multiplier: 2x</div>
+                    <div class="active-curses">
+                        <h4>Active Curses:</h4>
+                        <ul>
+                            <li>Reduced Health</li>
+                            <li>Slower Movement</li>
+                        </ul>
+                    </div>
+                    <div class="timed-challenge">
+                        <p>Complete within 60 seconds for bonus rewards!</p>
+                    </div>
+                </div>
+                <button class="choice-button" onclick="startRiskPhase()">Accept Risk</button>
+            </div>
+        </div>
+
+        <!-- Escalate Phase Overlay -->
+        <div id="escalate-overlay" class="phase-overlay escalate-phase" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Escalate Phase</h3>
+                <div class="escalate-info">
+                    <div class="escalation-level">Escalation Level: 3</div>
+                    <div class="modifier-list">
+                        <div class="modifier-stat">+50% Damage</div>
+                        <div class="modifier-stat">+25% Speed</div>
+                        <div class="modifier-stat">+100% Rewards</div>
+                    </div>
+                    <div class="miniboss-alert">
+                        <h4>⚠️ Miniboss Alert!</h4>
+                        <p>A powerful enemy approaches...</p>
+                        <div class="miniboss-health">
+                            <div class="miniboss-health-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="choice-button" onclick="startEscalatePhase()">Face Challenge</button>
+            </div>
+        </div>
+
+        <!-- CashOut Phase Overlay -->
+        <div id="cashout-overlay" class="phase-overlay cashout-phase" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Cash Out Phase</h3>
+                <div class="currency-display">
+                    <div>Gold: 150</div>
+                    <div>XP: 250</div>
+                    <div>Items: 3</div>
+                </div>
+                <div class="shop-items">
+                    <div class="shop-item" onclick="purchaseItem('health-potion')">
+                        <h4>Health Potion</h4>
+                        <p>Cost: 50 Gold</p>
+                    </div>
+                    <div class="shop-item" onclick="purchaseItem('speed-boost')">
+                        <h4>Speed Boost</h4>
+                        <p>Cost: 75 Gold</p>
+                    </div>
+                </div>
+                <div class="shop-actions">
+                    <button class="choice-button" onclick="continueAdventure()">Continue</button>
+                    <button class="choice-button" onclick="cashOut()">Cash Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameover-overlay" class="game-overlay" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Game Over</h3>
+                <p class="overlay-msg">You have fallen in battle...</p>
+                <div class="final-stats">
+                    <div>Final Score: 1250</div>
+                    <div>Survived: 3 Phases</div>
+                    <div>Enemies Defeated: 12</div>
+                </div>
+                <button id="rematch-button" onclick="startNewGame()">New Game</button>
+            </div>
+        </div>
+
+        <!-- Orientation Overlay -->
+        <div id="orientation-overlay" class="orientation-overlay" hidden>
+            <div class="overlay-box">
+                <h3 class="overlay-title">Rotate Device</h3>
+                <p class="overlay-msg">Please rotate your device to landscape mode for the best experience.</p>
+                <button id="overlay-start" onclick="startGame()">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="site.js"></script>
+</body>
+</html>

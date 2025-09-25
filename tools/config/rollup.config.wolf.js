@@ -42,7 +42,7 @@ const terserConfig = {
 export default {
   onwarn,
   context: 'globalThis',
-  input: 'src/animation/wolf-animation.js',
+  input: 'src/animation/enemy/wolf-animation.js',
   output: [
     {
       file: 'dist/animations/wolf-animation.js',
@@ -74,9 +74,7 @@ export default {
       exportConditions: ['browser', 'module', 'import', 'default']
     })
   ],
-  external: [
-    './particle-system.js'
-  ]
+  external: []
 }
 
 

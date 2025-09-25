@@ -10,10 +10,11 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const projectRoot = join(__dirname, '..')
+const projectRoot = join(__dirname, '..', '..')
 
 console.log('📚 Building Trystero Game Framework Documentation...')
 
@@ -356,19 +357,89 @@ function buildMainIndex() {
   console.log('✅ Main index already exists in root')
 }
 
+// Copy dist assets to docs folder for deployment
+function copyDistAssets() {
+  console.log('📦 Copying dist assets to docs folder...')
+  
+  const distPath = join(projectRoot, 'dist')
+  const docsPath = join(projectRoot, 'docs')
+  
+  if (!existsSync(distPath)) {
+    console.log('⚠️  No dist folder found, skipping asset copy')
+    return
+  }
+  
+  try {
+    // Ensure docs/dist directory exists
+    const docsDistPath = join(docsPath, 'dist')
+    if (!existsSync(docsDistPath)) {
+      mkdirSync(docsDistPath, { recursive: true })
+    }
+    
+    // Copy dist contents to docs/dist (Windows compatible)
+    if (process.platform === 'win32') {
+      execSync(`xcopy "${distPath}\\*" "${docsDistPath}\\" /E /I /Y`, { stdio: 'inherit' })
+    } else {
+      execSync(`cp -r ${distPath}/* ${docsDistPath}/`, { stdio: 'inherit' })
+    }
+    
+    // Copy WASM files to docs root for easy access
+    const wasmPath = join(distPath, 'wasm')
+    if (existsSync(wasmPath)) {
+      if (process.platform === 'win32') {
+        execSync(`copy "${wasmPath}\\*.wasm" "${docsPath}\\"`, { stdio: 'inherit' })
+      } else {
+        execSync(`cp ${wasmPath}/*.wasm ${docsPath}/`, { stdio: 'inherit' })
+      }
+    }
+    
+    // Copy core modules to docs root
+    const corePath = join(distPath, 'core')
+    if (existsSync(corePath)) {
+      if (process.platform === 'win32') {
+        execSync(`xcopy "${corePath}" "${docsPath}\\core\\" /E /I /Y`, { stdio: 'inherit' })
+      } else {
+        execSync(`cp -r ${corePath} ${docsPath}/`, { stdio: 'inherit' })
+      }
+    }
+    
+    // Copy animations to docs root
+    const animationsPath = join(distPath, 'animations')
+    if (existsSync(animationsPath)) {
+      if (process.platform === 'win32') {
+        execSync(`xcopy "${animationsPath}" "${docsPath}\\animations\\" /E /I /Y`, { stdio: 'inherit' })
+      } else {
+        execSync(`cp -r ${animationsPath} ${docsPath}/`, { stdio: 'inherit' })
+      }
+    }
+    
+    console.log('✅ Dist assets copied to docs folder')
+    
+  } catch (error) {
+    console.error('❌ Error copying dist assets:', error.message)
+    // Don't fail the build if copying fails
+  }
+}
+
 // Main build function
 async function buildDocs() {
   try {
     buildApiDocs()
     buildGettingStartedGuide()
     buildMainIndex()
+    copyDistAssets()
     
     console.log('\\n🎉 Documentation build complete!')
     console.log('📁 Files created in root directory:')
     console.log('   - API.md')
     console.log('   - GETTING_STARTED.md')
     console.log('   - index.html (main landing page)')
-    console.log('\\n🌐 Open index.html in your browser to view the project')
+    console.log('📁 Assets copied to docs folder:')
+    console.log('   - dist/ (all built assets)')
+    console.log('   - *.wasm (WASM modules)')
+    console.log('   - core/ (networking modules)')
+    console.log('   - animations/ (animation modules)')
+    console.log('\\n🌐 Open docs/index.html in your browser to view the game')
     
   } catch (error) {
     console.error('❌ Error building documentation:', error)

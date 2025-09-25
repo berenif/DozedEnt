@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-09-21T17:55:08.430Z",
-  "duration": 43088,
+  "timestamp": "2025-09-21T19:38:04.010Z",
+  "duration": 39117,
   "stats": {
     "modulesBuilt": 3,
-    "totalSize": 1777824,
+    "totalSize": 1770334,
     "optimizationSavings": 0,
     "errors": [],
     "warnings": [
@@ -15,7 +15,7 @@
       "core/trystero-firebase.min.js": 166,
       "core/trystero-ipfs.min.js": 542,
       "core/trystero-mqtt.min.js": 351,
-      "core/trystero-nostr.min.js": 20,
+      "core/trystero-nostr.min.js": 13,
       "core/trystero-supabase.min.js": 127,
       "core/trystero-torrent.min.js": 13,
       "core/trystero-wasm.min.js": 4,

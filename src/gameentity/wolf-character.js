@@ -1,7 +1,7 @@
 // Wolf Character Class - Realistic wolf appearance and animations
 // Implements proper wolf visuals with ears, snout, tail, and fur texture
 
-import WolfAnimationSystem from '../animation/wolf-animation.js'
+import WolfAnimationSystem from '../animation/enemy/wolf-animation.js'
 
 export class WolfCharacter {
     constructor(x, y, type = 'normal', wasmModule = null, id = -1) {

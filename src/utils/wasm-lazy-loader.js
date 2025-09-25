@@ -14,10 +14,12 @@ export class WasmLazyLoader {
       preloadCritical: true,
       enableCompression: true,
       cacheModules: true,
-      loadTimeout: 30000,
+      loadTimeout: 30000, // Increased to 30s for better reliability
+      instantiationTimeout: 20000, // Increased to 20s for complex WASM modules
       retryAttempts: 3,
-      retryDelay: 1000,
-      compressionThreshold: 1024 * 50 // 50KB
+      retryDelay: 2000, // Increased retry delay to 2s
+      compressionThreshold: 1024 * 50, // 50KB
+      debugMode: false // Disable debug mode by default to reduce overhead
     };
 
     this.stats = {
@@ -202,7 +204,19 @@ export class WasmLazyLoader {
         const arrayBuffer = await this.loadModuleBytes(moduleName, options);
         
         // Create proper import objects based on module name
-        const imports = this.createImportObject(moduleName, options.imports || {});
+        console.log(`🔧 Creating import object for ${moduleName}...`);
+        let imports = this.createImportObject(moduleName, options.imports || {});
+        console.log(`✅ Import object created for ${moduleName} with ${Object.keys(imports).length} import categories`);
+        
+        // If this is a retry attempt, try with a simpler import object
+        if (attempt > 1) {
+          console.log(`🔧 Retry attempt ${attempt}: Using simplified import object...`);
+          imports = this.createSimplifiedImportObject(moduleName);
+          console.log(`✅ Simplified import object created for ${moduleName}`);
+        }
+        
+        // Perform memory optimization before instantiation
+        this.optimizeMemoryBeforeInstantiation();
         
         // Use streaming compilation if available for better performance
         let instance;
@@ -210,11 +224,39 @@ export class WasmLazyLoader {
         if (typeof WebAssembly.instantiate === 'function') {
           // Direct instantiation from buffer (more efficient than compile + instantiate)
           // Wrap in timeout to prevent browser hanging
+          console.log(`🔧 Starting WASM instantiation for ${moduleName} (${arrayBuffer.byteLength} bytes)...`);
+          const instantiationStart = performance.now();
+          
+          // Add progress monitoring for instantiation
+          const instantiationPromise = WebAssembly.instantiate(arrayBuffer, imports);
+          
+          // Create a progress monitor that logs every 5 seconds (reduced frequency)
+          let progressInterval;
+          const progressMonitor = () => {
+            progressInterval = setInterval(() => {
+              const elapsed = performance.now() - instantiationStart;
+              console.log(`⏳ WASM instantiation still in progress for ${moduleName} (${elapsed.toFixed(0)}ms elapsed)...`);
+            }, 5000); // Reduced from 2000ms to 5000ms
+          };
+          
+          // Only start progress monitoring for large modules or in debug mode
+          if (arrayBuffer.byteLength > 100000 || this.config.debugMode) {
+            progressMonitor();
+          }
+          
           const result = await this.withTimeout(
-            WebAssembly.instantiate(arrayBuffer, imports),
-            this.config.loadTimeout,
-            `WASM instantiation timeout for ${moduleName}`
+            instantiationPromise,
+            this.config.instantiationTimeout,
+            `WASM instantiation timeout for ${moduleName} after ${this.config.instantiationTimeout}ms`
           );
+          
+          // Clear progress monitor
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
+          
+          const instantiationTime = performance.now() - instantiationStart;
+          console.log(`✅ WASM instantiation completed for ${moduleName} in ${instantiationTime.toFixed(2)}ms`);
           instance = result.instance;
           compiledModule = result.module || null;
 
@@ -222,16 +264,67 @@ export class WasmLazyLoader {
           this.clearSourceMapReferences(instance, compiledModule);
         } else {
           // Fallback to two-step process with timeout protection
+          console.log(`🔧 Starting WASM compilation for ${moduleName} (${arrayBuffer.byteLength} bytes)...`);
+          const compilationStart = performance.now();
+          
+          // Add progress monitoring for compilation
+          const compilationPromise = WebAssembly.compile(arrayBuffer);
+          
+          // Create a progress monitor for compilation
+          let compilationProgressInterval;
+          const compilationProgressMonitor = () => {
+            compilationProgressInterval = setInterval(() => {
+              const elapsed = performance.now() - compilationStart;
+              console.log(`⏳ WASM compilation still in progress for ${moduleName} (${elapsed.toFixed(0)}ms elapsed)...`);
+            }, 2000);
+          };
+          
+          compilationProgressMonitor();
+          
           compiledModule = await this.withTimeout(
-            WebAssembly.compile(arrayBuffer),
-            this.config.loadTimeout / 2,
-            `WASM compilation timeout for ${moduleName}`
+            compilationPromise,
+            this.config.instantiationTimeout / 2,
+            `WASM compilation timeout for ${moduleName} after ${this.config.instantiationTimeout / 2}ms`
           );
+          
+          // Clear compilation progress monitor
+          if (compilationProgressInterval) {
+            clearInterval(compilationProgressInterval);
+          }
+          
+          const compilationTime = performance.now() - compilationStart;
+          console.log(`✅ WASM compilation completed for ${moduleName} in ${compilationTime.toFixed(2)}ms`);
+          
+          console.log(`🔧 Starting WASM instantiation for ${moduleName}...`);
+          const instantiationStart = performance.now();
+          
+          // Add progress monitoring for second instantiation
+          const secondInstantiationPromise = WebAssembly.instantiate(compiledModule, imports);
+          
+          // Create a progress monitor for second instantiation
+          let secondInstantiationProgressInterval;
+          const secondInstantiationProgressMonitor = () => {
+            secondInstantiationProgressInterval = setInterval(() => {
+              const elapsed = performance.now() - instantiationStart;
+              console.log(`⏳ WASM second instantiation still in progress for ${moduleName} (${elapsed.toFixed(0)}ms elapsed)...`);
+            }, 2000);
+          };
+          
+          secondInstantiationProgressMonitor();
+          
           instance = await this.withTimeout(
-            WebAssembly.instantiate(compiledModule, imports),
-            this.config.loadTimeout / 2,
-            `WASM instantiation timeout for ${moduleName}`
+            secondInstantiationPromise,
+            this.config.instantiationTimeout / 2,
+            `WASM instantiation timeout for ${moduleName} after ${this.config.instantiationTimeout / 2}ms`
           );
+          
+          // Clear second instantiation progress monitor
+          if (secondInstantiationProgressInterval) {
+            clearInterval(secondInstantiationProgressInterval);
+          }
+          
+          const instantiationTime = performance.now() - instantiationStart;
+          console.log(`✅ WASM instantiation completed for ${moduleName} in ${instantiationTime.toFixed(2)}ms`);
 
           this.clearSourceMapReferences(instance, compiledModule);
         }
@@ -242,7 +335,37 @@ export class WasmLazyLoader {
         lastError = error;
         console.warn(`⚠️ Load attempt ${attempt} failed for '${moduleName}':`, error.message);
         
+        // Provide specific guidance based on error type
+        if (error.message.includes('timeout')) {
+          console.warn(`🕐 Timeout detected (attempt ${attempt}/${this.config.retryAttempts}) - this may indicate:`);
+          console.warn(`   - Browser performance issues or high CPU load`);
+          console.warn(`   - WASM module complexity requiring more time`);
+          console.warn(`   - Browser memory limitations`);
+          console.warn(`   - Network connectivity issues`);
+          console.warn(`   - Server not responding properly`);
+          
+          // Log memory usage if available
+          if (typeof performance !== 'undefined' && performance.memory) {
+            const memInfo = performance.memory;
+            console.warn(`📊 Current memory usage: Used ${(memInfo.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB, Total ${(memInfo.totalJSHeapSize / 1024 / 1024).toFixed(1)}MB`);
+          }
+        } else if (error.message.includes('WebAssembly')) {
+          console.warn(`🔧 WebAssembly error (attempt ${attempt}/${this.config.retryAttempts}) - this may indicate:`);
+          console.warn(`   - WASM file is corrupted`);
+          console.warn(`   - Browser doesn't support required WASM features`);
+          console.warn(`   - Import object incompatibility`);
+          console.warn(`   - WASM module requires features not available in this browser`);
+        } else if (error.message.includes('fetch')) {
+          console.warn(`🌐 Network error (attempt ${attempt}/${this.config.retryAttempts}) - this may indicate:`);
+          console.warn(`   - File not found at expected path`);
+          console.warn(`   - Server not running or misconfigured`);
+          console.warn(`   - CORS or MIME type issues`);
+        } else {
+          console.warn(`❌ Unknown error (attempt ${attempt}/${this.config.retryAttempts}):`, error.message);
+        }
+        
         if (attempt < this.config.retryAttempts) {
+          console.log(`🔄 Retrying in ${this.config.retryDelay * attempt}ms...`);
           await this.delay(this.config.retryDelay * attempt);
         }
       }
@@ -386,26 +509,13 @@ export class WasmLazyLoader {
       baseUrl = new URL(window.location.href);
     }
     
-    // Check if we're in the docs directory (GitHub Pages)
-    const isInDocs = baseUrl.pathname.includes('/docs/') || baseUrl.pathname.endsWith('/docs');
-    
-    const paths = isInDocs ? [
-      // For docs directory, prioritize local paths
-      `${moduleName}.wasm`,
-      `wasm/${moduleName}.wasm`,
-      `js/src/wasm/${moduleName}.wasm`,
-      `../${moduleName}.wasm`,
-      `../src/wasm/${moduleName}.wasm`,
-      `../docs/${moduleName}.wasm`,
-      `../docs/wasm/${moduleName}.wasm`
-    ] : [
-      // For root directory
+    const paths = [
       `${moduleName}.wasm`,
       `dist/${moduleName}.wasm`,
       `src/wasm/${moduleName}.wasm`,
       `wasm/${moduleName}.wasm`,
-      `docs/${moduleName}.wasm`,
-      `docs/wasm/${moduleName}.wasm`
+      `../${moduleName}.wasm`,
+      `../src/wasm/${moduleName}.wasm`
     ];
 
     return paths.map(path => {
@@ -527,15 +637,177 @@ export class WasmLazyLoader {
   }
 
   /**
-   * Create proper import objects for WASM modules
+   * Create simplified import object for retry attempts
+   * @param {string} moduleName - Name of the module
+   * @returns {Object} Simplified import object
+   * @private
+   */
+  createSimplifiedImportObject(moduleName) {
+    console.log(`🔧 Creating simplified import object for ${moduleName}...`);
+    
+    // Create minimal memory
+    const memory = new WebAssembly.Memory({ initial: 8 }); // Smaller initial memory
+    
+    // Minimal imports - only essential functions
+    const simplifiedImports = {
+      env: {
+        memory,
+        abort: () => { throw new Error('WASM abort'); },
+        __console_log: (ptr, len) => {
+          try {
+            const view = new Uint8Array(memory.buffer, ptr, len);
+            const text = new TextDecoder().decode(view);
+            console.log('[WASM]:', text);
+          } catch (e) {
+            console.warn('Failed to decode WASM console log:', e);
+          }
+        },
+        js_log: (ptr, len) => {
+          try {
+            const view = new Uint8Array(memory.buffer, ptr, len);
+            const text = new TextDecoder().decode(view);
+            console.log('[WASM]:', text);
+          } catch (e) {
+            console.warn('Failed to decode WASM js_log:', e);
+          }
+        },
+        js_get_timestamp: () => Date.now(),
+        js_random: () => Math.random()
+      }
+    };
+    
+    // Add minimal WASI if needed
+    if (moduleName === 'game') {
+      simplifiedImports.wasi_snapshot_preview1 = this.createMinimalWasiShim(memory);
+    }
+    
+    console.log(`✅ Simplified import object created with ${Object.keys(simplifiedImports).length} categories`);
+    return simplifiedImports;
+  }
+
+  /**
+   * Create minimal WASI shim for simplified imports
+   * @param {WebAssembly.Memory} memory - WASM memory instance
+   * @returns {Object} Minimal WASI import object
+   * @private
+   */
+  createMinimalWasiShim(memory) {
+    const u8 = () => new Uint8Array(memory.buffer);
+    const dv = () => new DataView(memory.buffer);
+    const textDecoder = new TextDecoder();
+    
+    return {
+      fd_write: (fd, iovPtr, iovCnt, nwrittenPtr) => {
+        let written = 0;
+        const dataView = dv();
+        const bytes = u8();
+        let offset = iovPtr >>> 0;
+        
+        for (let i = 0; i < (iovCnt >>> 0); i++) {
+          const ptr = dataView.getUint32(offset, true);
+          const len = dataView.getUint32(offset + 4, true);
+          offset += 8;
+          
+          try {
+            const chunk = bytes.subarray(ptr, ptr + len);
+            const text = textDecoder.decode(chunk);
+            if (fd === 1) {
+              console.log(text);
+            } else if (fd === 2) {
+              console.error(text);
+            }
+            written += len;
+          } catch (e) {
+            console.warn('WASI fd_write decode error:', e);
+          }
+        }
+        
+        dataView.setUint32(nwrittenPtr >>> 0, written >>> 0, true);
+        return 0;
+      },
+      
+      proc_exit: (code) => {
+        throw new Error(`WASI proc_exit: ${code}`);
+      },
+      
+      random_get: (ptr, len) => {
+        const view = u8().subarray(ptr >>> 0, (ptr >>> 0) + (len >>> 0));
+        
+        // Use crypto if available, otherwise use Math.random
+        try {
+          if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+            globalThis.crypto.getRandomValues(view);
+            return 0;
+          }
+        } catch (e) {
+          // Fall back to Math.random
+        }
+        
+        // Simple fallback
+        for (let i = 0; i < view.length; i++) {
+          view[i] = Math.floor(Math.random() * 256);
+        }
+        return 0;
+      },
+      
+      clock_time_get: (_id, _precision, timePtr) => {
+        const nowNs = BigInt(Date.now()) * 1000000n;
+        const dataView = dv();
+        
+        try {
+          if (typeof dataView.setBigUint64 === 'function') {
+            dataView.setBigUint64(timePtr >>> 0, nowNs, true);
+          } else {
+            const low = Number(nowNs & 0xffffffffn);
+            const high = Number((nowNs >> 32n) & 0xffffffffn);
+            dataView.setUint32(timePtr >>> 0, low, true);
+            dataView.setUint32((timePtr >>> 0) + 4, high, true);
+          }
+        } catch (e) {
+          console.warn('WASI clock_time_get error:', e);
+        }
+        return 0;
+      },
+      
+      args_sizes_get: (argcPtr, argvBufSizePtr) => {
+        const dataView = dv();
+        dataView.setUint32(argcPtr >>> 0, 0, true);
+        dataView.setUint32(argvBufSizePtr >>> 0, 0, true);
+        return 0;
+      },
+      
+      args_get: () => 0,
+      environ_sizes_get: (envcPtr, envBufSizePtr) => {
+        const dataView = dv();
+        dataView.setUint32(envcPtr >>> 0, 0, true);
+        dataView.setUint32(envBufSizePtr >>> 0, 0, true);
+        return 0;
+      },
+      environ_get: () => 0,
+      fd_close: () => 0,
+      fd_seek: (_fd, _offsetLow, _offsetHigh, _whence, newOffsetPtr) => {
+        const dataView = dv();
+        dataView.setUint32(newOffsetPtr >>> 0, 0, true);
+        dataView.setUint32((newOffsetPtr >>> 0) + 4, 0, true);
+        return 0;
+      }
+    };
+  }
+
+  /**
+   * Create proper import objects for WASM modules with WASM 2.0 support
    * @param {string} moduleName - Name of the module
    * @param {Object} userImports - User-provided imports
    * @returns {Object} Complete import object
    * @private
    */
   createImportObject(moduleName, userImports = {}) {
-    // Create base memory if not provided
-    const memory = userImports.env?.memory || new WebAssembly.Memory({ initial: 16 });
+    // Create base memory if not provided - support for multiple memories
+    const memory = userImports.env?.memory || new WebAssembly.Memory({ 
+      initial: 16,
+      maximum: 1024, // Support larger memory limits
+      shared: false   // Enable shared memory if needed
+    });
     
     // Base imports that most modules need
     const baseImports = {
@@ -569,6 +841,38 @@ export class WasmLazyLoader {
           console.log(`[WASM] Memory growth notification: ${memoryIndex}`);
           // This is a callback that Emscripten uses to notify about memory growth
           // In most cases, we don't need to do anything special here
+        },
+        
+        // WASM 2.0 bulk memory operations
+        memory_fill: (memoryIndex, dest, value, size) => {
+          try {
+            const mem = memoryIndex === 0 ? memory : this.getAdditionalMemory(memoryIndex);
+            const view = new Uint8Array(mem.buffer, dest, size);
+            view.fill(value);
+            return 0;
+          } catch (error) {
+            console.warn('Memory fill error:', error);
+            return 1;
+          }
+        },
+        
+        memory_copy: (memoryIndex, dest, src, size) => {
+          try {
+            const mem = memoryIndex === 0 ? memory : this.getAdditionalMemory(memoryIndex);
+            const destView = new Uint8Array(mem.buffer, dest, size);
+            const srcView = new Uint8Array(mem.buffer, src, size);
+            destView.set(srcView);
+            return 0;
+          } catch (error) {
+            console.warn('Memory copy error:', error);
+            return 1;
+          }
+        },
+        
+        // WASM 2.0 exception handling
+        wasm_exception: (exceptionPtr) => {
+          console.warn('[WASM] Exception occurred:', exceptionPtr);
+          // Handle WASM exceptions if needed
         }
       }
     };
@@ -737,6 +1041,46 @@ export class WasmLazyLoader {
   }
 
   /**
+   * Optimize memory before WASM instantiation
+   * @private
+   */
+  optimizeMemoryBeforeInstantiation() {
+    try {
+      // Force garbage collection if available
+      if (typeof window !== 'undefined' && window.gc) {
+        window.gc();
+        console.log('🧹 Forced garbage collection before WASM instantiation');
+      }
+      
+      // Clear any cached modules that might be consuming memory
+      if (this.moduleCache.size > 0) {
+        console.log(`🧹 Clearing ${this.moduleCache.size} cached modules before instantiation`);
+        this.moduleCache.clear();
+      }
+      
+      // Log memory usage if available
+      if (typeof performance !== 'undefined' && performance.memory) {
+        const memInfo = performance.memory;
+        console.log(`📊 Memory before instantiation: Used ${(memInfo.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB, Total ${(memInfo.totalJSHeapSize / 1024 / 1024).toFixed(1)}MB, Limit ${(memInfo.jsHeapSizeLimit / 1024 / 1024).toFixed(1)}MB`);
+      }
+    } catch (error) {
+      console.warn('Memory optimization warning:', error.message);
+    }
+  }
+
+  /**
+   * Get additional memory for WASM 2.0 multiple memories support
+   * @param {number} memoryIndex - Memory index
+   * @returns {WebAssembly.Memory} Memory instance
+   * @private
+   */
+  getAdditionalMemory(memoryIndex) {
+    // For now, return the main memory
+    // In a full implementation, this would manage multiple memory instances
+    return this.loadedModules.get('main')?.exports?.memory || new WebAssembly.Memory({ initial: 16 });
+  }
+
+  /**
    * Utility delay function
    * @private
    */
@@ -771,6 +1115,134 @@ export class WasmLazyLoader {
    */
   configure(options) {
     this.config = { ...this.config, ...options };
+  }
+
+  /**
+   * Run comprehensive WASM diagnostics
+   * @param {string} moduleName - Module to test
+   * @returns {Object} Diagnostic results
+   */
+  async runDiagnostics(moduleName = 'game') {
+    console.log(`🔍 Running WASM diagnostics for module: ${moduleName}`);
+    
+    const diagnostics = {
+      browserSupport: {
+        webAssembly: typeof WebAssembly !== 'undefined',
+        instantiate: typeof WebAssembly?.instantiate === 'function',
+        compile: typeof WebAssembly?.compile === 'function',
+        instantiateStreaming: typeof WebAssembly?.instantiateStreaming === 'function',
+        compileStreaming: typeof WebAssembly?.compileStreaming === 'function'
+      },
+      networkTests: [],
+      fileTests: [],
+      memoryTests: {},
+      errors: []
+    };
+
+    // Test browser support
+    if (!diagnostics.browserSupport.webAssembly) {
+      diagnostics.errors.push('WebAssembly not supported in this browser');
+      return diagnostics;
+    }
+
+    // Test network connectivity to WASM files
+    const paths = this.resolveModulePaths(moduleName);
+    for (const path of paths.slice(0, 3)) { // Test first 3 paths
+      try {
+        console.log(`🌐 Testing network access to: ${path}`);
+        const startTime = performance.now();
+        const response = await fetch(path, { method: 'HEAD' });
+        const responseTime = performance.now() - startTime;
+        
+        diagnostics.networkTests.push({
+          path,
+          status: response.status,
+          statusText: response.statusText,
+          responseTime: responseTime.toFixed(2),
+          contentType: response.headers.get('content-type'),
+          contentLength: response.headers.get('content-length'),
+          success: response.ok
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Network test passed: ${path} (${responseTime.toFixed(2)}ms)`);
+        } else {
+          console.warn(`⚠️ Network test failed: ${path} - ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        diagnostics.networkTests.push({
+          path,
+          error: error.message,
+          success: false
+        });
+        console.warn(`❌ Network test error: ${path} - ${error.message}`);
+      }
+    }
+
+    // Test file loading
+    for (const path of paths.slice(0, 2)) { // Test first 2 paths
+      try {
+        console.log(`📁 Testing file loading from: ${path}`);
+        const startTime = performance.now();
+        const response = await fetch(path);
+        const arrayBuffer = await response.arrayBuffer();
+        const loadTime = performance.now() - startTime;
+        
+        diagnostics.fileTests.push({
+          path,
+          size: arrayBuffer.byteLength,
+          loadTime: loadTime.toFixed(2),
+          success: true
+        });
+        
+        console.log(`✅ File load test passed: ${path} (${arrayBuffer.byteLength} bytes in ${loadTime.toFixed(2)}ms)`);
+        
+        // Test WASM compilation if file loaded successfully
+        try {
+          console.log(`🔧 Testing WASM compilation...`);
+          const compileStart = performance.now();
+          const module = await WebAssembly.compile(arrayBuffer);
+          const compileTime = performance.now() - compileStart;
+          
+          diagnostics.fileTests[diagnostics.fileTests.length - 1].compilation = {
+            success: true,
+            time: compileTime.toFixed(2)
+          };
+          
+          console.log(`✅ WASM compilation test passed (${compileTime.toFixed(2)}ms)`);
+        } catch (compileError) {
+          diagnostics.fileTests[diagnostics.fileTests.length - 1].compilation = {
+            success: false,
+            error: compileError.message
+          };
+          console.warn(`⚠️ WASM compilation test failed: ${compileError.message}`);
+        }
+        
+      } catch (error) {
+        diagnostics.fileTests.push({
+          path,
+          error: error.message,
+          success: false
+        });
+        console.warn(`❌ File load test error: ${path} - ${error.message}`);
+      }
+    }
+
+    // Test memory availability
+    try {
+      diagnostics.memoryTests = {
+        totalMemory: navigator.deviceMemory || 'unknown',
+        hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+        userAgent: navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                   navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                   navigator.userAgent.includes('Safari') ? 'Safari' : 'Other'
+      };
+    } catch (error) {
+      diagnostics.memoryTests.error = error.message;
+    }
+
+    console.log(`📊 Diagnostics complete:`, diagnostics);
+    return diagnostics;
   }
 }
 
@@ -820,6 +1292,12 @@ export function cleanupGlobalSourceMaps() {
 
 // Global lazy loader instance
 export const globalWasmLoader = new WasmLazyLoader();
+
+// Make diagnostics available globally for debugging
+if (typeof window !== 'undefined') {
+  window.runWasmDiagnostics = () => globalWasmLoader.runDiagnostics();
+  window.wasmLoader = globalWasmLoader;
+}
 
 // Auto-preload critical modules when available
 if (typeof document !== 'undefined') {

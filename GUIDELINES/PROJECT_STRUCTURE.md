@@ -22,7 +22,7 @@ DozedEnt/
 ├── 📄 favicon.ico                  # Site favicon
 ├── 📄 mocha.opts                   # Mocha test configuration
 │
-├── 📂 docs/                        # 🌐 GitHub Pages deployment directory
+├── 📂 public/                      # 🌐 GitHub Pages deployment directory
 │   ├── 📄 index.html               # Main game page
 │   ├── 📄 favicon.ico              # Site favicon
 │   ├── 📄 README.md                # Live demo documentation
@@ -121,7 +121,7 @@ DozedEnt/
 ## 🎯 Key Improvements
 
 ### 1. 🌐 GitHub Pages Structure
-- **`docs/` directory** - Standard GitHub Pages deployment folder
+- **`public/` directory** - Standard GitHub Pages deployment folder
 - **Proper Jekyll configuration** - Optimized for WebAssembly and modern JS
 - **Asset organization** - Clean separation of deployment assets
 - **Automated deployment** - GitHub Actions workflow for CI/CD
@@ -134,7 +134,7 @@ DozedEnt/
 
 ### 3. 📚 Documentation Structure
 - **Comprehensive README** - Clear project overview and quick start
-- **Live demo documentation** - Dedicated docs/README.md for GitHub Pages
+- **Live demo documentation** - Dedicated public/README.md for GitHub Pages
 - **Maintained guidelines** - Existing GUIDELINES/ structure preserved
 - **Project structure guide** - This document for navigation
 
@@ -151,7 +151,7 @@ DozedEnt/
 ### GitHub Pages Deployment
 1. **Automatic Triggers** - Push to main/master branch
 2. **Build Process** - GitHub Actions builds WASM and bundles JS
-3. **Asset Processing** - Copies optimized assets to docs/
+3. **Asset Processing** - Copies optimized assets to public/
 4. **Jekyll Processing** - GitHub Pages serves with proper MIME types
 5. **Live Update** - Site updates automatically within minutes
 
@@ -186,7 +186,7 @@ npm test
 
 ### Documentation
 - **`README.md`** - Main project documentation
-- **`docs/README.md`** - Live demo documentation
+- **`public/README.md`** - Live demo documentation
 - **`GUIDELINES/`** - Comprehensive development guides
 - **`PROJECT_STRUCTURE.md`** - This structure guide
 
@@ -219,8 +219,8 @@ npm test
 
 ## 📝 Next Steps
 
-1. **Update repository settings** - Enable GitHub Pages from docs/ folder
-2. **Configure custom domain** (optional) - Add CNAME file to docs/
+1. **Update repository settings** - Enable GitHub Pages from public/ folder
+2. **Configure custom domain** (optional) - Add CNAME file to public/
 3. **Test deployment** - Verify automated build and deploy process
 4. **Update documentation links** - Ensure all internal links work
 5. **Monitor performance** - Check load times and optimization

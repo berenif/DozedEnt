@@ -45,7 +45,7 @@ export default {
     resolve({browser: true, preferBuiltins: false})
   ],
   external: [
-    // Bundle animation-system into the output so docs/dist has no external deps
+    // Bundle animation-system into the output so public/dist has no external deps
     // './animation-system.js',
     './sound-system.js',
     './particle-system.js'

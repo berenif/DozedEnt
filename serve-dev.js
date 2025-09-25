@@ -14,8 +14,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 8080;
-const DOCS_DIR = path.join(__dirname, 'docs');
+const PORT = 5501;
+const PUBLIC_DIR = path.join(__dirname, 'public');
 const DIST_DIR = path.join(__dirname, 'dist');
 const SRC_DIR = path.join(__dirname, 'src');
 
@@ -85,11 +85,11 @@ const server = http.createServer((req, res) => {
     let filePath = null;
     let baseDir = null;
     
-    // Check docs directory first (main game files)
-    const docsPath = path.join(DOCS_DIR, pathname);
-    if (fs.existsSync(docsPath) && fs.statSync(docsPath).isFile()) {
-        filePath = docsPath;
-        baseDir = DOCS_DIR;
+    // Check public directory first (main game files)
+    const publicPath = path.join(PUBLIC_DIR, pathname);
+    if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
+        filePath = publicPath;
+        baseDir = PUBLIC_DIR;
     }
     // Check dist directory (for trystero-wasm.min.js and other dist files)
     else if (pathname.startsWith('dist/')) {
@@ -107,14 +107,14 @@ const server = http.createServer((req, res) => {
             baseDir = SRC_DIR;
         }
     }
-    // Fallback to docs directory
+    // Fallback to public directory
     else {
-        filePath = docsPath;
-        baseDir = DOCS_DIR;
+        filePath = publicPath;
+        baseDir = PUBLIC_DIR;
     }
     
     // Security check - ensure file is within allowed directories
-    const allowedDirs = [DOCS_DIR, DIST_DIR, SRC_DIR];
+    const allowedDirs = [PUBLIC_DIR, DIST_DIR, SRC_DIR];
     if (!allowedDirs.some(dir => filePath.startsWith(dir))) {
         res.writeHead(403, { 'Content-Type': 'text/plain' });
         res.end('Forbidden');
@@ -136,7 +136,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
     console.log(`🚀 DozedEnt development server running at http://localhost:${PORT}`);
     console.log(`📁 Serving files from:`);
-    console.log(`   - ${DOCS_DIR} (main game files)`);
+    console.log(`   - ${PUBLIC_DIR} (main game files)`);
     console.log(`   - ${DIST_DIR} (distribution files)`);
     console.log(`   - ${SRC_DIR} (source files)`);
     console.log(`🎮 Open http://localhost:${PORT} to play the game`);

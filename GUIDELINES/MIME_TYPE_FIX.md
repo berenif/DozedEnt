@@ -8,7 +8,7 @@ The error "Le chargement du module à l'adresse « http://localhost:8080/js/site
 ### ✅ Solution 1: Use the Custom Development Server (Recommended)
 ```bash
 # Run the custom development server
-npm run serve:docs
+npm run serve:public
 # or
 node serve-dev.js
 ```
@@ -17,10 +17,10 @@ This server properly serves JavaScript modules with `application/javascript` MIM
 
 ### ✅ Solution 2: Use Python HTTP Server
 ```bash
-# Navigate to docs directory and serve
-npm run serve:simple
+# Navigate to public directory and serve
+npm run serve:simple:public
 # or
-cd docs && python -m http.server 8080
+cd public && python -m http.server 8080
 ```
 
 ### ✅ Solution 3: Use http-server Package
@@ -46,7 +46,7 @@ The issue occurs because:
 
 ## File Structure
 ```
-docs/
+public/
 ├── index.html          # Main game page
 ├── js/
 │   ├── site.js         # Main game script (ES module)
@@ -59,7 +59,7 @@ docs/
 
 1. **Start the server**:
    ```bash
-   npm run serve:docs
+   npm run serve:public
    ```
 
 2. **Open your browser** to `http://localhost:8080`

@@ -8,16 +8,12 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-const docsDir = rootDir; // Deploy to root instead of docs folder
+const publicDir = rootDir; // Deploy to root instead of public folder
 const demoDir = path.join(rootDir, 'demo');
 const distDir = path.join(rootDir, 'dist');
 
 describe('GitHub Pages Deployment', () => {
   describe('Build Scripts', () => {
-    it('should have build:docs script in package.json', () => {
-      const packageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-      expect(packageJson.scripts).to.have.property('build:docs');
-    });
 
     it('should have all prerequisite build scripts', () => {
       const packageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
@@ -33,28 +29,28 @@ describe('GitHub Pages Deployment', () => {
   describe('Root Deployment Structure', () => {
     before(function() {
       // Skip if root directory doesn't exist yet
-      if (!fs.existsSync(docsDir)) {
+      if (!fs.existsSync(publicDir)) {
         this.skip();
       }
     });
 
     it('should have root directory', () => {
-      expect(fs.existsSync(docsDir), 'root directory is missing').to.be.true;
+      expect(fs.existsSync(publicDir), 'root directory is missing').to.be.true;
     });
 
     it('should have index.html in root', () => {
-      const indexPath = path.join(docsDir, 'index.html');
+      const indexPath = path.join(publicDir, 'index.html');
       expect(fs.existsSync(indexPath), 'index.html is missing').to.be.true;
     });
 
     it('should have .nojekyll file for GitHub Pages', () => {
-      const nojekyllPath = path.join(docsDir, '.nojekyll');
+      const nojekyllPath = path.join(publicDir, '.nojekyll');
       expect(fs.existsSync(nojekyllPath), '.nojekyll file is missing in root folder').to.be.true;
     });
 
     it('should have dist folder with built assets in root', () => {
-      const docsDistPath = path.join(docsDir, 'dist');
-      expect(fs.existsSync(docsDistPath), 'dist folder is missing in root').to.be.true;
+      const publicDistPath = path.join(publicDir, 'dist');
+      expect(fs.existsSync(publicDistPath), 'dist folder is missing in root').to.be.true;
     });
 
     it('should have essential project files in root', () => {
@@ -65,7 +61,7 @@ describe('GitHub Pages Deployment', () => {
       ];
 
       essentialFiles.forEach(file => {
-        const filePath = path.join(docsDir, file);
+        const filePath = path.join(publicDir, file);
         expect(fs.existsSync(filePath), 
           `Essential project file missing: ${file}`).to.be.true;
       });
@@ -130,13 +126,13 @@ describe('GitHub Pages Deployment', () => {
   describe('HTML Content Validation', () => {
     before(function() {
       // Skip if docs folder doesn't exist yet
-      if (!fs.existsSync(docsDir)) {
+      if (!fs.existsSync(publicDir)) {
         this.skip();
       }
     });
 
     it('should have valid HTML structure in index.html', () => {
-      const indexPath = path.join(docsDir, 'index.html');
+      const indexPath = path.join(publicDir, 'index.html');
       if (!fs.existsSync(indexPath)) {
         return;
       }
@@ -153,7 +149,7 @@ describe('GitHub Pages Deployment', () => {
     });
 
     it('should have game links in index.html', () => {
-      const indexPath = path.join(docsDir, 'index.html');
+      const indexPath = path.join(publicDir, 'index.html');
       if (!fs.existsSync(indexPath)) {
         return;
       }
@@ -166,7 +162,7 @@ describe('GitHub Pages Deployment', () => {
     });
 
     it('should not have localhost references in production files', () => {
-      const indexPath = path.join(docsDir, 'index.html');
+      const indexPath = path.join(publicDir, 'index.html');
       if (!fs.existsSync(indexPath)) {
         return;
       }
@@ -205,8 +201,8 @@ describe('GitHub Pages Deployment', () => {
           execSync('npm install', { cwd: rootDir, stdio: 'pipe' });
         }
 
-        // Run the build:docs command
-        const output = execSync('npm run build:docs', { 
+        // Run the build:public command
+        const output = execSync('npm run build:public', { 
           cwd: rootDir, 
           encoding: 'utf8',
           stdio: 'pipe'
@@ -216,14 +212,14 @@ describe('GitHub Pages Deployment', () => {
         expect(output).to.not.include('ERROR');
         expect(output).to.not.include('FAILED');
         
-        // Verify docs folder was created/updated
-        expect(fs.existsSync(docsDir)).to.be.true;
+        // Verify public folder was created/updated
+        expect(fs.existsSync(publicDir)).to.be.true;
         
         // Verify critical files exist after build
         const criticalFiles = [
-          path.join(docsDir, 'dist'),
-          path.join(docsDir, 'wolf-animation.js'),
-          path.join(docsDir, 'wolf-character.js')
+          path.join(publicDir, 'dist'),
+          path.join(publicDir, 'wolf-animation.js'),
+          path.join(publicDir, 'wolf-character.js')
         ];
 
         criticalFiles.forEach(file => {

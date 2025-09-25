@@ -145,8 +145,8 @@ const sourceFiles = [
   'src/utils/wasm.js',
 
   // Animation modules
-  'src/animation/player-animator.js',
-  'src/animation/wolf-animation.js'
+  'src/animation/player/procedural/player-animator.js',
+  'src/animation/enemy/wolf-animation.js'
 ];
 
 let missingSources = [];

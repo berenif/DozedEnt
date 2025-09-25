@@ -1,0 +1,149 @@
+# Jekyll configuration for DozedEnt GitHub Pages (Symlinks)
+# This file configures how GitHub Pages serves the DozedEnt game
+
+# Basic site settings
+title: "DozedEnt - P2P Survival Game"
+description: "WebAssembly-first multiplayer survival game with advanced AI, 5-button combat system, and serverless P2P networking"
+baseurl: "/DozedEnt" # Repository name for GitHub Pages
+url: "" # Your custom domain or leave empty for github.io domain
+
+# Build settings
+theme: null # We're using custom HTML/CSS, so no Jekyll theme
+plugins: []
+
+# Exclude files from being served
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .sass-cache
+  - .jekyll-cache
+  - .jekyll-metadata
+  - README.md
+  - package.json
+  - package-lock.json
+  - tools/
+  - test/
+  - coverage/
+  - emsdk/
+
+# Include specific files/folders for GitHub Pages
+include:
+  - index.html
+  - js/
+  - css/
+  - wasm/
+  - assets/
+  - images/
+  - favicon.ico
+  - dist/
+  - core/
+  - animations/
+  - src/
+  - data/
+  - *.wasm
+  - site.js
+  - serve-modules.js
+  - trystero-wasm.min.js
+
+# Disable Jekyll processing for certain files to preserve WASM and JS modules
+defaults:
+  - scope:
+      path: "*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "wasm/**/*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "dist/**/*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "js/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "js/**/*.mjs"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "js/**/*.ts"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "js/**/*.d.ts"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "dist/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "core/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "animations/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "src/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "css/**/*.css"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "**/*.map"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "assets/**/*"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "data/**/*"
+    values:
+      layout: null
+      sitemap: false
+
+# MIME type configuration for WebAssembly
+webrick:
+  headers:
+    'Access-Control-Allow-Origin': '*'
+    'Access-Control-Allow-Methods': 'GET'
+  mime_types:
+    wasm: application/wasm
+    map: application/json
+
+# GitHub Pages specific settings
+github: [metadata]
+kramdown:
+  input: GFM
+  hard_wrap: false

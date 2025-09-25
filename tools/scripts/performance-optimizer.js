@@ -214,8 +214,8 @@ class PerformanceOptimizer {
     
     const wasmFiles = [
       path.join(projectRoot, 'game.wasm'),
-      path.join(projectRoot, 'docs/game.wasm'),
-      path.join(projectRoot, 'docs/wasm/game.wasm')
+      path.join(projectRoot, 'public/game.wasm'),
+      path.join(projectRoot, 'public/wasm/game.wasm')
     ];
 
     let wasmSize = 0;

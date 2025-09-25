@@ -121,7 +121,7 @@ export class GameRenderer {
             { type: 'lever', x: 860, y: 390, width: 20, height: 40, activated: false },
             { type: 'door', x: 1300, y: 340, width: 40, height: 110, locked: true }
         )
-        // Decorations for docs/alternate renderers that rely on pre-filled arrays
+        // Decorations for public/alternate renderers that rely on pre-filled arrays
         for (let i = 0; i < 10; i++) {
             this.decorations.push({ type: 'tree', x: 100 + i * 150, y: 360, width: 80, height: 150 })
             this.decorations.push({ type: 'bush', x: 180 + i * 150, y: 430, width: 60, height: 40 })

@@ -46,11 +46,15 @@ export class MemoryOptimizer {
     
     // Configuration
     this.config = {
-      monitoringInterval: 5000, // 5 seconds
+      monitoringInterval: 10000, // Increased to 10 seconds to reduce overhead
       gcThreshold: 50 * 1024 * 1024, // 50MB
       autoOptimize: true,
       debugMode: false
     };
+    
+    // Monitoring state
+    this.isMonitoring = false;
+    this.monitoringInterval = null;
     
     this.initialize();
   }
@@ -246,14 +250,19 @@ export class MemoryOptimizer {
   startMonitoring() {
     if (!performance.memory) {
       console.debug('Memory monitoring not available in this environment (performance.memory API not supported)');
+      this.isMonitoring = false;
       return;
     }
     
-    this.monitoringInterval = setInterval(() => {
-      this.updateMemoryStats();
-      this.checkForLeaks();
-      this.autoOptimize();
-    }, this.config.monitoringInterval);
+    // Delay initial monitoring to avoid interfering with WASM loading
+    setTimeout(() => {
+      this.monitoringInterval = setInterval(() => {
+        this.updateMemoryStats();
+        this.checkForLeaks();
+        this.autoOptimize();
+      }, this.config.monitoringInterval);
+      this.isMonitoring = true;
+    }, 2000); // 2 second delay
   }
 
   /**
@@ -264,6 +273,26 @@ export class MemoryOptimizer {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
+    this.isMonitoring = false;
+  }
+  
+  /**
+   * Cleanup and dispose of resources
+   */
+  dispose() {
+    this.stopMonitoring();
+    // Clear all pools
+    Object.keys(this.pools).forEach(key => {
+      this.pools[key] = [];
+    });
+    // Reset stats
+    this.memoryStats.history = [];
+    this.performanceMetrics = {
+      poolHits: 0,
+      poolMisses: 0,
+      allocations: 0,
+      deallocations: 0
+    };
   }
 
   /**

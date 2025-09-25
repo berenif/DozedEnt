@@ -11,6 +11,7 @@
     "./firebase": "./src/netcode/firebase.js",
     "./ipfs": "./src/netcode/ipfs.js",
     "./mqtt": "./src/netcode/mqtt.js",
+    "./nostr": "./src/netcode/nostr.js",
     "./supabase": "./src/netcode/supabase.js",
     "./torrent": "./src/netcode/torrent.js",
     "./wasm": "./src/utils/wasm.js"
@@ -59,8 +60,8 @@
     "rollup": "^4.49.0",
     "serve": "^14.2.4",
     "sinon": "^21.0.0",
-    "stun": "^1.3.1",
-    "to-ico": "^1.1.5",
+    "stun": "^1.1.0",
+    "to-ico": "^1.0.1",
     "ws": "^8.18.2"
   },
   "scripts": {
@@ -70,13 +71,20 @@
     "build:animations": "rollup -c tools/config/rollup.config.animations.js",
     "build:wolf": "rollup -c tools/config/rollup.config.wolf.js",
     "build:dev": "NODE_ENV=development npm run build",
-    "build:docs": "node tools/scripts/build-docs.js",
-    "copy:docs": "node tools/scripts/copy-to-docs.js",
+    "build:public": "node tools/scripts/build-public.js",
+    "build:public:symlinks": "node tools/scripts/build-public-symlinks.js",
+    "build:public:minimal": "node tools/scripts/build-public-minimal.js",
+    "copy:public": "node tools/scripts/build-public.js",
     "build:all": "npm run build",
     "build:check": "node tools/scripts/pre-build-check.js",
     "build:validate": "node tools/scripts/build-validator.js",
     "build:organize": "node tools/scripts/dist-organizer.js",
     "validate:github-pages": "node tools/scripts/validate-github-pages.js",
+    "validate:public-deployment": "node tools/scripts/validate-public-deployment.js",
+    "validate:protocol-versions": "node tools/scripts/validate-protocol-versions.js",
+    "deploy:validate": "npm run validate:github-pages",
+    "deploy:validate:public": "npm run validate:public-deployment",
+    "deploy:validate:protocols": "npm run validate:protocol-versions",
     "balance:gen": "node tools/scripts/generate-balance.cjs",
     "wasm:build": "pwsh -ExecutionPolicy Bypass -File tools/scripts/build-wasm.ps1 prod",
     "wasm:build:dev": "pwsh -ExecutionPolicy Bypass -File tools/scripts/build-wasm.ps1 dev",
@@ -108,9 +116,8 @@
     "test:all": "npm run test:unit && npm run test:coverage:check",
     "dev": "node tools/scripts/server.js",
     "serve": "npm run dev",
-    "serve:docs": "node serve-dev.js",
-    "serve:simple": "cd docs && python -m http.server 8080",
-    "serve:http": "npx http-server docs -p 8080 -c-1 --cors"
+    "serve:public": "npx http-server public -p 8080 -c-1 --cors",
+    "serve:simple:public": "cd public && python -m http.server 8080"
   },
   "keywords": [
     "webrtc",

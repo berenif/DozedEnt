@@ -16,7 +16,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] RNG uses WASM substream; no `Math.random` in JS
 - [ ] API surface minimal: exports only flat getters/setters; no JSON
 - [ ] Snapshots remain compact/flat; no perf regressions in frame time
-- [ ] Build succeeds and `docs/game.wasm` updated
+- [ ] Build succeeds and `public/game.wasm` updated
 - [ ] Docs updated (`AGENTS.md` and this checklist entry)
 - [ ] Balance JSON changes reflected in `src/wasm/generated/balance_data.h`
 - [ ] Golden tests re-run after balance tuning
@@ -87,7 +87,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] RNG uses WASM substream; no `Math.random` in JS
 - [x] API surface minimal: exports only flat getters/setters; no JSON
 - [x] Snapshots remain compact/flat; no perf regressions in frame time
-- [x] Build succeeds and `docs/game.wasm` updated
+- [x] Build succeeds and `public/game.wasm` updated
 - [x] Docs updated (`AGENTS.md` and this checklist entry)
 
 ### Explore
@@ -157,7 +157,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 - ✅ Add Risk/Escalate/CashOut scaffolding and exports in WASM
 - Move spawn selection into WASM; UI reads spawn from snapshot
 - ✅ Add golden replay test and perf budget checks
-- ✅ Ensure build step runs and updates `docs/game.wasm`
+- ✅ Ensure build step runs and updates `public/game.wasm`
 
 ---
 
@@ -174,7 +174,7 @@ Duplicate the blocks below for each feature and check items off before merging.
 - [x] RNG uses WASM substream; no `Math.random` in JS
 - [x] API surface minimal: exports only flat getters/setters; no JSON
 - [x] Snapshots remain compact/flat; no perf regressions in frame time
-- [x] Build succeeds and `docs/game.wasm` updated
+- [x] Build succeeds and `public/game.wasm` updated
 - [x] Docs updated (`AGENTS.md` and this checklist entry)
 
 ### Explore

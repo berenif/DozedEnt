@@ -87,7 +87,7 @@ DozedEnt/
 │   ├── build-wasm.ps1         # Windows WASM build
 │   ├── build-wasm.sh          # Linux/macOS WASM build
 │   └── generate-balance.cjs    # Balance data generator
-├── docs/                       # GitHub Pages deployment
+├── public/                     # GitHub Pages deployment
 │   ├── game.wasm              # Deployed game module
 │   ├── index.html             # Game UI
 │   └── js/src/               # JavaScript integration layer
@@ -268,7 +268,7 @@ wasm-opt --print-size game.wasm
 ```bash
 # Build and commit
 npm run wasm:build
-git add game.wasm docs/
+git add game.wasm public/
 git commit -m "Update WASM build"
 git push origin main
 
@@ -277,9 +277,9 @@ git push origin main
 
 ### Manual Deployment
 ```bash
-# Copy WASM to docs for GitHub Pages
-cp game.wasm docs/
-cp game-host.wasm docs/wasm/
+# Copy WASM to public for GitHub Pages
+cp game.wasm public/
+cp game-host.wasm public/wasm/
 
 # Validate deployment
 npm run validate:github-pages

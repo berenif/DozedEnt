@@ -179,7 +179,7 @@ em++ wasm/game.cpp \
     -s WASM_BIGINT=1 \
     -s EXPORT_ALL=0 \
     -s ALLOW_MEMORY_GROWTH=1 \
-    -o docs/game.wasm
+    -o public/game.wasm
 ```
 
 ### Deploy to GitHub Pages
