@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Module Loading</title>
+</head>
+<body>
+    <h1>Testing Module Loading</h1>
+    <div id="status">Loading...</div>
+    
+    <script type="module">
+        try {
+            console.log('Testing Trystero module loading...');
+            
+            // Test importing the network provider manager
+            const { NetworkProviderManager } = await import('../src/netcode/network-provider-manager.js');
+            console.log('NetworkProviderManager imported successfully');
+            
+            // Test creating an instance
+            const manager = new NetworkProviderManager();
+            console.log('NetworkProviderManager instance created');
+            
+            // Test initializing a provider
+            const success = await manager.initializeProvider('torrent');
+            console.log('Provider initialization result:', success);
+            
+            document.getElementById('status').innerHTML = 
+                `✅ All modules loaded successfully! Provider init: ${success}`;
+                
+        } catch (error) {
+            console.error('Module loading failed:', error);
+            document.getElementById('status').innerHTML = 
+                `❌ Module loading failed: ${error.message}`;
+        }
+    </script>
+</body>
+</html>
