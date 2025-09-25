@@ -54,8 +54,11 @@ jobs:
           ./emsdk activate latest
           source ./emsdk_env.sh
           cd ..
+          echo "EMSDK_ROOT=$PWD/emsdk" >> $GITHUB_ENV
+          echo "PATH=$PWD/emsdk:$PATH" >> $GITHUB_ENV
           
           # Build the WASM module
+          source ./emsdk/emsdk_env.sh
           npm run wasm:build
           
       - name: Build project
