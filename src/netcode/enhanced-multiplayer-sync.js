@@ -476,7 +476,9 @@ export class EnhancedMultiplayerSync {
    */
   removePlayerFromAllSystems(playerId) {
     const player = this.sessionState.players.get(playerId)
-    if (!player) {return}
+    if (!player) {
+      return
+    }
     
     this.sessionState.players.delete(playerId)
     
@@ -546,7 +548,9 @@ export class EnhancedMultiplayerSync {
    * Send local input
    */
   sendInput(input) {
-    if (!this.rollbackNetcode) {return}
+    if (!this.rollbackNetcode) {
+      return
+    }
     
     let processedInput = input
     

@@ -90,7 +90,9 @@ export class DesyncDetectionSystem {
    * Add a player to desync tracking
    */
   addPlayer(playerId) {
-    if (this.playerDesyncs.has(playerId)) {return}
+    if (this.playerDesyncs.has(playerId)) {
+      return
+    }
     
     this.playerDesyncs.set(playerId, {
       playerId,
@@ -199,7 +201,9 @@ export class DesyncDetectionSystem {
    */
   validatePlayerChecksums(playerId, frame, checksumData) {
     const playerTracker = this.playerDesyncs.get(playerId)
-    if (!playerTracker) {return}
+    if (!playerTracker) {
+      return
+    }
     
     let hasDesync = false
     const desyncInfo = {
@@ -582,16 +586,18 @@ export class DesyncDetectionSystem {
       return 'fair'
     } else if (desyncRate > 0.005) {
       return 'good'
-    } 
+    } else {
       return 'excellent'
-    
+    }
   }
   
   /**
    * Clean up old checksum history
    */
   cleanupChecksumHistory() {
-    if (this.checksumHistory.size <= this.config.checksumHistorySize) {return}
+    if (this.checksumHistory.size <= this.config.checksumHistorySize) {
+      return
+    }
     
     const frames = Array.from(this.checksumHistory.keys()).sort((a, b) => a - b)
     const framesToDelete = frames.slice(0, frames.length - this.config.checksumHistorySize)

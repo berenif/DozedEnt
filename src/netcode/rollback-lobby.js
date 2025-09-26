@@ -8,7 +8,7 @@
 import RollbackNetcode from './rollback-netcode.js'
 import RollbackP2P from './rollback-p2p.js'
 import { joinRoom as joinMqttRoom } from './mqtt.js'
-import { createLogger } from '../logger.js'
+import { createLogger } from '../utils/logger.js'
 import { toJson, fromJson, genId } from '../utils.js'
 
 const LOBBY_ANNOUNCE_INTERVAL = 3000 // 3 seconds
