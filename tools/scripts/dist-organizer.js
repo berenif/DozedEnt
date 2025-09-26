@@ -123,21 +123,20 @@ class DistOrganizer {
   async moveFilesToDirectories() {
     console.log(chalk.blue('📦 Moving files to organized directories...'));
     
-    // Move files to their respective directories
+    // Files are already in the correct structure from the build process
+    // Just verify they exist and log their locations
     for (const [directory, files] of Object.entries(this.organizedStructure)) {
       const targetDir = path.join(this.distPath, directory);
       
       for (const file of files) {
-        const sourcePath = path.join(this.distPath, file);
         const targetPath = path.join(targetDir, file);
         
         try {
-          await fs.access(sourcePath);
-          await fs.rename(sourcePath, targetPath);
-          console.log(chalk.green(`  ✓ Moved ${file} → ${directory}`));
+          await fs.access(targetPath);
+          console.log(chalk.green(`  ✓ Found ${file} in ${directory}`));
         } catch (error) {
           if (error.code === 'ENOENT') {
-            console.log(chalk.yellow(`  ⚠ ${file} not found (may not be built yet)`));
+            console.log(chalk.yellow(`  ⚠ ${file} not found in ${directory} (may not be built yet)`));
           } else {
             throw error;
           }
