@@ -1,6 +1,6 @@
 export {getRelaySockets, joinRoom, selfId} from '../netcode/mqtt.js'
 export {default as RoomManager} from './room-manager.js'
-export {default as HostAuthority} from '../host-authority.js'
+export {default as HostAuthority} from '../netcode/host-authority.js'
 export {default as RoomLobbyUI} from '../netcode/room-lobby-ui.js'
 
 // Visual & Animation Features
