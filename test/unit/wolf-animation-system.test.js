@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { WolfAnimationSystem } from '../../src/animation/wolf-animation.js';
+import { WolfAnimationSystem } from '../../src/animation/enemy/wolf-animation.js';
 
 describe('WolfAnimationSystem', () => {
   let animationSystem;

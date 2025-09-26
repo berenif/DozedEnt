@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { AnimatedPlayer } from '../../src/animation/player-animator.js';
+import { AnimatedPlayer } from '../../src/animation/player/procedural/player-animator.js';
 
 describe('AnimatedPlayer', () => {
   let player;
