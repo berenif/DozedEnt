@@ -198,9 +198,15 @@ export class PhaseAudioSystem {
      * Initialize phase audio
      */
     initializePhaseAudio() {
-        // Set initial phase audio
-        this.currentPhase = this.wasm.get_phase();
-        this.applyPhaseAudio(this.currentPhase);
+        try {
+            // Set initial phase audio
+            this.currentPhase = this.wasm.get_phase ? this.wasm.get_phase() : 0;
+            this.applyPhaseAudio(this.currentPhase);
+        } catch (error) {
+            console.warn('Failed to initialize phase audio:', error);
+            this.currentPhase = 0;
+            this.applyPhaseAudio(this.currentPhase);
+        }
     }
     
     /**
@@ -214,10 +220,17 @@ export class PhaseAudioSystem {
         
         this.lastPhaseCheck = currentTime;
         
-        const newPhase = this.wasm.get_phase();
-        if (newPhase !== this.currentPhase) {
-            this.triggerPhaseTransition(this.currentPhase, newPhase);
-            this.currentPhase = newPhase;
+        try {
+            if (!this.wasm.get_phase) {
+                return; // WASM method not available
+            }
+            const newPhase = this.wasm.get_phase();
+            if (newPhase !== this.currentPhase) {
+                this.triggerPhaseTransition(this.currentPhase, newPhase);
+                this.currentPhase = newPhase;
+            }
+        } catch (error) {
+            // Silently ignore errors from missing WASM methods
         }
     }
     
@@ -454,30 +467,40 @@ export class PhaseAudioSystem {
         switch (this.currentPhase) {
             case 0: // Explore
                 // Increase intensity if enemies are nearby
-                const enemyCount = this.wasm.get_enemy_count();
-                if (enemyCount > 0) {
-                    targetIntensity += 0.2;
+                if (this.wasm.get_enemy_count) {
+                    const enemyCount = this.wasm.get_enemy_count();
+                    if (enemyCount > 0) {
+                        targetIntensity += 0.2;
+                    }
                 }
                 break;
                 
             case 1: // Fight
                 // Increase intensity based on combat intensity
-                const playerHealth = this.wasm.get_health();
-                const maxHealth = this.wasm.get_max_health();
-                const healthRatio = playerHealth / maxHealth;
-                targetIntensity += (1 - healthRatio) * 0.3;
+                if (this.wasm.get_health && this.wasm.get_max_health) {
+                    const playerHealth = this.wasm.get_health();
+                    const maxHealth = this.wasm.get_max_health();
+                    if (maxHealth > 0) {
+                        const healthRatio = playerHealth / maxHealth;
+                        targetIntensity += (1 - healthRatio) * 0.3;
+                    }
+                }
                 break;
                 
             case 4: // Risk
                 // Increase intensity based on risk multiplier
-                const riskMultiplier = this.wasm.get_risk_multiplier();
-                targetIntensity += (riskMultiplier - 1) * 0.2;
+                if (this.wasm.get_risk_multiplier) {
+                    const riskMultiplier = this.wasm.get_risk_multiplier();
+                    targetIntensity += (riskMultiplier - 1) * 0.2;
+                }
                 break;
                 
             case 5: // Escalate
                 // Increase intensity based on escalation level
-                const escalationLevel = this.wasm.get_escalation_level();
-                targetIntensity += escalationLevel * 0.3;
+                if (this.wasm.get_escalation_level) {
+                    const escalationLevel = this.wasm.get_escalation_level();
+                    targetIntensity += escalationLevel * 0.3;
+                }
                 break;
         }
         
@@ -531,11 +554,18 @@ export class PhaseAudioSystem {
         // Clear intervals
         if (this.phaseMonitorInterval) {
             clearInterval(this.phaseMonitorInterval);
+            this.phaseMonitorInterval = null;
         }
         
         // Stop current ambient
         if (this.audioManager.ambientSystem.currentAmbient) {
-            this.audioManager.ambientSystem.currentAmbient.stop();
+            try {
+                this.audioManager.ambientSystem.currentAmbient.stop();
+                this.audioManager.ambientSystem.currentAmbient.disconnect();
+            } catch (error) {
+                // Source may already be stopped
+            }
+            this.audioManager.ambientSystem.currentAmbient = null;
         }
     }
 }

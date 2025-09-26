@@ -175,7 +175,7 @@ export class EnhancedAudioManager {
     
     // Convolution reverb for spatial realism
     this.reverb = this.audioContext.createConvolver();
-    await this.createReverbImpulse();
+    this.createReverbImpulse(); // This doesn't need await as it's synchronous
     
     // Create category gain nodes
     Object.keys(this.audioCategories).forEach(category => {
@@ -469,8 +469,19 @@ export class EnhancedAudioManager {
     
     // Auto-cleanup when sound ends
     source.onended = () => {
-      this.spatialSources.delete(sourceId);
-      this.performance.activeSources--;
+      const sourceData = this.spatialSources.get(sourceId);
+      if (sourceData) {
+        // Disconnect all nodes to prevent memory leaks
+        try {
+          sourceData.source.disconnect();
+          sourceData.panner.disconnect();
+          sourceData.gainNode.disconnect();
+        } catch (e) {
+          // Nodes may already be disconnected
+        }
+        this.spatialSources.delete(sourceId);
+      }
+      this.performance.activeSources = Math.max(0, this.performance.activeSources - 1);
     };
     
     this.performance.activeSources++;
@@ -522,6 +533,49 @@ export class EnhancedAudioManager {
     }
   }
   
+  /**
+   * Update spatial audio source position
+   */
+  updateSpatialSource(sourceId, options) {
+    const sourceData = this.spatialSources.get(sourceId);
+    if (!sourceData) {
+      return false;
+    }
+    
+    const { panner, gainNode } = sourceData;
+    
+    // Update position if provided
+    if (options.x !== undefined && options.y !== undefined) {
+      const z = options.z || 0;
+      if (panner.positionX) {
+        panner.positionX.value = options.x;
+        panner.positionY.value = options.y;
+        panner.positionZ.value = z;
+      } else {
+        panner.setPosition(options.x, options.y, z);
+      }
+      sourceData.position = { x: options.x, y: options.y, z };
+    }
+    
+    // Update volume if provided
+    if (options.volume !== undefined) {
+      gainNode.gain.value = options.volume;
+    }
+    
+    // Update distance parameters if provided
+    if (options.maxDistance !== undefined) {
+      panner.maxDistance = options.maxDistance;
+    }
+    if (options.refDistance !== undefined) {
+      panner.refDistance = options.refDistance;
+    }
+    if (options.rolloffFactor !== undefined) {
+      panner.rolloffFactor = options.rolloffFactor;
+    }
+    
+    return true;
+  }
+
   /**
    * Update listener orientation
    */
@@ -729,9 +783,16 @@ export class EnhancedAudioManager {
     
     // Fade out current track
     if (this.musicSystem.currentTrack) {
-      this.musicSystem.currentTrack.gain.gain.exponentialRampToValueAtTime(0.001, currentTime + crossfadeTime);
+      const oldTrack = this.musicSystem.currentTrack;
+      oldTrack.gain.gain.exponentialRampToValueAtTime(0.001, currentTime + crossfadeTime);
       setTimeout(() => {
-        this.musicSystem.currentTrack.source.stop();
+        try {
+          oldTrack.source.stop();
+          oldTrack.source.disconnect();
+          oldTrack.gain.disconnect();
+        } catch (error) {
+          // Source may already be stopped
+        }
       }, this.musicSystem.crossfadeTime);
     }
     
@@ -1031,6 +1092,47 @@ export class EnhancedAudioManager {
   }
   
   /**
+   * Set category volume (alias for setVolume)
+   */
+  setCategoryVolume(category, volume) {
+    return this.setVolume(category, volume);
+  }
+  
+  /**
+   * Set master volume
+   */
+  setMasterVolume(volume) {
+    this.audioCategories.master.volume = Math.max(0, Math.min(1, volume));
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.audioCategories.master.volume;
+    }
+  }
+  
+  /**
+   * Set muted state
+   */
+  setMuted(muted) {
+    if (this.masterGain) {
+      if (muted) {
+        this._previousMasterVolume = this.masterGain.gain.value;
+        this.masterGain.gain.value = 0;
+      } else {
+        this.masterGain.gain.value = this._previousMasterVolume || this.audioCategories.master.volume;
+      }
+    }
+    this._isMuted = muted;
+  }
+  
+  /**
+   * Set 3D audio enabled
+   */
+  set3DAudioEnabled(enabled) {
+    this._3dAudioEnabled = enabled;
+    // When disabled, all spatial sources will play as 2D
+    // This is handled in playSpatialSound method
+  }
+  
+  /**
    * Get current volume for category
    */
   getVolume(category) {
@@ -1062,6 +1164,59 @@ export class EnhancedAudioManager {
   }
   
   /**
+   * Get audio system info
+   */
+  getAudioInfo() {
+    return {
+      contextState: this.audioContext ? this.audioContext.state : 'uninitialized',
+      categories: Object.keys(this.audioCategories).map(cat => ({
+        name: cat,
+        volume: this.audioCategories[cat].volume
+      })),
+      musicSystem: {
+        hasCurrentTrack: !!this.musicSystem.currentTrack,
+        crossfading: this.musicSystem.crossfading,
+        adaptiveMusic: this.musicSystem.adaptiveMusic,
+        intensity: this.musicSystem.intensity,
+        targetIntensity: this.musicSystem.targetIntensity
+      },
+      ambientSystem: {
+        hasWeather: !!this.ambientSystem.weather,
+        timeOfDay: this.ambientSystem.timeOfDay,
+        environment: this.ambientSystem.environment,
+        activeLayers: this.ambientSystem.layers.size
+      },
+      loadedAssets: this.audioAssets.size,
+      spatialSources: this.spatialSources.size
+    };
+  }
+  
+  /**
+   * Get spatial audio info
+   */
+  getSpatialAudioInfo() {
+    const sources = [];
+    this.spatialSources.forEach((source, id) => {
+      sources.push({
+        id,
+        position: source.position,
+        startTime: source.startTime
+      });
+    });
+    
+    return {
+      enabled: this._3dAudioEnabled !== false,
+      listenerPosition: this.listener ? {
+        x: this.listener.positionX?.value || 0,
+        y: this.listener.positionY?.value || 0,
+        z: this.listener.positionZ?.value || 0
+      } : null,
+      activeSources: sources,
+      sourceCount: this.spatialSources.size
+    };
+  }
+  
+  /**
    * Create fallback audio system for unsupported browsers
    */
   createFallbackAudio() {
@@ -1077,12 +1232,15 @@ export class EnhancedAudioManager {
    * Cleanup audio system
    */
   destroy() {
-    // Stop all active sources
-    this.spatialSources.forEach(({ source }) => {
+    // Stop and disconnect all active sources
+    this.spatialSources.forEach(({ source, panner, gainNode }) => {
       try {
         source.stop();
+        source.disconnect();
+        panner.disconnect();
+        gainNode.disconnect();
       } catch (error) {
-        // Source may already be stopped
+        // Source may already be stopped or disconnected
       }
     });
     
@@ -1092,13 +1250,30 @@ export class EnhancedAudioManager {
     if (this.musicSystem.currentTrack) {
       try {
         this.musicSystem.currentTrack.source.stop();
+        this.musicSystem.currentTrack.source.disconnect();
+        this.musicSystem.currentTrack.gain.disconnect();
       } catch (error) {
         // Source may already be stopped
       }
+      this.musicSystem.currentTrack = null;
     }
     
+    // Stop weather audio
+    if (this.ambientSystem.weather) {
+      try {
+        this.ambientSystem.weather.stop();
+        this.ambientSystem.weather.disconnect();
+      } catch (error) {
+        // Source may already be stopped
+      }
+      this.ambientSystem.weather = null;
+    }
+    
+    // Clear all audio assets to free memory
+    this.audioAssets.clear();
+    
     // Close audio context
-    if (this.audioContext) {
+    if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close();
     }
     
