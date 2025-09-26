@@ -67,7 +67,7 @@ describe('Build System', () => {
     before(function() {
       // Run build before testing outputs
       // Increase timeout for build process
-      this.timeout(30000);
+      this.timeout(120000);
       
       try {
         // Check if dependencies are installed
@@ -89,7 +89,7 @@ describe('Build System', () => {
     });
 
     it('should generate firebase bundle', () => {
-      const filePath = path.join(distDir, 'trystero-firebase.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-firebase.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -97,7 +97,7 @@ describe('Build System', () => {
     });
 
     it('should generate ipfs bundle', () => {
-      const filePath = path.join(distDir, 'trystero-ipfs.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-ipfs.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -105,7 +105,7 @@ describe('Build System', () => {
     });
 
     it('should generate mqtt bundle', () => {
-      const filePath = path.join(distDir, 'trystero-mqtt.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-mqtt.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -114,7 +114,7 @@ describe('Build System', () => {
 
 
     it('should generate supabase bundle', () => {
-      const filePath = path.join(distDir, 'trystero-supabase.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-supabase.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -122,7 +122,7 @@ describe('Build System', () => {
     });
 
     it('should generate torrent bundle', () => {
-      const filePath = path.join(distDir, 'trystero-torrent.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-torrent.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -130,7 +130,7 @@ describe('Build System', () => {
     });
 
     it('should generate wasm bundle', () => {
-      const filePath = path.join(distDir, 'trystero-wasm.min.js');
+      const filePath = path.join(distDir, 'core', 'trystero-wasm.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
       
       const stats = fs.statSync(filePath);
@@ -139,7 +139,7 @@ describe('Build System', () => {
 
     it('should generate minified bundles', () => {
       // Check that bundles are actually minified by checking for typical minification patterns
-      const firebaseBundle = fs.readFileSync(path.join(distDir, 'trystero-firebase.min.js'), 'utf8');
+      const firebaseBundle = fs.readFileSync(path.join(distDir, 'core', 'trystero-firebase.min.js'), 'utf8');
       
       // Minified code typically has very long lines
       const lines = firebaseBundle.split('\n');
@@ -155,7 +155,7 @@ describe('Build System', () => {
   describe('Animation Build Output', () => {
     before(function() {
       // Run animation build
-      this.timeout(30000);
+      this.timeout(60000);
       
       try {
         console.log('Running animation build...');
@@ -173,7 +173,7 @@ describe('Build System', () => {
       ];
       
       files.forEach(file => {
-        const filePath = path.join(distDir, file);
+        const filePath = path.join(distDir, 'animations', file);
         expect(fs.existsSync(filePath)).to.be.true;
         
         const stats = fs.statSync(filePath);
@@ -185,7 +185,7 @@ describe('Build System', () => {
   describe('Wolf Build Output', () => {
     before(function() {
       // Run wolf build
-      this.timeout(30000);
+      this.timeout(60000);
       
       try {
         console.log('Running wolf build...');
@@ -203,7 +203,7 @@ describe('Build System', () => {
       ];
       
       files.forEach(file => {
-        const filePath = path.join(distDir, file);
+        const filePath = path.join(distDir, 'animations', file);
         expect(fs.existsSync(filePath)).to.be.true;
         
         const stats = fs.statSync(filePath);
@@ -240,8 +240,8 @@ describe('Build System', () => {
         'src/netcode/supabase.js',
         'src/netcode/torrent.js',
         'src/utils/wasm.js',
-        'src/animation/player-animator.js',
-        'src/animation/wolf-animation.js'
+        'src/animation/player/procedural/player-animator.js',
+        'src/animation/enemy/wolf-animation.js'
       ];
       
       sourceFiles.forEach(file => {

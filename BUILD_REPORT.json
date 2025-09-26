@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-09-21T19:38:04.010Z",
-  "duration": 39117,
+  "timestamp": "2025-09-26T19:45:00.191Z",
+  "duration": 55536,
   "stats": {
     "modulesBuilt": 3,
-    "totalSize": 1770334,
+    "totalSize": 1760432,
     "optimizationSavings": 0,
     "errors": [],
     "warnings": [
@@ -19,12 +19,12 @@
       "core/trystero-supabase.min.js": 127,
       "core/trystero-torrent.min.js": 13,
       "core/trystero-wasm.min.js": 4,
-      "animations/player-animator.js": 129,
+      "animations/player-animator.js": 126,
       "animations/player-animator.min.js": 47,
-      "animations/player-animator.umd.js": 141,
-      "animations/wolf-animation.js": 78,
+      "animations/player-animator.umd.js": 138,
+      "animations/wolf-animation.js": 76,
       "animations/wolf-animation.min.js": 31,
-      "animations/wolf-animation.umd.js": 86,
+      "animations/wolf-animation.umd.js": 84,
       "core/index.js": 1,
       "animations/index.js": 1,
       "index.js": 0
