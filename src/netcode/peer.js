@@ -4,6 +4,11 @@ const iceStateEvent = 'icegatheringstatechange'
 const offerType = 'offer'
 const answerType = 'answer'
 
+export const defaultIceServers = [
+  ...alloc(3, (_, i) => `stun:stun${i || ''}.l.google.com:19302`),
+  'stun:stun.cloudflare.com:3478'
+].map(url => ({urls: url}))
+
 export default (initiator, {rtcConfig, rtcPolyfill, turnConfig}) => {
   const pc = new (rtcPolyfill || RTCPeerConnection)({
     iceServers: defaultIceServers.concat(turnConfig || []),
@@ -196,8 +201,3 @@ export default (initiator, {rtcConfig, rtcPolyfill, turnConfig}) => {
     }
   }
 }
-
-export const defaultIceServers = [
-  ...alloc(3, (_, i) => `stun:stun${i || ''}.l.google.com:19302`),
-  'stun:stun.cloudflare.com:3478'
-].map(url => ({urls: url}))

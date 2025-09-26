@@ -3,7 +3,7 @@
  * Handles peer connections and ultra-low latency input exchange
  */
 
-import { createLogger } from '../logger.js'
+import { createLogger } from '../utils/logger.js'
 import { toJson, fromJson, genId } from '../utils.js'
 
 const ICE_SERVERS = [
