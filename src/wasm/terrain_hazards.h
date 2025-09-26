@@ -119,6 +119,9 @@ static inline void apply_hazard_damage(float damage, HazardType type) {
   g_hp -= damage;
   if (g_hp < 0.f) g_hp = 0.f;
   
+  // Sync with save system health
+  g_health = (int)(g_hp * g_max_health);
+  
   g_last_hazard_damage_time = g_time_seconds;
   
   // Apply status effects based on hazard type

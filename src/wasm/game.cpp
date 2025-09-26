@@ -101,8 +101,9 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   g_vel_x = 0.f;
   g_vel_y = 0.f;
   g_stamina = 1.0f;
-  g_health = 100;     // Initialize health
-  g_max_health = 100; // Initialize max health
+  g_health = 100;     // Initialize health (save system)
+  g_max_health = 100; // Initialize max health (save system)
+  g_hp = 1.0f;        // Initialize normalized health (gameplay)
   g_game_time = 0.0f; // Initialize game time
   g_blocking = 0;
   g_is_rolling = 0;
@@ -869,7 +870,12 @@ void update(float dtSeconds) {
           if (rng_float01() < (g_crit_chance + get_weapon_crit_bonus())) { damage *= 2.0f; }
           e.health -= damage;
           if (e.health < 0.f) e.health = 0.f;
-          if (damage > 0.f && g_lifesteal > 0.f) { g_hp += damage * g_lifesteal; if (g_hp > 1.0f) g_hp = 1.0f; }
+          if (damage > 0.f && g_lifesteal > 0.f) { 
+            g_hp += damage * g_lifesteal; 
+            if (g_hp > 1.0f) g_hp = 1.0f;
+            // Sync with save system health
+            g_health = (int)(g_hp * g_max_health);
+          }
           
           // Track damage dealt for achievements
           if (damage > 0.f) {
@@ -965,6 +971,8 @@ void update(float dtSeconds) {
         if (i <= last) {
           g_dangers[i] = g_dangers[last];
           if (g_danger_count > 0) g_danger_count--;
+          // Re-check current index since we moved an element here
+          i--;
         }
       }
     }
@@ -1040,11 +1048,14 @@ void update(float dtSeconds) {
   if (dtSeconds > 0.f && g_hp_regen_per_sec > 0.f) {
     g_hp += g_hp_regen_per_sec * dtSeconds;
     if (g_hp > 1.0f) g_hp = 1.0f;
+    // Sync with save system health
+    g_health = (int)(g_hp * g_max_health);
   }
 
   // Wall sliding detection
-  static bool g_is_wall_sliding = false;
-  static float g_wall_slide_timer = 0.f;
+  // g_is_wall_sliding is already declared in internal_core.h
+  // static bool g_is_wall_sliding = false; // REMOVED - duplicate declaration
+  // g_wall_slide_timer is already declared in internal_core.h
   
   // Check for wall sliding conditions
   if (!g_is_grounded && g_vel_y > 0.1f) {
@@ -1072,7 +1083,7 @@ void update(float dtSeconds) {
       bool moving_into_wall = (wall_normal_x > 0 && g_input_x > 0) || (wall_normal_x < 0 && g_input_x < 0);
       
       if (touching_wall && moving_into_wall && g_vel_y > 0.05f) {
-          g_is_wall_sliding = true;
+          g_is_wall_sliding = 1;  // Changed from true to 1 (int type)
           g_wall_slide_timer = 0.f;
           // Reduce fall speed while wall sliding
           g_vel_y *= 0.6f;
@@ -1080,12 +1091,12 @@ void update(float dtSeconds) {
           if (g_is_wall_sliding) {
               g_wall_slide_timer += dtSeconds;
               if (g_wall_slide_timer > 0.1f) { // Small delay before stopping wall slide
-                  g_is_wall_sliding = false;
+                  g_is_wall_sliding = 0;  // Changed from false to 0 (int type)
               }
           }
       }
   } else {
-      g_is_wall_sliding = false;
+      g_is_wall_sliding = 0;  // Changed from false to 0 (int type)
   }
 
   // Update player animation state with improved transitions
