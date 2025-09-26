@@ -56,12 +56,12 @@ export class EnhancedMobileControls {
    */
   createEnhancedJoystick() {
     const joystick = document.getElementById('joystick');
-    if (!joystick) {return;}
+    if (!joystick) return;
     
     const base = document.getElementById('joystick-base');
     const knob = document.getElementById('joystick-knob');
     
-    if (!base || !knob) {return;}
+    if (!base || !knob) return;
     
     // Add direction indicators
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -93,7 +93,7 @@ export class EnhancedMobileControls {
    */
   createEnhancedActionButtons() {
     const actionsContainer = document.getElementById('actions');
-    if (!actionsContainer) {return;}
+    if (!actionsContainer) return;
     
     // Clear existing buttons
     actionsContainer.innerHTML = '';
@@ -140,7 +140,7 @@ export class EnhancedMobileControls {
    */
   createGestureIndicators() {
     const viewport = document.getElementById('viewport');
-    if (!viewport) {return;}
+    if (!viewport) return;
     
     // Swipe indicators
     const swipeIndicator = document.createElement('div');
@@ -225,7 +225,7 @@ export class EnhancedMobileControls {
    * Handle joystick touch move
    */
   handleJoystickMove(event) {
-    if (!this.joystickState.active) {return;}
+    if (!this.joystickState.active) return;
     
     event.preventDefault();
     const touch = event.touches[0];
@@ -303,14 +303,14 @@ export class EnhancedMobileControls {
     const button = event.currentTarget;
     const action = button.dataset.action;
     
-    if (!action) {return;}
+    if (!action) return;
     
     const buttonState = this.buttonStates.get(action);
-    if (!buttonState) {return;}
+    if (!buttonState) return;
     
     // Check cooldown
     const now = performance.now();
-    if (buttonState.cooldown > 0) {return;}
+    if (buttonState.cooldown > 0) return;
     
     // Visual feedback
     button.classList.add('pressed');
@@ -334,10 +334,10 @@ export class EnhancedMobileControls {
     const button = event.currentTarget;
     const action = button.dataset.action;
     
-    if (!action) {return;}
+    if (!action) return;
     
     const buttonState = this.buttonStates.get(action);
-    if (!buttonState) {return;}
+    if (!buttonState) return;
     
     // Visual feedback
     button.classList.remove('pressed');
@@ -367,7 +367,7 @@ export class EnhancedMobileControls {
    */
   handleGlobalTouchStart(event) {
     // Skip if touching controls
-    if (event.target.closest('.mobile-controls')) {return;}
+    if (event.target.closest('.mobile-controls')) return;
     
     const touches = Array.from(event.touches).map(touch => ({
       id: touch.identifier,
@@ -390,7 +390,7 @@ export class EnhancedMobileControls {
    */
   handleGlobalTouchMove(event) {
     // Skip if touching controls
-    if (event.target.closest('.mobile-controls')) {return;}
+    if (event.target.closest('.mobile-controls')) return;
     
     const touches = Array.from(event.touches).map(touch => ({
       id: touch.identifier,
@@ -420,7 +420,7 @@ export class EnhancedMobileControls {
    */
   handleGlobalTouchEnd(event) {
     // Skip if touching controls
-    if (event.target.closest('.mobile-controls')) {return;}
+    if (event.target.closest('.mobile-controls')) return;
     
     const endTime = performance.now();
     const duration = endTime - this.gestureData.startTime;
@@ -480,7 +480,7 @@ export class EnhancedMobileControls {
    * Detect swipe gesture
    */
   detectSwipe() {
-    if (this.gestureData.startTouches.length !== 1 || this.gestureData.currentTouches.length !== 1) {return;}
+    if (this.gestureData.startTouches.length !== 1 || this.gestureData.currentTouches.length !== 1) return;
     
     const start = this.gestureData.startTouches[0];
     const end = this.gestureData.currentTouches[0];
@@ -489,7 +489,7 @@ export class EnhancedMobileControls {
     const deltaY = end.y - start.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    if (distance < this.gestureState.swipeThreshold) {return;}
+    if (distance < this.gestureState.swipeThreshold) return;
     
     // Determine swipe direction
     const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
@@ -574,7 +574,7 @@ export class EnhancedMobileControls {
    * Trigger vibration with different patterns for different actions
    */
   vibrate(duration = 50) {
-    if (!this.vibrationEnabled) {return;}
+    if (!this.vibrationEnabled) return;
     
     try {
       navigator.vibrate(duration);
@@ -587,7 +587,7 @@ export class EnhancedMobileControls {
    * Vibrate with action-specific patterns
    */
   vibrateForAction(action) {
-    if (!this.vibrationEnabled) {return;}
+    if (!this.vibrationEnabled) return;
     
     const patterns = {
       lightAttack: 30,
@@ -714,7 +714,7 @@ export class EnhancedMobileControls {
    * Trigger game action
    */
   triggerGameAction(action, pressed) {
-    if (!this.gameStateManager) {return;}
+    if (!this.gameStateManager) return;
     
     switch (action) {
       case 'lightAttack':
@@ -761,7 +761,7 @@ export class EnhancedMobileControls {
    * Trigger swipe-based actions
    */
   triggerSwipeAction(direction) {
-    if (!this.gameStateManager) {return;}
+    if (!this.gameStateManager) return;
     
     // Swipe gestures can trigger different actions
     switch (direction) {
