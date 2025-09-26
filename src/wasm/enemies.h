@@ -1039,6 +1039,8 @@ static inline void expire_dangers() {
       if (i <= last) {
         g_dangers[i] = g_dangers[last];
         if (g_danger_count > 0) g_danger_count--;
+        // Re-check current index since we moved an element here
+        i--;
       }
     }
   }
