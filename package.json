@@ -117,8 +117,7 @@
     "dev": "node tools/scripts/server.js",
     "serve": "npm run dev",
     "serve:public": "npx http-server public -p 8080 -c-1 --cors",
-    "serve:simple:public": "cd public && python -m http.server 8080",
-    "build:docs": "node tools/scripts/build-docs.js"
+    "serve:simple:public": "cd public && python -m http.server 8080"
   },
   "keywords": [
     "webrtc",
