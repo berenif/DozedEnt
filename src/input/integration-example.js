@@ -108,7 +108,7 @@ export class GameInputIntegration {
      */
     updateOrientationOverlay() {
         const orientationOverlay = document.getElementById('orientation-overlay');
-        if (!orientationOverlay) {return;}
+        if (!orientationOverlay) return;
         
         const isMobile = this.inputManager.isMobile;
         const isPortrait = window.innerHeight > window.innerWidth;
@@ -145,7 +145,7 @@ export class GameInputIntegration {
      * Update input-based UI elements
      */
     updateInputUI() {
-        if (!this.inputManager) {return;}
+        if (!this.inputManager) return;
         
         const inputState = this.inputManager.getInputState();
         

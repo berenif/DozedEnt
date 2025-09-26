@@ -164,7 +164,7 @@ class MobileGameControls {
         const joystickBase = document.getElementById('joystick-base');
         const joystickKnob = document.getElementById('joystick-knob');
         
-        if (!joystickBase || !joystickKnob) {return;}
+        if (!joystickBase || !joystickKnob) return;
 
         let isJoystickActive = false;
         const joystickCenter = { x: 0, y: 0 };
@@ -179,7 +179,7 @@ class MobileGameControls {
         };
 
         const handleJoystickMove = (clientX, clientY) => {
-            if (!isJoystickActive) {return;}
+            if (!isJoystickActive) return;
 
             const center = getJoystickCenter();
             const dx = clientX - center.x;
@@ -360,7 +360,7 @@ class MobileGameControls {
     }
 
     handleAction(action) {
-        if (this.isOnCooldown(action)) {return;}
+        if (this.isOnCooldown(action)) return;
         
         console.log(`Action: ${action}`);
         
@@ -432,7 +432,7 @@ class MobileGameControls {
     }
 
     handleSkill(skill) {
-        if (this.isOnCooldown(`skill-${skill}`)) {return;}
+        if (this.isOnCooldown(`skill-${skill}`)) return;
         
         console.log(`Skill activated: ${skill}`);
         
@@ -477,10 +477,10 @@ class MobileGameControls {
      */
     createEnhancedActionButtons() {
         const actionsContainer = document.getElementById('actions');
-        if (!actionsContainer) {return;}
+        if (!actionsContainer) return;
         
         // Check if enhanced buttons already exist
-        if (actionsContainer.querySelector('[data-action="lightAttack"]')) {return;}
+        if (actionsContainer.querySelector('[data-action="lightAttack"]')) return;
         
         // Clear existing buttons
         actionsContainer.innerHTML = '';
@@ -566,7 +566,7 @@ class MobileGameControls {
      */
     enhanceJoystick() {
         const joystick = document.getElementById('joystick-base');
-        if (!joystick) {return;}
+        if (!joystick) return;
         
         // Add glow effect on touch
         joystick.addEventListener('touchstart', () => {
@@ -593,14 +593,14 @@ class MobileGameControls {
      * Setup gesture recognition
      */
     setupGestures() {
-        if (!this.gestureSupport.swipe && !this.gestureSupport.longPress) {return;}
+        if (!this.gestureSupport.swipe && !this.gestureSupport.longPress) return;
         
         let touchStartTime = 0;
         let touchStartPos = { x: 0, y: 0 };
         let longPressTimer = null;
         
         document.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.mobile-controls')) {return;} // Skip for control elements
+            if (e.target.closest('.mobile-controls')) return; // Skip for control elements
             
             touchStartTime = Date.now();
             const touch = e.touches[0];
@@ -1101,7 +1101,7 @@ class MobileGameControls {
     }
 
     playSound(frequency, duration) {
-        if (!this.audioContext) {return;}
+        if (!this.audioContext) return;
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -1267,7 +1267,7 @@ class InterfaceSwitcher {
     }
 
     updateInterface() {
-        if (!this.mobileControls) {return;}
+        if (!this.mobileControls) return;
 
         // Remove all interface classes
         this.mobileControls.classList.remove('interface-compact', 'interface-minimal');
