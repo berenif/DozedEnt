@@ -5,6 +5,9 @@
  * Provides seamless audio feedback for all game events
  */
 
+import { EnhancedAudioManager } from './enhanced-audio-manager.js';
+import { PhaseAudioSystem } from './phase-audio-system.js';
+
 export class AudioIntegration {
     constructor(canvas, wasmModule, gameRenderer) {
         this.canvas = canvas;
@@ -108,31 +111,37 @@ export class AudioIntegration {
     updateWASMAudio() {
         try {
             // Check for player health changes
-            const currentHealth = this.wasm.get_health();
-            if (currentHealth < this.lastPlayerHealth) {
-                this.onPlayerTakeDamage(this.lastPlayerHealth - currentHealth);
+            if (this.wasm.get_health) {
+                const currentHealth = this.wasm.get_health();
+                if (currentHealth < this.lastPlayerHealth) {
+                    this.onPlayerTakeDamage(this.lastPlayerHealth - currentHealth);
+                }
+                this.lastPlayerHealth = currentHealth;
             }
-            this.lastPlayerHealth = currentHealth;
             
             // Check for stamina changes
-            const currentStamina = this.wasm.get_stamina();
-            if (currentStamina < this.lastPlayerStamina - 0.1) {
-                this.onPlayerLowStamina();
+            if (this.wasm.get_stamina) {
+                const currentStamina = this.wasm.get_stamina();
+                if (currentStamina < this.lastPlayerStamina - 0.1) {
+                    this.onPlayerLowStamina();
+                }
+                this.lastPlayerStamina = currentStamina;
             }
-            this.lastPlayerStamina = currentStamina;
             
             // Check for enemy count changes
-            const currentEnemyCount = this.wasm.get_enemy_count();
-            if (currentEnemyCount < this.lastEnemyCount) {
-                this.onEnemyDefeated();
+            if (this.wasm.get_enemy_count) {
+                const currentEnemyCount = this.wasm.get_enemy_count();
+                if (currentEnemyCount < this.lastEnemyCount) {
+                    this.onEnemyDefeated();
+                }
+                this.lastEnemyCount = currentEnemyCount;
             }
-            this.lastEnemyCount = currentEnemyCount;
             
             // Update spatial audio based on player position
             this.updatePlayerPositionAudio();
             
         } catch (error) {
-            console.error('Error updating WASM audio:', error);
+            // Silently handle errors from missing WASM methods
         }
     }
     
@@ -142,17 +151,19 @@ export class AudioIntegration {
     updateSpatialAudio() {
         try {
             // Get player position
-            const playerX = this.wasm.get_x();
-            const playerY = this.wasm.get_y();
-            
-            // Update listener position
-            this.audioManager.updateListenerPosition(playerX, playerY);
+            if (this.wasm.get_x && this.wasm.get_y) {
+                const playerX = this.wasm.get_x();
+                const playerY = this.wasm.get_y();
+                
+                // Update listener position
+                this.audioManager.setListenerPosition(playerX, playerY);
+            }
             
             // Update enemy positions
             this.updateEnemyPositions();
             
         } catch (error) {
-            console.error('Error updating spatial audio:', error);
+            // Silently handle errors from missing WASM methods
         }
     }
     
@@ -160,23 +171,32 @@ export class AudioIntegration {
      * Update enemy positions for spatial audio
      */
     updateEnemyPositions() {
+        if (!this.wasm.get_enemy_count) {
+            return; // WASM method not available
+        }
+        
         const enemyCount = this.wasm.get_enemy_count();
         
         for (let i = 0; i < enemyCount; i++) {
             try {
                 // Get enemy position (this would need to be implemented in WASM)
-                const enemyX = this.wasm.get_enemy_x(i);
-                const enemyY = this.wasm.get_enemy_y(i);
-                const enemyActive = this.wasm.get_enemy_active(i);
-                
-                if (enemyActive) {
-                    // Update spatial audio source
-                    this.audioManager.updateSpatialSource(`enemy_${i}`, {
-                        x: enemyX,
-                        y: enemyY,
-                        volume: 0.8,
-                        maxDistance: 0.5
-                    });
+                if (this.wasm.get_enemy_x && this.wasm.get_enemy_y && this.wasm.get_enemy_active) {
+                    const enemyX = this.wasm.get_enemy_x(i);
+                    const enemyY = this.wasm.get_enemy_y(i);
+                    const enemyActive = this.wasm.get_enemy_active(i);
+                    
+                    if (enemyActive) {
+                        // Update spatial audio source
+                        this.audioManager.updateSpatialSource(`enemy_${i}`, {
+                            x: enemyX,
+                            y: enemyY,
+                            volume: 0.8,
+                            maxDistance: 0.5
+                        });
+                    }
+                } else {
+                    // Enemy position functions not implemented yet
+                    break;
                 }
             } catch (error) {
                 // Enemy position functions might not be implemented yet
@@ -189,6 +209,10 @@ export class AudioIntegration {
      * Update player position audio
      */
     updatePlayerPositionAudio() {
+        if (!this.wasm.get_x || !this.wasm.get_y) {
+            return; // WASM methods not available
+        }
+        
         const playerX = this.wasm.get_x();
         const playerY = this.wasm.get_y();
         
@@ -205,6 +229,10 @@ export class AudioIntegration {
     updateFootstepAudio() {
         // This would track player movement and play appropriate footstep sounds
         // based on the current phase and terrain
+        if (!this.wasm.get_phase) {
+            return; // WASM method not available
+        }
+        
         const currentPhase = this.wasm.get_phase();
         const phaseEffects = this.phaseAudio.phaseEffects[currentPhase];
         

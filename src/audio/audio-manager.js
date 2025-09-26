@@ -27,12 +27,19 @@ export class AudioManager {
   // Adapter methods mapping to enhanced system
   resumeAudioContext() { return this._enhanced.resumeAudioContext?.() }
   setVolume(category, volume) { return this._enhanced.setVolume(category, volume) }
+  setCategoryVolume(category, volume) { return this._enhanced.setCategoryVolume(category, volume) }
+  setMasterVolume(volume) { return this._enhanced.setMasterVolume(volume) }
+  setMuted(muted) { return this._enhanced.setMuted(muted) }
+  set3DAudioEnabled(enabled) { return this._enhanced.set3DAudioEnabled(enabled) }
   getVolume(category) { return this._enhanced.getVolume(category) }
   playSound(key, options) { return this._enhanced.playSound(key, options) }
   playSpatialSound(key, x, y, z = 0, options = {}) { return this._enhanced.playSpatialSound(key, x, y, z, options) }
-  setListenerPosition(x, y, z = 0) { return this._enhanced.setListenerPosition(x, y, z) }
+  setListenerPosition(x, y, z = 0) { return this._enhanced.setListenerPosition(x, y, z); }
+  updateSpatialSource(sourceId, options) { return this._enhanced.updateSpatialSource(sourceId, options) }
   handlePhaseTransition(data) { return this._enhanced.handlePhaseTransition(data) }
   updateWeatherAudio(data) { return this._enhanced.updateWeatherAudio(data) }
   getPerformanceInfo() { return this._enhanced.getPerformanceInfo() }
+  getAudioInfo() { return this._enhanced.getAudioInfo() }
+  getSpatialAudioInfo() { return this._enhanced.getSpatialAudioInfo() }
   destroy() { return this._enhanced.destroy() }
 }
