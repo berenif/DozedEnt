@@ -112,7 +112,7 @@ DozedEnt/
 npm run dev
 
 # Or use Python HTTP server
-cd docs
+cd public
 python3 -m http.server 8080
 ```
 

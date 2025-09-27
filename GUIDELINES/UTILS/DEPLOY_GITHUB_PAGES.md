@@ -85,7 +85,7 @@ The automated deployment pipeline executes the following stages:
 4. **Build project** - Runs `npm run build` which:
    - Builds the project with Rollup
    - Copies built files to the public folder
-5. **Upload artifact** - Packages the docs folder for deployment
+5. **Upload artifact** - Packages the public folder for deployment
 6. **Deploy** - Publishes the site to GitHub Pages
 
 ## 💻 Local Development
@@ -181,7 +181,7 @@ The GitHub Actions workflow will automatically build and deploy your changes.
 For manual control over deployment:
 
 1. Build locally: `npm run build`
-2. Commit the public folder: `git add public && git commit -m "Update docs"`
+2. Commit the public folder: `git add public && git commit -m "Update public folder"`
 3. Push to GitHub: `git push origin main`
 
 ## 📝 Important Notes

@@ -95,6 +95,7 @@
     "wasm:build:win:host": "powershell -ExecutionPolicy Bypass -File tools/scripts/build-wasm.ps1 host",
     "wasm:build:win:all": "powershell -ExecutionPolicy Bypass -File tools/scripts/build-wasm.ps1 all",
     "wasm:clean": "rm -f *.wasm",
+    "wasm:exports": "node tools/scripts/generate-wasm-exports.js",
     "wasm:setup": "bash -c 'source ./emsdk/emsdk_env.sh && em++ --version'",
     "get-bundle-sizes": "node tools/scripts/get-bundle-sizes.js",
     "optimize:performance": "node tools/scripts/performance-optimizer.js",
@@ -117,7 +118,8 @@
     "dev": "node tools/scripts/server.js",
     "serve": "npm run dev",
     "serve:public": "npx http-server public -p 8080 -c-1 --cors",
-    "serve:simple:public": "cd public && python -m http.server 8080"
+    "serve:simple:public": "cd public && python -m http.server 8080",
+    "validate:filesize": "node tools/scripts/check-file-sizes.js"
   },
   "keywords": [
     "webrtc",

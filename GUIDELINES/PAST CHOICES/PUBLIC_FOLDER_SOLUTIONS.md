@@ -2,12 +2,14 @@
 
 This document explains different approaches to make the `public/` folder use the `dist/` folder directly and avoid file duplication.
 
-## Current Problem
+## Current Implementation
 
-The current setup duplicates files between `dist/` and `public/` folders:
-- `dist/` contains the built game files
-- `public/` copies files from `dist/` for GitHub Pages deployment
-- This creates unnecessary duplication and maintenance overhead
+The project currently uses a **direct deployment approach** where essential files are copied to the `public/` folder for GitHub Pages deployment:
+
+- `dist/` contains the complete built game files and modules
+- `public/` contains only the essential files needed for deployment
+- Key files like `game.wasm`, `site.js`, and `index.html` are copied to `public/`
+- Asset folders (`animations/`, `core/`, `src/`, etc.) are symlinked or copied as needed
 
 ## Solution Options
 
@@ -22,24 +24,22 @@ The current setup duplicates files between `dist/` and `public/` folders:
 - Works on Unix-like systems (Linux, macOS)
 - May not work on Windows without admin privileges
 
-**Structure created**:
+**Current Structure**:
 ```
 public/
-├── index.html (copied)
+├── index.html (feature demo page)
 ├── site.js (copied)
 ├── favicon.ico (copied)
-├── dist/ → ../dist/ (symlink)
-├── core/ → ../dist/core/ (symlink)
-├── animations/ → ../dist/animations/ (symlink)
-├── wasm/ → ../dist/wasm/ (symlink)
-├── src/ → ../src/ (symlink)
-├── assets/ → ../assets/ (symlink)
-├── data/ → ../data/ (symlink)
-├── images/ → ../images/ (symlink)
-├── game.wasm → ../dist/wasm/game.wasm (symlink)
-├── game-host.wasm → ../dist/wasm/game-host.wasm (symlink)
-├── _config.yml (created)
-└── .nojekyll (created)
+├── game.wasm (copied from dist/wasm/)
+├── game-host.wasm (copied from dist/wasm/)
+├── _config.yml (GitHub Pages config)
+├── animations/ → ../dist/animations/ (symlinked/copied)
+├── core/ → ../dist/core/ (symlinked/copied)
+├── src/ → ../src/ (symlinked/copied)
+├── wasm/ → ../dist/wasm/ (symlinked/copied)
+├── assets/ → ../assets/ (symlinked/copied)
+├── data/ → ../data/ (symlinked/copied)
+└── feature-demo.js (demo page script)
 ```
 
 **Pros**:
@@ -84,42 +84,39 @@ public/
 - May have issues with relative path resolution in some environments
 - Less flexible than symlinks
 
-### Option 3: Current Approach (File Copying)
+### Option 3: Current Approach (Selective Copying)
 
 **Script**: `tools/scripts/build-public.js`
 **Command**: `npm run build:public`
 
 **How it works**:
-- Copies all necessary files from `dist/` and other folders to `public/`
-- Creates complete duplication of all assets
+- Copies essential files (`game.wasm`, `site.js`, `index.html`) from `dist/` to `public/`
+- Creates symlinks or copies for asset folders as needed
+- Maintains a clean, deployment-ready `public/` folder
 
 **Pros**:
 - Works on all platforms
-- No dependency on symlinks or path modifications
+- No dependency on external path modifications
 - Self-contained deployment folder
+- Selective copying reduces duplication
 
 **Cons**:
-- File duplication
-- Larger disk usage
-- Need to rebuild when source files change
-- Maintenance overhead
+- Some file duplication for essential files
+- Requires build step when core files change
+- Still needs maintenance for the copied files
 
 ## Recommended Usage
 
-### For Development (Unix-like systems):
-```bash
-npm run build:public:symlinks
-```
-
-### For Cross-platform compatibility:
-```bash
-npm run build:public:minimal
-```
-
-### For maximum compatibility:
+### Current Implementation:
 ```bash
 npm run build:public
 ```
+
+This command uses selective copying to prepare the `public/` folder for GitHub Pages deployment. It copies essential files and creates appropriate symlinks/copies for asset folders.
+
+### Alternative Approaches:
+- **Symlinks** (`npm run build:public:symlinks`) - For Unix-like development environments
+- **Minimal** (`npm run build:public:minimal`) - For maximum compatibility across platforms
 
 ## Implementation Details
 

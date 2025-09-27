@@ -32,6 +32,10 @@ export class WasmManager {
       _lastMetricsUpdate: 0,
       _metricsUpdateInterval: 1000 // Update metrics every second instead of every frame
     };
+
+    this._cachedCombatTelemetry = null;
+    this._lastCombatTelemetryUpdate = 0;
+    this._combatTelemetryCacheMs = 16.67; // ~1 frame cache for combat telemetry
   }
 
   /**
@@ -172,7 +176,7 @@ export class WasmManager {
 
         return true;
       } catch (lazyLoadError) {
-        console.warn('⚠️ Lazy loader failed, falling back to traditional loading:', lazyLoadError.message);
+        console.warn('âš ï¸ Lazy loader failed, falling back to traditional loading:', lazyLoadError.message);
         console.warn('Lazy loader error details:', {
           message: lazyLoadError.message,
           name: lazyLoadError.name,
@@ -181,10 +185,10 @@ export class WasmManager {
         
         // Run diagnostics if timeout occurred
         if (lazyLoadError.message.includes('timeout')) {
-          console.log('🔍 Running WASM diagnostics due to timeout...');
+          console.log('ðŸ” Running WASM diagnostics due to timeout...');
           try {
             const diagnostics = await globalWasmLoader.runDiagnostics('game');
-            console.log('📊 WASM Diagnostics Results:', diagnostics);
+            console.log('ðŸ“Š WASM Diagnostics Results:', diagnostics);
           } catch (diagError) {
             console.warn('Failed to run diagnostics:', diagError.message);
           }
@@ -575,7 +579,8 @@ export class WasmManager {
       
       // Invalidate cached state since WASM state changed
       this._invalidateStateCache();
-      
+      this._invalidateCombatTelemetryCache();
+
       // Update performance metrics (throttled to reduce overhead)
       const updateEnd = performance.now();
       const frameTime = updateEnd - updateStart;
@@ -681,6 +686,135 @@ export class WasmManager {
   _invalidateStateCache() {
     this._cachedPlayerState = null;
     this._lastStateUpdate = 0;
+  }
+
+  _invalidateCombatTelemetryCache() {
+    this._cachedCombatTelemetry = null;
+    this._lastCombatTelemetryUpdate = 0;
+  }
+
+  getParryWindow() {
+    if (!this.isLoaded || !this.exports || typeof this.exports.get_parry_window !== 'function') {
+      return 0.12;
+    }
+    try {
+      const value = this.exports.get_parry_window();
+      return Number.isFinite(value) && value >= 0 ? value : 0.12;
+    } catch (error) {
+      console.warn('Failed to read parry window from WASM:', error);
+      return 0.12;
+    }
+  }
+
+  getCombatTelemetry() {
+    const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
+
+    const fallback = {
+      comboCount: 0,
+      comboWindowRemaining: 0,
+      parryWindow: this.getParryWindow(),
+      counterWindowRemaining: 0,
+      canCounter: false,
+      hyperarmorActive: false,
+      armorValue: 0,
+      isBlocking: false,
+      isRolling: false,
+      rollState: 0,
+      rollTime: 0,
+      isInvulnerable: false,
+      isStunned: false,
+      stunRemaining: 0,
+      statusEffectCount: 0,
+      statusMovementModifier: 1,
+      statusDamageModifier: 1,
+      statusDefenseModifier: 1,
+      nearWall: false,
+      wallDistance: 0,
+      nearLedge: false,
+      ledgeDistance: 0,
+      speed: 0,
+      weaponHasHyperarmor: false,
+      weaponHasFlowCombo: false,
+      weaponHasBashSynergy: false,
+      timestamp: now
+    };
+
+    if (!this.isLoaded || !this.exports) {
+      return fallback;
+    }
+
+    if (this._cachedCombatTelemetry && (now - this._lastCombatTelemetryUpdate) < this._combatTelemetryCacheMs) {
+      return this._cachedCombatTelemetry;
+    }
+
+    const exp = this.exports;
+    const readNumber = (getter, fallbackValue = 0) => {
+      if (typeof getter === 'function') {
+        try {
+          const value = getter();
+          return Number.isFinite(value) ? value : fallbackValue;
+        } catch (error) {
+          return fallbackValue;
+        }
+      }
+      return fallbackValue;
+    };
+    const readBool = (getter, fallbackValue = false) => {
+      if (typeof getter === 'function') {
+        try {
+          return Boolean(getter());
+        } catch (error) {
+          return fallbackValue;
+        }
+      }
+      return fallbackValue;
+    };
+
+    try {
+      const parryWindow = readNumber(exp.get_parry_window, fallback.parryWindow);
+
+      const telemetry = {
+        comboCount: Math.max(0, Math.round(readNumber(exp.get_combo_count, fallback.comboCount))),
+        comboWindowRemaining: Math.max(0, readNumber(exp.get_combo_window_remaining, fallback.comboWindowRemaining)),
+        parryWindow,
+        counterWindowRemaining: Math.max(0, readNumber(exp.get_counter_window_remaining, fallback.counterWindowRemaining)),
+        canCounter: readBool(exp.get_can_counter, fallback.canCounter),
+        hyperarmorActive: readBool(exp.get_has_hyperarmor, fallback.hyperarmorActive),
+        armorValue: Math.max(0, readNumber(exp.get_armor_value, fallback.armorValue)),
+        isBlocking: readBool(exp.get_block_state, fallback.isBlocking),
+        isRolling: readBool(exp.get_is_rolling, fallback.isRolling),
+        rollState: Math.max(0, readNumber(exp.get_roll_state, fallback.rollState)),
+        rollTime: Math.max(0, readNumber(exp.get_roll_time, fallback.rollTime)),
+        isInvulnerable: readBool(exp.get_is_invulnerable, fallback.isInvulnerable),
+        isStunned: readBool(exp.get_is_stunned, fallback.isStunned),
+        stunRemaining: Math.max(0, readNumber(exp.get_stun_remaining, fallback.stunRemaining)),
+        statusEffectCount: Math.max(0, readNumber(exp.get_status_effect_count, fallback.statusEffectCount)),
+        statusMovementModifier: Math.max(0, readNumber(exp.get_status_movement_modifier, fallback.statusMovementModifier)),
+        statusDamageModifier: Math.max(0, readNumber(exp.get_status_damage_modifier, fallback.statusDamageModifier)),
+        statusDefenseModifier: Math.max(0, readNumber(exp.get_status_defense_modifier, fallback.statusDefenseModifier)),
+        nearWall: readBool(exp.get_near_wall, fallback.nearWall),
+        wallDistance: Math.max(0, readNumber(exp.get_wall_distance, fallback.wallDistance)),
+        nearLedge: readBool(exp.get_near_ledge, fallback.nearLedge),
+        ledgeDistance: Math.max(0, readNumber(exp.get_ledge_distance, fallback.ledgeDistance)),
+        speed: Math.max(0, readNumber(exp.get_speed, fallback.speed)),
+        weaponHasHyperarmor: readBool(exp.weapon_has_hyperarmor, fallback.weaponHasHyperarmor),
+        weaponHasFlowCombo: readBool(exp.weapon_has_flow_combo, fallback.weaponHasFlowCombo),
+        weaponHasBashSynergy: readBool(exp.weapon_has_bash_synergy, fallback.weaponHasBashSynergy),
+        timestamp: now
+      };
+
+      this._cachedCombatTelemetry = telemetry;
+      this._lastCombatTelemetryUpdate = now;
+
+      return telemetry;
+    } catch (error) {
+      console.warn('Failed to read combat telemetry from WASM:', error);
+      this._cachedCombatTelemetry = null;
+      this._lastCombatTelemetryUpdate = 0;
+      return fallback;
+    }
   }
 
   /**
@@ -837,11 +971,16 @@ export class WasmManager {
       // Set light attack input and trigger update
       if (typeof this.exports.set_player_input === 'function') {
         this.exports.set_player_input(0, 0, 0, 0, 1, 0, 0, 0); // lightAttack = 1
+        this._invalidateCombatTelemetryCache();
         return true;
       }
       // Fallback to legacy API if available
       if (typeof this.exports.on_light_attack === 'function') {
-        return this.exports.on_light_attack() === 1;
+        const success = this.exports.on_light_attack() === 1;
+        if (success) {
+          this._invalidateCombatTelemetryCache();
+        }
+        return success;
       }
     } catch (error) {
       console.error('Light attack error:', error);
@@ -862,11 +1001,16 @@ export class WasmManager {
       // Set heavy attack input and trigger update
       if (typeof this.exports.set_player_input === 'function') {
         this.exports.set_player_input(0, 0, 0, 0, 0, 1, 0, 0); // heavyAttack = 1
+        this._invalidateCombatTelemetryCache();
         return true;
       }
       // Fallback to legacy API if available
       if (typeof this.exports.on_heavy_attack === 'function') {
-        return this.exports.on_heavy_attack() === 1;
+        const success = this.exports.on_heavy_attack() === 1;
+        if (success) {
+          this._invalidateCombatTelemetryCache();
+        }
+        return success;
       }
     } catch (error) {
       console.error('Heavy attack error:', error);
@@ -887,11 +1031,16 @@ export class WasmManager {
       // Set special attack input and trigger update
       if (typeof this.exports.set_player_input === 'function') {
         this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 1); // special = 1
+        this._invalidateCombatTelemetryCache();
         return true;
       }
       // Fallback to legacy API if available
       if (typeof this.exports.on_special_attack === 'function') {
-        return this.exports.on_special_attack() === 1;
+        const success = this.exports.on_special_attack() === 1;
+        if (success) {
+          this._invalidateCombatTelemetryCache();
+        }
+        return success;
       }
     } catch (error) {
       console.error('Special attack error:', error);
@@ -915,7 +1064,11 @@ export class WasmManager {
     if (!this.isLoaded || typeof this.exports.on_roll_start !== 'function') {
       return 0;
     }
-    return this.exports.on_roll_start();
+    const result = this.exports.on_roll_start();
+    if (result === 1) {
+      this._invalidateCombatTelemetryCache();
+    }
+    return result;
   }
 
   /**
@@ -951,11 +1104,16 @@ export class WasmManager {
           isBlocking ? 1 : 0, // isBlocking
           0  // special
         );
+        this._invalidateCombatTelemetryCache();
         return true;
       }
       // Fallback to legacy API if available
       if (typeof this.exports.set_blocking === 'function') {
-        return this.exports.set_blocking(isBlocking ? 1 : 0, faceX, faceY) === 1;
+        const result = this.exports.set_blocking(isBlocking ? 1 : 0, faceX, faceY) === 1;
+        if (result) {
+          this._invalidateCombatTelemetryCache();
+        }
+        return result;
       }
     } catch (error) {
       console.error('Set blocking error:', error);
@@ -1752,6 +1910,8 @@ export class WasmManager {
       return;
     }
     this.exports.set_character_and_weapon(character, weapon);
+    this._invalidateStateCache();
+    this._invalidateCombatTelemetryCache();
   }
 
   /**

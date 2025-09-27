@@ -1,10 +1,10 @@
 # 🎮 DozedEnt - WebAssembly Survival Game
 
-[![Deploy Status](https://github.com/YOUR_USERNAME/DozedEnt/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)](https://github.com/YOUR_USERNAME/DozedEnt/actions)
-[![Game Status](https://img.shields.io/badge/status-playable-brightgreen)](https://YOUR_USERNAME.github.io/DozedEnt/)
+[![Deploy Status](https://github.com/berenif/DozedEnt/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)](https://github.com/berenif/DozedEnt/actions)
+[![Game Status](https://img.shields.io/badge/status-playable-brightgreen)](https://berenif.github.io/DozedEnt/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**🚀 [Play Live Demo](https://YOUR_USERNAME.github.io/DozedEnt/) | 📖 [Documentation](GUIDELINES/README.md) | 🛠️ [Development Guide](GUIDELINES/UTILS/DEVELOPMENT_WORKFLOW.md)**
+**🚀 [Play Live Demo](https://berenif.github.io/DozedEnt/) | 📖 [Documentation](GUIDELINES/AGENTS.md) | 🛠️ [Development Guide](GUIDELINES/BUILD/DEVELOPMENT_WORKFLOW.md)**
 
 ---
 
@@ -45,82 +45,81 @@
 ### 🎯 Core System References
 | Topic | File | Quick Description |
 |-------|------|-------------------|
-| **Quick Reference** | [`QUICK_REFERENCE.md`](./QUICK_REFERENCE.md) | ⭐ Essential info, checklists, and common patterns |
+| **Main Architecture** | [`GUIDELINES/AGENTS.md`](./GUIDELINES/AGENTS.md) | ⭐ WASM-first architecture, API reference, build process |
 | **Source Module Overview** | [`GUIDELINES/Feature-overview.md`](./GUIDELINES/Feature-overview.md) | Directory-by-directory summary of major `src/` systems |
-| **Development Workflow** | [`DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) | ⭐ Complete development cycle and best practices |
-| **Main Architecture** | [`AGENTS.md`](./AGENTS.md) | WASM-first architecture, API reference, build process |
-| **Combat System** | [`5-BUTTON_COMBAT_IMPLEMENTATION.md`](./5-BUTTON_COMBAT_IMPLEMENTATION.md) | Complete 5-button combat implementation |
+| **Development Workflow** | [`GUIDELINES/BUILD/DEVELOPMENT_WORKFLOW.md`](./GUIDELINES/BUILD/DEVELOPMENT_WORKFLOW.md) | ⭐ Complete development cycle and best practices |
+| **Combat System** | [`GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md`](./GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md) | Complete 5-button combat implementation |
 | **Getting Started** | [`GETTING_STARTED.md`](./GETTING_STARTED.md) | Quick setup and basic examples |
 
 ### 🤖 AI & Enemy Systems
 | Component | File | Purpose |
 |-----------|------|---------|
-| **AI Template** | [`AI/ENEMY_TEMPLATE.md`](./AI/ENEMY_TEMPLATE.md) | Baseline rules for all enemy AI |
-| **AI System** | [`AI/ENEMY_AI.md`](./AI/ENEMY_AI.md) | Modular behavior system overview |
-| **Wolf AI** | [`AI/WOLF_AI.md`](./AI/WOLF_AI.md) | Specific wolf pack AI implementation |
+| **AI Template** | [`GUIDELINES/AI/ENEMY_TEMPLATE.md`](./GUIDELINES/AI/ENEMY_TEMPLATE.md) | Baseline rules for all enemy AI |
+| **AI System** | [`GUIDELINES/AI/ENEMY_AI.md`](./GUIDELINES/AI/ENEMY_AI.md) | Modular behavior system overview |
+| **Wolf AI** | [`GUIDELINES/AI/WOLF_AI.md`](./GUIDELINES/AI/WOLF_AI.md) | Specific wolf pack AI implementation |
 
 ### 🎬 Animation Systems
 | Component | File | Purpose |
 |-----------|------|---------|
-| **Animation Index** | [`ANIMATION/ANIMATION_SYSTEM_INDEX.md`](./ANIMATION/ANIMATION_SYSTEM_INDEX.md) | Animation architecture overview |
-| **Player Animations** | [`ANIMATION/PLAYER_ANIMATIONS.md`](./ANIMATION/PLAYER_ANIMATIONS.md) | Player animation states and transitions |
-| **Wolf Body System** | [`ANIMATION/WOLF_BODY_SYSTEM_README.md`](./ANIMATION/WOLF_BODY_SYSTEM_README.md) | Wolf animation implementation |
+| **Animation Index** | [`GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md`](./GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md) | Animation architecture overview |
+| **Player Animations** | [`GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md`](./GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md) | Player animation states and transitions |
+| **Wolf Body System** | [`GUIDELINES/ANIMATION/WOLF_BODY_SYSTEM_README.md`](./GUIDELINES/ANIMATION/WOLF_BODY_SYSTEM_README.md) | Wolf animation implementation |
 
 ### 🎮 Game Systems
 | Component | File | Purpose |
 |-----------|------|---------|
-| **Core Loop** | [`GAME/IMPLEMENTATION_SUMMARY.md`](./GAME/IMPLEMENTATION_SUMMARY.md) | 8-phase game loop implementation |
-| **Core Loop Checklist** | [`GAME/CORE_LOOP_CHECKLIST.md`](./GAME/CORE_LOOP_CHECKLIST.md) | Validation checklist for core loop |
-| **Combat System** | [`SYSTEMS/COMBAT_SYSTEM.md`](./SYSTEMS/COMBAT_SYSTEM.md) | Detailed combat mechanics |
-| **Gameplay Mechanics** | [`SYSTEMS/GAMEPLAY_MECHANICS.md`](./SYSTEMS/GAMEPLAY_MECHANICS.md) | Core gameplay systems |
-| **World Simulation** | [`SYSTEMS/CORE_WORLD_SIMULATION.md`](./SYSTEMS/CORE_WORLD_SIMULATION.md) | World state management |
-| **Player Characters** | [`SYSTEMS/PLAYER_CHARACTERS.md`](./SYSTEMS/PLAYER_CHARACTERS.md) | Character system design |
+| **Core Loop** | [`GUIDELINES/GAME/IMPLEMENTATION_SUMMARY.md`](./GUIDELINES/GAME/IMPLEMENTATION_SUMMARY.md) | 8-phase game loop implementation |
+| **Core Loop Checklist** | [`GUIDELINES/GAME/CORE_LOOP_CHECKLIST.md`](./GUIDELINES/GAME/CORE_LOOP_CHECKLIST.md) | Validation checklist for core loop |
+| **Combat System** | [`GUIDELINES/SYSTEMS/COMBAT_SYSTEM.md`](./GUIDELINES/SYSTEMS/COMBAT_SYSTEM.md) | Detailed combat mechanics |
+| **Gameplay Mechanics** | [`GUIDELINES/SYSTEMS/GAMEPLAY_MECHANICS.md`](./GUIDELINES/SYSTEMS/GAMEPLAY_MECHANICS.md) | Core gameplay systems |
+| **World Simulation** | [`GUIDELINES/SYSTEMS/CORE_WORLD_SIMULATION.md`](./GUIDELINES/SYSTEMS/CORE_WORLD_SIMULATION.md) | World state management |
+| **Player Characters** | [`GUIDELINES/SYSTEMS/PLAYER_CHARACTERS.md`](./GUIDELINES/SYSTEMS/PLAYER_CHARACTERS.md) | Character system design |
 
 ### 🌐 Multiplayer Systems
 | Component | File | Purpose |
 |-----------|------|---------|
-| **Lobby System** | [`MULTIPLAYER/LOBBY_SYSTEM.md`](./MULTIPLAYER/LOBBY_SYSTEM.md) | Matchmaking and lobby management |
-| **Room System** | [`MULTIPLAYER/ROOM_SYSTEM.md`](./MULTIPLAYER/ROOM_SYSTEM.md) | Room-based multiplayer architecture |
+| **Lobby System** | [`GUIDELINES/MULTIPLAYER/LOBBY_SYSTEM.md`](./GUIDELINES/MULTIPLAYER/LOBBY_SYSTEM.md) | Matchmaking and lobby management |
+| **Room System** | [`GUIDELINES/MULTIPLAYER/ROOM_SYSTEM.md`](./GUIDELINES/MULTIPLAYER/ROOM_SYSTEM.md) | Room-based multiplayer architecture |
 
 ### 🛠️ Development Tools
 | Component | File | Purpose |
 |-----------|------|---------|
-| **Build Instructions** | [`UTILS/BUILD_INSTRUCTIONS.md`](./UTILS/BUILD_INSTRUCTIONS.md) | How to build the WASM module |
-| **GitHub Pages Deploy** | [`UTILS/DEPLOY_GITHUB_PAGES.md`](./UTILS/DEPLOY_GITHUB_PAGES.md) | Deployment process |
-| **Testing** | [`TESTING.md`](./TESTING.md) | Testing framework and procedures |
-| **Test Coverage** | [`UTILS/TEST_COVERAGE_IMPROVEMENTS.md`](./UTILS/TEST_COVERAGE_IMPROVEMENTS.md) | Testing improvements |
+| **Build Instructions** | [`GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md`](./GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md) | How to build the WASM module |
+| **GitHub Pages Deploy** | [`GUIDELINES/UTILS/DEPLOY_GITHUB_PAGES.md`](./GUIDELINES/UTILS/DEPLOY_GITHUB_PAGES.md) | Deployment process |
+| **Testing** | [`GUIDELINES/BUILD/TESTING.md`](./GUIDELINES/BUILD/TESTING.md) | Testing framework and procedures |
+| **Test Coverage** | [`GUIDELINES/UTILS/TEST_COVERAGE_IMPROVEMENTS.md`](./GUIDELINES/UTILS/TEST_COVERAGE_IMPROVEMENTS.md) | Testing improvements |
 
 ---
 
 ## 🔍 Quick Reference Checklists
 
 ### ✅ Before Making Changes
-- [ ] Read [`AGENTS.md`](./AGENTS.md) for architecture principles
+- [ ] Read [`GUIDELINES/AGENTS.md`](./GUIDELINES/AGENTS.md) for architecture principles
 - [ ] Check if changes affect WASM/JS boundary
 - [ ] Ensure deterministic behavior is maintained
 - [ ] Verify no gameplay logic goes into JavaScript
 
 ### ✅ Combat System Changes
-- [ ] Review [`5-BUTTON_COMBAT_IMPLEMENTATION.md`](./5-BUTTON_COMBAT_IMPLEMENTATION.md)
-- [ ] Check [`SYSTEMS/COMBAT_SYSTEM.md`](./SYSTEMS/COMBAT_SYSTEM.md) for mechanics
+- [ ] Review [`GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md`](./GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md)
+- [ ] Check [`GUIDELINES/SYSTEMS/COMBAT_SYSTEM.md`](./GUIDELINES/SYSTEMS/COMBAT_SYSTEM.md) for mechanics
 - [ ] Validate timing windows and state machines
 - [ ] Test input buffer and responsiveness
 
 ### ✅ AI/Enemy Changes
-- [ ] Follow [`AI/ENEMY_TEMPLATE.md`](./AI/ENEMY_TEMPLATE.md) guidelines
-- [ ] Check [`AI/ENEMY_AI.md`](./AI/ENEMY_AI.md) for system integration
+- [ ] Follow [`GUIDELINES/AI/ENEMY_TEMPLATE.md`](./GUIDELINES/AI/ENEMY_TEMPLATE.md) guidelines
+- [ ] Check [`GUIDELINES/AI/ENEMY_AI.md`](./GUIDELINES/AI/ENEMY_AI.md) for system integration
 - [ ] Ensure AI logic stays in WASM
 - [ ] Test deterministic behavior
 
 ### ✅ Animation Changes
-- [ ] Review [`ANIMATION/ANIMATION_SYSTEM_INDEX.md`](./ANIMATION/ANIMATION_SYSTEM_INDEX.md)
+- [ ] Review [`GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md`](./GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md)
 - [ ] Check state transitions in relevant animation docs
 - [ ] Ensure animations don't affect game logic
 - [ ] Validate performance impact
 
 ### ✅ Core Loop Changes
-- [ ] Review [`GAME/IMPLEMENTATION_SUMMARY.md`](./GAME/IMPLEMENTATION_SUMMARY.md)
-- [ ] Use [`GAME/CORE_LOOP_CHECKLIST.md`](./GAME/CORE_LOOP_CHECKLIST.md) for validation
+- [ ] Review [`GUIDELINES/GAME/IMPLEMENTATION_SUMMARY.md`](./GUIDELINES/GAME/IMPLEMENTATION_SUMMARY.md)
+- [ ] Use [`GUIDELINES/GAME/CORE_LOOP_CHECKLIST.md`](./GUIDELINES/GAME/CORE_LOOP_CHECKLIST.md) for validation
 - [ ] Test all 8 phases (Explore → Fight → Choose → PowerUp → Risk → Escalate → CashOut → Reset)
 - [ ] Verify deterministic phase transitions
 
@@ -129,21 +128,21 @@
 ## 🎯 Common Tasks & References
 
 ### Adding New Features
-1. **Start with**: [`AGENTS.md`](./AGENTS.md) - Architecture principles
+1. **Start with**: [`GUIDELINES/AGENTS.md`](./GUIDELINES/AGENTS.md) - Architecture principles
 2. **Plan with**: Relevant system documentation (AI, Animation, Game, etc.)
 3. **Implement in**: WASM first, then JS integration layer
-4. **Test with**: [`TESTING.md`](./TESTING.md) procedures
+4. **Test with**: [`GUIDELINES/BUILD/TESTING.md`](./GUIDELINES/BUILD/TESTING.md) procedures
 
 ### Debugging Issues
-1. **Architecture problems**: [`AGENTS.md`](./AGENTS.md) troubleshooting section
-2. **Combat issues**: [`5-BUTTON_COMBAT_IMPLEMENTATION.md`](./5-BUTTON_COMBAT_IMPLEMENTATION.md)
-3. **AI behavior**: [`AI/ENEMY_AI.md`](./AI/ENEMY_AI.md) or [`AI/WOLF_AI.md`](./AI/WOLF_AI.md)
-4. **Animation glitches**: [`ANIMATION/PLAYER_ANIMATIONS.md`](./ANIMATION/PLAYER_ANIMATIONS.md)
+1. **Architecture problems**: [`GUIDELINES/AGENTS.md`](./GUIDELINES/AGENTS.md) troubleshooting section
+2. **Combat issues**: [`GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md`](./GUIDELINES/FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md)
+3. **AI behavior**: [`GUIDELINES/AI/ENEMY_AI.md`](./GUIDELINES/AI/ENEMY_AI.md) or [`GUIDELINES/AI/WOLF_AI.md`](./GUIDELINES/AI/WOLF_AI.md)
+4. **Animation glitches**: [`GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md`](./GUIDELINES/ANIMATION/PLAYER_ANIMATIONS.md)
 
 ### Performance Optimization
-1. **WASM optimization**: [`AGENTS.md`](./AGENTS.md) performance section
-2. **Build optimization**: [`UTILS/BUILD_INSTRUCTIONS.md`](./UTILS/BUILD_INSTRUCTIONS.md)
-3. **Testing performance**: [`UTILS/TEST_COVERAGE_IMPROVEMENTS.md`](./UTILS/TEST_COVERAGE_IMPROVEMENTS.md)
+1. **WASM optimization**: [`GUIDELINES/AGENTS.md`](./GUIDELINES/AGENTS.md) performance section
+2. **Build optimization**: [`GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md`](./GUIDELINES/UTILS/BUILD_INSTRUCTIONS.md)
+3. **Testing performance**: [`GUIDELINES/UTILS/TEST_COVERAGE_IMPROVEMENTS.md`](./GUIDELINES/UTILS/TEST_COVERAGE_IMPROVEMENTS.md)
 
 ---
 
@@ -157,9 +156,9 @@
 - **Performance targets** - <16ms frame time, <32MB memory, 60+ FPS
 
 ### File Naming Conventions
-- **Core architecture**: `AGENTS.md` (main reference)
+- **Core architecture**: `GUIDELINES/AGENTS.md` (main reference)
 - **Implementation guides**: `*_IMPLEMENTATION.md`
-- **System overviews**: `*_SYSTEM.md` 
+- **System overviews**: `*_SYSTEM.md`
 - **Quick references**: `*_INDEX.md`
 - **Checklists**: `*_CHECKLIST.md`
 

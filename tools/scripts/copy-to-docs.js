@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Copy Source Files to Docs Directory
- * 
+ * Copy Source Files to Public Directory
+ *
  * This script copies all necessary source files from the src/ directory
- * to the docs/ directory for GitHub Pages deployment.
+ * to the public/ directory for GitHub Pages deployment.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, cpSync } from 'fs'
@@ -15,15 +15,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '../..')
 const srcDir = join(projectRoot, 'src')
-const docsDir = join(projectRoot, 'docs')
-const docsJsDir = join(docsDir, 'js')
+const publicDir = join(projectRoot, 'public')
+const publicJsDir = join(publicDir, 'js')
 
-console.log('📁 Copying source files to docs directory...')
+console.log('📁 Copying source files to public directory...')
 
-// Ensure docs/js directory exists
-if (!existsSync(docsJsDir)) {
-  mkdirSync(docsJsDir, { recursive: true })
-  console.log('✅ Created docs/js directory')
+// Ensure public/js directory exists
+if (!existsSync(publicJsDir)) {
+  mkdirSync(publicJsDir, { recursive: true })
+  console.log('✅ Created public/js directory')
 }
 
 // Copy all source files recursively
@@ -63,8 +63,8 @@ const directoriesToCopy = [
 console.log('📂 Copying source directories...')
 directoriesToCopy.forEach(dir => {
   const srcPath = join(srcDir, dir)
-  const destPath = join(docsJsDir, 'src', dir)
-  
+  const destPath = join(publicJsDir, 'src', dir)
+
   if (existsSync(srcPath)) {
     copyDirectory(srcPath, destPath)
   } else {
@@ -82,8 +82,8 @@ const filesToCopy = [
 console.log('📄 Copying individual source files...')
 filesToCopy.forEach(file => {
   const srcPath = join(srcDir, file)
-  const destPath = join(docsJsDir, 'src', file)
-  
+  const destPath = join(publicJsDir, 'src', file)
+
   if (existsSync(srcPath)) {
     try {
       copyFileSync(srcPath, destPath)
@@ -98,7 +98,7 @@ filesToCopy.forEach(file => {
 
 // Copy assets directory
 const assetsSrc = join(projectRoot, 'assets')
-const assetsDest = join(docsDir, 'assets')
+const assetsDest = join(publicDir, 'assets')
 
 if (existsSync(assetsSrc)) {
   console.log('🎵 Copying assets directory...')
@@ -109,7 +109,7 @@ if (existsSync(assetsSrc)) {
 
 // Copy data directory
 const dataSrc = join(projectRoot, 'data')
-const dataDest = join(docsDir, 'data')
+const dataDest = join(publicDir, 'data')
 
 if (existsSync(dataSrc)) {
   console.log('📊 Copying data directory...')
@@ -118,9 +118,9 @@ if (existsSync(dataSrc)) {
   console.log('⚠️  Data directory not found')
 }
 
-// Copy built files from dist to docs/js
+// Copy built files from dist to public/js
 const distSrc = join(projectRoot, 'dist')
-const distDest = join(docsDir, 'js', 'dist')
+const distDest = join(publicDir, 'js', 'dist')
 
 if (existsSync(distSrc)) {
   console.log('📦 Copying dist directory...')
@@ -131,7 +131,7 @@ if (existsSync(distSrc)) {
 
 // Copy WASM files
 const wasmFiles = ['game.wasm', 'game-host.wasm']
-const wasmDestDir = join(docsDir, 'wasm')
+const wasmDestDir = join(publicDir, 'wasm')
 
 if (!existsSync(wasmDestDir)) {
   mkdirSync(wasmDestDir, { recursive: true })
@@ -141,7 +141,7 @@ console.log('🔧 Copying WASM files...')
 wasmFiles.forEach(file => {
   const srcPath = join(projectRoot, file)
   const destPath = join(wasmDestDir, file)
-  
+
   if (existsSync(srcPath)) {
     try {
       copyFileSync(srcPath, destPath)
@@ -156,7 +156,7 @@ wasmFiles.forEach(file => {
 
 // Copy main site.js if it exists
 const siteJsSrc = join(projectRoot, 'site.js')
-const siteJsDest = join(docsDir, 'site.js')
+const siteJsDest = join(publicDir, 'site.js')
 
 if (existsSync(siteJsSrc)) {
   try {
@@ -171,7 +171,7 @@ if (existsSync(siteJsSrc)) {
 
 // Copy favicon
 const faviconSrc = join(projectRoot, 'favicon.ico')
-const faviconDest = join(docsDir, 'favicon.ico')
+const faviconDest = join(publicDir, 'favicon.ico')
 
 if (existsSync(faviconSrc)) {
   try {
@@ -185,7 +185,7 @@ if (existsSync(faviconSrc)) {
 }
 
 // Create .nojekyll file to prevent Jekyll processing
-const nojekyllPath = join(docsDir, '.nojekyll')
+const nojekyllPath = join(publicDir, '.nojekyll')
 if (!existsSync(nojekyllPath)) {
   try {
     writeFileSync(nojekyllPath, '')
@@ -195,16 +195,16 @@ if (!existsSync(nojekyllPath)) {
   }
 }
 
-console.log('\n🎉 Source files copied to docs directory!')
+console.log('\n🎉 Source files copied to public directory!')
 console.log('📁 Files copied:')
-console.log('   - All src/ directories → docs/js/src/')
-console.log('   - Individual src/ files → docs/js/src/')
-console.log('   - assets/ → docs/assets/')
-console.log('   - data/ → docs/data/')
-console.log('   - dist/ → docs/js/dist/')
-console.log('   - WASM files → docs/wasm/')
-console.log('   - site.js → docs/site.js')
-console.log('   - favicon.ico → docs/favicon.ico')
+console.log('   - All src/ directories → public/js/src/')
+console.log('   - Individual src/ files → public/js/src/')
+console.log('   - assets/ → public/assets/')
+console.log('   - data/ → public/data/')
+console.log('   - dist/ → public/js/dist/')
+console.log('   - WASM files → public/wasm/')
+console.log('   - site.js → public/site.js')
+console.log('   - favicon.ico → public/favicon.ico')
 console.log('   - .nojekyll file created')
 
-console.log('\n🌐 Your docs directory is now ready for GitHub Pages deployment!')
+console.log('\n🌐 Your public directory is now ready for GitHub Pages deployment!')

@@ -28,13 +28,13 @@ cd public && python -m http.server 8080
 # Install and run http-server
 npm run serve:http
 # or
-npx http-server docs -p 8080 -c-1 --cors
+npx http-server public -p 8080 -c-1 --cors
 ```
 
 ### ✅ Solution 4: Use Live Server (VS Code Extension)
 If you're using VS Code:
 1. Install the "Live Server" extension
-2. Right-click on `docs/index.html`
+2. Right-click on `public/index.html`
 3. Select "Open with Live Server"
 
 ## Why This Happens
@@ -67,7 +67,7 @@ public/
 3. **Check the console** - you should see:
    ```
    🚀 DozedEnt development server running at http://localhost:8080
-   📁 Serving files from: C:\Users\flori\Desktop\DozedEnt\docs
+   📁 Serving files from: C:\Users\flori\Desktop\DozedEnt\public
    🎮 Open http://localhost:8080 to play the game
    ⚡ JavaScript modules will be served with proper MIME types
    ```
@@ -87,7 +87,7 @@ If you still see MIME type errors:
 
 1. **Clear browser cache**: Hard refresh (Ctrl+F5)
 2. **Check browser console**: Look for specific error messages
-3. **Verify file paths**: Ensure `js/site.js` exists in the docs directory
+3. **Verify file paths**: Ensure `js/site.js` exists in the public directory
 4. **Try different port**: Change port if 8080 is occupied
 
 ## Production Deployment

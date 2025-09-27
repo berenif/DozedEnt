@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
         pathname = '/index.html';
     }
     
-    const filePath = path.join(__dirname, '../../docs', pathname);
+    const filePath = path.join(__dirname, '../../public', pathname);
     const ext = path.extname(filePath).toLowerCase();
     const contentType = mimeTypes[ext] || 'application/octet-stream';
     

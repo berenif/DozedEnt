@@ -82,19 +82,8 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 | `set_blocking(on, faceX, faceY, nowSeconds)` | Toggle/update block state | `on`: 0 or 1<br>`faceX`: direction<br>`faceY`: direction<br>`nowSeconds`: timestamp | `1` if active, `0` if not |
 | `get_block_state()` | Query blocking status | None | `1` if blocking, `0` otherwise |
 | `handle_incoming_attack(ax, ay, dirX, dirY, nowSeconds)` | Process incoming attack | Attack parameters | `-1`: ignore<br>`0`: hit<br>`1`: block<br>`2`: perfect parry |
-#### 🔄 Game Loop & State Management
 
-| Function | Description | Parameters | Returns |
-|----------|-------------|------------|----------|
-| `init_run(seed, start_weapon)` | Initialize new run | `seed`: RNG seed<br>`start_weapon`: weapon ID | `void` |
-| `reset_run(new_seed)` | Instant restart with new seed | `new_seed`: RNG seed | `void` |
-| `get_phase()` | Get current game phase | None | Phase enum (see below) |
-| `get_choice_count()` | Number of available choices | None | `int` |
-| `get_choice_id(i)` | Get choice ID at index | `i`: index | `int` |
-| `get_choice_type(i)` | Get choice type at index | `i`: index | `int` |
-| `get_choice_rarity(i)` | Get choice rarity at index | `i`: index | `int` |
-| `get_choice_tags(i)` | Get choice tags at index | `i`: index | `int` |
-| `commit_choice(choice_id)` | Apply selected choice | `choice_id`: selected ID | `void` |
+*See [GAME/IMPLEMENTATION_SUMMARY.md](./GAME/IMPLEMENTATION_SUMMARY.md) for complete API documentation.*
 
 ##### 📊 Game Phases (Complete Implementation)
 ```cpp
@@ -434,9 +423,9 @@ fetch('game.wasm')
 - **Deterministic**: Same seed + inputs = same output across all clients
 - **Memory Efficient**: Flat data structures, no allocations during gameplay
 - **Fast Updates**: < 1ms per frame typical, < 20ms maximum
-- **Small Binary**: ~43KB WASM module
+- **Small Binary**: ~43KB WASM module with 60+ export functions
 - **No GC Pressure**: All state in WASM linear memory
-- **60+ Export Functions**: Complete API surface for all game systems
+- **Multiplayer Ready**: Room-based P2P networking with host authority
 
 ### 🎯 Performance Targets
 - Frame time: ≤ 16ms (60 FPS)
@@ -444,6 +433,7 @@ fetch('game.wasm')
 - WASM memory: < 32MB total
 - GC frequency: < 1/second
 - Network sync: < 100ms latency
+- Binary size: < 50KB (currently ~43KB)
 
 ### 📈 Optimization Strategies
 1. **Batch State Reads**: Read all WASM state once per frame

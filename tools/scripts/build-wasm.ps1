@@ -10,25 +10,40 @@ param(
 Write-Host "WASM Build Script for DozedEnt Game" -ForegroundColor Cyan
 Write-Host "Build type: $BuildType" -ForegroundColor Yellow
 
-# Initialize Emscripten environment
-# Write-Host "Setting up Emscripten environment..." -ForegroundColor Green
-# try {
-#     . .\emsdk\emsdk_env.ps1
-#     Write-Host "Emscripten environment initialized" -ForegroundColor Green
-# } catch {
-#     Write-Host "Failed to initialize Emscripten environment" -ForegroundColor Red
-#     Write-Host "Make sure emsdk is properly installed in the emsdk/ directory" -ForegroundColor Yellow
-#     exit 1
-# }
+# Initialize Emscripten environment (vendored in ./emsdk)
+Write-Host "Setting up Emscripten environment..." -ForegroundColor Green
+try {
+    $emsdkEnv = Join-Path -Path (Get-Location) -ChildPath "emsdk/emsdk_env.ps1"
+    if (-not (Test-Path $emsdkEnv)) {
+        throw "emsdk_env.ps1 not found at $emsdkEnv"
+    }
+    . $emsdkEnv
+
+    # Ensure EM_CONFIG points to our vendored config (emsdk/.emscripten)
+    $expectedConfig = (Resolve-Path "./emsdk/.emscripten").Path
+    if (-not $env:EM_CONFIG -or -not (Test-Path $env:EM_CONFIG) -or -not ($env:EM_CONFIG -ieq $expectedConfig)) {
+        $env:EM_CONFIG = $expectedConfig
+    }
+
+    Write-Host "Emscripten environment initialized" -ForegroundColor Green
+    Write-Host "EM_CONFIG: $($env:EM_CONFIG)" -ForegroundColor DarkGray
+} catch {
+    Write-Host "Failed to initialize Emscripten environment" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host "Make sure emsdk is properly installed in the emsdk/ directory" -ForegroundColor Yellow
+    exit 1
+}
 
 # Verify em++ is available
-# try {
-#     $emVersion = em++ --version | Select-String "emcc"
-#     Write-Host "Emscripten compiler available: $emVersion" -ForegroundColor Green
-# } catch {
-#     Write-Host "em++ compiler not found" -ForegroundColor Red
-#     exit 1
-# }
+try {
+    $emVersion = em++ --version 2>&1 | Select-String "emcc"
+    if (-not $emVersion) { throw "em++ did not report version" }
+    Write-Host "Emscripten compiler available: $emVersion" -ForegroundColor Green
+} catch {
+    Write-Host "em++ compiler not found" -ForegroundColor Red
+    Write-Host "PATH: $($env:PATH)" -ForegroundColor DarkGray
+    exit 1
+}
 
 # Clean previous builds
 Write-Host "Cleaning previous WASM builds..." -ForegroundColor Yellow
@@ -146,6 +161,20 @@ if ($success) {
     Write-Host "  npm run wasm:build:dev  - Build development game.wasm" -ForegroundColor White
     Write-Host "  npm run wasm:build:host - Build game-host.wasm" -ForegroundColor White
     Write-Host "  npm run wasm:build:all  - Build all WASM modules" -ForegroundColor White
+
+    # Generate export manifest for CI/auditing
+    Write-Host ""; Write-Host "Generating WASM export manifest..." -ForegroundColor Cyan
+    try {
+        node ./tools/scripts/generate-wasm-exports.js --out ./WASM_EXPORTS.json | Write-Host
+        if (Test-Path "./WASM_EXPORTS.json") {
+            $json = Get-Content ./WASM_EXPORTS.json -Raw | ConvertFrom-Json
+            $moduleSummaries = $json.modules | ForEach-Object { "  $($_.file): $($_.exportCount) exports" }
+            Write-Host "Manifest created with:" -ForegroundColor Green
+            $moduleSummaries | ForEach-Object { Write-Host $_ -ForegroundColor White }
+        }
+    } catch {
+        Write-Host "Failed to generate export manifest: $_" -ForegroundColor Yellow
+    }
 } else {
     Write-Host "WASM build failed!" -ForegroundColor Red
     Write-Host ""

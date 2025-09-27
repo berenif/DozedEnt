@@ -1,12 +1,12 @@
 # Build Report
 
-Generated: 2025-09-26T19:45:00.191Z
-Duration: 55536ms
+Generated: 2025-09-27T16:50:40.242Z
+Duration: 74171ms
 
 ## Summary
 
 - **Modules Built**: 3
-- **Total Size**: 1719KB
+- **Total Size**: 1729KB
 - **Optimization Savings**: 0 bytes
 - **Errors**: 0
 - **Warnings**: 3
@@ -20,12 +20,12 @@ Duration: 55536ms
 - **core/trystero-supabase.min.js**: 127KB
 - **core/trystero-torrent.min.js**: 13KB
 - **core/trystero-wasm.min.js**: 4KB
-- **animations/player-animator.js**: 126KB
+- **animations/player-animator.js**: 129KB
 - **animations/player-animator.min.js**: 47KB
-- **animations/player-animator.umd.js**: 138KB
-- **animations/wolf-animation.js**: 76KB
+- **animations/player-animator.umd.js**: 141KB
+- **animations/wolf-animation.js**: 78KB
 - **animations/wolf-animation.min.js**: 31KB
-- **animations/wolf-animation.umd.js**: 84KB
+- **animations/wolf-animation.umd.js**: 86KB
 - **core/index.js**: 1KB
 - **animations/index.js**: 1KB
 - **index.js**: 0KB

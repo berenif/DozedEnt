@@ -1,0 +1,106 @@
+# Jekyll configuration for GitHub Pages - Build Directory Deployment
+# This file configures how GitHub Pages serves the DozedEnt game from the build directory
+
+# Basic site settings
+title: "DozedEnt - P2P Survival Game"
+description: "WebAssembly-first multiplayer survival game with advanced AI, 5-button combat system, and serverless P2P networking"
+baseurl: "/DozedEnt" # Repository name for GitHub Pages
+url: "" # Your custom domain or leave empty for github.io domain
+
+# Build settings
+theme: null # We're using custom HTML/CSS, so no Jekyll theme
+plugins: []
+
+# Exclude files from being served
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .sass-cache
+  - .jekyll-cache
+  - .jekyll-metadata
+  - README.md
+  - package.json
+  - package-lock.json
+  - .gitignore
+  - .github/
+
+# Include specific files/folders for GitHub Pages
+include:
+  - index.html
+  - favicon.ico
+  - site.js
+  - *.wasm
+  - core/
+  - animations/
+  - wasm/
+  - assets/
+  - images/
+  - build-info.json
+
+# Disable Jekyll processing for certain files to preserve WASM and JS modules
+defaults:
+  - scope:
+      path: "*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "wasm/**/*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "core/**/*.wasm"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "core/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "animations/**/*.js"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "**/*.map"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "assets/**/*"
+    values:
+      layout: null
+      sitemap: false
+  - scope:
+      path: "build-info.json"
+    values:
+      layout: null
+      sitemap: false
+
+# MIME type configuration for WebAssembly
+webrick:
+  headers:
+    'Access-Control-Allow-Origin': '*'
+    'Access-Control-Allow-Methods': 'GET'
+  mime_types:
+    wasm: application/wasm
+    map: application/json
+
+# GitHub Pages specific settings
+github: [metadata]
+kramdown:
+  input: GFM
+  hard_wrap: false

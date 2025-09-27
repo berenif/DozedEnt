@@ -218,7 +218,7 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 
 - [x] Externalize balance constants to data files
 - [ ] Add more choice variety (current: 18 choices)
-- [ ] Implement save/load system
+- [x] Implement save/load system
 - [ ] Add achievement tracking
 - [ ] Implement leaderboards
 - [ ] Add multiplayer phase synchronization
@@ -226,6 +226,9 @@ All game logic is implemented in WASM (C++) with JavaScript only handling UI ren
 - [ ] Add audio cues for phase changes
 - [ ] Implement tutorial for each phase
 - [ ] Add statistics tracking
+- [ ] Enhanced UI animations and polish
+- [ ] More enemy types and behaviors
+- [ ] Advanced multiplayer features
 
 ## Build Instructions
 

@@ -2,7 +2,7 @@
 
 /**
  * GitHub Pages Deployment Validation Script
- * 
+ *
  * This script validates that all required files are present for GitHub Pages deployment
  * and checks that the deployment structure is correct.
  */
@@ -15,9 +15,11 @@ import chalk from 'chalk'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..', '..')
-const docsPath = join(projectRoot, 'docs')
+const publicPath = join(projectRoot, 'public')
 
 console.log(chalk.bold.blue('\n🔍 Validating GitHub Pages Deployment...\n'))
+
+console.log(chalk.blue('📁 Checking public directory structure...'))
 
 class GitHubPagesValidator {
   constructor() {
@@ -73,17 +75,17 @@ class GitHubPagesValidator {
    * Check directory structure
    */
   async checkDirectoryStructure() {
-    if (!existsSync(docsPath)) {
-      this.errors.push('docs/ directory does not exist')
+    if (!existsSync(publicPath)) {
+      this.errors.push('public/ directory does not exist')
       return
     }
 
     for (const dir of this.requiredDirectories) {
-      const dirPath = join(docsPath, dir)
+      const dirPath = join(publicPath, dir)
       if (!existsSync(dirPath)) {
-        this.warnings.push(`docs/${dir}/ directory missing`)
+        this.warnings.push(`public/${dir}/ directory missing`)
       } else {
-        console.log(chalk.green(`  ✅ docs/${dir}/ exists`))
+        console.log(chalk.green(`  ✅ public/${dir}/ exists`))
       }
     }
   }
@@ -93,20 +95,20 @@ class GitHubPagesValidator {
    */
   async checkRequiredFiles() {
     for (const file of this.requiredFiles) {
-      const filePath = join(docsPath, file)
+      const filePath = join(publicPath, file)
       if (!existsSync(filePath)) {
-        this.errors.push(`Required file docs/${file} is missing`)
+        this.errors.push(`Required file public/${file} is missing`)
       } else {
-        console.log(chalk.green(`  ✅ docs/${file} exists`))
+        console.log(chalk.green(`  ✅ public/${file} exists`))
       }
     }
 
     for (const file of this.optionalFiles) {
-      const filePath = join(docsPath, file)
+      const filePath = join(publicPath, file)
       if (existsSync(filePath)) {
-        console.log(chalk.green(`  ✅ docs/${file} exists`))
+        console.log(chalk.green(`  ✅ public/${file} exists`))
       } else {
-        console.log(chalk.yellow(`  ⚠️  docs/${file} missing (optional)`))
+        console.log(chalk.yellow(`  ⚠️  public/${file} missing (optional)`))
       }
     }
   }
@@ -115,9 +117,9 @@ class GitHubPagesValidator {
    * Check dist folder contents
    */
   async checkDistFolder() {
-    const distPath = join(docsPath, 'dist')
+    const distPath = join(publicPath, 'dist')
     if (!existsSync(distPath)) {
-      this.errors.push('docs/dist/ directory is missing')
+      this.errors.push('public/dist/ directory is missing')
       return
     }
 
@@ -134,9 +136,9 @@ class GitHubPagesValidator {
     for (const item of expectedDistContents) {
       const itemPath = join(distPath, item)
       if (!existsSync(itemPath)) {
-        this.warnings.push(`docs/dist/${item} missing`)
+        this.warnings.push(`public/dist/${item} missing`)
       } else {
-        console.log(chalk.green(`  ✅ docs/dist/${item} exists`))
+        console.log(chalk.green(`  ✅ public/dist/${item} exists`))
       }
     }
   }
@@ -146,28 +148,28 @@ class GitHubPagesValidator {
    */
   async checkWasmFiles() {
     const wasmFiles = ['game.wasm', 'game-host.wasm']
-    
+
     for (const wasmFile of wasmFiles) {
-      const wasmPath = join(docsPath, wasmFile)
+      const wasmPath = join(publicPath, wasmFile)
       if (existsSync(wasmPath)) {
         const stats = statSync(wasmPath)
         const sizeKB = Math.round(stats.size / 1024)
-        console.log(chalk.green(`  ✅ docs/${wasmFile} exists (${sizeKB}KB)`))
-        
+        console.log(chalk.green(`  ✅ public/${wasmFile} exists (${sizeKB}KB)`))
+
         if (stats.size === 0) {
-          this.errors.push(`docs/${wasmFile} is empty`)
+          this.errors.push(`public/${wasmFile} is empty`)
         }
       } else {
-        this.errors.push(`docs/${wasmFile} is missing`)
+        this.errors.push(`public/${wasmFile} is missing`)
       }
     }
 
     // Check dist/wasm folder
-    const distWasmPath = join(docsPath, 'dist', 'wasm')
+    const distWasmPath = join(publicPath, 'dist', 'wasm')
     if (existsSync(distWasmPath)) {
-      console.log(chalk.green(`  ✅ docs/dist/wasm/ exists`))
+      console.log(chalk.green(`  ✅ public/dist/wasm/ exists`))
     } else {
-      this.warnings.push('docs/dist/wasm/ directory missing')
+      this.warnings.push('public/dist/wasm/ directory missing')
     }
   }
 
@@ -175,15 +177,15 @@ class GitHubPagesValidator {
    * Check Jekyll configuration
    */
   async checkJekyllConfig() {
-    const configPath = join(docsPath, '_config.yml')
+    const configPath = join(publicPath, '_config.yml')
     if (!existsSync(configPath)) {
-      this.errors.push('docs/_config.yml is missing')
+      this.errors.push('public/_config.yml is missing')
       return
     }
 
     try {
       const configContent = readFileSync(configPath, 'utf8')
-      
+
       // Check for required configurations
       const requiredConfigs = [
         'title:',
@@ -224,17 +226,17 @@ class GitHubPagesValidator {
     ]
 
     for (const file of filesToCheck) {
-      const filePath = join(docsPath, file.path)
+      const filePath = join(publicPath, file.path)
       if (existsSync(filePath)) {
         const stats = statSync(filePath)
         const sizeKB = Math.round(stats.size / 1024)
-        
+
         if (file.maxSize && sizeKB > file.maxSize) {
-          this.warnings.push(`docs/${file.path} is large (${sizeKB}KB > ${file.maxSize}KB)`)
+          this.warnings.push(`public/${file.path} is large (${sizeKB}KB > ${file.maxSize}KB)`)
         } else if (file.minSize && sizeKB < file.minSize) {
-          this.warnings.push(`docs/${file.path} is small (${sizeKB}KB < ${file.minSize}KB)`)
+          this.warnings.push(`public/${file.path} is small (${sizeKB}KB < ${file.minSize}KB)`)
         } else {
-          console.log(chalk.green(`  ✅ docs/${file.path} size OK (${sizeKB}KB)`))
+          console.log(chalk.green(`  ✅ public/${file.path} size OK (${sizeKB}KB)`))
         }
       }
     }
@@ -268,7 +270,7 @@ class GitHubPagesValidator {
     console.log(chalk.blue('  □ GitHub Pages enabled in repository settings'))
     console.log(chalk.blue('  □ GitHub Actions permissions configured'))
     console.log(chalk.blue('  □ Workflow file exists (.github/workflows/deploy.yml)'))
-    console.log(chalk.blue('  □ All required files present in docs/'))
+    console.log(chalk.blue('  □ All required files present in public/'))
     console.log(chalk.blue('  □ WASM files have correct MIME types'))
     console.log(chalk.blue('  □ Jekyll configuration is valid'))
 

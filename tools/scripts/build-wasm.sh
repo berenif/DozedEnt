@@ -124,4 +124,8 @@ if [ -f "game.wasm" ] || [ -f "game-host.wasm" ]; then
     echo "WASM files copied to dist/wasm/"
 fi
 
+# Generate export manifest for CI/auditing
+echo "Generating WASM export manifest..."
+node ./tools/scripts/generate-wasm-exports.js --out ./WASM_EXPORTS.json || echo "Warning: Failed to generate export manifest"
+
 echo "Build completed successfully"
