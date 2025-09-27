@@ -25,6 +25,27 @@ import { OrientationManager } from '../src/ui/orientation-manager.js';
 import { MainMenuController } from '../src/ui/main-menu-controller.js';
 import { PhaseOverlayController } from '../src/ui/phase-overlay-controller.js';
 import { LobbyUIController } from '../src/ui/lobby-ui-controller.js';
+import { VisualEffectsManager } from '../src/effects/visual-effects-manager.js';
+import { PhaseTransitionEffects } from '../src/effects/phase-transition-effects.js';
+import { PhaseAudioSystem } from '../src/audio/phase-audio-system.js';
+import { AchievementManager } from '../src/game/achievement-manager.js';
+import { AchievementUI } from '../src/ui/achievement-ui.js';
+import { SaveLoadManager } from '../src/game/save-load-manager.js';
+import { SaveLoadUI } from '../src/ui/save-load-ui.js';
+import { LeaderboardSystem } from '../src/gameplay/leaderboard-system.js';
+import { StatisticsManager } from '../src/game/statistics-manager.js';
+import { StatisticsDashboard } from '../src/ui/statistics-dashboard.js';
+import { StatisticsIntegration } from '../src/gameplay/statistics-integration.js';
+import { LeaderboardIntegration } from '../src/gameplay/leaderboard-integration.js';
+import { initializePersistenceUI, showPersistenceUI as showGlobalPersistenceUI } from '../src/ui/persistence-ui.js';
+import { TutorialSystem } from '../src/ui/tutorial-system.js';
+import { ThreatAwarenessUI } from '../src/ui/threat-awareness-ui.js';
+import { DeathFeedbackSystem } from '../src/ui/death-feedback-system.js';
+import { ModernRogueliteUI } from '../src/ui/modern-roguelite-ui.js';
+import { CombatUIOptimizer } from '../src/ui/combat-ui-optimizer.js';
+import { AlertSystem } from '../src/ui/alert-system.js';
+import { AccessibilityManager } from '../src/ui/accessibility-manager.js';
+import { ComprehensiveAccessibility } from '../src/ui/comprehensive-accessibility.js';
 
 /**
  * Main Game Application Class
@@ -48,7 +69,7 @@ class GameApplication {
     // System managers
     this.wasmManager = new WasmManager();
     this.roomManager = new RoomManager();
-    this.audioManager = new AudioManager();
+    this.audioManager = null;
     this.gameStateManager = new GameStateManager();
     this.inputManager = null;
     this.enhancedMobileControls = null;
@@ -60,6 +81,27 @@ class GameApplication {
     this.mainMenuController = null;
     this.phaseOverlayController = null;
     this.lobbyUIController = null;
+    this.visualEffectsManager = null;
+    this.phaseTransitionEffects = null;
+    this.phaseAudioSystem = null;
+    this.achievementManager = null;
+    this.achievementUI = null;
+    this.saveLoadManager = null;
+    this.saveLoadUI = null;
+    this.persistenceUI = null;
+    this.leaderboardSystem = null;
+    this.statisticsManager = null;
+    this.statisticsDashboard = null;
+    this.statisticsIntegration = null;
+    this.leaderboardIntegration = null;
+    this.tutorialSystem = null;
+    this.threatAwarenessUI = null;
+    this.deathFeedbackSystem = null;
+    this.modernRogueliteUI = null;
+    this.combatUIOptimizer = null;
+    this.alertSystem = null;
+    this.accessibilityManager = null;
+    this.comprehensiveAccessibility = null;
 
 
     // Game systems
@@ -77,6 +119,12 @@ class GameApplication {
     this.lastFrameTime = 0;
     this.animationFrameId = null;
     this.isInitialized = false;
+    this.currentPhase = 0;
+    this.lastPhase = 0;
+    this.lastPlayerHealth = null;
+    this.lastPlayerStamina = null;
+    this.wasBlockingLastFrame = false;
+    this.wasRollingLastFrame = false;
   }
 
   /**
@@ -167,6 +215,7 @@ class GameApplication {
 
       // Initialize audio system
       console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â§ Initializing audio system...');
+      this.audioManager = new AudioManager(this.gameStateManager);
       this.audioManager.setupEventListeners();
       console.log('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Audio system initialized');
 
@@ -193,6 +242,10 @@ class GameApplication {
       // Initialize game state with WASM
       console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â§ Initializing game state manager...');
       this.gameStateManager.initialize(this.wasmManager);
+      this.currentPhase = this.wasmManager?.getPhase?.() ?? 0;
+      this.lastPhase = this.currentPhase;
+      this.lastPlayerHealth = this.wasmManager?.exports?.get_health?.() ?? 100;
+      this.lastPlayerStamina = this.wasmManager?.exports?.get_stamina?.() ?? 100;
       console.log('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Game state manager initialized');
 
       // Initialize input manager
@@ -206,6 +259,8 @@ class GameApplication {
       console.log('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Enhanced mobile controls initialized');
 
       // Initialize UI controllers
+      this.initializeExtendedSystems();
+
       console.log('Initializing UI controllers...');
       this.initializeInterfaceControllers();
       console.log('UI controllers initialized');
@@ -221,6 +276,7 @@ class GameApplication {
       console.log('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Initialization UI updated');
 
       this.isInitialized = true;
+      this.alertSystem?.showAlert?.('DozedEnt systems ready. Press Start to begin your run.', 'success', { duration: 4200 });
       console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Game application initialized successfully');
       return true;
 
@@ -293,6 +349,111 @@ class GameApplication {
     this.gameStateManager.setWolfAISystem(this.wolfAISystem);
 
     // Make systems globally accessible for debugging
+    this.registerGlobalReferences();
+  }
+
+  /**
+   * Initialize extended systems that sit on top of the core gameplay loop
+   * (achievements, persistence, statistics, visual effects, accessibility, etc.)
+   */
+  initializeExtendedSystems() {
+    try {
+      if (!this.alertSystem) {
+        this.alertSystem = new AlertSystem({ toastLifetime: 4800 });
+      }
+
+      if (!this.accessibilityManager) {
+        this.accessibilityManager = new AccessibilityManager();
+      }
+
+      if (!this.comprehensiveAccessibility) {
+        this.comprehensiveAccessibility = new ComprehensiveAccessibility();
+        this.comprehensiveAccessibility.setEnabled(true);
+      }
+
+      if (this.gameCanvas && !this.visualEffectsManager) {
+        this.visualEffectsManager = new VisualEffectsManager(this.gameCanvas, this.gameStateManager);
+      }
+
+      const wasmExports = this.wasmManager?.exports;
+
+      if (this.visualEffectsManager && wasmExports && !this.phaseTransitionEffects) {
+        this.phaseTransitionEffects = new PhaseTransitionEffects(
+          this.visualEffectsManager,
+          wasmExports,
+          this.gameRenderer
+        );
+      }
+
+      if (this.audioManager && wasmExports && !this.phaseAudioSystem) {
+        const audioBackend = this.audioManager._enhanced ?? this.audioManager;
+        this.phaseAudioSystem = new PhaseAudioSystem(audioBackend, wasmExports);
+      }
+
+      if (this.wasmManager?.isLoaded && !this.achievementManager) {
+        this.achievementManager = new AchievementManager(this.wasmManager, null);
+        this.achievementUI = new AchievementUI(this.achievementManager);
+        this.achievementManager.uiManager = this.achievementUI;
+      }
+
+      if (this.wasmManager?.isLoaded && !this.saveLoadManager) {
+        this.saveLoadManager = new SaveLoadManager(this.wasmManager);
+        this.saveLoadUI = new SaveLoadUI(this.saveLoadManager);
+      }
+
+      if (this.wasmManager?.isLoaded && !this.leaderboardSystem) {
+        this.leaderboardSystem = new LeaderboardSystem(this.gameStateManager, null);
+      }
+
+      if (this.wasmManager?.isLoaded && !this.statisticsManager) {
+        this.statisticsManager = new StatisticsManager(this.wasmManager);
+        this.statisticsDashboard = new StatisticsDashboard(this.statisticsManager);
+      }
+
+      if (wasmExports && !this.statisticsIntegration) {
+        this.statisticsIntegration = new StatisticsIntegration(wasmExports);
+      }
+
+      if (wasmExports && this.leaderboardSystem && !this.leaderboardIntegration) {
+        this.leaderboardIntegration = new LeaderboardIntegration(wasmExports, this.leaderboardSystem);
+      }
+
+      if (!this.persistenceUI) {
+        this.persistenceUI = initializePersistenceUI(this.gameStateManager, this.wasmManager);
+        this.persistenceUI?.setLeaderboardSystem?.(this.leaderboardSystem);
+      }
+
+      if (this.gameRenderer && wasmExports && !this.tutorialSystem) {
+        this.tutorialSystem = new TutorialSystem(wasmExports, this.gameRenderer);
+      }
+
+      if (this.gameCanvas && this.audioManager && !this.threatAwarenessUI) {
+        this.threatAwarenessUI = new ThreatAwarenessUI(this.wasmManager, this.gameCanvas, this.audioManager);
+      }
+
+      if (this.wasmManager?.isLoaded && !this.deathFeedbackSystem) {
+        this.deathFeedbackSystem = new DeathFeedbackSystem(this.wasmManager);
+      }
+
+      if (this.wasmManager && !this.combatUIOptimizer) {
+        this.combatUIOptimizer = new CombatUIOptimizer(this.wasmManager);
+      }
+
+      if (this.wasmManager && !this.modernRogueliteUI) {
+        this.modernRogueliteUI = new ModernRogueliteUI(this.wasmManager);
+      }
+
+      this.registerGlobalReferences();
+    } catch (error) {
+      console.error('Failed to initialize extended systems:', error);
+    }
+  }
+
+  /**
+   * Register frequently used systems on the global window for debugging and tooling support
+   */
+  registerGlobalReferences() {
+    window.gameApp = this;
     window.gameRenderer = this.gameRenderer;
     window.cameraEffects = this.cameraEffects;
     window.wolfAISystem = this.wolfAISystem;
@@ -300,6 +461,27 @@ class GameApplication {
     window.animatedPlayer = this.animatedPlayer;
     window.wasmManager = this.wasmManager;
     window.gameStateManager = this.gameStateManager;
+    if (this.visualEffectsManager) window.visualEffectsManager = this.visualEffectsManager;
+    if (this.phaseTransitionEffects) window.phaseTransitionEffects = this.phaseTransitionEffects;
+    if (this.phaseAudioSystem) window.phaseAudioSystem = this.phaseAudioSystem;
+    if (this.achievementManager) window.achievementManager = this.achievementManager;
+    if (this.achievementUI) window.achievementUI = this.achievementUI;
+    if (this.saveLoadManager) window.saveLoadManager = this.saveLoadManager;
+    if (this.saveLoadUI) window.saveLoadUI = this.saveLoadUI;
+    if (this.statisticsManager) window.statisticsManager = this.statisticsManager;
+    if (this.statisticsDashboard) window.statisticsDashboard = this.statisticsDashboard;
+    if (this.leaderboardSystem) window.leaderboardSystem = this.leaderboardSystem;
+    if (this.leaderboardIntegration) window.leaderboardIntegration = this.leaderboardIntegration;
+    if (this.statisticsIntegration) window.statisticsIntegration = this.statisticsIntegration;
+    if (this.persistenceUI) window.persistenceUI = this.persistenceUI;
+    if (this.tutorialSystem) window.tutorialSystem = this.tutorialSystem;
+    if (this.threatAwarenessUI) window.threatAwarenessUI = this.threatAwarenessUI;
+    if (this.deathFeedbackSystem) window.deathFeedbackSystem = this.deathFeedbackSystem;
+    if (this.modernRogueliteUI) window.modernRogueliteUI = this.modernRogueliteUI;
+    if (this.combatUIOptimizer) window.combatUIOptimizer = this.combatUIOptimizer;
+    if (this.alertSystem) window.alertSystem = this.alertSystem;
+    if (this.accessibilityManager) window.accessibilityManager = this.accessibilityManager;
+    if (this.comprehensiveAccessibility) window.comprehensiveAccessibility = this.comprehensiveAccessibility;
   }
 
   /**
@@ -333,7 +515,7 @@ class GameApplication {
 
     this.phaseOverlayController = new PhaseOverlayController({
       wasmManager: this.wasmManager,
-      onChoiceCommitted: () => {},
+      onChoiceCommitted: (choiceId) => this.handleChoiceCommitted(choiceId),
       onRestart: () => this.handleGameRestart(),
       onRematch: () => this.handleGameRematch()
     });
@@ -388,6 +570,73 @@ class GameApplication {
   }
 
   /**
+   * Respond to committed choices from the phase overlay controller
+   * @param {number} choiceId - Choice identifier returned by WASM
+   */
+  handleChoiceCommitted(choiceId) {
+    try {
+      this.gameStateManager.phaseState.selectedChoice = choiceId;
+    } catch (error) {
+      console.warn('Unable to cache selected choice in game state:', error);
+    }
+
+    window.dispatchEvent(new CustomEvent('choiceMade', {
+      detail: {
+        choiceId,
+        timestamp: performance.now(),
+        phase: this.currentPhase,
+        phaseName: this.getPhaseNameById(this.currentPhase)
+      }
+    }));
+
+    this.alertSystem?.showAlert?.(`Choice ${choiceId + 1} locked in`, 'info', { duration: 3200 });
+  }
+
+  /**
+   * Compose payload for gameStarted events raised to other subsystems
+   * @param {object} data - Original payload from GameStateManager
+   * @returns {object}
+   */
+  buildGameStartedDetail(data = {}) {
+    const seed = this.wasmManager?.getRunSeed?.();
+    return {
+      ...data,
+      seed: seed !== undefined && seed !== null ? seed.toString() : undefined,
+      timestamp: performance.now(),
+      players: this.roomManager?.getPlayerCount?.() ?? 1,
+      phase: this.currentPhase,
+      phaseName: this.getPhaseNameById(this.currentPhase)
+    };
+  }
+
+  /**
+   * Gather a snapshot of the most relevant run statistics from WASM exports
+   * @param {object} extra - Additional metadata to merge into the summary
+   * @returns {object}
+   */
+  createRunSummary(extra = {}) {
+    const exports = this.wasmManager?.exports;
+    const seed = this.wasmManager?.getRunSeed?.();
+
+    return {
+      ...extra,
+      timestamp: performance.now(),
+      seed: seed !== undefined && seed !== null ? seed.toString() : undefined,
+      phase: this.currentPhase,
+      phaseName: this.getPhaseNameById(this.currentPhase),
+      players: this.roomManager?.getPlayerCount?.() ?? 1,
+      survivalTime: exports?.get_survival_time?.() ?? null,
+      roomsCleared: exports?.get_rooms_cleared?.() ?? null,
+      enemiesDefeated: exports?.get_enemies_defeated?.() ?? null,
+      gold: exports?.get_gold?.() ?? null,
+      essence: exports?.get_essence?.() ?? null,
+      totalDamageDealt: exports?.get_total_damage_dealt?.() ?? null,
+      totalDamageTaken: exports?.get_total_damage_taken?.() ?? null,
+      achievementScore: exports?.get_total_achievement_score?.() ?? null
+    };
+  }
+
+  /**
    * Setup event listeners
    * @private
    */
@@ -399,23 +648,35 @@ class GameApplication {
       });
     }
 
-    this.gameStateManager.on('gameStarted', () => {
+    this.gameStateManager.on('gameStarted', (data) => {
+      const detail = this.buildGameStartedDetail(data);
+      window.dispatchEvent(new CustomEvent('gameStarted', { detail }));
       this.startGameLoop();
     });
 
     this.gameStateManager.on('gameStopped', () => {
+      window.dispatchEvent(new CustomEvent('gameStopped', {
+        detail: { timestamp: performance.now() }
+      }));
       this.stopGameLoop();
     });
 
     this.gameStateManager.on('gamePaused', () => {
+      window.dispatchEvent(new CustomEvent('gamePaused', {
+        detail: { timestamp: performance.now() }
+      }));
       this.pauseGameLoop();
     });
 
     this.gameStateManager.on('gameResumed', () => {
+      window.dispatchEvent(new CustomEvent('gameResumed', {
+        detail: { timestamp: performance.now() }
+      }));
       this.resumeGameLoop();
     });
 
     this.gameStateManager.on('phaseChanged', (phase) => {
+      this.handlePhaseTransition(phase);
       this.phaseOverlayController?.handlePhaseChange(phase);
     });
 
@@ -564,7 +825,8 @@ class GameApplication {
       
       // Initialize world state
       if (this.wasmManager.isLoaded) {
-        const currentPhase = this.wasmManager.getPhase();
+          const currentPhase = this.wasmManager.getPhase();
+          this.lastPhase = this.currentPhase = currentPhase;
         console.log(`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¯ Game started in phase: ${this.getPhaseNameById(currentPhase)}`);
       }
       
@@ -587,6 +849,107 @@ class GameApplication {
       'Risk', 'Escalate', 'CashOut', 'Reset'
     ];
     return phases[phaseId] || `Unknown(${phaseId})`;
+  }
+
+  /**
+   * Handle notifications and downstream integrations when the phase changes
+   * @param {number} nextPhase - Phase identifier reported by WASM
+   */
+  handlePhaseTransition(nextPhase) {
+    const previousPhase = this.currentPhase ?? nextPhase;
+    const detail = {
+      from: previousPhase,
+      to: nextPhase,
+      fromName: this.getPhaseNameById(previousPhase),
+      toName: this.getPhaseNameById(nextPhase),
+      timestamp: performance.now()
+    };
+
+    if (previousPhase !== nextPhase) {
+      window.dispatchEvent(new CustomEvent('phaseCompleted', {
+        detail: {
+          phase: previousPhase,
+          phaseName: detail.fromName,
+          nextPhase,
+          nextPhaseName: detail.toName,
+          timestamp: detail.timestamp
+        }
+      }));
+    }
+
+    this.lastPhase = previousPhase;
+    this.currentPhase = nextPhase;
+
+    window.dispatchEvent(new CustomEvent('phaseTransition', { detail }));
+
+    this.visualEffectsManager?.startPhaseTransition?.(previousPhase, nextPhase);
+    this.phaseTransitionEffects?.triggerPhaseTransition?.(previousPhase, nextPhase);
+    this.phaseAudioSystem?.triggerPhaseTransition?.(previousPhase, nextPhase);
+
+    if (nextPhase === 6) {
+      this.persistenceUI?.refreshShopItems?.();
+    }
+
+    if (nextPhase === 7) {
+      const summary = this.createRunSummary(detail);
+      window.dispatchEvent(new CustomEvent('gameCompleted', { detail: summary }));
+      this.deathFeedbackSystem?.show?.(summary);
+      this.alertSystem?.showAlert?.('Run completed! Review your performance.', 'success', { duration: 5200 });
+    } else if (previousPhase !== nextPhase) {
+      this.alertSystem?.showAlert?.(`Entering ${detail.toName} phase`, 'info', { duration: 2600 });
+    }
+  }
+
+  /**
+   * Monitor key telemetry values so we can emit high-level gameplay events for JS systems
+   */
+  trackPlayerTelemetry() {
+    const exports = this.wasmManager?.exports;
+    if (exports) {
+      try {
+        const health = exports.get_health?.();
+        if (Number.isFinite(health)) {
+          if (this.lastPlayerHealth !== null && health < this.lastPlayerHealth) {
+            const damage = this.lastPlayerHealth - health;
+            window.dispatchEvent(new CustomEvent('playerHit', {
+              detail: {
+                damage,
+                currentHealth: health,
+                previousHealth: this.lastPlayerHealth,
+                timestamp: performance.now()
+              }
+            }));
+            if (damage > 0.5) {
+              this.alertSystem?.showAlert?.(`-${Math.round(damage)} HP`, 'warning', { duration: 1800 });
+            }
+          }
+          this.lastPlayerHealth = health;
+        }
+
+        const stamina = exports.get_stamina?.();
+        if (Number.isFinite(stamina)) {
+          this.lastPlayerStamina = stamina;
+        }
+      } catch (error) {
+        console.warn('Failed to poll WASM telemetry:', error);
+      }
+    }
+
+    const blocking = Boolean(this.gameStateManager?.playerState?.isBlocking);
+    if (blocking && !this.wasBlockingLastFrame) {
+      window.dispatchEvent(new CustomEvent('playerBlock', {
+        detail: { timestamp: performance.now() }
+      }));
+    }
+    this.wasBlockingLastFrame = blocking;
+
+    const rolling = Boolean(this.gameStateManager?.playerState?.isRolling);
+    if (rolling && !this.wasRollingLastFrame) {
+      window.dispatchEvent(new CustomEvent('playerRoll', {
+        detail: { timestamp: performance.now() }
+      }));
+    }
+    this.wasRollingLastFrame = rolling;
   }
 
   /**
@@ -713,15 +1076,29 @@ class GameApplication {
       }
 
       // Update Combat Feedback
-      if (this.combatFeedback) {
-        this.combatFeedback.update();
-      }
+        if (this.combatFeedback) {
+          this.combatFeedback.update();
+        }
 
-      // Render frame
-      this.render(deltaTime);
+        if (this.visualEffectsManager) {
+          this.visualEffectsManager.update(deltaTime);
+        }
 
-      // Continue loop
-      this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+        if (this.phaseTransitionEffects) {
+          this.phaseTransitionEffects.update(deltaTime);
+        }
+
+        if (this.phaseAudioSystem) {
+          this.phaseAudioSystem.update(deltaTime);
+        }
+
+        this.trackPlayerTelemetry();
+
+        // Render frame
+        this.render(deltaTime);
+
+        // Continue loop
+        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
 
     } catch (error) {
       console.error('Error in game loop:', error);
@@ -788,23 +1165,25 @@ class GameApplication {
       });
 
       // Render player using AnimatedPlayer (primary renderer)
-      if (this.animatedPlayer) {
-        this.animatedPlayer.render(ctx, camera);
-      } else {
-        // Fallback: render simple player rectangle
-        ctx.save();
+        if (this.animatedPlayer) {
+          this.animatedPlayer.render(ctx, camera);
+        } else {
+          // Fallback: render simple player rectangle
+          ctx.save();
         ctx.fillStyle = '#4a90e2';
         const screenX = playerWorldX - camera.x;
         const screenY = playerWorldY - camera.y;
         ctx.fillRect(screenX - 16, screenY - 16, 32, 32);
-        ctx.restore();
-      }
+          ctx.restore();
+        }
 
-      // Render UI overlays
-      this.renderUI();
+        this.visualEffectsManager?.render?.();
 
-    } catch (error) {
-      console.error('Error in render loop:', error);
+        // Render UI overlays
+        this.renderUI();
+
+      } catch (error) {
+        console.error('Error in render loop:', error);
     }
   }
 
@@ -1027,6 +1406,22 @@ class GameApplication {
       this.audioManager.destroy();
     }
 
+    this.visualEffectsManager?.destroy?.();
+    this.phaseTransitionEffects = null;
+    this.phaseAudioSystem?.destroy?.();
+    this.achievementUI?.destroy?.();
+    this.achievementManager?.destroy?.();
+    this.saveLoadUI?.closeMenu?.();
+    this.saveLoadManager?.destroy?.();
+    this.statisticsDashboard?.closeDashboard?.();
+    this.threatAwarenessUI?.destroy?.();
+    this.deathFeedbackSystem?.hide?.();
+    this.modernRogueliteUI?.destroy?.();
+    this.combatUIOptimizer?.destroy?.();
+    this.alertSystem?.clearAllAlerts?.();
+    this.accessibilityManager = null;
+    this.comprehensiveAccessibility?.setEnabled?.(false);
+
     this.orientationManager?.destroy?.();
     this.mainMenuController?.destroy?.();
     this.phaseOverlayController?.destroy?.();
@@ -1048,6 +1443,22 @@ window.toggleLobby = function() {
       gameApp.updateRoomsList();
     }
   }
+};
+
+window.showPersistenceUI = function(tab = 'saves') {
+  showGlobalPersistenceUI(tab);
+};
+
+window.openSaveMenu = function() {
+  gameApp.saveLoadUI?.openMenu?.();
+};
+
+window.openStatisticsDashboard = function() {
+  gameApp.statisticsDashboard?.openDashboard?.();
+};
+
+window.showAchievements = function() {
+  gameApp.achievementUI?.openViewer?.();
 };
 
 window.showLobbyTab = function(tabName) {

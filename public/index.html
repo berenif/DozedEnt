@@ -1,290 +1,943 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DozedEnt - WASM-First Multiplayer Survival Game</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    
-    <!-- CSS Styles -->
-    <link rel="stylesheet" href="src/css/base.css">
-    <link rel="stylesheet" href="src/css/site.css">
-    <link rel="stylesheet" href="src/css/game-viewport.css">
-    <link rel="stylesheet" href="src/css/ui.css">
-    <link rel="stylesheet" href="src/css/mobile.css">
-    <link rel="stylesheet" href="src/css/roguelike-hud.css">
-    
-    <script>window.__BUILD__ = {
-  "buildTime": "2025-09-21T20:22:42.813Z",
-  "version": "1.0.0",
-  "deploymentType": "github-pages-symlinks",
-  "structure": {
-    "mainFiles": [
-      "index.html",
-      "site.js",
-      "favicon.ico"
-    ],
-    "symlinks": [
-      "dist/",
-      "core/",
-      "animations/",
-      "wasm/",
-      "src/",
-      "assets/",
-      "data/",
-      "images/"
-    ],
-    "wasmFiles": [
-      "game.wasm",
-      "game-host.wasm"
-    ]
-  },
-  "notes": [
-    "All dist/ folder contents are symlinked from ../dist/",
-    "WASM files are symlinked from root level and dist/wasm/",
-    "Core networking modules are symlinked from dist/core/",
-    "Animation modules are symlinked from dist/animations/",
-    "Source files are symlinked from ../src/ for debugging",
-    "Assets and data are symlinked from ../assets/ and ../data/",
-    "No file duplication - all files reference original sources"
-  ]
-};</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DozedEnt Save System Demo</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #050816;
+      color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      line-height: 1.6;
+      background: radial-gradient(circle at top, #0f172a, #050816 55%);
+      min-height: 100vh;
+      padding-bottom: 48px;
+    }
+
+    a {
+      color: #38bdf8;
+    }
+
+    .hero {
+      padding: 56px 24px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(14, 116, 144, 0.9), rgba(30, 64, 175, 0.9));
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.45);
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 2.5rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      margin: 0 auto;
+      max-width: 680px;
+      font-size: 1.05rem;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      padding: 20px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.4);
+    }
+
+    .feature-card h2 {
+      margin-top: 0;
+      font-size: 1.15rem;
+    }
+
+    .feature-card ul {
+      padding-left: 18px;
+      margin: 12px 0 0;
+      font-size: 0.95rem;
+    }
+
+    .panel {
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 24px;
+      box-shadow: 0 16px 35px rgba(2, 6, 23, 0.5);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .form-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+      color: #cbd5f5;
+      font-size: 0.9rem;
+    }
+
+    .form-grid input,
+    .form-grid select,
+    .form-grid textarea {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(3, 7, 18, 0.6);
+      color: #e2e8f0;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      resize: vertical;
+    }
+
+    .form-grid textarea {
+      min-height: 72px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      color: #0f172a;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.4);
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+    }
+
+    button.secondary {
+      background: rgba(99, 102, 241, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+    }
+
+    .state-preview {
+      margin-top: 20px;
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      padding: 16px;
+      font-family: "Fira Code", "Source Code Pro", monospace;
+      font-size: 0.85rem;
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .slot-card,
+    .auto-save-card {
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.6);
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .slot-header h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #60a5fa;
+    }
+
+    .slot-status {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #f8fafc;
+    }
+
+    .slot-meta p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+    }
+
+    .slot-meta .label {
+      color: #94a3b8;
+      margin-right: 4px;
+    }
+
+    .slot-meta .empty {
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .slot-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .slot-actions button {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .slot-actions button:nth-child(2) {
+      background: linear-gradient(135deg, #34d399, #22d3ee);
+    }
+
+    .slot-actions button:nth-child(3) {
+      background: rgba(248, 113, 113, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(248, 113, 113, 0.4);
+    }
+
+    .log-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .log-list li {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+    }
+
+    .log-list li[data-type="success"] {
+      border-color: rgba(52, 211, 153, 0.5);
+      color: #bbf7d0;
+    }
+
+    .log-list li[data-type="error"] {
+      border-color: rgba(248, 113, 113, 0.5);
+      color: #fecaca;
+    }
+
+    .log-list li[data-type="warn"] {
+      border-color: rgba(251, 191, 36, 0.5);
+      color: #fde68a;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      padding: 32px 12px;
+    }
+
+    @media (max-width: 800px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      main {
+        padding: 32px 18px;
+      }
+    }
+  
+    .game-demo-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .game-demo-description {
+      margin: 0;
+      color: #cbd5f5;
+      font-size: 0.95rem;
+    }
+
+    .game-stage {
+      position: relative;
+      width: min(680px, 100%);
+      aspect-ratio: 16 / 9;
+      min-height: 260px;
+      margin: 0 auto;
+      border-radius: 24px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.28), rgba(15, 23, 42, 0.95) 70%);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.1), 0 30px 60px rgba(2, 6, 23, 0.55);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .game-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .game-stage:focus-visible {
+      outline: 2px solid rgba(56, 189, 248, 0.7);
+      outline-offset: 4px;
+    }
+
+    .game-stage[data-pointer-active="true"] {
+      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35), 0 30px 60px rgba(13, 148, 136, 0.35);
+      cursor: grabbing;
+    }
+
+    .player {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #38bdf8, #1e3a8a);
+      box-shadow: 0 20px 35px rgba(8, 47, 73, 0.45);
+      animation: player-idle 2s ease-in-out infinite;
+    }
+
+    .player::before {
+      content: "";
+      position: absolute;
+      inset: 12px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 65%), radial-gradient(circle at 50% 75%, rgba(125, 211, 252, 0.9), rgba(14, 165, 233, 0));
+      mix-blend-mode: screen;
+      animation: player-core 3.6s linear infinite;
+    }
+
+    .player::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -14px;
+      width: 72%;
+      height: 18px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0));
+      filter: blur(1px);
+      opacity: 0.65;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .player.is-moving {
+      animation: player-walk 0.5s steps(4) infinite;
+    }
+
+    .player.is-moving::after {
+      opacity: 0.4;
+      transform: translateX(-50%) scaleX(1.2);
+    }
+
+    .player[data-facing="left"] {
+      background: linear-gradient(225deg, #38bdf8, #1d4ed8);
+    }
+
+    .player[data-facing="right"] {
+      background: linear-gradient(45deg, #38bdf8, #0ea5e9);
+    }
+
+    .player[data-facing="up"] {
+      background: linear-gradient(0deg, #38bdf8, #1d4ed8);
+    }
+
+    .player[data-facing="down"] {
+      background: linear-gradient(180deg, #38bdf8, #1d4ed8);
+    }
+
+    @keyframes player-idle {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    @keyframes player-walk {
+      0% {
+        transform: translateY(0) scale(1);
+      }
+      25% {
+        transform: translate(-1px, -10px) scale(1.02);
+      }
+      50% {
+        transform: translateY(-4px) scale(0.98);
+      }
+      75% {
+        transform: translate(1px, -10px) scale(1.02);
+      }
+      100% {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes player-core {
+      0% {
+        transform: rotate(0deg);
+        opacity: 0.45;
+      }
+      50% {
+        opacity: 0.7;
+      }
+      100% {
+        transform: rotate(360deg);
+        opacity: 0.45;
+      }
+    }
+
+    .game-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .game-info strong {
+      color: #e0f2fe;
+      font-weight: 600;
+    }
+
+    .game-info-button {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(30, 64, 175, 0.35);
+      color: #e0f2fe;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .game-info-button:hover {
+      background: rgba(59, 130, 246, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .game-info-button:active {
+      transform: translateY(0);
+    }
+
+    @media (max-width: 720px) {
+      .game-stage {
+        aspect-ratio: auto;
+        height: 320px;
+      }
+
+      .player {
+        width: 48px;
+        height: 48px;
+      }
+    }
+
+  </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-container">
-            <div class="logo">🎮</div>
-            <h1>DozedEnt</h1>
-            <p>Powered by Trystero - P2P Survival Game</p>
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Initializing WASM game engine...</div>
-            <button id="start-game-btn" class="start-button" disabled>
-                <span class="button-text">Initializing...</span>
-            </button>
+  <header class="hero">
+    <h1>DozedEnt Feature Demo</h1>
+    <p>Interactive overview of the save system powering the 8 phase roguelite loop. Update the mock WASM state, write it to local storage with the real SaveLoadManager, and inspect how metadata is tracked for each slot and the dedicated auto save.</p>
+  </header>
+
+  <main>
+
+    <section class="panel game-demo-panel">
+      <h2>Playable Arena Demo</h2>
+      <p class="game-demo-description">Use the keyboard arrows or WASD keys to move the holographic scout around the arena. Tap or click inside the playfield to glide toward a location.</p>
+      <div class="game-stage" data-game-area tabindex="0" role="presentation" aria-label="Playable arena">
+        <div class="player" data-player data-facing="down"></div>
+      </div>
+      <div class="game-info" data-game-info>
+        <span>Status: <strong data-game-status>Idle</strong></span>
+        <span>Position: <strong data-game-coords>0, 0</strong></span>
+        <button type="button" class="game-info-button" data-center-player>Center Player</button>
+      </div>
+    </section>
+
+    <section class="feature-grid">
+      <article class="feature-card">
+        <h2>Phase Loop</h2>
+        <ul>
+          <li>Explore, Fight, Choose, PowerUp</li>
+          <li>Risk, Escalate, CashOut, Reset</li>
+          <li>Phase aware metadata stored per slot</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <h2>Save Slots</h2>
+        <ul>
+          <li>Three manual slots with quick save</li>
+          <li>Metadata cache and persistence events</li>
+          <li>Local storage friendly base64 payloads</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <h2>Auto Save</h2>
+        <ul>
+          <li>Dedicated rolling backup slot</li>
+          <li>Notification surface via window events</li>
+          <li>Configurable cadence via SaveLoadManager</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <h2>Telemetry</h2>
+        <ul>
+          <li>Level, currencies, rooms cleared</li>
+          <li>Total playtime tracking in metadata</li>
+          <li>Phase mapping helper for UI overlays</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Demo Player State</h2>
+      <form id="state-form" class="form-grid">
+        <label>
+          Hero Name
+          <input id="input-hero-name" type="text" value="Demo Survivor">
+        </label>
+        <label>
+          Level
+          <input id="input-level" type="number" min="1" value="1">
+        </label>
+        <label>
+          Gold
+          <input id="input-gold" type="number" min="0" value="0">
+        </label>
+        <label>
+          Essence
+          <input id="input-essence" type="number" min="0" value="0">
+        </label>
+        <label>
+          Rooms Cleared
+          <input id="input-room-count" type="number" min="1" value="1">
+        </label>
+        <label>
+          Play Time (minutes)
+          <input id="input-playtime" type="number" min="0" value="0">
+        </label>
+        <label>
+          Current Phase
+          <select id="input-phase">
+            <option value="0">Explore</option>
+            <option value="1">Fight</option>
+            <option value="2">Choose</option>
+            <option value="3">PowerUp</option>
+            <option value="4">Risk</option>
+            <option value="5">Escalate</option>
+            <option value="6">CashOut</option>
+            <option value="7">Reset</option>
+          </select>
+        </label>
+        <label>
+          Inventory (comma separated)
+          <textarea id="input-loadout">Rusty Blade, Explorer Cloak</textarea>
+        </label>
+        <label>
+          Notes
+          <textarea id="input-notes">Fresh run started.</textarea>
+        </label>
+      </form>
+      <div class="form-actions">
+        <button id="randomize-state" type="button">Randomize</button>
+        <button id="reset-state" class="secondary" type="button">Reset</button>
+        <button id="write-state" type="button">Apply Changes</button>
+      </div>
+      <pre id="state-preview" class="state-preview"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>Save Slots</h2>
+      <div class="form-actions">
+        <button id="quick-save" type="button">Quick Save (Slot 1)</button>
+        <button id="quick-load" type="button">Quick Load (Slot 1)</button>
+        <button id="trigger-auto-save" class="secondary" type="button">Trigger Auto Save</button>
+        <button id="load-auto-save" class="secondary" type="button">Load Auto Save</button>
+        <button id="clear-storage" class="secondary" type="button">Clear All Storage</button>
+      </div>
+      <div class="slots-grid">
+        <div class="slot-card" data-slot="0">
+          <div class="slot-header">
+            <h3>Slot 1</h3>
+            <span id="slot-0-status" class="slot-status">Empty</span>
+          </div>
+          <div id="slot-0-meta" class="slot-meta">
+            <p class="empty">No data saved.</p>
+          </div>
+          <div class="slot-actions">
+            <button type="button" data-action="save" data-slot="0">Save</button>
+            <button type="button" data-action="load" data-slot="0">Load</button>
+            <button type="button" data-action="delete" data-slot="0">Delete</button>
+          </div>
         </div>
-    </div>
-
-    <!-- Main Game Interface -->
-    <div id="game-interface" class="game-interface" style="display: none;">
-        <!-- Viewport Container -->
-        <div class="viewport-container">
-            <!-- Main Game Canvas -->
-            <canvas id="canvas" width="3840" height="2160"></canvas>
-            
-            <!-- Game Renderer Canvas -->
-            <canvas id="gameCanvas" width="1280" height="720"></canvas>
-            
-            <!-- Game Boundary Indicator -->
-            <div class="game-boundary"></div>
+        <div class="slot-card" data-slot="1">
+          <div class="slot-header">
+            <h3>Slot 2</h3>
+            <span id="slot-1-status" class="slot-status">Empty</span>
+          </div>
+          <div id="slot-1-meta" class="slot-meta">
+            <p class="empty">No data saved.</p>
+          </div>
+          <div class="slot-actions">
+            <button type="button" data-action="save" data-slot="1">Save</button>
+            <button type="button" data-action="load" data-slot="1">Load</button>
+            <button type="button" data-action="delete" data-slot="1">Delete</button>
+          </div>
         </div>
-
-        <!-- Status UI -->
-        <div id="status" class="status-ui">
-            <div id="peer-count">Players: 1</div>
-            <div id="connection-status" class="status-connecting">Ready</div>
+        <div class="slot-card" data-slot="2">
+          <div class="slot-header">
+            <h3>Slot 3</h3>
+            <span id="slot-2-status" class="slot-status">Empty</span>
+          </div>
+          <div id="slot-2-meta" class="slot-meta">
+            <p class="empty">No data saved.</p>
+          </div>
+          <div class="slot-actions">
+            <button type="button" data-action="save" data-slot="2">Save</button>
+            <button type="button" data-action="load" data-slot="2">Load</button>
+            <button type="button" data-action="delete" data-slot="2">Delete</button>
+          </div>
         </div>
-
-        <!-- Debug HUD -->
-        <div id="debug-hud" class="debug-hud"></div>
-
-        <!-- Enhanced UI Toggle -->
-        <button id="enhanced-ui-toggle" class="ui-toggle-button" title="Switch to Enhanced UI">
-            <span class="toggle-icon">⚙️</span>
-        </button>
-
-        <!-- Mobile Controls -->
-        <div id="joystick" class="mobile-joystick" hidden>
-            <div id="joystick-base">
-                <div id="joystick-knob"></div>
-            </div>
+        <div class="auto-save-card">
+          <div class="slot-header">
+            <h3>Auto Save Slot</h3>
+            <span id="auto-save-status" class="slot-status">No data</span>
+          </div>
+          <p id="auto-save-meta" class="slot-meta">
+            Auto save snapshots are written to <code>localStorage</code> with the <code>game_auto_save</code> key.
+          </p>
         </div>
+      </div>
+    </section>
 
-        <div id="actions" class="mobile-actions" hidden>
-            <button id="roll-button" class="action-button">Roll</button>
-            <button id="attack-button" class="action-button">Attack</button>
-            <button id="block-button" class="action-button">Block</button>
-            <button id="special-button" class="action-button">Special</button>
-        </div>
+    <section class="panel">
+      <h2>Event Log</h2>
+      <ul id="log-list" class="log-list"></ul>
+    </section>
+  </main>
 
-        <!-- Desktop Controls Tooltip -->
-        <div id="controls-tip" class="controls-tooltip">
-            <strong>Controls:</strong>
-            <ul>
-                <li>WASD / Arrow Keys: Move</li>
-                <li>Space: Jump</li>
-                <li>J: Light Attack</li>
-                <li>K: Heavy Attack</li>
-                <li>L: Block</li>
-                <li>Shift: Roll</li>
-                <li>U: Special</li>
-            </ul>
-        </div>
+  <footer>
+    Built from the real SaveLoadManager module with a mock WASM bridge. Inspect storage in your browser devtools to see the exact payloads.
+  </footer>
 
-        <!-- Main Menu -->
-        <div id="main-menu" class="main-menu">
-            <div class="menu-container">
-                <h2>Main Menu</h2>
-                <div class="menu-options">
-                    <button class="menu-button" data-action="new-game">New Game</button>
-                    <button class="menu-button" data-action="continue">Continue</button>
-                    <button class="menu-button" data-action="join-online">Join Online</button>
-                    <button class="menu-button" data-action="settings">Settings</button>
-                </div>
-            </div>
-        </div>
+  <script type="module" src="./feature-demo.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      const area = document.querySelector('[data-game-area]');
+      const player = document.querySelector('[data-player]');
+      const statusLabel = document.querySelector('[data-game-status]');
+      const coordLabel = document.querySelector('[data-game-coords]');
+      const centerButton = document.querySelector('[data-center-player]');
+      if (!area || !player || !statusLabel || !coordLabel) {
+        return;
+      }
 
-        <!-- Lobby Panel -->
-        <div id="lobbyPanel" class="lobby-panel" style="display: none;">
-            <div class="lobby-container">
-                <h3>Multiplayer Lobby</h3>
-                <div class="lobby-tabs">
-                    <button class="tab-button active" data-tab="rooms">Rooms</button>
-                    <button class="tab-button" data-tab="create">Create Room</button>
-                    <button class="tab-button" data-tab="chat">Chat</button>
-                </div>
-                
-                <div class="tab-content" id="rooms-tab">
-                    <div class="rooms-list" id="rooms-list">
-                        <div class="room-item">
-                            <span class="room-name">Quick Play Room</span>
-                            <span class="room-players">2/4</span>
-                            <button class="join-button" onclick="joinRoom('quick-play')">Join</button>
-                        </div>
-                    </div>
-                    <button class="quick-play-button" onclick="quickPlay()">Quick Play</button>
-                </div>
-                
-                <div class="tab-content" id="create-tab" style="display: none;">
-                    <div class="create-room-form">
-                        <input type="text" id="roomName" placeholder="Room Name" value="My Room">
-                        <select id="gameMode">
-                            <option value="default">Default</option>
-                            <option value="survival">Survival</option>
-                            <option value="pvp">PvP</option>
-                        </select>
-                        <button onclick="createRoom()">Create Room</button>
-                    </div>
-                </div>
-                
-                <div class="tab-content" id="chat-tab" style="display: none;">
-                    <div class="chat-messages" id="chat-messages"></div>
-                    <div class="chat-input">
-                        <input type="text" id="chat-input" placeholder="Type a message...">
-                        <button onclick="sendChat()">Send</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+      const pressed = new Set();
+      const pointerTarget = { active: false, x: 0, y: 0, id: null };
+      const state = {
+        x: 0,
+        y: 0,
+        maxX: 0,
+        maxY: 0,
+        speed: 220,
+        lastTime: performance.now()
+      };
 
-        <!-- Phase Overlays -->
-        <div id="choice-overlay" class="phase-overlay" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Choose Your Path</h3>
-                <p class="overlay-msg">Select your next action:</p>
-                <div class="choices">
-                    <button class="choice-button" data-choice="explore">Explore</button>
-                    <button class="choice-button" data-choice="fight">Fight</button>
-                    <button class="choice-button" data-choice="rest">Rest</button>
-                </div>
-            </div>
-        </div>
+      const keyMap = {
+        ArrowUp: 'up',
+        ArrowDown: 'down',
+        ArrowLeft: 'left',
+        ArrowRight: 'right',
+        w: 'up',
+        W: 'up',
+        s: 'down',
+        S: 'down',
+        a: 'left',
+        A: 'left',
+        d: 'right',
+        D: 'right'
+      };
 
-        <!-- Risk Phase Overlay -->
-        <div id="risk-overlay" class="phase-overlay risk-phase" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Risk Phase</h3>
-                <div class="risk-info">
-                    <div class="risk-multiplier">Risk Multiplier: 2x</div>
-                    <div class="active-curses">
-                        <h4>Active Curses:</h4>
-                        <ul>
-                            <li>Reduced Health</li>
-                            <li>Slower Movement</li>
-                        </ul>
-                    </div>
-                    <div class="timed-challenge">
-                        <p>Complete within 60 seconds for bonus rewards!</p>
-                    </div>
-                </div>
-                <button class="choice-button" onclick="startRiskPhase()">Accept Risk</button>
-            </div>
-        </div>
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
 
-        <!-- Escalate Phase Overlay -->
-        <div id="escalate-overlay" class="phase-overlay escalate-phase" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Escalate Phase</h3>
-                <div class="escalate-info">
-                    <div class="escalation-level">Escalation Level: 3</div>
-                    <div class="modifier-list">
-                        <div class="modifier-stat">+50% Damage</div>
-                        <div class="modifier-stat">+25% Speed</div>
-                        <div class="modifier-stat">+100% Rewards</div>
-                    </div>
-                    <div class="miniboss-alert">
-                        <h4>⚠️ Miniboss Alert!</h4>
-                        <p>A powerful enemy approaches...</p>
-                        <div class="miniboss-health">
-                            <div class="miniboss-health-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                </div>
-                <button class="choice-button" onclick="startEscalatePhase()">Face Challenge</button>
-            </div>
-        </div>
+      function isTyping() {
+        const active = document.activeElement;
+        if (!active) {
+          return false;
+        }
+        const tag = active.tagName;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable;
+      }
 
-        <!-- CashOut Phase Overlay -->
-        <div id="cashout-overlay" class="phase-overlay cashout-phase" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Cash Out Phase</h3>
-                <div class="currency-display">
-                    <div>Gold: 150</div>
-                    <div>XP: 250</div>
-                    <div>Items: 3</div>
-                </div>
-                <div class="shop-items">
-                    <div class="shop-item" onclick="purchaseItem('health-potion')">
-                        <h4>Health Potion</h4>
-                        <p>Cost: 50 Gold</p>
-                    </div>
-                    <div class="shop-item" onclick="purchaseItem('speed-boost')">
-                        <h4>Speed Boost</h4>
-                        <p>Cost: 75 Gold</p>
-                    </div>
-                </div>
-                <div class="shop-actions">
-                    <button class="choice-button" onclick="continueAdventure()">Continue</button>
-                    <button class="choice-button" onclick="cashOut()">Cash Out</button>
-                </div>
-            </div>
-        </div>
+      function applyPosition() {
+        player.style.left = `${state.x}px`;
+        player.style.top = `${state.y}px`;
+      }
 
-        <!-- Game Over Overlay -->
-        <div id="gameover-overlay" class="game-overlay" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Game Over</h3>
-                <p class="overlay-msg">You have fallen in battle...</p>
-                <div class="final-stats">
-                    <div>Final Score: 1250</div>
-                    <div>Survived: 3 Phases</div>
-                    <div>Enemies Defeated: 12</div>
-                </div>
-                <button id="rematch-button" onclick="startNewGame()">New Game</button>
-            </div>
-        </div>
+      function updateCoords() {
+        const centerX = Math.round(state.x + player.offsetWidth / 2);
+        const centerY = Math.round(state.y + player.offsetHeight / 2);
+        coordLabel.textContent = `${centerX}, ${centerY}`;
+      }
 
-        <!-- Orientation Overlay -->
-        <div id="orientation-overlay" class="orientation-overlay" hidden>
-            <div class="overlay-box">
-                <h3 class="overlay-title">Rotate Device</h3>
-                <p class="overlay-msg">Please rotate your device to landscape mode for the best experience.</p>
-                <button id="overlay-start" onclick="startGame()">Start Game</button>
-            </div>
-        </div>
-    </div>
+      function setStatus(text) {
+        statusLabel.textContent = text;
+      }
 
-    <!-- Scripts -->
-    <script type="module" src="site.js"></script>
+      function updateBounds() {
+        const rect = area.getBoundingClientRect();
+        state.maxX = Math.max(0, rect.width - player.offsetWidth);
+        state.maxY = Math.max(0, rect.height - player.offsetHeight);
+        state.x = clamp(state.x, 0, state.maxX);
+        state.y = clamp(state.y, 0, state.maxY);
+        applyPosition();
+        updateCoords();
+      }
+
+      function centerPlayer() {
+        state.x = state.maxX / 2;
+        state.y = state.maxY / 2;
+        pressed.clear();
+        clearPointerTarget();
+        applyPosition();
+        updateCoords();
+        player.classList.remove('is-moving');
+        player.dataset.facing = 'down';
+        setStatus('Idle');
+      }
+
+      function requestPointerTarget(x, y, id) {
+        pointerTarget.active = true;
+        pointerTarget.x = clamp(x, 0, state.maxX);
+        pointerTarget.y = clamp(y, 0, state.maxY);
+        pointerTarget.id = id;
+        area.dataset.pointerActive = 'true';
+      }
+
+      function clearPointerTarget() {
+        pointerTarget.active = false;
+        pointerTarget.id = null;
+        delete area.dataset.pointerActive;
+      }
+
+      function handlePointer(event) {
+        const rect = area.getBoundingClientRect();
+        const targetX = event.clientX - rect.left - player.offsetWidth / 2;
+        const targetY = event.clientY - rect.top - player.offsetHeight / 2;
+        requestPointerTarget(targetX, targetY, event.pointerId);
+      }
+
+      function pointerUp(event) {
+        if (pointerTarget.id !== null && pointerTarget.id !== event.pointerId) {
+          return;
+        }
+        clearPointerTarget();
+        if (!pressed.size) {
+          player.classList.remove('is-moving');
+          setStatus('Idle');
+        }
+      }
+
+      function determineFacing(vx, vy) {
+        if (Math.abs(vx) > Math.abs(vy)) {
+          player.dataset.facing = vx > 0 ? 'right' : 'left';
+        } else if (vy !== 0) {
+          player.dataset.facing = vy > 0 ? 'down' : 'up';
+        }
+      }
+
+      function handleKeyDown(event) {
+        const direction = keyMap[event.key];
+        if (!direction || isTyping()) {
+          return;
+        }
+        pressed.add(direction);
+        if (event.key.startsWith('Arrow')) {
+          event.preventDefault();
+        }
+      }
+
+      function handleKeyUp(event) {
+        const direction = keyMap[event.key];
+        if (!direction) {
+          return;
+        }
+        pressed.delete(direction);
+        if (!pressed.size && !pointerTarget.active) {
+          player.classList.remove('is-moving');
+          setStatus('Idle');
+        }
+        if (event.key.startsWith('Arrow')) {
+          event.preventDefault();
+        }
+      }
+
+      function stopMotion() {
+        pressed.clear();
+        clearPointerTarget();
+        player.classList.remove('is-moving');
+        setStatus('Idle');
+      }
+
+      function tick(now) {
+        const delta = Math.min((now - state.lastTime) / 1000, 0.05);
+        state.lastTime = now;
+
+        let moveX = 0;
+        let moveY = 0;
+
+        if (pressed.has('left')) moveX -= 1;
+        if (pressed.has('right')) moveX += 1;
+        if (pressed.has('up')) moveY -= 1;
+        if (pressed.has('down')) moveY += 1;
+
+        if (pointerTarget.active) {
+          const diffX = pointerTarget.x - state.x;
+          const diffY = pointerTarget.y - state.y;
+          const distance = Math.hypot(diffX, diffY);
+          if (distance < 1.5) {
+            clearPointerTarget();
+          } else {
+            moveX += diffX / distance;
+            moveY += diffY / distance;
+          }
+        }
+
+        const moving = moveX !== 0 || moveY !== 0;
+
+        if (moving) {
+          const magnitude = Math.hypot(moveX, moveY) || 1;
+          const velocityX = (moveX / magnitude) * state.speed * delta;
+          const velocityY = (moveY / magnitude) * state.speed * delta;
+          state.x = clamp(state.x + velocityX, 0, state.maxX);
+          state.y = clamp(state.y + velocityY, 0, state.maxY);
+          applyPosition();
+          updateCoords();
+          player.classList.add('is-moving');
+          determineFacing(velocityX, velocityY);
+          setStatus(pointerTarget.active ? 'Gliding' : 'Moving');
+        } else if (!pressed.size && !pointerTarget.active) {
+          player.classList.remove('is-moving');
+          setStatus('Idle');
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      window.addEventListener('keydown', handleKeyDown, { passive: false });
+      window.addEventListener('keyup', handleKeyUp, { passive: false });
+      window.addEventListener('blur', stopMotion);
+      window.addEventListener('resize', updateBounds);
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          stopMotion();
+        }
+      });
+
+      area.addEventListener('pointerdown', event => {
+        if (typeof area.focus === 'function') {
+          area.focus();
+        }
+        handlePointer(event);
+        event.preventDefault();
+      });
+
+      area.addEventListener('pointermove', event => {
+        if (!pointerTarget.active || pointerTarget.id !== event.pointerId) {
+          return;
+        }
+        handlePointer(event);
+      });
+
+      area.addEventListener('pointerup', pointerUp);
+      area.addEventListener('pointercancel', pointerUp);
+      area.addEventListener('pointerleave', event => {
+        if (pointerTarget.active && pointerTarget.id === event.pointerId) {
+          pointerUp(event);
+        }
+      });
+
+      if (centerButton) {
+        centerButton.addEventListener('click', () => {
+          centerPlayer();
+        });
+      }
+
+      updateBounds();
+      centerPlayer();
+      state.lastTime = performance.now();
+      requestAnimationFrame(tick);
+    })();
+  </script>
 </body>
 </html>

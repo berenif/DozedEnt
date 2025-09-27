@@ -117,9 +117,7 @@ export class SaveLoadManager {
           essence: stats.essence || 0,
           roomCount: stats.roomCount || 1,
           totalPlayTime: stats.totalPlayTime || 0,
-          phase: this.getPhaseNa
-
-me(stats.phase || 0)
+          phase: this.getPhaseName(stats.phase || 0)
         }
       };
       
@@ -438,8 +436,7 @@ me(stats.phase || 0)
    * @param {number} phase
    * @returns {string}
    */
-  getPhaseNa
-me(phase) {
+  getPhaseName(phase) {
     const phases = [
       'Explore', 'Fight', 'Choose', 'PowerUp', 
       'Risk', 'Escalate', 'CashOut', 'Reset'
