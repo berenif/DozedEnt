@@ -82,9 +82,9 @@ The automated deployment pipeline executes the following stages:
 1. **Checkout** - Gets the latest code from your repository
 2. **Setup Node.js** - Installs Node.js version 20
 3. **Install dependencies** - Runs `npm ci` to install packages
-4. **Build project** - Runs `npm run build:docs` which:
+4. **Build project** - Runs `npm run build` which:
    - Builds the project with Rollup
-   - Copies built files to the docs folder
+   - Copies built files to the public folder
 5. **Upload artifact** - Packages the docs folder for deployment
 6. **Deploy** - Publishes the site to GitHub Pages
 
@@ -99,12 +99,12 @@ Before deploying to production, test your site locally:
 npm install
 
 # Build the project
-npm run build:docs
+npm run build
 
-# Serve the docs folder locally
-npx serve docs
+# Serve the public folder locally
+npx serve public
 # Or use any static server:
-# python -m http.server 8000 -d docs
+# python -m http.server 8000 -d public
 ```
 
 ## 🌐 Custom Domain Configuration
@@ -180,8 +180,8 @@ The GitHub Actions workflow will automatically build and deploy your changes.
 
 For manual control over deployment:
 
-1. Build locally: `npm run build:docs`
-2. Commit the docs folder: `git add docs && git commit -m "Update docs"`
+1. Build locally: `npm run build`
+2. Commit the public folder: `git add public && git commit -m "Update docs"`
 3. Push to GitHub: `git push origin main`
 
 ## 📝 Important Notes

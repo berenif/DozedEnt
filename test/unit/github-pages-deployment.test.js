@@ -191,7 +191,7 @@ describe('GitHub Pages Deployment', () => {
   });
 
   describe('Build Process Integration', () => {
-    it('should successfully run build:docs command', function() {
+    it('should successfully run build:public command', function() {
       this.timeout(30000); // Allow 30 seconds for build
       
       try {
@@ -228,7 +228,7 @@ describe('GitHub Pages Deployment', () => {
         });
       } catch (error) {
         // If build fails, provide helpful error message
-        throw new Error(`Build:docs command failed: ${error.message}`);
+        throw new Error(`Build:public command failed: ${error.message}`);
       }
     });
   });

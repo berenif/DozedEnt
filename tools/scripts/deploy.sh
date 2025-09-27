@@ -24,7 +24,7 @@ npm run build:all
 
 # Build documentation
 echo "📚 Building documentation..."
-npm run build:docs
+npm run build:public
 
 # Dist folder is already in root, no need to copy
 
