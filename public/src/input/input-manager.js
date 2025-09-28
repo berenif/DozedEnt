@@ -35,17 +35,20 @@ export class InputManager {
             gamepadDeadzone: 0.15
         };
         
+        // Track last movement direction for shield facing
+        this.lastMovementDirection = { x: 1, y: 0 }; // Default to facing right
+        
         // Key mappings
         this.keyMappings = {
             // Movement (WASD + Arrow keys)
             movement: {
-                'KeyW': { axis: 'y', value: -1 },
+                'KeyW': { axis: 'y', value: 1 },
                 'KeyA': { axis: 'x', value: -1 },
-                'KeyS': { axis: 'y', value: 1 },
+                'KeyS': { axis: 'y', value: -1 },
                 'KeyD': { axis: 'x', value: 1 },
-                'ArrowUp': { axis: 'y', value: -1 },
+                'ArrowUp': { axis: 'y', value: 1 },
                 'ArrowLeft': { axis: 'x', value: -1 },
-                'ArrowDown': { axis: 'y', value: 1 },
+                'ArrowDown': { axis: 'y', value: -1 },
                 'ArrowRight': { axis: 'x', value: 1 }
             },
             
@@ -84,9 +87,9 @@ export class InputManager {
     /**
      * Initialize input system
      */
-    init() {
-        this.setupKeyboardInput();
-        this.setupMouseInput();
+  init() {
+    this.setupKeyboardInput();
+    this.setupMouseInput();
         
         if (this.hasTouch) {
             this.setupTouchInput();
@@ -99,8 +102,21 @@ export class InputManager {
         // Show appropriate controls
         this.updateControlsDisplay();
         
-        // Start input update loop
-        this.startInputLoop();
+    // Clear stuck inputs when window loses focus (prevents latched block)
+    window.addEventListener('blur', () => {
+      try {
+        this.inputState.lightAttack = false;
+        this.inputState.heavyAttack = false;
+        this.inputState.block = false;
+        this.inputState.roll = false;
+        this.inputState.special = false;
+        this.inputState.pointer.down = false;
+        this.resetMovementInput();
+      } catch (_) { /* ignore */ }
+    });
+
+    // Start input update loop
+    this.startInputLoop();
         
         console.log(`Input Manager initialized - Mobile: ${this.isMobile}, Touch: ${this.hasTouch}, Gamepad: ${this.hasGamepad}`);
     }
@@ -315,7 +331,7 @@ export class InputManager {
         this.inputState.pointer.y = event.clientY;
         
         // Update facing direction based on mouse position
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('demo-canvas') || document.getElementById('gameCanvas');
         if (canvas) {
             const rect = canvas.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
@@ -580,7 +596,20 @@ export class InputManager {
      */
     startInputLoop() {
         const updateInput = () => {
-            this.updateGamepadInput();
+            // Allow disabling gamepad via feature flag for debugging
+            try {
+                const flags = (window.DZ && typeof window.DZ.flags === 'function') ? window.DZ.flags() : null;
+                const disableGamepad = flags && !!flags.disableGamepad;
+                if (!disableGamepad) {
+                    this.updateGamepadInput();
+                } else {
+                    // When disabled, ensure gamepad-only toggles are cleared
+                    this.inputState.block = false;
+                    this.inputState.roll = false;
+                }
+            } catch (_) {
+                this.updateGamepadInput();
+            }
             // Input is now sent to WASM via GameStateManager.update()
             // this.sendInputToWasm(); // Disabled to prevent duplicate input
             requestAnimationFrame(updateInput);
@@ -594,6 +623,12 @@ export class InputManager {
      */
     sendInputToWasm() {
         if (!this.wasmManager || !this.wasmManager.exports) return;
+        
+        // Update last movement direction for shield facing
+        if (this.inputState.direction.x !== 0 || this.inputState.direction.y !== 0) {
+            this.lastMovementDirection.x = this.inputState.direction.x;
+            this.lastMovementDirection.y = this.inputState.direction.y;
+        }
         
         // Send input to WASM using the 5-button combat system
         if (this.wasmManager.exports.set_player_input) {
@@ -609,12 +644,12 @@ export class InputManager {
             );
         }
         
-        // Send facing direction for blocking
+        // Send facing direction for blocking - use last movement direction
         if (this.wasmManager.exports.set_blocking && this.inputState.block) {
             this.wasmManager.exports.set_blocking(
                 1,
-                this.inputState.facing.x,
-                this.inputState.facing.y,
+                this.lastMovementDirection.x,
+                this.lastMovementDirection.y,
                 performance.now() / 1000
             );
         }

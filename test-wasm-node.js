@@ -18,7 +18,7 @@ async function testWasmDirectly() {
     try {
         // Load the WASM helper
         console.log('📥 Loading WASM helper...');
-        const wasmPath = join(__dirname, 'src/utils/wasm.js');
+        const wasmPath = join(__dirname, 'public/src/utils/wasm.js');
         const wasmUrl = `file://${wasmPath.replace(/\\/g, '/')}`;
         const wasmModule = await import(wasmUrl);
         console.log('✅ WASM helper loaded');

@@ -10,7 +10,7 @@ if (!canvas) {
 
 const renderer = createRenderer(canvas);
 const wasmApi = await createWasmApi();
-const inputManager = new InputManager(null);
+const inputManager = new InputManager(wasmApi);
 
 const step = 1 / 60;
 const maxSubSteps = 5;
@@ -113,10 +113,26 @@ const buildOverlay = (state, now) => {
   return { debug: true, lines: [...overlayLines] };
 };
 
-const applyInput = () => {
-  const input = inputManager.inputState;
+  const applyInput = () => {
+  // Allow console override via window.DZ.setFlag('inputOverride', { direction:{x,y}, roll, jump, lightAttack, heavyAttack, block, special })
+  const flagsSnapshot = (window.DZ && typeof window.DZ.flags === 'function') ? window.DZ.flags() : null;
+  const override = flagsSnapshot && typeof flagsSnapshot.inputOverride === 'object' ? flagsSnapshot.inputOverride : null;
+  const input = override || inputManager.inputState;
   const dirX = clamp(input.direction?.x ?? 0, -1, 1);
   const dirY = clamp(input.direction?.y ?? 0, -1, 1);
+  
+  // Update last movement direction for shield facing
+  if (dirX !== 0 || dirY !== 0) {
+    inputManager.lastMovementDirection.x = dirX;
+    inputManager.lastMovementDirection.y = dirY;
+  }
+  
+  // If user is providing movement input, force-release block to avoid latch
+  let block = input.block ? 1 : 0;
+  if (dirX !== 0 || dirY !== 0) {
+    block = 0;
+  }
+
   wasmApi.setPlayerInput(
     dirX,
     dirY,
@@ -124,9 +140,25 @@ const applyInput = () => {
     input.jump ? 1 : 0,
     input.lightAttack ? 1 : 0,
     input.heavyAttack ? 1 : 0,
-    input.block ? 1 : 0,
+    block,
     input.special ? 1 : 0
   );
+
+  // Synchronize blocking state explicitly to avoid latched blocks
+  if (wasmApi.exports?.set_blocking) {
+    wasmApi.exports.set_blocking(
+      block,
+      inputManager.lastMovementDirection.x,
+      inputManager.lastMovementDirection.y,
+      performance.now() / 1000
+    );
+  }
+
+  // One-time log when override is active
+  if (override && !window.__DZ_OVERRIDE_LOGGED__) {
+    window.__DZ_OVERRIDE_LOGGED__ = true;
+    console.info('[Demo] Using inputOverride from feature flags:', { dirX, dirY, ...override });
+  }
 };
 
 const frame = (now) => {

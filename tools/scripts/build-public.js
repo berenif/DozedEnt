@@ -25,8 +25,32 @@ function setupPublicDirectory() {
   
   // Remove existing public directory if it exists
   if (existsSync(publicDir)) {
-    rmSync(publicDir, { recursive: true, force: true })
-    console.log('? Cleaned existing public directory')
+    try {
+      // Try to remove with force and recursive
+      rmSync(publicDir, { recursive: true, force: true })
+      console.log('? Cleaned existing public directory')
+    } catch (error) {
+      if (error.code === 'EBUSY' || error.code === 'EPERM') {
+        console.log('? Directory is locked, trying alternative approach...')
+        
+        // Try to remove individual files first
+        try {
+          const files = execSync(`dir /b "${publicDir}"`, { encoding: 'utf8' }).split('\n').filter(f => f.trim())
+          for (const file of files) {
+            try {
+              rmSync(join(publicDir, file), { recursive: true, force: true })
+            } catch (fileError) {
+              console.log(`  ?? Could not remove ${file}, will overwrite`)
+            }
+          }
+          console.log('? Cleaned individual files from public directory')
+        } catch (dirError) {
+          console.log('? Could not clean directory, will attempt to overwrite files')
+        }
+      } else {
+        throw error
+      }
+    }
   }
   
   // Create public directory

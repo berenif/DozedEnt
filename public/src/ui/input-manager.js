@@ -605,10 +605,10 @@ export class InputManager {
       x += 1;
     }
     if (this.inputState.keyboard.get('move-up')) {
-      y -= 1;
+      y += 1;
     }
     if (this.inputState.keyboard.get('move-down')) {
-      y += 1;
+      y -= 1;
     }
     
     // Normalize diagonal movement

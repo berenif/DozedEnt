@@ -1,4 +1,7 @@
-﻿let ctx = null;
+import { CharacterAnimator, AnimationPresets } from '../animation/system/animation-system.js';
+import { PLAYER_ANIM_CODES } from './wasm-api.js';
+
+let ctx = null;
 let canvas = null;
 let width = 0;
 let height = 0;
@@ -12,6 +15,27 @@ const worldBounds = {
   minY: 0,
   maxY: 5
 };
+
+const spriteUrl = new URL('../images/player-sprites.png', import.meta.url).href;
+const playerSprite = new Image();
+let spriteReady = false;
+playerSprite.onload = () => { spriteReady = true; };
+playerSprite.onerror = () => {
+  spriteReady = false;
+  console.warn('[Demo] Failed to load player sprite sheet:', spriteUrl);
+};
+playerSprite.src = spriteUrl;
+
+const playerAnimator = new CharacterAnimator();
+const playerAnimations = AnimationPresets.createPlayerAnimations();
+Object.entries(playerAnimations).forEach(([name, animation]) => playerAnimator.addAnimation(name, animation));
+
+const IDLE_STATE = PLAYER_ANIM_CODES.idle ?? 0;
+let activeAnimState = IDLE_STATE;
+let lastFacing = 'right';
+let lastAnimatorTime = typeof performance !== 'undefined' ? performance.now() : 0;
+playerAnimator.setAnimState(IDLE_STATE);
+playerAnimator.setFacing(lastFacing);
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -77,11 +101,7 @@ const drawBackground = () => {
   drawGrid();
 };
 
-const drawPlayer = (state) => {
-  ensureContext();
-  const position = wasmToCanvas(state.x, state.y);
-  const baseRadius = Math.max(12, Math.min(width, height) * 0.03);
-
+const drawFallbackPlayer = (state, position, baseRadius) => {
   ctx.save();
   ctx.translate(position.x, position.y);
 
@@ -98,7 +118,6 @@ const drawPlayer = (state) => {
   ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Direction indicator using velocity
   const speed = Math.hypot(state.vx, state.vy);
   if (speed > 0.01) {
     const dirX = clamp(state.vx / Math.max(speed, 0.001), -1, 1);
@@ -132,6 +151,82 @@ const drawPlayer = (state) => {
   ctx.restore();
 };
 
+const drawPlayer = (state) => {
+  ensureContext();
+  const position = wasmToCanvas(state.x, state.y);
+  const baseRadius = Math.max(20, Math.min(width, height) * 0.035);
+
+  const now = typeof performance !== 'undefined' ? performance.now() : 0;
+  const deltaSeconds = Math.min(0.1, Math.max(0, (now - lastAnimatorTime) / 1000));
+  lastAnimatorTime = now;
+
+  const stateName = typeof state.anim === 'string' ? state.anim : 'idle';
+  const targetState = PLAYER_ANIM_CODES[stateName] ?? IDLE_STATE;
+  if (targetState !== activeAnimState) {
+    try {
+      playerAnimator.setAnimState(targetState);
+      activeAnimState = targetState;
+    } catch (error) {
+      console.warn('[Demo] Unable to set animation state', stateName, error);
+    }
+  }
+
+  const velocityMagnitude = Math.hypot(state.vx ?? 0, state.vy ?? 0);
+  if (velocityMagnitude > 0.02) {
+    lastFacing = (state.vx ?? 0) < 0 ? 'left' : 'right';
+  }
+  playerAnimator.setFacing(lastFacing);
+
+  const transform = playerAnimator.update(
+    deltaSeconds,
+    { x: state.x, y: state.y },
+    { x: state.vx ?? 0, y: state.vy ?? 0 },
+    state.grounded ?? true
+  ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+
+  const frame = playerAnimator.controller?.getCurrentFrame?.();
+  if (!spriteReady || !frame) {
+    drawFallbackPlayer(state, position, baseRadius);
+    return;
+  }
+
+  const renderSize = Math.max(64, Math.min(width, height) * 0.14);
+  const halfSize = renderSize / 2;
+
+  ctx.save();
+  ctx.translate(position.x + (transform.offsetX ?? 0), position.y + (transform.offsetY ?? 0));
+  if (transform.rotation) {
+    ctx.rotate(transform.rotation);
+  }
+  const flip = lastFacing === 'left' ? -1 : 1;
+  const scaleX = (transform.scaleX ?? 1) * flip;
+  const scaleY = transform.scaleY ?? 1;
+  ctx.scale(scaleX, scaleY);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    playerSprite,
+    frame.x,
+    frame.y,
+    frame.width,
+    frame.height,
+    -halfSize,
+    -halfSize,
+    renderSize,
+    renderSize
+  );
+  ctx.restore();
+
+  if (state.block) {
+    ctx.save();
+    ctx.translate(position.x, position.y - renderSize * 0.45);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.beginPath();
+    ctx.arc(0, 0, renderSize * 0.55, Math.PI * 0.03, Math.PI * 0.97);
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
 const drawObstacles = (obstacles) => {
   ensureContext();
   if (!Array.isArray(obstacles) || obstacles.length === 0) return;
@@ -140,8 +235,8 @@ const drawObstacles = (obstacles) => {
   for (const obstacle of obstacles) {
     const pos = wasmToCanvas(obstacle.x, obstacle.y);
     const radius = Math.max(6, obstacle.r * Math.min(width, height) * 0.05);
-    const stroke = obstacle.type === "landmark" ? "rgba(190, 242, 100, 0.45)" : "rgba(148, 163, 184, 0.35)";
-    const fill = obstacle.type === "landmark" ? "rgba(190, 242, 100, 0.18)" : "rgba(148, 163, 184, 0.12)";
+    const stroke = obstacle.type === 'landmark' ? 'rgba(190, 242, 100, 0.45)' : 'rgba(148, 163, 184, 0.35)';
+    const fill = obstacle.type === 'landmark' ? 'rgba(190, 242, 100, 0.18)' : 'rgba(148, 163, 184, 0.12)';
     ctx.strokeStyle = stroke;
     ctx.fillStyle = fill;
     ctx.beginPath();
@@ -210,6 +305,3 @@ export const createRenderer = (targetCanvas) => {
     dispose: () => window.removeEventListener('resize', onResize)
   };
 };
-
-
-

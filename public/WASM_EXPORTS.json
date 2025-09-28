@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2025-09-28T20:53:04.508Z",
+  "generatedAt": "2025-09-27T21:08:53.427Z",
   "tools": {
     "wasmDis": "C:\\Users\\flori\\Desktop\\DozedEnt\\emsdk\\upstream\\bin\\wasm-dis.exe"
   },
   "modules": [
     {
       "file": "game.wasm",
-      "exportCount": 340,
+      "exportCount": 339,
       "byType": {
         "memory": [
           "memory"
@@ -203,7 +203,6 @@
           "get_roll_duration",
           "get_roll_cooldown",
           "get_parry_window",
-          "clear_input_latch",
           "get_obstacle_count",
           "get_obstacle_x",
           "get_obstacle_y",
@@ -548,7 +547,6 @@
         "get_roll_duration",
         "get_roll_cooldown",
         "get_parry_window",
-        "clear_input_latch",
         "get_obstacle_count",
         "get_obstacle_x",
         "get_obstacle_y",

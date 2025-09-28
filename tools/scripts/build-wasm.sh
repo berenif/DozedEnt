@@ -45,7 +45,7 @@ build_game_wasm() {
         echo "Production build with maximum optimization"
     fi
     
-    cmd="em++ src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
+    cmd="em++ public/src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
     echo "Command: $cmd"
     
     if eval "$cmd"; then
@@ -62,7 +62,7 @@ build_game_wasm() {
 build_host_wasm() {
     echo "Building game-host.wasm..."
     
-    cmd='em++ src/wasm/game-host.cpp -O3 -s STANDALONE_WASM=1 -s EXPORTED_FUNCTIONS="[\"_game_init\",\"_game_create_state\",\"_game_update\",\"_game_handle_input\",\"_game_get_state\",\"_game_get_state_size\",\"_game_apply_state\",\"_game_destroy\",\"_malloc\",\"_free\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\"]" -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT=1 -o ./game-host.wasm'
+    cmd='em++ public/src/wasm/game-host.cpp -O3 -s STANDALONE_WASM=1 -s EXPORTED_FUNCTIONS="[\"_game_init\",\"_game_create_state\",\"_game_update\",\"_game_handle_input\",\"_game_get_state\",\"_game_get_state_size\",\"_game_apply_state\",\"_game_destroy\",\"_malloc\",\"_free\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\"]" -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT=1 -o ./game-host.wasm'
     echo "Command: $cmd"
     
     if eval "$cmd"; then

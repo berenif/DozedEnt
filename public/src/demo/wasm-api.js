@@ -22,11 +22,11 @@ const REQUIRED_EXPORTS = [
   'reset_run'
 ];
 
+// Prefer paths that work when public/ is the web root
 const DIRECT_PATHS = [
-  'public/game.wasm',
-  'public/wasm/game.wasm',
-  'game.wasm',
-  'dist/game.wasm'
+  'wasm/game.wasm'
+  
+  // Removed 'dist/game.wasm' as it has incomplete exports
 ];
 
 const OPTIONAL_PATTERNS = [
@@ -34,6 +34,28 @@ const OPTIONAL_PATTERNS = [
   /^get_landmark_/, 
   /^get_exit_/
 ];
+
+export const PLAYER_ANIM_CODES = Object.freeze({
+  idle: 0,
+  running: 1,
+  attacking: 2,
+  blocking: 3,
+  rolling: 4,
+  hurt: 5,
+  dead: 6,
+  jumping: 7,
+  doubleJumping: 8,
+  landing: 9,
+  wallSliding: 10,
+  dashing: 11,
+  chargingAttack: 12
+});
+
+export const PLAYER_ANIM_NAMES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(PLAYER_ANIM_CODES).map(([name, code]) => [code, name])
+  )
+);
 
 const optionalDefaultsUrl = new URL('./optional-export-defaults.json', import.meta.url);
 
@@ -57,7 +79,7 @@ const resolveBaseUrls = (relativePaths) => {
       try {
         const resolved = new URL(path, origin).href;
         candidates.add(resolved);
-      } catch (_) {
+      } catch {
         // ignore invalid url
       }
     });
@@ -115,6 +137,7 @@ const contractToSet = (contract) => {
 const createFallbackExports = () => {
   const manager = new WasmManager();
   const base = typeof manager.createFallbackExports === 'function' ? manager.createFallbackExports() : {};
+  const ANIM = PLAYER_ANIM_CODES;
 
   const state = {
     x: 0,
@@ -124,7 +147,7 @@ const createFallbackExports = () => {
     grounded: 1,
     rolling: 0,
     block: 0,
-    anim: 0,
+    anim: ANIM.idle,
     animTimer: 0,
     stamina: 1,
     hp: 1
@@ -141,14 +164,6 @@ const createFallbackExports = () => {
     special: 0
   };
 
-  const ANIM = {
-    idle: 0,
-    run: 1,
-    roll: 2,
-    attack: 3,
-    block: 4
-  };
-
   const applyInput = (nx, ny) => {
     const max = Math.max(1, Math.hypot(nx, ny));
     const speed = 2.7;
@@ -163,23 +178,43 @@ const createFallbackExports = () => {
     state.y = Math.min(4.5, Math.max(0, state.y));
   };
 
+  const setAnimState = (animCode) => {
+    const code = Number.isFinite(animCode) ? animCode : ANIM.idle;
+    if (state.anim !== code) {
+      state.anim = code;
+      state.animTimer = 0;
+    }
+    state.rolling = code === ANIM.rolling ? 1 : 0;
+  };
+
   const resolveAnim = () => {
     if (inputs.roll) {
-      state.anim = ANIM.roll;
-      state.rolling = 1;
+      setAnimState(ANIM.rolling);
       return;
     }
-    state.rolling = 0;
+
     if (inputs.block) {
-      state.anim = ANIM.block;
+      setAnimState(ANIM.blocking);
       return;
     }
-    if (inputs.light || inputs.heavy || inputs.special) {
-      state.anim = ANIM.attack;
+
+    if (inputs.light || inputs.heavy) {
+      setAnimState(ANIM.attacking);
       return;
     }
+
+    if (inputs.special) {
+      setAnimState(ANIM.chargingAttack);
+      return;
+    }
+
+    if (inputs.jump) {
+      setAnimState(ANIM.jumping);
+      return;
+    }
+
     const moving = Math.hypot(inputs.x, inputs.y) > 0.05;
-    state.anim = moving ? ANIM.run : ANIM.idle;
+    setAnimState(moving ? ANIM.running : ANIM.idle);
   };
 
   const fallback = {
@@ -191,6 +226,7 @@ const createFallbackExports = () => {
       state.stamina = 1;
       state.hp = 1;
       state.animTimer = 0;
+      setAnimState(ANIM.idle);
     },
     set_player_input: (x, y, roll, jump, light, heavy, block, special) => {
       base.set_player_input?.(x, y, roll, jump, light, heavy, block, special);
@@ -231,31 +267,47 @@ const createFallbackExports = () => {
     get_stamina: () => state.stamina,
     get_hp: () => state.hp,
     init_run: (seed, weapon) => {
-      base.init_run?.(seed, weapon);
+      try {
+        const safeSeed = typeof seed === 'bigint' ? seed : BigInt(Math.floor(Number(seed) || 1));
+        base.init_run?.(safeSeed, weapon);
+      } catch (error) {
+        console.warn('[Demo] Fallback init_run seed conversion failed:', error.message);
+        base.init_run?.(1n, weapon);
+      }
       state.x = 0;
       state.y = 0;
       state.animTimer = 0;
+      setAnimState(ANIM.idle);
     },
     reset_run: (seed) => {
-      base.reset_run?.(seed);
+      try {
+        const safeSeed = typeof seed === 'bigint' ? seed : BigInt(Math.floor(Number(seed) || 1));
+        base.reset_run?.(safeSeed);
+      } catch (error) {
+        console.warn('[Demo] Fallback reset_run seed conversion failed:', error.message);
+        base.reset_run?.(1n);
+      }
       state.x = 0;
       state.y = 0;
       state.animTimer = 0;
+      setAnimState(ANIM.idle);
+    },
+    forceFallback: () => {
+      try {
+        setFlag('forceFallback', true);
+        const url = new URL(window.location.href);
+        url.searchParams.set('debug', '1');
+        window.location.href = url.toString();
+      } catch (e) {
+        console.warn('[Demo] forceFallback() failed:', e.message);
+      }
     }
   };
 
   return fallback;
 };
 
-const normalizeAnim = (value) => {
-  switch (value) {
-    case 1: return 'running';
-    case 2: return 'rolling';
-    case 3: return 'attacking';
-    case 4: return 'blocking';
-    default: return 'idle';
-  }
-};
+const normalizeAnim = (value) => PLAYER_ANIM_NAMES[value] || 'idle';
 
 const createOptionalWrapper = (name, exports, defaults, debugEnabled) => {
   const fn = exports[name];
@@ -300,6 +352,27 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
   REQUIRED_EXPORTS.forEach(name => {
     handles[name] = exports[name].bind(exports);
   });
+  // Normalize boolean-like exports to strict 0/1 to avoid noisy logs
+  const wrapBool01 = (fn) => {
+    if (typeof fn !== 'function') return fn;
+    return (...args) => {
+      try {
+        const v = Number(fn(...args));
+        return ((v | 0) & 1) >>> 0; // ensure 0 or 1
+      } catch {
+        return 0;
+      }
+    };
+  };
+  if (typeof handles.get_block_state === 'function') {
+    handles.get_block_state = wrapBool01(handles.get_block_state);
+  }
+  if (typeof handles.get_is_grounded === 'function') {
+    handles.get_is_grounded = wrapBool01(handles.get_is_grounded);
+  }
+  if (typeof handles.get_is_rolling === 'function') {
+    handles.get_is_rolling = wrapBool01(handles.get_is_rolling);
+  }
 
   const optionalHandles = {};
   const attachOptional = (name) => {
@@ -329,18 +402,38 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     hp: 1
   };
 
+  const coerceNumber = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
   const getPlayerState = () => {
-    stateCache.x = Number(handles.get_x());
-    stateCache.y = Number(handles.get_y());
-    stateCache.vx = Number(handles.get_vel_x());
-    stateCache.vy = Number(handles.get_vel_y());
-    stateCache.grounded = Boolean(handles.get_is_grounded());
-    stateCache.rolling = Boolean(handles.get_is_rolling());
-    stateCache.block = Boolean(handles.get_block_state());
-    stateCache.anim = normalizeAnim(Number(handles.get_player_anim_state()));
-    stateCache.animT = Number(handles.get_player_state_timer());
-    stateCache.stamina = Number(handles.get_stamina());
-    stateCache.hp = Number(handles.get_hp());
+    // Coerce all numeric reads to finite numbers to avoid NaN in overlay/render
+    stateCache.x = coerceNumber(handles.get_x(), 0);
+    stateCache.y = coerceNumber(handles.get_y(), 0);
+    stateCache.vx = coerceNumber(handles.get_vel_x(), 0);
+    stateCache.vy = coerceNumber(handles.get_vel_y(), 0);
+    // Some builds have returned 255 for boolean flags; normalize safely
+    const groundedRaw = coerceNumber(handles.get_is_grounded(), 0);
+    const rollingRaw = coerceNumber(handles.get_is_rolling(), 0);
+    const blockRaw = coerceNumber(handles.get_block_state(), 0);
+    const toBool = (n) => ((n | 0) & 1) === 1; // mask to LSB
+    if (groundedRaw !== 0 && groundedRaw !== 1) {
+      logOnce('warn-grounded-norm', () => console.warn('[Demo] get_is_grounded returned', groundedRaw, 'â€” normalizing via &1.'));
+    }
+    if (rollingRaw !== 0 && rollingRaw !== 1) {
+      logOnce('warn-rolling-norm', () => console.warn('[Demo] get_is_rolling returned', rollingRaw, 'â€” normalizing via &1.'));
+    }
+    if (blockRaw !== 0 && blockRaw !== 1) {
+      logOnce('warn-block-norm', () => console.warn('[Demo] get_block_state returned', blockRaw, 'â€” normalizing via &1.'));
+    }
+    stateCache.grounded = toBool(groundedRaw);
+    stateCache.rolling = toBool(rollingRaw);
+    stateCache.block = toBool(blockRaw);
+    stateCache.anim = normalizeAnim(coerceNumber(handles.get_player_anim_state(), 0));
+    stateCache.animT = coerceNumber(handles.get_player_state_timer(), 0);
+    stateCache.stamina = coerceNumber(handles.get_stamina(), 1);
+    stateCache.hp = coerceNumber(handles.get_hp(), 1);
     return stateCache;
   };
 
@@ -348,7 +441,20 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
   const initialWeapon = Number.isFinite(config.weapon) ? config.weapon : 0;
 
   handles.start();
-  handles.init_run(initialSeed, initialWeapon);
+  
+  // Convert seed to BigInt safely for WASM compatibility
+  try {
+    const seedBigInt = typeof initialSeed === 'bigint' ? initialSeed : BigInt(Math.floor(Number(initialSeed)));
+    handles.init_run(seedBigInt, initialWeapon);
+  } catch (seedError) {
+    console.warn('[Demo] Seed conversion failed, using fallback seed:', seedError.message);
+    handles.init_run(1n, initialWeapon); // Use safe default seed
+  }
+  
+  // Ensure player starts with block off after initialization
+  if (handles.set_blocking) {
+    handles.set_blocking(0, 0, 0, 0);
+  }
 
   let currentSeed = initialSeed;
   let cachedWeapon = initialWeapon;
@@ -357,6 +463,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     isFallback: loaderInfo.fallback,
     loaderInfo,
     memory,
+    exports: handles, // Expose raw WASM exports for input manager
     start: handles.start,
     update: (dt) => {
       const delta = Number.isFinite(dt) ? dt : 1 / 60;
@@ -368,8 +475,15 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     getPlayerState,
     resetRun: (seed = currentSeed) => {
       currentSeed = Number.isFinite(seed) ? seed : initialSeed;
-      handles.reset_run(currentSeed);
-      handles.init_run(currentSeed, cachedWeapon);
+      try {
+        const seedBigInt = typeof currentSeed === 'bigint' ? currentSeed : BigInt(Math.floor(Number(currentSeed)));
+        handles.reset_run(seedBigInt);
+        handles.init_run(seedBigInt, cachedWeapon);
+      } catch (seedError) {
+        console.warn('[Demo] Reset seed conversion failed, using fallback:', seedError.message);
+        handles.reset_run(1n);
+        handles.init_run(1n, cachedWeapon);
+      }
     },
     setWeapon: (weaponId) => {
       const value = Number.isFinite(weaponId) ? weaponId : 0;
@@ -402,7 +516,42 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     reset: api.resetRun,
     setFlag,
     flags: allFlags,
-    setInput: api.setPlayerInput
+    setInput: api.setPlayerInput,
+    // Expose raw wasm exports for debugging
+    exports: handles,
+    optional: optionalHandles,
+    unblock: () => {
+      try {
+        // Clear local flags if used via override
+        const flagsObj = allFlags();
+        if (flagsObj && typeof flagsObj.inputOverride === 'object') {
+          flagsObj.inputOverride.block = 0;
+          setFlag('inputOverride', flagsObj.inputOverride);
+        }
+        // Force-clear in WASM if export exists
+        if (api.exports && typeof api.exports.set_blocking === 'function') {
+          api.exports.set_blocking(0, 0, 0, performance.now() / 1000);
+        }
+      } catch (e) {
+        console.warn('[Demo] unblock() failed:', e.message);
+      }
+    },
+    forceBlock: (on) => {
+      try {
+        const v = on ? 1 : 0;
+        // Drive block state via input path for a few frames
+        for (let i = 0; i < 6; i += 1) {
+          api.setPlayerInput(0, 0, 0, 0, 0, 0, v, 0);
+          api.update(1 / 60);
+        }
+        // Also call direct blocking export if present
+        if (api.exports && typeof api.exports.set_blocking === 'function') {
+          api.exports.set_blocking(v, 0, 0, performance.now() / 1000);
+        }
+      } catch (e) {
+        console.warn('[Demo] forceBlock() failed:', e.message);
+      }
+    }
   };
 
   return api;
@@ -476,6 +625,10 @@ const initialise = async () => {
   let loaderError = null;
 
   try {
+    const flagsAtInit = allFlags();
+    if (flagsAtInit && flagsAtInit.forceFallback) {
+      throw new Error('forced by flag');
+    }
     runtime = loaderMode === 'lazy' ? await tryLazyLoad() : await tryDirectLoad();
   } catch (error) {
     loaderError = error;
@@ -506,6 +659,41 @@ const initialise = async () => {
     api = createApiFromRuntime(activeRuntime, optionalDefaults, contractSet);
   }
 
+  // Runtime sanity check: ensure inputs produce finite, changing state
+  const validateRuntime = () => {
+    try {
+      const before = api.getPlayerState();
+      const bx = Number.isFinite(before.x) ? before.x : 0;
+      const by = Number.isFinite(before.y) ? before.y : 0;
+      // Apply a brief rightward input over a few updates
+      api.setPlayerInput(1, 0, 0, 0, 0, 0, 0, 0);
+      for (let i = 0; i < 6; i += 1) {
+        api.update(1 / 60);
+      }
+      api.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
+      const after = api.getPlayerState();
+      const ax = Number.isFinite(after.x) ? after.x : NaN;
+      const ay = Number.isFinite(after.y) ? after.y : NaN;
+      const moved = Number.isFinite(ax) && Number.isFinite(ay) && (Math.abs(ax - bx) > 1e-6 || Math.abs(ay - by) > 1e-6);
+      // Reset to initial to avoid affecting the session
+      api.resetRun();
+      return moved;
+    } catch {
+      return false;
+    }
+  };
+
+  if (!validateRuntime()) {
+    logOnce('runtime-invalid', () => console.warn('[Demo] Active WASM runtime produced invalid or static state; switching to fallback.'));
+    const fallbackExports = createFallbackExports();
+    activeRuntime = {
+      exports: fallbackExports,
+      memory: null,
+      loaderInfo: { mode: loaderMode, path: 'sanity-check', fallback: true }
+    };
+    api = createApiFromRuntime(activeRuntime, optionalDefaults, contractSet);
+  }
+
   logOnce('loader-summary', () => {
     const info = activeRuntime.loaderInfo;
     console.info(`[Demo] loader=${info.mode} path=${info.path} fallback=${info.fallback}`);
@@ -519,6 +707,3 @@ export const createWasmApi = async () => {
   }
   return createPromise;
 };
-
-
-

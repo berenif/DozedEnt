@@ -42,7 +42,7 @@ const terserConfig = {
 export default {
   onwarn,
   context: 'globalThis',
-  input: 'src/animation/player/procedural/player-animator.js',
+  input: 'public/src/animation/player/procedural/player-animator.js',
   output: [
     {
       file: 'dist/animations/player-animator.js',

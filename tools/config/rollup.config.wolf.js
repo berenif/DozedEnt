@@ -42,7 +42,7 @@ const terserConfig = {
 export default {
   onwarn,
   context: 'globalThis',
-  input: 'src/animation/enemy/wolf-animation.js',
+  input: 'public/src/animation/enemy/wolf-animation.js',
   output: [
     {
       file: 'dist/animations/wolf-animation.js',

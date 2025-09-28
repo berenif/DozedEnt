@@ -648,8 +648,9 @@ void update(float dtSeconds) {
     g_player_latched = 0; g_latch_enemy_idx = -1;
   }
 
-  // While holding block (and not rolling) or latched, target zero velocity
-  bool haltMovement = ((g_input_is_blocking && !g_is_rolling) || g_player_latched);
+  // Only halt movement when actual blocking state is active (not just the input intent),
+  // or when latched. This prevents getting stuck if block couldn't activate.
+  bool haltMovement = ((g_blocking && !g_is_rolling) || g_player_latched);
 
   // Compute desired velocity from input
   float desiredVX = haltMovement ? 0.f : (g_input_x * speed);
@@ -1669,6 +1670,8 @@ __attribute__((export_name("set_blocking")))
 int set_blocking(int on, float faceX, float faceY) {
   // normalize facing input
   normalize(faceX, faceY);
+  // Keep input-intent in sync so external unblock calls fully clear state
+  g_input_is_blocking = on ? 1 : 0;
   if (on) {
     // Heavy attack feinting - can cancel heavy attack during windup
     if (can_feint_heavy()) {
@@ -1702,7 +1705,7 @@ int set_blocking(int on, float faceX, float faceY) {
 
 // Returns current blocking state (1 = blocking, 0 = not blocking)
 __attribute__((export_name("get_block_state")))
-int get_block_state() { return g_blocking ? 1 : 0; }
+  int get_block_state() { return g_blocking ? 1 : 0; }
 
 // Evaluate an incoming attack against current defensive state.
 // Returns:
@@ -1773,7 +1776,19 @@ __attribute__((export_name("get_roll_cooldown")))
 float get_roll_cooldown() { return ROLL_COOLDOWN_SEC; }
 
 __attribute__((export_name("get_parry_window")))
-float get_parry_window() { return PARRY_WINDOW; }
+  float get_parry_window() { return PARRY_WINDOW; }
+
+// Clear all input latches and block state (debug/escape hatch)
+__attribute__((export_name("clear_input_latch")))
+void clear_input_latch() {
+  g_input_x = 0.f;
+  g_input_y = 0.f;
+  g_input_light_attack = 0;
+  g_input_heavy_attack = 0;
+  g_input_is_blocking = 0;
+  g_input_special = 0;
+  g_blocking = 0;
+}
 
 // Landmarks/exits getters
 __attribute__((export_name("get_obstacle_count")))

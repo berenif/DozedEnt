@@ -134,19 +134,19 @@ configFiles.forEach(file => {
 console.log(chalk.bold('\nChecking source files...'));
 const sourceFiles = [
   // Core exports
-  'src/utils/index.js',
+  'public/src/utils/index.js',
 
   // Strategy implementations
-  'src/netcode/firebase.js',
-  'src/netcode/ipfs.js',
-  'src/netcode/mqtt.js',
-  'src/netcode/supabase.js',
-  'src/netcode/torrent.js',
-  'src/utils/wasm.js',
+  'public/src/netcode/firebase.js',
+  'public/src/netcode/ipfs.js',
+  'public/src/netcode/mqtt.js',
+  'public/src/netcode/supabase.js',
+  'public/src/netcode/torrent.js',
+  'public/src/utils/wasm.js',
 
   // Animation modules
-  'src/animation/player/procedural/player-animator.js',
-  'src/animation/enemy/wolf-animation.js'
+  'public/src/animation/player/procedural/player-animator.js',
+  'public/src/animation/enemy/wolf-animation.js'
 ];
 
 let missingSources = [];

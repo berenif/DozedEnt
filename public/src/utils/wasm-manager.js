@@ -38,6 +38,23 @@ export class WasmManager {
     this._combatTelemetryCacheMs = 16.67; // ~1 frame cache for combat telemetry
   }
 
+  // Ensure certain WASM exports return canonical 0/1 values
+  _normalizeBooleanExports() {
+    if (!this.exports) return;
+    const wrap01 = (fn) => {
+      if (typeof fn !== 'function') return null;
+      const orig = fn.bind(this.exports);
+      return () => {
+        const v = Number(orig());
+        return Number.isFinite(v) ? ((v | 0) & 1) : 0;
+      };
+    };
+    if (typeof this.exports.get_block_state === 'function') {
+      const wrapped = wrap01(this.exports.get_block_state);
+      if (wrapped) this.exports.get_block_state = wrapped;
+    }
+  }
+
   /**
    * Initialize WASM module with comprehensive error handling and lazy loading
    * Supports WASM 2.0 features including SIMD, bulk memory operations, and exceptions
@@ -105,6 +122,8 @@ export class WasmManager {
         const lazyLoadTime = performance.now() - initStartTime;
         console.log(`WASM module loaded successfully with lazy loader in ${lazyLoadTime.toFixed(2)}ms`);
 
+        // Clamp boolean-like getters to 0/1 for consistency
+        this._normalizeBooleanExports();
         globalThis.wasmExports = this.exports;
 
         if (typeof this.exports.start === 'function') {
@@ -226,9 +245,10 @@ export class WasmManager {
 
       const candidatePaths = [
         'game.wasm',
-        'dist/game.wasm',
+        'wasm/game.wasm',
         'src/wasm/game.wasm',
         '../game.wasm'
+        // Removed 'dist/game.wasm' as it has incomplete exports
       ];
       
       console.log('WASM candidate paths:', candidatePaths);
@@ -240,7 +260,7 @@ export class WasmManager {
           if (parts.length > 0) {
             const repo = parts[0];
             candidatePaths.push(`${repo}/game.wasm`);
-            candidatePaths.push(`${repo}/dist/game.wasm`);
+            candidatePaths.push(`${repo}/wasm/game.wasm`);
           }
         }
       } catch (error) {
@@ -321,6 +341,8 @@ export class WasmManager {
       this.exports = exports;
       this.isLoaded = true;
       
+      // Clamp boolean-like getters to 0/1 for consistency
+      this._normalizeBooleanExports();
       // Make globally accessible for debugging
       globalThis.wasmExports = this.exports;
       
@@ -403,6 +425,15 @@ export class WasmManager {
       // Initialize WASM run with starting weapon (0 = default)
       const startWeapon = this.getStartWeaponFromUrl() || 0;
       this.exports.init_run(this.runSeed, startWeapon);
+      // Clear any lingering input/block state so player can move after spawn
+      try {
+        if (typeof this.exports.set_player_input === 'function') {
+          this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        if (typeof this.exports.set_blocking === 'function') {
+          try { this.exports.set_blocking(0, 0, 0); } catch (_) { /* ignore */ }
+        }
+      } catch (_) { /* non-fatal */ }
       console.log('WASM game run initialized successfully');
       
       // Make seed available for visual RNG
@@ -1636,6 +1667,15 @@ export class WasmManager {
     }
     this.runSeed = newSeed;
     this.exports.reset_run(newSeed);
+    // After resetting, ensure no latched block/input remains
+    try {
+      if (typeof this.exports.set_player_input === 'function') {
+        this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
+      }
+      if (typeof this.exports.set_blocking === 'function') {
+        try { this.exports.set_blocking(0, 0, 0); } catch (_) { /* ignore */ }
+      }
+    } catch (_) { /* ignore */ }
   }
 
   /**
@@ -1683,6 +1723,15 @@ export class WasmManager {
       const newSeed = typeof seed === 'bigint' ? seed : BigInt(String(seed));
       this.runSeed = newSeed;
       this.exports.init_run(newSeed, weapon);
+      // Clear any lingering block/input so movement isn't halted on spawn
+      try {
+        if (typeof this.exports.set_player_input === 'function') {
+          this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        if (typeof this.exports.set_blocking === 'function') {
+          try { this.exports.set_blocking(0, 0, 0); } catch (_) { /* ignore */ }
+        }
+      } catch (_) { /* ignore */ }
       globalThis.runSeedForVisuals = newSeed;
     } catch (error) {
       console.error('initRun failed:', error);

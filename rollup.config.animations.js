@@ -12,7 +12,7 @@ const onwarn = (warning, warn) => {
 export default {
   onwarn,
   context: 'globalThis',
-  input: 'src/animation/player-animator.js',
+  input: 'public/src/animation/player/procedural/player-animator.js',
   output: [
     {
       file: 'dist/player-animator.js',

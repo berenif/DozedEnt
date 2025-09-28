@@ -10,8 +10,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { DeadCodeEliminator } from '../../src/utils/dead-code-eliminator.js';
-import { MemoryOptimizer } from '../../src/utils/memory-optimizer.js';
+import { DeadCodeEliminator } from '../../public/src/utils/dead-code-eliminator.js';
+import { MemoryOptimizer } from '../../public/src/utils/memory-optimizer.js';
 import { DistOrganizer } from './dist-organizer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -341,8 +341,8 @@ class EnhancedBuildSystem {
     console.log(chalk.blue('📦 Copying WASM files...'));
     
     const wasmFiles = [
-      { source: 'src/wasm/game.wasm', target: 'dist/wasm/game.wasm' },
-      { source: 'src/wasm/game-host.wasm', target: 'dist/wasm/game-host.wasm' }
+      { source: 'public/src/wasm/game.wasm', target: 'dist/wasm/game.wasm' },
+      { source: 'public/src/wasm/game-host.wasm', target: 'dist/wasm/game-host.wasm' }
     ];
     
     for (const { source, target } of wasmFiles) {
