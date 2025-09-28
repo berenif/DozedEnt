@@ -451,9 +451,14 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     handles.init_run(1n, initialWeapon); // Use safe default seed
   }
   
-  // Ensure player starts with block off after initialization
+  // Ensure player starts with clean input state after initialization
   if (handles.set_blocking) {
-    handles.set_blocking(0, 0, 0, 0);
+    handles.set_blocking(0, 0, 0, performance.now() / 1000);
+  }
+  
+  // Also clear all inputs to ensure clean start
+  if (handles.set_player_input) {
+    handles.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
   }
 
   let currentSeed = initialSeed;

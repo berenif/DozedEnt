@@ -21,6 +21,9 @@ export class LegacyInputManagerAdapter {
         this.inputState = this.unifiedManager.inputState;
         this.lastMovementDirection = this.unifiedManager.inputState.lastMovementDirection;
         
+        // Ensure initial state is clean
+        this.clearAllInputs();
+        
         console.log('🔄 Legacy Input Manager Adapter initialized');
     }
     

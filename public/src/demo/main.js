@@ -1,4 +1,4 @@
-﻿import { config, setFlag } from './config.js';
+import { config, setFlag } from './config.js';
 import { createWasmApi } from './wasm-api.js';
 import { createRenderer } from './renderer.js';
 // Import the new unified input system with legacy compatibility
@@ -11,11 +11,23 @@ if (!canvas) {
 
 const renderer = createRenderer(canvas);
 const wasmApi = await createWasmApi();
+
+// Small delay to ensure WASM is fully initialized before input manager
+await new Promise(resolve => setTimeout(resolve, 50));
+
 // Initialize unified input manager with legacy compatibility
 const inputManager = createInputManager(wasmApi, { 
   useLegacyAdapter: true, 
   debugMode: false 
 });
+
+// Clear any potential stuck inputs after initialization
+setTimeout(() => {
+  if (inputManager && inputManager.clearAllInputs) {
+    inputManager.clearAllInputs();
+    console.log('✅ Demo: Cleared initial input state');
+  }
+}, 100);
 
 const step = 1 / 60;
 const maxSubSteps = 5;
@@ -132,10 +144,18 @@ const buildOverlay = (state, now) => {
     inputManager.lastMovementDirection.y = dirY;
   }
   
-  // If user is providing movement input, force-release block to avoid latch
-  let block = input.block ? 1 : 0;
-  if (dirX !== 0 || dirY !== 0) {
+  // Get block state - ensure it's properly read from input
+  let block = (input.block === true || input.block === 1) ? 1 : 0;
+  
+  // If user is providing movement input, force-release block to avoid stuck state
+  // But only if they're actually trying to move (not just having the key down)
+  if ((dirX !== 0 || dirY !== 0) && block === 1) {
+    // User is trying to move while blocking - release the block
     block = 0;
+    // Also update the input state to reflect this
+    if (inputManager.inputState) {
+      inputManager.inputState.block = false;
+    }
   }
 
   wasmApi.setPlayerInput(
