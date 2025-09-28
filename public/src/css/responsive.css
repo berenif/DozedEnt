@@ -1,0 +1,331 @@
+/* Enhanced Responsive Design for Desktop and Mobile Controls */
+
+/* Base responsive styles */
+* {
+    box-sizing: border-box;
+}
+
+/* Viewport adaptations */
+@media (max-width: 1200px) {
+    #controls-tip {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+}
+
+@media (max-width: 992px) {
+    #controls-tip {
+        font-size: 13px;
+        padding: 6px 10px;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        text-align: center;
+    }
+}
+
+/* Tablet adaptations */
+@media (max-width: 768px) {
+    /* Show mobile controls on tablets */
+    .mobile-controls {
+        display: block !important;
+        height: 200px;
+    }
+    
+    #controls-tip {
+        display: none !important;
+    }
+    
+    /* Adjust game viewport */
+    #viewport {
+        padding: 10px;
+    }
+    
+    #gameCanvas {
+        border-radius: 8px;
+    }
+    
+    /* UI overlays adjustments */
+    .ui-overlay {
+        padding: 15px;
+    }
+    
+    #connectionStatus,
+    #playerCount {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+    
+    #debug-hud {
+        font-size: 12px;
+        right: 10px;
+        top: 10px;
+    }
+    
+    /* Enhanced mobile controls sizing */
+    #joystick {
+        width: 120px;
+        height: 120px;
+    }
+
+    .action-btn {
+        width: 65px;
+        height: 65px;
+        font-size: 22px;
+    }
+
+    .phase-overlay h2 {
+        font-size: 1.5em;
+    }
+
+    .choice-button {
+        min-width: 150px;
+        padding: 12px 24px;
+    }
+}
+
+/* Mobile phone adaptations */
+@media (max-width: 480px) {
+    /* Force mobile controls */
+    .mobile-controls {
+        display: block !important;
+        opacity: 1 !important;
+        height: 220px;
+    }
+    
+    /* Hide desktop elements */
+    #controls-tip {
+        display: none !important;
+    }
+    
+    /* Compact UI */
+    .ui-overlay {
+        padding: 10px;
+    }
+    
+    #connectionStatus,
+    #playerCount {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    #debug-hud {
+        font-size: 10px;
+        right: 5px;
+        top: 5px;
+    }
+    
+    /* Adjust phase overlays for mobile */
+    .phase-overlay {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    .phase-overlay h2 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .phase-overlay p {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    
+    .choice-button,
+    .risk-button {
+        padding: 12px 20px;
+        font-size: 14px;
+        margin: 8px;
+    }
+}
+
+/* Orientation-specific styles */
+@media (orientation: portrait) {
+    /* Portrait mode optimizations */
+    .mobile-controls {
+        height: 250px;
+        background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.7) 30%, rgba(0, 0, 0, 0.9) 100%);
+    }
+    
+    /* Stack action buttons vertically in portrait */
+    #actions {
+        flex-direction: column-reverse;
+        gap: 15px;
+        max-width: none;
+    }
+    
+    /* Larger joystick in portrait */
+    #joystick {
+        width: 140px;
+        height: 140px;
+    }
+    
+    /* Adjust game viewport for portrait */
+    #viewport {
+        padding-bottom: 260px;
+    }
+}
+
+@media (orientation: landscape) {
+    /* Landscape mode optimizations */
+    .mobile-controls {
+        height: 180px;
+    }
+    
+    /* Horizontal action buttons in landscape */
+    #actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-width: 200px;
+    }
+    
+    /* Smaller controls in landscape */
+    #joystick {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .action-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+    .mobile-controls {
+        height: 200px;
+    }
+    
+    #joystick {
+        width: 100px;
+        height: 100px;
+        bottom: 15px;
+        left: 15px;
+    }
+    
+    #joystick-knob {
+        width: 35px;
+        height: 35px;
+    }
+    
+    #actions {
+        bottom: 15px;
+        right: 15px;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 18px;
+    }
+    
+    .action-btn.enhanced-btn .btn-emoji {
+        font-size: 16px;
+    }
+}
+
+/* Large desktop screens */
+@media (min-width: 1440px) {
+    #controls-tip {
+        font-size: 16px;
+        padding: 12px 20px;
+        bottom: 30px;
+        left: 30px;
+    }
+    
+    #debug-hud {
+        font-size: 14px;
+        right: 30px;
+        top: 30px;
+    }
+    
+    .ui-overlay {
+        padding: 30px;
+    }
+}
+
+/* Touch device optimizations */
+@media (pointer: coarse) {
+    /* Larger touch targets */
+    .action-btn {
+        min-width: 70px;
+        min-height: 70px;
+    }
+    
+    #joystick {
+        min-width: 120px;
+        min-height: 120px;
+    }
+    
+    /* Better touch feedback */
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    #joystick-base:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* Mouse/trackpad optimizations */
+@media (pointer: fine) {
+    /* Smaller hover states for precise pointing */
+    .action-btn:hover {
+        transform: scale(1.05);
+        background: rgba(255, 255, 255, 0.15);
+    }
+    
+    #joystick-base:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    #joystick-base,
+    #joystick-knob,
+    .mobile-controls,
+    .ui-overlay > * {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .long-press-feedback {
+        animation: none !important;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .action-btn {
+        border-width: 3px;
+        border-color: #fff;
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    #joystick-base {
+        border-width: 3px;
+        border-color: #fff;
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    #joystick-knob {
+        background: #fff;
+        border-color: #000;
+    }
+    
+    #controls-tip {
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid #fff;
+    }
+}
+
+/* Hide elements when not needed */
+.hidden {
+    display: none !important;
+}

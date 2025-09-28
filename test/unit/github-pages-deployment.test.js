@@ -125,7 +125,7 @@ describe('GitHub Pages Deployment', () => {
 
   describe('HTML Content Validation', () => {
     before(function() {
-      // Skip if docs folder doesn't exist yet
+      // Skip if public folder doesn't exist yet
       if (!fs.existsSync(publicDir)) {
         this.skip();
       }

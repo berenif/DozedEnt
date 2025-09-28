@@ -14,10 +14,38 @@
 
 ### ⚡ Key Features
 - **🎯 5-Button Combat** - Responsive fighting system with precise timing
-- **🧠 Intelligent AI** - Advanced wolf pack behavior with coordinated strategies  
+- **🧠 Intelligent AI** - Advanced wolf pack behavior with coordinated strategies
 - **🔄 8-Phase Game Loop** - Complete roguelike progression system
 - **🌐 P2P Multiplayer** - Serverless networking with multiple backends
 - **📱 Cross-Platform** - Desktop and mobile with optimized controls
+
+### 🚀 Quick Start
+
+1. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
+   This starts the server on `http://localhost:8080` with proper ES module support.
+
+2. **Open in Browser**:
+   - Main game: `http://localhost:8080`
+   - WASM testing: `http://localhost:8080/public/test-wasm.html`
+
+⚠️ **Important**: Use `http://localhost:8080` (not 5501) to avoid MIME type issues with ES modules.
+
+### 🛠️ Troubleshooting MIME Type Issues
+
+If you get "type MIME interdit" errors:
+
+1. **Stop any other servers** running on port 8080 or 5501
+2. **Use only the project's server**: `npm run dev`
+3. **Clear browser cache** (Ctrl+Shift+R or Cmd+Shift+R)
+4. **Check browser console** for detailed error messages
+
+The project's server automatically serves:
+- JavaScript files with `application/javascript` MIME type
+- WASM files with `application/wasm` MIME type
+- Includes CORS headers for ES module loading
 - **⚡ High Performance** - Native-speed WASM core, <16ms frame times
 
 ---
@@ -113,7 +141,7 @@
 
 ### ✅ Animation Changes
 - [ ] Review [`GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md`](./GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md)
-- [ ] Check state transitions in relevant animation docs
+- [ ] Check state transitions in relevant animation public
 - [ ] Ensure animations don't affect game logic
 - [ ] Validate performance impact
 

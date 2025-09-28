@@ -70,47 +70,76 @@ function serveFile(req, res, filePath) {
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url);
     let pathname = parsedUrl.pathname;
-    
+
     // Remove leading slash
     if (pathname.startsWith('/')) {
         pathname = pathname.substring(1);
     }
-    
+
     // Default to index.html
     if (pathname === '' || pathname === '/') {
         pathname = 'index.html';
     }
-    
-    // Try to find the file in multiple directories
+
+    // Resolve the actual file path, handling relative paths like ../src/
     let filePath = null;
     let baseDir = null;
-    
-    // Check public directory first (main game files)
-    const publicPath = path.join(PUBLIC_DIR, pathname);
-    if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
-        filePath = publicPath;
-        baseDir = PUBLIC_DIR;
+
+    // Handle relative paths by resolving them relative to the public directory
+    // since that's where the HTML file is served from
+    let resolvedPath = pathname;
+
+    // If the path starts with ../, resolve it relative to the public directory
+    if (pathname.startsWith('../')) {
+        // Remove the ../ and resolve relative to public directory
+        const relativePath = pathname.substring(3); // Remove '../'
+        resolvedPath = relativePath;
+        filePath = path.join(PUBLIC_DIR, '..', relativePath);
+    } else {
+        filePath = path.join(PUBLIC_DIR, pathname);
     }
-    // Check dist directory (for trystero-wasm.min.js and other dist files)
-    else if (pathname.startsWith('dist/')) {
-        const distPath = path.join(DIST_DIR, pathname.substring(5)); // Remove 'dist/' prefix
-        if (fs.existsSync(distPath) && fs.statSync(distPath).isFile()) {
-            filePath = distPath;
-            baseDir = DIST_DIR;
-        }
-    }
-    // Check src directory (for wasm.js and other source files)
-    else if (pathname.startsWith('src/')) {
-        const srcPath = path.join(SRC_DIR, pathname.substring(4)); // Remove 'src/' prefix
-        if (fs.existsSync(srcPath) && fs.statSync(srcPath).isFile()) {
-            filePath = srcPath;
+
+    // Check if the file exists at the resolved path
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        // Determine which base directory this file belongs to
+        if (filePath.includes(SRC_DIR)) {
             baseDir = SRC_DIR;
+        } else if (filePath.includes(DIST_DIR)) {
+            baseDir = DIST_DIR;
+        } else {
+            baseDir = PUBLIC_DIR;
         }
-    }
-    // Fallback to public directory
-    else {
-        filePath = publicPath;
-        baseDir = PUBLIC_DIR;
+    } else {
+        // Fallback to original logic for direct paths
+        const normalizedPath = path.normalize(pathname);
+
+        // Check public directory first (main game files)
+        const publicPath = path.join(PUBLIC_DIR, normalizedPath);
+        if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
+            filePath = publicPath;
+            baseDir = PUBLIC_DIR;
+        }
+        // Check dist directory (for trystero-wasm.min.js and other dist files)
+        else if (normalizedPath.startsWith('dist/') || normalizedPath.includes('/dist/')) {
+            const distPath = path.join(DIST_DIR, normalizedPath.replace(/^.*\/dist\//, ''));
+            if (fs.existsSync(distPath) && fs.statSync(distPath).isFile()) {
+                filePath = distPath;
+                baseDir = DIST_DIR;
+            }
+        }
+        // Check src directory (for CSS, JS, and other source files)
+        else if (normalizedPath.includes('/src/') || normalizedPath.startsWith('src/')) {
+            const srcPath = path.join(SRC_DIR, normalizedPath.replace(/^.*\/src\//, ''));
+            if (fs.existsSync(srcPath) && fs.statSync(srcPath).isFile()) {
+                filePath = srcPath;
+                baseDir = SRC_DIR;
+            }
+        }
+        // Fallback to public directory
+        else {
+            filePath = publicPath;
+            baseDir = PUBLIC_DIR;
+        }
     }
     
     // Security check - ensure file is within allowed directories

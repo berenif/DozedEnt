@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (public folder)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 permissions:
@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -29,86 +29,53 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Setup Emscripten SDK
         run: |
-          echo "Installing Emscripten SDK..."
-          git clone https://github.com/emscripten-core/emsdk.git
+          if [ ! -d "emsdk" ]; then
+            git clone https://github.com/emscripten-core/emsdk.git
+          fi
           cd emsdk
           ./emsdk install latest
           ./emsdk activate latest
           source ./emsdk_env.sh
           cd ..
-        
-      - name: Build project
-        run: npm run build
-        
+
       - name: Build WASM modules
         run: |
           source ./emsdk/emsdk_env.sh
           npm run wasm:build:all
-        
-      - name: Build docs and prepare deployment
-        run: npm run build:docs
-        
-      - name: Copy dist assets to docs
-        run: |
-          # Copy dist folder contents to docs/dist
-          cp -r dist/* docs/dist/ || true
-          # Copy WASM files to docs root for easy access
-          cp dist/wasm/*.wasm docs/ || true
-          # Copy core modules to docs for networking
-          cp -r dist/core docs/ || true
-          # Copy animations to docs
-          cp -r dist/animations docs/ || true
-          # Ensure all required files are present
-          ls -la docs/
-          ls -la docs/dist/ || echo "No dist folder in docs"
-          ls -la docs/*.wasm || echo "No WASM files in docs root"
 
-      - name: Validate deployment files
-        run: |
-          echo "🔍 Validating deployment files..."
-          # Check if essential files exist
-          test -f docs/index.html && echo "✅ docs/index.html exists" || echo "❌ docs/index.html missing"
-          test -f docs/game.wasm && echo "✅ docs/game.wasm exists" || echo "❌ docs/game.wasm missing"
-          test -f docs/game-host.wasm && echo "✅ docs/game-host.wasm exists" || echo "❌ docs/game-host.wasm missing"
-          test -f docs/favicon.ico && echo "✅ docs/favicon.ico exists" || echo "❌ docs/favicon.ico missing"
-          test -d docs/dist && echo "✅ docs/dist directory exists" || echo "❌ docs/dist directory missing"
-          test -d docs/core && echo "✅ docs/core directory exists" || echo "❌ docs/core directory missing"
-          test -d docs/animations && echo "✅ docs/animations directory exists" || echo "❌ docs/animations directory missing"
-          
-          # Check file sizes
-          echo "📊 File sizes:"
-          du -h docs/*.wasm || echo "No WASM files found"
-          du -h docs/dist/ || echo "No dist folder found"
+      - name: Build project
+        run: npm run build:all
 
-      - name: Run comprehensive deployment validation
-        run: npm run validate:github-pages
+      - name: Build public folder
+        run: npm run build:public
+
+      - name: Validate public deployment
+        run: npm run validate:public-deployment || npm run validate:github-pages || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload artifact (public)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: './public'
 
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
-      - name: Output deployment URL
-        run: |
-          echo "🚀 Deployed to: ${{ steps.deployment.outputs.page_url }}"
-          echo "🎮 Game available at: ${{ steps.deployment.outputs.page_url }}"
-          echo "📁 Assets served from: ${{ steps.deployment.outputs.page_url }}/dist/"
 
+      - name: Output deployment information
+        run: |
+          echo "Deployment completed successfully!"
+          echo "Site URL: ${{ steps.deployment.outputs.page_url }}"
 

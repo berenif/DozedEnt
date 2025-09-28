@@ -1,0 +1,77 @@
+/* Player Elements */
+.player {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    transition: all 0.1s ease;
+    z-index: 20;
+}
+
+.player.self {
+    background: #2196f3;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+}
+
+.player.attacking {
+    animation: attack-flash 0.2s ease;
+}
+
+.player.rolling {
+    animation: roll-spin 0.18s linear;
+}
+
+.player.blocking {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+@keyframes attack-flash {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes roll-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Health and Stamina Bars */
+.health, .stamina {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.health .fill, .stamina .fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.health .fill {
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+}
+
+.stamina .fill {
+    background: linear-gradient(90deg, #2196f3, #03a9f4);
+}
+
+/* Shadows */
+.shadow {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%) scale(var(--shadow-scale, 1));
+    width: 30px;
+    height: 8px;
+    background: rgba(0, 0, 0, var(--shadow-opacity, 0.65));
+    border-radius: 50%;
+    z-index: -1;
+}

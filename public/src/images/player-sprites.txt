@@ -1,0 +1,23 @@
+
+This is a placeholder file for player-sprites.png
+
+The player animation system expects a 192x192 pixel sprite sheet with:
+- 32x32 pixel frames
+- 6 frames per row, 6 rows total
+- Different colors for different animation states:
+
+Row 0 (Y=0-31): Idle frames - Green (#00FF88)
+Row 1 (Y=32-63): Run frames - Blue (#0088FF)
+Row 2 (Y=64-95): Attack frames - Orange (#FF8800)
+Row 3 (Y=96-127): Block frames - Dark Blue (#4444FF)
+Row 4 (Y=128-159): Roll frames - Yellow (#FFFF44)
+Row 5 (Y=160-191): Hurt frames - Red (#FF4444)
+
+To fix this:
+1. Open create-sprite-sheet.html in your browser
+2. Click "Generate Sprites"
+3. Click "Download Sprite Sheet"
+4. Save the file as player-sprites.png in the src/images/ directory
+5. Reload the player-animation-test.html page
+
+This will provide proper sprite animations for the player character.

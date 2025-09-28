@@ -150,7 +150,7 @@ This guide mirrors the `src/` directory so you can quickly map gameplay systems 
 - C++ sources (`game.cpp`, `game-host.cpp`) plus domain headers (`wolf_vocalization.h`, `scent_tracking.h`, `terrain_hazards.h`, `statistics-system.h`, etc.) define the deterministic simulation exported to JS.【F:src/wasm/game.cpp†L1-L60】【F:src/wasm/wolf_vocalization.h†L1-L60】
 - Generated bindings live under [`src/wasm/generated/`](../src/wasm/generated/) for structured data sharing.
 
-**Integration notes:** Keep gameplay logic within C++—JS modules read state via exports only. Review [`GUIDELINES/BUILD/API.md`](../GUIDELINES/BUILD/API.md) for canonical export signatures before adding new WASM hooks. When updating C++ headers, rebuild `game.wasm` and update `docs/game-host.wasm` as needed.
+**Integration notes:** Keep gameplay logic within C++—JS modules read state via exports only. Review [`GUIDELINES/BUILD/API.md`](../GUIDELINES/BUILD/API.md) for canonical export signatures before adding new WASM hooks. When updating C++ headers, rebuild `game.wasm` and update `public/game-host.wasm` as needed.
 
 ## Assets & Media (`src/images/`, `assets/`)
 
@@ -158,7 +158,7 @@ This guide mirrors the `src/` directory so you can quickly map gameplay systems 
 
 - [**Images**](../src/images/) include player sprite atlases (`player-sprites.png/.bmp`), hand reference art, and favicon resources along with editing notes (`player-sprites_instructions.txt`).
 - [**Audio Assets**](../assets/audio/) are grouped by usage (ambient layers, combat SFX, UI cues, wolf vocals) to align with `EnhancedAudioManager` categories.
-- Additional build-time data lives in [`docs/data/`](../docs/data/) for documentation demos and WASM packaging.
+- Additional build-time data lives in [`public/data/`](../public/data/) for documentation demos and WASM packaging.
 
 **Integration notes:** The asset directories are served statically. When adding new media ensure filenames map to identifiers expected by `EnhancedAudioManager`, `VisualEffectsManager`, or UI modules, and update preload lists if using service workers.
 # Source Module Feature Overview
@@ -309,7 +309,7 @@ This guide mirrors the `src/` directory so you can quickly map gameplay systems 
 - C++ sources (`game.cpp`, `game-host.cpp`) plus domain headers (`wolf_vocalization.h`, `scent_tracking.h`, `terrain_hazards.h`, `statistics-system.h`, etc.) define the deterministic simulation exported to JS.【F:src/wasm/game.cpp†L1-L60】【F:src/wasm/wolf_vocalization.h†L1-L60】
 - Generated bindings live under [`src/wasm/generated/`](../src/wasm/generated/) for structured data sharing.
 
-**Integration notes:** Keep gameplay logic within C++—JS modules read state via exports only. Review [`GUIDELINES/BUILD/API.md`](../GUIDELINES/BUILD/API.md) for canonical export signatures before adding new WASM hooks. When updating C++ headers, rebuild `game.wasm` and update `docs/game-host.wasm` as needed.
+**Integration notes:** Keep gameplay logic within C++—JS modules read state via exports only. Review [`GUIDELINES/BUILD/API.md`](../GUIDELINES/BUILD/API.md) for canonical export signatures before adding new WASM hooks. When updating C++ headers, rebuild `game.wasm` and update `public/game-host.wasm` as needed.
 
 ## Assets & Media (`src/images/`, `assets/`)
 
@@ -317,6 +317,6 @@ This guide mirrors the `src/` directory so you can quickly map gameplay systems 
 
 - [**Images**](../src/images/) include player sprite atlases (`player-sprites.png/.bmp`), hand reference art, and favicon resources along with editing notes (`player-sprites_instructions.txt`).
 - [**Audio Assets**](../assets/audio/) are grouped by usage (ambient layers, combat SFX, UI cues, wolf vocals) to align with `EnhancedAudioManager` categories.
-- Additional build-time data lives in [`docs/data/`](../docs/data/) for documentation demos and WASM packaging.
+- Additional build-time data lives in [`public/data/`](../public/data/) for documentation demos and WASM packaging.
 
 **Integration notes:** The asset directories are served statically. When adding new media ensure filenames map to identifiers expected by `EnhancedAudioManager`, `VisualEffectsManager`, or UI modules, and update preload lists if using service workers.

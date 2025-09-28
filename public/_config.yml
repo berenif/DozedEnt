@@ -40,7 +40,6 @@ include:
   - assets/
   - images/
   - favicon.ico
-  - dist/
   - core/
   - animations/
   - src/
@@ -59,11 +58,6 @@ defaults:
       sitemap: false
   - scope:
       path: "wasm/**/*.wasm"
-    values:
-      layout: null
-      sitemap: false
-  - scope:
-      path: "dist/**/*.wasm"
     values:
       layout: null
       sitemap: false
@@ -89,11 +83,6 @@ defaults:
       sitemap: false
   - scope:
       path: "js/**/*.d.ts"
-    values:
-      layout: null
-      sitemap: false
-  - scope:
-      path: "dist/**/*.js"
     values:
       layout: null
       sitemap: false

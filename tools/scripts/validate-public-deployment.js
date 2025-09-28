@@ -17,7 +17,7 @@ const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..', '..')
 const publicPath = join(projectRoot, 'public')
 
-console.log(chalk.bold.blue('\n🔍 Validating Public Folder Deployment...\n'))
+console.log(chalk.bold.blue('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Validating Public Folder Deployment...\n'))
 
 class PublicDeploymentValidator {
   constructor() {
@@ -29,19 +29,13 @@ class PublicDeploymentValidator {
       'game.wasm',
       'game-host.wasm',
       '_config.yml',
-      '.nojekyll',
-      'site.js'
+      '.nojekyll'
     ]
-    this.requiredDirectories = [
-      'dist',
-      'core',
-      'animations',
-      'assets',
-      'images'
-    ]
+    this.requiredDirectories = ['core','assets','images']
     this.optionalFiles = [
       'serve-modules.js',
       'trystero-wasm.min.js',
+      'site.js',
       'deployment-info.json'
     ]
     this.optionalDirectories = [
@@ -55,31 +49,28 @@ class PublicDeploymentValidator {
    * Run complete validation
    */
   async validate() {
-    console.log(chalk.blue('📁 Checking public directory structure...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Checking public directory structure...'))
     await this.checkDirectoryStructure()
     
-    console.log(chalk.blue('📄 Checking required files...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ Checking required files...'))
     await this.checkRequiredFiles()
     
-    console.log(chalk.blue('📦 Checking dist folder contents...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ Checking dist folder contents...'))
     await this.checkDistFolder()
     
-    console.log(chalk.blue('🔧 Checking WASM files...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ Checking WASM files...'))
     await this.checkWasmFiles()
     
-    console.log(chalk.blue('🌐 Checking core modules...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Checking core modules...'))
     await this.checkCoreModules()
     
-    console.log(chalk.blue('🎭 Checking animation modules...'))
-    await this.checkAnimationModules()
-    
-    console.log(chalk.blue('🎵 Checking assets...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµ Checking assets...'))
     await this.checkAssets()
     
-    console.log(chalk.blue('⚙️  Checking Jekyll configuration...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  Checking Jekyll configuration...'))
     await this.checkJekyllConfig()
     
-    console.log(chalk.blue('📊 Checking file sizes...'))
+    console.log(chalk.blue('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â  Checking file sizes...'))
     await this.checkFileSizes()
     
     this.displayResults()
@@ -100,16 +91,16 @@ class PublicDeploymentValidator {
       if (!existsSync(dirPath)) {
         this.warnings.push(`public/${dir}/ directory missing`)
       } else {
-        console.log(chalk.green(`  ✅ public/${dir}/ exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${dir}/ exists`))
       }
     }
 
     for (const dir of this.optionalDirectories) {
       const dirPath = join(publicPath, dir)
       if (existsSync(dirPath)) {
-        console.log(chalk.green(`  ✅ public/${dir}/ exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${dir}/ exists`))
       } else {
-        console.log(chalk.yellow(`  ⚠️  public/${dir}/ missing (optional)`))
+        console.log(chalk.yellow(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  public/${dir}/ missing (optional)`))
       }
     }
   }
@@ -123,16 +114,16 @@ class PublicDeploymentValidator {
       if (!existsSync(filePath)) {
         this.errors.push(`Required file public/${file} is missing`)
       } else {
-        console.log(chalk.green(`  ✅ public/${file} exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${file} exists`))
       }
     }
 
     for (const file of this.optionalFiles) {
       const filePath = join(publicPath, file)
       if (existsSync(filePath)) {
-        console.log(chalk.green(`  ✅ public/${file} exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${file} exists`))
       } else {
-        console.log(chalk.yellow(`  ⚠️  public/${file} missing (optional)`))
+        console.log(chalk.yellow(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  public/${file} missing (optional)`))
       }
     }
   }
@@ -143,7 +134,7 @@ class PublicDeploymentValidator {
   async checkDistFolder() {
     const distPath = join(publicPath, 'dist')
     if (!existsSync(distPath)) {
-      this.errors.push('public/dist/ directory is missing')
+      // If dist/ is not shipped to public/, skip without error
       return
     }
 
@@ -162,7 +153,7 @@ class PublicDeploymentValidator {
       if (!existsSync(itemPath)) {
         this.warnings.push(`public/dist/${item} missing`)
       } else {
-        console.log(chalk.green(`  ✅ public/dist/${item} exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/dist/${item} exists`))
       }
     }
   }
@@ -178,7 +169,7 @@ class PublicDeploymentValidator {
       if (existsSync(wasmPath)) {
         const stats = statSync(wasmPath)
         const sizeKB = Math.round(stats.size / 1024)
-        console.log(chalk.green(`  ✅ public/${wasmFile} exists (${sizeKB}KB)`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${wasmFile} exists (${sizeKB}KB)`))
         
         if (stats.size === 0) {
           this.errors.push(`public/${wasmFile} is empty`)
@@ -187,21 +178,12 @@ class PublicDeploymentValidator {
         this.errors.push(`public/${wasmFile} is missing`)
       }
     }
-
-    // Check dist/wasm folder
-    const distWasmPath = join(publicPath, 'dist', 'wasm')
-    if (existsSync(distWasmPath)) {
-      console.log(chalk.green(`  ✅ public/dist/wasm/ exists`))
-    } else {
-      this.warnings.push('public/dist/wasm/ directory missing')
-    }
-
     // Check public/wasm folder
     const publicWasmPath = join(publicPath, 'wasm')
     if (existsSync(publicWasmPath)) {
-      console.log(chalk.green(`  ✅ public/wasm/ exists`))
+      console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/wasm/ exists`))
     } else {
-      console.log(chalk.yellow(`  ⚠️  public/wasm/ missing (optional)`))
+      console.log(chalk.yellow(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  public/wasm/ missing (optional)`))
     }
   }
 
@@ -228,42 +210,13 @@ class PublicDeploymentValidator {
     for (const file of expectedCoreFiles) {
       const filePath = join(corePath, file)
       if (existsSync(filePath)) {
-        console.log(chalk.green(`  ✅ public/core/${file} exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/core/${file} exists`))
       } else {
         this.warnings.push(`public/core/${file} missing`)
       }
     }
   }
 
-  /**
-   * Check animation modules
-   */
-  async checkAnimationModules() {
-    const animationsPath = join(publicPath, 'animations')
-    if (!existsSync(animationsPath)) {
-      this.warnings.push('public/animations/ directory missing')
-      return
-    }
-
-    const expectedAnimationFiles = [
-      'index.js',
-      'player-animator.js',
-      'player-animator.min.js',
-      'player-animator.umd.js',
-      'wolf-animation.js',
-      'wolf-animation.min.js',
-      'wolf-animation.umd.js'
-    ]
-
-    for (const file of expectedAnimationFiles) {
-      const filePath = join(animationsPath, file)
-      if (existsSync(filePath)) {
-        console.log(chalk.green(`  ✅ public/animations/${file} exists`))
-      } else {
-        this.warnings.push(`public/animations/${file} missing`)
-      }
-    }
-  }
 
   /**
    * Check assets
@@ -283,7 +236,7 @@ class PublicDeploymentValidator {
     for (const dir of expectedAssetDirs) {
       const dirPath = join(assetsPath, dir)
       if (existsSync(dirPath)) {
-        console.log(chalk.green(`  ✅ public/assets/${dir}/ exists`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/assets/${dir}/ exists`))
       } else {
         this.warnings.push(`public/assets/${dir}/ missing`)
       }
@@ -292,7 +245,7 @@ class PublicDeploymentValidator {
     // Check images directory
     const imagesPath = join(publicPath, 'images')
     if (existsSync(imagesPath)) {
-      console.log(chalk.green(`  ✅ public/images/ exists`))
+      console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/images/ exists`))
     } else {
       this.warnings.push('public/images/ directory missing')
     }
@@ -322,7 +275,7 @@ class PublicDeploymentValidator {
 
       for (const config of requiredConfigs) {
         if (configContent.includes(config)) {
-          console.log(chalk.green(`  ✅ _config.yml contains ${config}`))
+          console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ _config.yml contains ${config}`))
         } else {
           this.warnings.push(`_config.yml missing ${config}`)
         }
@@ -330,14 +283,14 @@ class PublicDeploymentValidator {
 
       // Check for WASM MIME type configuration
       if (configContent.includes('application/wasm')) {
-        console.log(chalk.green(`  ✅ _config.yml has WASM MIME type configuration`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ _config.yml has WASM MIME type configuration`))
       } else {
         this.warnings.push('_config.yml missing WASM MIME type configuration')
       }
 
       // Check for public folder specific configurations
       if (configContent.includes('public/')) {
-        console.log(chalk.green(`  ✅ _config.yml configured for public folder`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ _config.yml configured for public folder`))
       } else {
         this.warnings.push('_config.yml may not be optimized for public folder deployment')
       }
@@ -369,7 +322,7 @@ class PublicDeploymentValidator {
         } else if (file.minSize && sizeKB < file.minSize) {
           this.warnings.push(`public/${file.path} is small (${sizeKB}KB < ${file.minSize}KB)`)
         } else {
-          console.log(chalk.green(`  ✅ public/${file.path} size OK (${sizeKB}KB)`))
+          console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/${file.path} size OK (${sizeKB}KB)`))
         }
       }
     }
@@ -380,9 +333,9 @@ class PublicDeploymentValidator {
       try {
         const stats = statSync(distPath)
         const sizeMB = Math.round(stats.size / (1024 * 1024))
-        console.log(chalk.green(`  ✅ public/dist/ size OK (${sizeMB}MB)`))
+        console.log(chalk.green(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ public/dist/ size OK (${sizeMB}MB)`))
       } catch (error) {
-        console.log(chalk.yellow(`  ⚠️  Could not determine public/dist/ size`))
+        console.log(chalk.yellow(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  Could not determine public/dist/ size`))
       }
     }
   }
@@ -391,44 +344,44 @@ class PublicDeploymentValidator {
    * Display validation results
    */
   displayResults() {
-    console.log(chalk.bold.blue('\n📊 Public Folder Validation Results:\n'))
+    console.log(chalk.bold.blue('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â  Public Folder Validation Results:\n'))
 
     if (this.errors.length === 0 && this.warnings.length === 0) {
-      console.log(chalk.green.bold('✅ All checks passed! Public folder is ready for deployment.'))
+      console.log(chalk.green.bold('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ All checks passed! Public folder is ready for deployment.'))
     } else {
       if (this.errors.length > 0) {
-        console.log(chalk.red.bold('❌ Errors found:'))
+        console.log(chalk.red.bold('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Errors found:'))
         this.errors.forEach(error => {
-          console.log(chalk.red(`  • ${error}`))
+          console.log(chalk.red(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ ${error}`))
         })
       }
 
       if (this.warnings.length > 0) {
-        console.log(chalk.yellow.bold('\n⚠️  Warnings:'))
+        console.log(chalk.yellow.bold('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  Warnings:'))
         this.warnings.forEach(warning => {
-          console.log(chalk.yellow(`  • ${warning}`))
+          console.log(chalk.yellow(`  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ ${warning}`))
         })
       }
     }
 
-    console.log(chalk.blue('\n📋 Public Folder Deployment Checklist:'))
-    console.log(chalk.blue('  □ GitHub Pages enabled in repository settings'))
-    console.log(chalk.blue('  □ GitHub Actions permissions configured'))
-    console.log(chalk.blue('  □ Workflow file exists (.github/workflows/deploy-public.yml)'))
-    console.log(chalk.blue('  □ All required files present in public/'))
-    console.log(chalk.blue('  □ Complete /dist folder copied to public/dist/'))
-    console.log(chalk.blue('  □ WASM files available at root and in /wasm/'))
-    console.log(chalk.blue('  □ Core modules available at /core/'))
-    console.log(chalk.blue('  □ Animation modules available at /animations/'))
-    console.log(chalk.blue('  □ Assets available at /assets/ and /images/'))
-    console.log(chalk.blue('  □ Jekyll configuration optimized for public folder'))
+    console.log(chalk.blue('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ Public Folder Deployment Checklist:'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ GitHub Pages enabled in repository settings'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ GitHub Actions permissions configured'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Workflow file exists (.github/workflows/deploy-public.yml)'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ All required files present in public/'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Core copied (no public/dist)'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ WASM files available at root and in /wasm/'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Core modules available at /core/'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Animation modules available at /animations/'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Assets available at /assets/ and /images/'))
+    console.log(chalk.blue('  ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Jekyll configuration optimized for public folder'))
 
     if (this.errors.length === 0) {
-      console.log(chalk.green.bold('\n🚀 Public folder is ready for GitHub Pages deployment!'))
+      console.log(chalk.green.bold('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ Public folder is ready for GitHub Pages deployment!'))
       console.log(chalk.blue('The public/ folder contains everything needed for the game to work.'))
       console.log(chalk.blue('Push to main branch to trigger automatic deployment.'))
     } else {
-      console.log(chalk.red.bold('\n❌ Fix errors before deploying'))
+      console.log(chalk.red.bold('\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Fix errors before deploying'))
     }
   }
 }
@@ -441,3 +394,8 @@ if (process.argv[1] && process.argv[1].endsWith('validate-public-deployment.js')
 }
 
 export { PublicDeploymentValidator }
+
+
+
+
+

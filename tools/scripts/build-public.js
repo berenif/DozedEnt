@@ -17,26 +17,26 @@ const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..', '..')
 const publicDir = join(projectRoot, 'public')
 
-console.log('🚀 Building DozedEnt Public Folder for GitHub Pages...')
+console.log('?? Building DozedEnt Public Folder for GitHub Pages...')
 
 // Clean and create public directory
 function setupPublicDirectory() {
-  console.log('🧹 Setting up public directory...')
+  console.log('?? Setting up public directory...')
   
   // Remove existing public directory if it exists
   if (existsSync(publicDir)) {
     rmSync(publicDir, { recursive: true, force: true })
-    console.log('✅ Cleaned existing public directory')
+    console.log('? Cleaned existing public directory')
   }
   
   // Create public directory
   mkdirSync(publicDir, { recursive: true })
-  console.log('✅ Created public directory')
+  console.log('? Created public directory')
 }
 
 // Copy main game files
 function copyMainGameFiles() {
-  console.log('🎮 Copying main game files...')
+  console.log('?? Copying main game files...')
   
   const mainFiles = [
     'index.html',
@@ -58,12 +58,12 @@ function copyMainGameFiles() {
         } else {
           copyFileSync(srcPath, destPath)
         }
-        console.log(`  ✅ Copied ${file}`)
+        console.log(`  ? Copied ${file}`)
       } catch (error) {
-        console.error(`  ❌ Error copying ${file}:`, error.message)
+        console.error(`  ? Error copying ${file}:`, error.message)
       }
     } else {
-      console.log(`  ⚠️  ${file} not found, skipping`)
+      console.log(`  ??  ${file} not found, skipping`)
     }
   })
 }
@@ -79,14 +79,12 @@ function injectBuildInfoIntoHtml(srcPath, destPath) {
     structure: {
       mainFiles: ['index.html', 'site.js', 'favicon.ico'],
       wasmFiles: ['game.wasm', 'game-host.wasm'],
-      directories: ['build/', 'core/', 'animations/', 'assets/', 'images/', 'src/', 'data/', 'wasm/'],
+      directories: ['core/', 'assets/', 'images/', 'src/', 'data/', 'wasm/'],
       configFiles: ['_config.yml', '.nojekyll']
     },
     notes: [
-      'All build/ folder contents are available at /build/',
+      'Core modules are available at /core/',
       'WASM files are available at root level and in /wasm/',
-      'Core networking modules are available at /core/',
-      'Animation modules are available at /animations/',
       'Source files are available at /src/ for debugging',
       'Assets and data are available at /assets/ and /data/'
     ]
@@ -110,7 +108,7 @@ function injectBuildInfoIntoHtml(srcPath, destPath) {
 
 // Copy WASM files
 function copyWasmFiles() {
-  console.log('🔧 Copying WASM files...')
+  console.log('?? Copying WASM files...')
   
   const wasmFiles = ['game.wasm', 'game-host.wasm']
   
@@ -121,12 +119,12 @@ function copyWasmFiles() {
     if (existsSync(srcPath)) {
       try {
         copyFileSync(srcPath, destPath)
-        console.log(`  ✅ Copied ${file}`)
+        console.log(`  ? Copied ${file}`)
       } catch (error) {
-        console.error(`  ❌ Error copying ${file}:`, error.message)
+        console.error(`  ? Error copying ${file}:`, error.message)
       }
     } else {
-      console.log(`  ⚠️  ${file} not found in root, skipping`)
+      console.log(`  ??  ${file} not found in root, skipping`)
     }
   })
   
@@ -135,7 +133,7 @@ function copyWasmFiles() {
   if (existsSync(distWasmPath)) {
     try {
       cpSync(distWasmPath, join(publicDir, 'wasm'), { recursive: true })
-      console.log('  ✅ Copied dist/wasm/ directory')
+      console.log('  ? Copied dist/wasm/ directory')
       
       // Also copy WASM files to public root for easy access
       wasmFiles.forEach(file => {
@@ -145,32 +143,32 @@ function copyWasmFiles() {
         if (existsSync(srcPath)) {
           try {
             copyFileSync(srcPath, destPath)
-            console.log(`  ✅ Copied dist/wasm/${file} to public root`)
+            console.log(`  ? Copied dist/wasm/${file} to public root`)
           } catch (error) {
-            console.error(`  ❌ Error copying dist/wasm/${file}:`, error.message)
+            console.error(`  ? Error copying dist/wasm/${file}:`, error.message)
           }
         }
       })
     } catch (error) {
-      console.error('  ❌ Error copying dist/wasm/:', error.message)
+      console.error('  ? Error copying dist/wasm/:', error.message)
     }
   }
 }
 
 // Copy build folder contents
 function copyDistFolder() {
-  console.log('📦 Copying build folder contents...')
+  console.log('?? Copying build folder contents...')
   
   const buildPath = join(projectRoot, 'build')
   if (!existsSync(buildPath)) {
-    console.log('  ⚠️  build folder not found, skipping')
+    console.log('  ??  build folder not found, skipping')
     return
   }
   
   try {
     // Copy entire build folder to public/build
     cpSync(buildPath, join(publicDir, 'build'), { recursive: true })
-    console.log('  ✅ Copied build/ → public/build/')
+    console.log('  ? Copied build/ ? public/build/')
     
     // Also copy key modules to public root for easy access
     const keyModules = ['core', 'animations']
@@ -181,18 +179,40 @@ function copyDistFolder() {
       
       if (existsSync(srcPath)) {
         cpSync(srcPath, destPath, { recursive: true })
-        console.log(`  ✅ Copied build/${module}/ → public/${module}/`)
+        console.log(`  ? Copied build/${module}/ ? public/${module}/`)
       }
     })
     
   } catch (error) {
-    console.error('  ❌ Error copying build folder:', error.message)
+    console.error('  ? Error copying build folder:', error.message)
   }
 }
 
 // Copy assets and data
+// Copy dist folder contents (v2)
+function copyDistFolderV2() {
+  const distPath = join(projectRoot, 'dist')
+  if (!existsSync(distPath)) {
+    console.log('  (i) dist folder not found, skipping')
+    return
+  }
+  try {
+    // Copy convenience folders from dist to public root
+    for (const module of ['core']) {
+      const srcPath = join(distPath, module)
+      const destPath = join(publicDir, module)
+      if (existsSync(srcPath)) {
+        cpSync(srcPath, destPath, { recursive: true })
+        console.log(`  Copied dist/${module}/ -> public/${module}/`)
+      }
+    }
+  } catch (error) {
+    console.error('  Error copying dist folder:', error.message)
+  }
+}
+
 function copyAssetsAndData() {
-  console.log('🎵 Copying assets and data...')
+  console.log('?? Copying assets and data...')
   
   const assetDirs = ['assets', 'data', 'images']
   
@@ -203,19 +223,19 @@ function copyAssetsAndData() {
     if (existsSync(srcPath)) {
       try {
         cpSync(srcPath, destPath, { recursive: true })
-        console.log(`  ✅ Copied ${dir}/ → public/${dir}/`)
+        console.log(`  ? Copied ${dir}/ ? public/${dir}/`)
       } catch (error) {
-        console.error(`  ❌ Error copying ${dir}/:`, error.message)
+        console.error(`  ? Error copying ${dir}/:`, error.message)
       }
     } else {
-      console.log(`  ⚠️  ${dir}/ not found, skipping`)
+      console.log(`  ??  ${dir}/ not found, skipping`)
     }
   })
 }
 
 // Copy source files for development/debugging
 function copySourceFiles() {
-  console.log('📁 Copying source files...')
+  console.log('?? Copying source files...')
   
   const srcPath = join(projectRoot, 'src')
   const destPath = join(publicDir, 'src')
@@ -223,18 +243,18 @@ function copySourceFiles() {
   if (existsSync(srcPath)) {
     try {
       cpSync(srcPath, destPath, { recursive: true })
-      console.log('  ✅ Copied src/ → public/src/')
+      console.log('  ? Copied src/ ? public/src/')
     } catch (error) {
-      console.error('  ❌ Error copying src/:', error.message)
+      console.error('  ? Error copying src/:', error.message)
     }
   } else {
-    console.log('  ⚠️  src/ not found, skipping')
+    console.log('  ??  src/ not found, skipping')
   }
 }
 
 // Create Jekyll configuration
 function createJekyllConfig() {
-  console.log('⚙️  Creating Jekyll configuration...')
+  console.log('??  Creating Jekyll configuration...')
   
   const jekyllConfig = `# Jekyll configuration for DozedEnt GitHub Pages
 # This file configures how GitHub Pages serves the DozedEnt game
@@ -278,7 +298,6 @@ include:
   - assets/
   - images/
   - favicon.ico
-  - dist/
   - core/
   - animations/
   - src/
@@ -297,11 +316,6 @@ defaults:
       sitemap: false
   - scope:
       path: "wasm/**/*.wasm"
-    values:
-      layout: null
-      sitemap: false
-  - scope:
-      path: "dist/**/*.wasm"
     values:
       layout: null
       sitemap: false
@@ -327,11 +341,6 @@ defaults:
       sitemap: false
   - scope:
       path: "js/**/*.d.ts"
-    values:
-      layout: null
-      sitemap: false
-  - scope:
-      path: "dist/**/*.js"
     values:
       layout: null
       sitemap: false
@@ -389,21 +398,21 @@ kramdown:
 
   try {
     writeFileSync(join(publicDir, '_config.yml'), jekyllConfig)
-    console.log('  ✅ Created _config.yml')
+    console.log('  ? Created _config.yml')
   } catch (error) {
-    console.error('  ❌ Error creating _config.yml:', error.message)
+    console.error('  ? Error creating _config.yml:', error.message)
   }
 }
 
 // Create .nojekyll file
 function createNoJekyllFile() {
-  console.log('🚫 Creating .nojekyll file...')
+  console.log('?? Creating .nojekyll file...')
   
   try {
     writeFileSync(join(publicDir, '.nojekyll'), '')
-    console.log('  ✅ Created .nojekyll file')
+    console.log('  ? Created .nojekyll file')
   } catch (error) {
-    console.error('  ❌ Error creating .nojekyll file:', error.message)
+    console.error('  ? Error creating .nojekyll file:', error.message)
   }
 }
 
@@ -411,7 +420,7 @@ function createNoJekyllFile() {
 
 // Validate public folder structure
 function validatePublicFolder() {
-  console.log('🔍 Validating public folder structure...')
+  console.log('?? Validating public folder structure...')
   
   const requiredFiles = [
     'index.html',
@@ -423,9 +432,7 @@ function validatePublicFolder() {
   ]
   
   const requiredDirs = [
-    'build',
-    'core',
-    'animations'
+    'core'
   ]
   
   const optionalDirs = [
@@ -441,9 +448,9 @@ function validatePublicFolder() {
   requiredFiles.forEach(file => {
     const filePath = join(publicDir, file)
     if (existsSync(filePath)) {
-      console.log(`  ✅ ${file} exists`)
+      console.log(`  ? ${file} exists`)
     } else {
-      console.log(`  ❌ ${file} missing`)
+      console.log(`  ? ${file} missing`)
       validationErrors++
     }
   })
@@ -451,9 +458,9 @@ function validatePublicFolder() {
   requiredDirs.forEach(dir => {
     const dirPath = join(publicDir, dir)
     if (existsSync(dirPath)) {
-      console.log(`  ✅ ${dir}/ exists`)
+      console.log(`  ? ${dir}/ exists`)
     } else {
-      console.log(`  ❌ ${dir}/ missing`)
+      console.log(`  ? ${dir}/ missing`)
       validationErrors++
     }
   })
@@ -461,16 +468,16 @@ function validatePublicFolder() {
   optionalDirs.forEach(dir => {
     const dirPath = join(publicDir, dir)
     if (existsSync(dirPath)) {
-      console.log(`  ✅ ${dir}/ exists`)
+      console.log(`  ? ${dir}/ exists`)
     } else {
-      console.log(`  ⚠️  ${dir}/ missing (optional)`)
+      console.log(`  ??  ${dir}/ missing (optional)`)
     }
   })
   
   if (validationErrors === 0) {
-    console.log('  ✅ Public folder validation passed')
+    console.log('  ? Public folder validation passed')
   } else {
-    console.log(`  ❌ Public folder validation failed (${validationErrors} errors)`)
+    console.log(`  ? Public folder validation failed (${validationErrors} errors)`)
   }
   
   return validationErrors === 0
@@ -482,7 +489,7 @@ async function buildPublicFolder() {
     setupPublicDirectory()
     copyMainGameFiles()
     copyWasmFiles()
-    copyDistFolder()
+    copyDistFolderV2()
     copyAssetsAndData()
     copySourceFiles()
     createJekyllConfig()
@@ -490,33 +497,35 @@ async function buildPublicFolder() {
     
     const validationPassed = validatePublicFolder()
     
-    console.log('\n🎉 Public folder build complete!')
-    console.log('📁 Structure created:')
-    console.log('   📄 Main files: index.html, site.js, favicon.ico')
-    console.log('   🔧 WASM files: game.wasm, game-host.wasm')
-    console.log('   📦 build/ folder: Complete build output')
-    console.log('   🌐 core/ folder: Networking modules')
-    console.log('   🎭 animations/ folder: Animation modules')
-    console.log('   🎵 assets/ folder: Audio and media files')
-    console.log('   🖼️  images/ folder: Game images')
-    console.log('   📁 src/ folder: Source files for debugging')
-    console.log('   📊 data/ folder: Game data files')
-    console.log('   ⚙️  Configuration: _config.yml, .nojekyll')
-    console.log('   📋 Info: window.__BUILD__ injected into HTML')
+    console.log('\n?? Public folder build complete!')
+    console.log('?? Structure created:')
+    console.log('   ?? Main files: index.html, site.js, favicon.ico')
+    console.log('   ?? WASM files: game.wasm, game-host.wasm')
+    // dist/ folder intentionally not included in public/
+    console.log('   ?? core/ folder: Networking modules')
+    // animations folder not included in public/
+    console.log('   ?? assets/ folder: Audio and media files')
+    console.log('   ???  images/ folder: Game images')
+    console.log('   ?? src/ folder: Source files for debugging')
+    console.log('   ?? data/ folder: Game data files')
+    console.log('   ??  Configuration: _config.yml, .nojekyll')
+    console.log('   ?? Info: window.__BUILD__ injected into HTML')
     
     if (validationPassed) {
-      console.log('\n✅ Public folder is ready for GitHub Pages deployment!')
-      console.log('🌐 Deploy by uploading the public/ folder to GitHub Pages')
+      console.log('\n? Public folder is ready for GitHub Pages deployment!')
+      console.log('?? Deploy by uploading the public/ folder to GitHub Pages')
     } else {
-      console.log('\n❌ Public folder validation failed - check errors above')
+      console.log('\n? Public folder validation failed - check errors above')
       process.exit(1)
     }
     
   } catch (error) {
-    console.error('❌ Error building public folder:', error)
+    console.error('? Error building public folder:', error)
     process.exit(1)
   }
 }
 
 // Run the build
 buildPublicFolder()
+
+

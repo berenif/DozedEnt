@@ -27,19 +27,19 @@ The project currently uses a **direct deployment approach** where essential file
 **Current Structure**:
 ```
 public/
-├── index.html (feature demo page)
-├── site.js (copied)
-├── favicon.ico (copied)
-├── game.wasm (copied from dist/wasm/)
-├── game-host.wasm (copied from dist/wasm/)
-├── _config.yml (GitHub Pages config)
-├── animations/ → ../dist/animations/ (symlinked/copied)
-├── core/ → ../dist/core/ (symlinked/copied)
-├── src/ → ../src/ (symlinked/copied)
-├── wasm/ → ../dist/wasm/ (symlinked/copied)
-├── assets/ → ../assets/ (symlinked/copied)
-├── data/ → ../data/ (symlinked/copied)
-└── feature-demo.js (demo page script)
+â”œâ”€â”€ index.html (feature demo page)
+â”œâ”€â”€ site.js (copied)
+â”œâ”€â”€ favicon.ico (copied)
+â”œâ”€â”€ game.wasm (copied from dist/wasm/)
+â”œâ”€â”€ game-host.wasm (copied from dist/wasm/)
+â”œâ”€â”€ _config.yml (GitHub Pages config)
+â”œâ”€â”€ animations/ â†’ ../dist/animations/ (symlinked/copied)
+â”œâ”€â”€ core/ â†’ ../dist/core/ (symlinked/copied)
+â”œâ”€â”€ src/ â†’ ../src/ (symlinked/copied)
+â”œâ”€â”€ wasm/ â†’ ../dist/wasm/ (symlinked/copied)
+â”œâ”€â”€ assets/ â†’ ../assets/ (symlinked/copied)
+â”œâ”€â”€ data/ â†’ ../data/ (symlinked/copied)
+â””â”€â”€ feature-demo.js (demo page script)
 ```
 
 **Pros**:
@@ -66,11 +66,11 @@ public/
 **Structure created**:
 ```
 public/
-├── index.html (redirects to ./public/index.html)
-├── site.js (copied with modified paths)
-├── favicon.ico (copied)
-├── _config.yml (created)
-└── .nojekyll (created)
+â”œâ”€â”€ index.html (redirects to ./public/index.html)
+â”œâ”€â”€ site.js (copied with modified paths)
+â”œâ”€â”€ favicon.ico (copied)
+â”œâ”€â”€ _config.yml (created)
+â””â”€â”€ .nojekyll (created)
 ```
 
 **Pros**:

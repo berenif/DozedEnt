@@ -52,8 +52,7 @@ test-*.html
 # Legacy and duplicate directories
 /demos/
 /assets/
-/docs/js/
-/docs/data/
+
 
 # Build reports and artifacts
 BUILD_REPORT.json

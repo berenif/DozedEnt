@@ -1,7 +1,7 @@
 {
-  "name": "trystero",
-  "version": "0.21.8",
-  "description": "Serverless WebRTC matchmaking for painless P2P",
+  "name": "dozedent",
+  "version": "1.0.0",
+  "description": "WASM-first multiplayer survival game",
   "main": "src/utils/index.js",
   "module": "src/utils/index.js",
   "type": "module",
@@ -21,13 +21,11 @@
     "node": ">=20"
   },
   "author": {
-    "name": "Dan Motzenbecker",
-    "email": "dan@oxism.com",
-    "url": "https://oxism.com"
+    "name": "DozedEnt Team"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dmotz/trystero.git"
+    "url": "git+https://github.com/berenif/DozedEnt.git"
   },
   "license": "MIT",
   "dependencies": {

@@ -1,0 +1,326 @@
+/* Critical UI Hierarchy - Optimized for Fast Reads Under Pressure */
+
+/* PRIORITY 1: CRITICAL SURVIVAL INFO - Largest, most prominent, stable positioning */
+.critical-vitals {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+  /* Stable positioning - never moves during combat */
+  transform: none !important;
+  transition: none !important;
+}
+
+.critical-health-bar {
+  height: 48px; /* Extra large for quick reads */
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid #ff4444;
+  border-radius: 8px;
+  padding: 6px;
+  position: relative;
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+}
+
+.critical-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444 0%, #cc3333 100%);
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.critical-health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+  letter-spacing: 1px;
+}
+
+.critical-stamina-bar {
+  height: 36px; /* Slightly smaller than health but still prominent */
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #28a745;
+  border-radius: 6px;
+  padding: 4px;
+  position: relative;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.2);
+}
+
+.critical-stamina-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  border-radius: 3px;
+  transition: width 0.15s ease-out;
+}
+
+.critical-stamina-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+}
+
+/* Health state indicators with high contrast */
+.critical-health-fill.low-health {
+  background: linear-gradient(90deg, #ff6b35 0%, #ff4500 100%);
+  animation: pulse-urgent 0.8s infinite;
+  box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.critical-health-fill.critical-health {
+  background: linear-gradient(90deg, #ff0000 0%, #cc0000 100%);
+  animation: pulse-critical 0.4s infinite;
+  box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.8);
+}
+
+.critical-stamina-fill.low-stamina {
+  background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+  animation: pulse-warning 1s infinite;
+}
+
+/* PRIORITY 2: IMMEDIATE THREATS - High contrast, attention-grabbing */
+.threat-indicators {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 900;
+  pointer-events: none;
+}
+
+.threat-indicator {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 0, 0, 0.8);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #ffffff;
+  animation: threat-pulse 0.5s infinite;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+}
+
+.threat-indicator.blockable {
+  background: rgba(255, 165, 0, 0.8);
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.6);
+}
+
+.threat-indicator.unblockable {
+  background: rgba(255, 0, 0, 0.9);
+  border-color: #ffff00;
+  animation: threat-critical 0.3s infinite;
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+}
+
+
+/* PRIORITY 4: ABILITY COOLDOWNS - Bottom center, stable positioning */
+.priority-abilities {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 700;
+  display: flex;
+  gap: 12px;
+}
+
+.priority-ability-slot {
+  width: 64px;
+  height: 64px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.priority-ability-slot.ready {
+  border-color: #28a745;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.4);
+}
+
+.priority-ability-slot.cooldown {
+  border-color: #6c757d;
+  opacity: 0.6;
+}
+
+.priority-ability-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.priority-ability-key {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.priority-cooldown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* PRIORITY 5: STATUS - Top right, smaller but visible */
+.priority-status {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.priority-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  min-width: 100px;
+}
+
+.priority-status-icon {
+  font-size: 16px;
+}
+
+.priority-status-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+/* Animations for critical states */
+@keyframes pulse-urgent {
+  0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(255, 107, 53, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 30px rgba(255, 107, 53, 0.6); }
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; box-shadow: 0 0 25px rgba(255, 0, 0, 0.6); }
+  50% { opacity: 0.9; box-shadow: 0 0 35px rgba(255, 0, 0, 0.8); }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes threat-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes threat-critical {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.15) rotate(2deg); }
+  75% { transform: scale(1.15) rotate(-2deg); }
+}
+
+@keyframes status-urgent {
+  0%, 100% { box-shadow: 0 0 15px rgba(255, 193, 7, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(255, 193, 7, 0.6); }
+}
+
+/* Responsive scaling for different screen sizes */
+@media (max-width: 1200px) {
+  .critical-vitals {
+    min-width: 240px;
+  }
+  
+  .critical-health-bar {
+    height: 40px;
+  }
+  
+  .critical-stamina-bar {
+    height: 30px;
+  }
+  
+  .critical-health-text {
+    font-size: 16px;
+  }
+  
+  .critical-stamina-text {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .critical-vitals {
+    min-width: 200px;
+  }
+  
+  .priority-abilities {
+    bottom: 20px;
+  }
+  
+  .priority-ability-slot {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .priority-ability-icon {
+    font-size: 20px;
+  }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+  .critical-health-bar {
+    border-width: 4px;
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+  }
+  
+  .critical-stamina-bar {
+    border-width: 3px;
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.4);
+  }
+  
+  
+  .threat-indicator {
+    border-width: 4px;
+  }
+}

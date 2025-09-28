@@ -1,18 +1,18 @@
-# 🚀 Public Folder GitHub Pages Deployment Guide
+# Ã°Å¸Å¡â‚¬ Public Folder GitHub Pages Deployment Guide
 
 <div align="center">
-  <h3>🌐 Robust Deployment for DozedEnt P2P Survival Game</h3>
-  <p>Automated deployment with GitHub Actions • Complete /dist folder deployment • Public folder structure</p>
+  <h3>Ã°Å¸Å’Â Robust Deployment for DozedEnt P2P Survival Game</h3>
+  <p>Automated deployment with GitHub Actions â€¢ Public folder deployment (no dist) â€¢ Public folder structure</p>
 </div>
 
 ---
 
-## 📌 Overview
+## Ã°Å¸â€œÅ’ Overview
 
-This guide provides comprehensive instructions for deploying the DozedEnt game to GitHub Pages using a robust `/public` folder structure. The deployment system automatically copies everything from the `/dist` folder and all necessary assets to create a complete, self-contained deployment package.
+This guide provides comprehensive instructions for deploying the DozedEnt game to GitHub Pages using a robust `/public` folder structure. The deployment system copies the required runtime artifacts (core, wasm, assets) into `public/` to create a complete, self-contained deployment package.
 
-### ✨ Key Features
-- **Complete Asset Deployment** - All `/dist` folder contents deployed to `/public/dist/`
+### Ã¢Å“Â¨ Key Features
+- **Complete Asset Deployment** - Core copied to public/ (no public/dist)
 - **Robust Structure** - Organized public folder with all game components
 - **WASM Support** - Proper MIME types and multiple WASM file locations
 - **Validation Pipeline** - Comprehensive pre-deployment checks
@@ -20,47 +20,37 @@ This guide provides comprehensive instructions for deploying the DozedEnt game t
 - **Multiplayer Ready** - P2P networking with Trystero infrastructure
 - **Performance Optimized** - Deterministic WASM execution
 
-## 🏗️ Deployment Architecture
+## Ã°Å¸Ââ€”Ã¯Â¸Â Deployment Architecture
 
 ### Build Process Flow
 ```
-Source Code → Build → Dist → Copy to Public → Validate → Deploy
-     ↓           ↓       ↓         ↓           ↓         ↓
+Source Code Ã¢â€ â€™ Build Ã¢â€ â€™ Dist Ã¢â€ â€™ Copy to Public Ã¢â€ â€™ Validate Ã¢â€ â€™ Deploy
+     Ã¢â€ â€œ           Ã¢â€ â€œ       Ã¢â€ â€œ         Ã¢â€ â€œ           Ã¢â€ â€œ         Ã¢â€ â€œ
    src/      npm run   dist/    public/    Validation  GitHub
             build      folder   folder      Checks     Pages
 ```
 
 ### Public Folder Structure After Deployment
+### Public Folder Structure After Deployment
 ```
 public/
-├── index.html              # Main game page
-├── favicon.ico             # Site icon
-├── site.js                 # Game initialization script
-├── game.wasm               # Main game WASM module
-├── game-host.wasm          # Host authority WASM module
-├── _config.yml             # Jekyll configuration
-├── .nojekyll               # Disable Jekyll processing
-├── deployment-info.json    # Deployment metadata
-├── dist/                   # Complete dist folder
-│   ├── core/              # Networking modules
-│   ├── animations/         # Animation modules
-│   ├── wasm/              # WASM modules
-│   ├── sourcemaps/        # Source maps
-│   └── reports/           # Build reports
-├── core/                   # Core modules (copied for easy access)
-├── animations/             # Animation modules (copied for easy access)
-├── wasm/                   # WASM modules (copied for easy access)
-├── assets/                 # Game assets
-│   ├── audio/             # Audio files
-│   └── images/            # Game images
-├── images/                 # Additional images
-├── src/                    # Source files (for debugging)
-└── data/                   # Game data files
++-- index.html              # Main game page
++-- favicon.ico             # Site icon
++-- site.js                 # Game initialization script
++-- game.wasm               # Main game WASM module
++-- game-host.wasm          # Host authority WASM module
++-- _config.yml             # Jekyll configuration
++-- .nojekyll               # Disable Jekyll processing
++-- core/                   # Core modules\n+-- wasm/                   # WASM modules
++-- assets/                 # Game assets (optional)
++-- images/                 # Game images (optional)
++-- src/                    # Source files (for debugging)
++-- data/                   # Game data files
 ```
 
-## 🔧 Setup Instructions
+## Ã°Å¸â€Â§ Setup Instructions
 
-### Step 1️⃣ Enable GitHub Pages
+### Step 1Ã¯Â¸ÂÃ¢Æ’Â£ Enable GitHub Pages
 
 1. Go to your repository on GitHub
 2. Click on **Settings** (in the repository navigation)
@@ -68,15 +58,15 @@ public/
 4. Under **Source**, select **GitHub Actions** (not "Deploy from a branch")
 5. Click **Save**
 
-### Step 2️⃣ Configure GitHub Actions Permissions
+### Step 2Ã¯Â¸ÂÃ¢Æ’Â£ Configure GitHub Actions Permissions
 
-1. Go to **Settings** → **Actions** → **General**
+1. Go to **Settings** Ã¢â€ â€™ **Actions** Ã¢â€ â€™ **General**
 2. Scroll down to **Workflow permissions**
 3. Ensure **Read and write permissions** is selected
 4. Check **Allow GitHub Actions to create and approve pull requests** (optional but recommended)
 5. Click **Save**
 
-### Step 3️⃣ Deploy Your Site
+### Step 3Ã¯Â¸ÂÃ¢Æ’Â£ Deploy Your Site
 
 The site will automatically deploy when you:
 - Push to the `main` or `master` branch
@@ -88,19 +78,19 @@ To manually trigger:
 3. Click **Run workflow**
 4. Select the branch and click **Run workflow**
 
-### Step 4️⃣ Access Your Published Site
+### Step 4Ã¯Â¸ÂÃ¢Æ’Â£ Access Your Published Site
 
 After successful deployment, your site will be available at:
 - **With custom domain**: `https://your-domain.com`
 - **Without custom domain**: `https://[username].github.io/[repository-name]`
 
 You can find the exact URL in:
-- **Settings** → **Pages** → Your site is published at...
+- **Settings** Ã¢â€ â€™ **Pages** Ã¢â€ â€™ Your site is published at...
 - The GitHub Actions workflow run summary
 
-## 🏭 Build Process
+## Ã°Å¸ÂÂ­ Build Process
 
-### 🔄 Workflow Steps
+### Ã°Å¸â€â€ž Workflow Steps
 
 The automated deployment pipeline executes the following stages:
 
@@ -117,14 +107,11 @@ The automated deployment pipeline executes the following stages:
 11. **Upload artifact** - Packages the public folder for deployment
 12. **Deploy** - Publishes the site to GitHub Pages
 
-### 📦 Asset Copying Process
+### Ã°Å¸â€œÂ¦ Asset Copying Process
 
 The deployment process copies assets in multiple locations for optimal access:
 
 ```bash
-# Copy dist folder contents to public/dist
-cp -r dist/* public/dist/
-
 # Copy WASM files to public root for easy access
 cp *.wasm public/
 
@@ -132,8 +119,6 @@ cp *.wasm public/
 cp -r dist/core public/
 
 # Copy animations to public root
-cp -r dist/animations public/
-
 # Copy all assets and data
 cp -r assets public/
 cp -r data public/
@@ -141,9 +126,9 @@ cp -r images public/
 cp -r src public/
 ```
 
-## 💻 Local Development
+## Ã°Å¸â€™Â» Local Development
 
-### 🧪 Testing Locally
+### Ã°Å¸Â§Âª Testing Locally
 
 Before deploying to production, test your public folder locally:
 
@@ -171,7 +156,7 @@ npm run serve:simple:public
 cd public && python -m http.server 8080
 ```
 
-### 🔍 Validation Commands
+### Ã°Å¸â€Â Validation Commands
 
 ```bash
 # Validate public folder deployment
@@ -184,9 +169,9 @@ npm run build:validate
 npm run deploy:validate:public
 ```
 
-## 🌐 Custom Domain Configuration
+## Ã°Å¸Å’Â Custom Domain Configuration
 
-### 🔗 Setting Up Your Domain
+### Ã°Å¸â€â€” Setting Up Your Domain
 
 1. Add a `CNAME` file to the `public/` folder with your domain:
    ```
@@ -203,7 +188,7 @@ npm run deploy:validate:public
    baseurl: ""
    ```
 
-## 🔧 Configuration Files
+## Ã°Å¸â€Â§ Configuration Files
 
 ### Jekyll Configuration (`public/_config.yml`)
 
@@ -266,26 +251,24 @@ jobs:
       - name: Upload artifact
 ```
 
-## 🚨 Troubleshooting
+## Ã°Å¸Å¡Â¨ Troubleshooting
 
 ### Common Issues
 
-#### ❌ WASM Files Not Loading
+#### Ã¢ÂÅ’ WASM Files Not Loading
 - **Cause**: Incorrect MIME types or missing files
 - **Solution**: Check `_config.yml` includes WASM MIME type configuration
 - **Verify**: Run `npm run validate:public-deployment`
 
-#### ❌ Assets Not Found (404 errors)
+#### Ã¢ÂÅ’ Assets Not Found (404 errors)
 - **Cause**: Files not copied to public folder
 - **Solution**: Ensure `build:public` script runs successfully
-- **Verify**: Check `public/dist/` folder exists
-
-#### ❌ Build Fails in GitHub Actions
+#### Ã¢ÂÅ’ Build Fails in GitHub Actions
 - **Cause**: Missing dependencies or build errors
 - **Solution**: Check build logs in Actions tab
 - **Verify**: Run `npm run build:all` locally
 
-#### ❌ Jekyll Processing Issues
+#### Ã¢ÂÅ’ Jekyll Processing Issues
 - **Cause**: Files being processed by Jekyll when they shouldn't be
 - **Solution**: Update `_config.yml` defaults section
 - **Verify**: Check file extensions in defaults
@@ -295,7 +278,6 @@ jobs:
 ```bash
 # Check public folder structure
 ls -la public/
-ls -la public/dist/
 ls -la public/*.wasm
 
 # Validate deployment
@@ -306,7 +288,6 @@ npm run serve:public
 
 # Check file sizes
 du -h public/*.wasm
-du -h public/dist/
 ```
 
 ### Validation Checklist
@@ -315,14 +296,13 @@ Before deploying, ensure:
 
 - [ ] `public/index.html` exists and is valid
 - [ ] `public/game.wasm` and `public/game-host.wasm` exist and are not empty
-- [ ] `public/dist/` folder contains all built assets
 - [ ] `public/_config.yml` is properly configured
 - [ ] All required directories exist (`core/`, `animations/`, `assets/`, `images/`)
 - [ ] GitHub Pages is enabled in repository settings
 - [ ] GitHub Actions permissions are configured
 - [ ] Workflow file exists (`.github/workflows/deploy-public.yml`)
 
-## 📊 Performance Optimization
+## Ã°Å¸â€œÅ  Performance Optimization
 
 ### Bundle Size Monitoring
 
@@ -346,7 +326,7 @@ npm run optimize:memory
 - **JavaScript Modules**: Minified and optimized
 - **CSS Files**: Minified and compressed
 
-## 🔄 Continuous Integration
+## Ã°Å¸â€â€ž Continuous Integration
 
 ### Automated Testing
 
@@ -359,14 +339,14 @@ The deployment pipeline includes:
 
 ### Quality Gates
 
-- ✅ All required files present in public folder
-- ✅ WASM files have correct MIME types
-- ✅ Bundle sizes within limits
-- ✅ No build errors or warnings
-- ✅ Jekyll configuration valid
-- ✅ Complete dist folder deployed
+- Ã¢Å“â€¦ All required files present in public folder
+- Ã¢Å“â€¦ WASM files have correct MIME types
+- Ã¢Å“â€¦ Bundle sizes within limits
+- Ã¢Å“â€¦ No build errors or warnings
+- Ã¢Å“â€¦ Jekyll configuration valid
+- Ã¢Å“â€¦ Core copied
 
-## 📈 Monitoring
+## Ã°Å¸â€œË† Monitoring
 
 ### Deployment Status
 
@@ -383,7 +363,7 @@ Monitor deployment status through:
 - **Asset Loading**: Verify all assets load correctly
 - **Network Performance**: Monitor P2P connection establishment
 
-## 🆘 Support
+## Ã°Å¸â€ Ëœ Support
 
 ### Getting Help
 
@@ -415,17 +395,20 @@ npm run deploy:validate:public
 
 ---
 
-## 🎉 Success!
+## Ã°Å¸Å½â€° Success!
 
 Once deployed successfully, your DozedEnt game will be available at your GitHub Pages URL with:
 
-- ✅ Complete game functionality
-- ✅ WASM modules properly loaded from multiple locations
-- ✅ P2P multiplayer networking
-- ✅ All assets and animations
-- ✅ Responsive mobile controls
-- ✅ Modern UI system
-- ✅ Complete /dist folder deployment
-- ✅ Robust public folder structure
+- Ã¢Å“â€¦ Complete game functionality
+- Ã¢Å“â€¦ WASM modules properly loaded from multiple locations
+- Ã¢Å“â€¦ P2P multiplayer networking
+- Ã¢Å“â€¦ All assets and animations
+- Ã¢Å“â€¦ Responsive mobile controls
+- Ã¢Å“â€¦ Modern UI system
+- Ã¢Å“â€¦ Public folder deployment (no dist)
+- Ã¢Å“â€¦ Robust public folder structure
 
 The deployment system is designed to be robust and maintainable, ensuring your game is always available and up-to-date with the latest changes. The public folder contains everything needed for the game to work, making it a complete, self-contained deployment package.
+
+
+
