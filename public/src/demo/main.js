@@ -1,7 +1,8 @@
 ﻿import { config, setFlag } from './config.js';
 import { createWasmApi } from './wasm-api.js';
 import { createRenderer } from './renderer.js';
-import { InputManager } from '../input/input-manager.js';
+// Import the new unified input system with legacy compatibility
+import { createInputManager } from '../managers/input-migration-adapter.js';
 
 const canvas = document.getElementById('demo-canvas');
 if (!canvas) {
@@ -10,7 +11,11 @@ if (!canvas) {
 
 const renderer = createRenderer(canvas);
 const wasmApi = await createWasmApi();
-const inputManager = new InputManager(wasmApi);
+// Initialize unified input manager with legacy compatibility
+const inputManager = createInputManager(wasmApi, { 
+  useLegacyAdapter: true, 
+  debugMode: false 
+});
 
 const step = 1 / 60;
 const maxSubSteps = 5;
