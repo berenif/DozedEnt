@@ -154,17 +154,13 @@ const buildOverlay = (state, now) => {
   }
   
   // Get block state - ensure it's properly read from input
+  // IMPORTANT: Block should ONLY be active when explicitly pressed
   let block = (input.block === true || input.block === 1) ? 1 : 0;
   
-  // If user is providing movement input, force-release block to avoid stuck state
-  // But only if they're actually trying to move (not just having the key down)
-  if ((dirX !== 0 || dirY !== 0) && block === 1) {
-    // User is trying to move while blocking - release the block
+  // DEBUG: If block is somehow active without input, clear it
+  if (block === 1 && !input.block) {
+    console.warn('Block state latched without input - clearing');
     block = 0;
-    // Also update the input state to reflect this
-    if (inputManager.inputState) {
-      inputManager.inputState.block = false;
-    }
   }
 
   wasmApi.setPlayerInput(
@@ -179,11 +175,12 @@ const buildOverlay = (state, now) => {
   );
 
   // Synchronize blocking state explicitly to avoid latched blocks
+  // Always call set_blocking with current state to ensure WASM state is correct
   if (wasmApi.exports?.set_blocking) {
     wasmApi.exports.set_blocking(
       block,
-      inputManager.lastMovementDirection.x,
-      inputManager.lastMovementDirection.y
+      inputManager.lastMovementDirection.x || 1,
+      inputManager.lastMovementDirection.y || 0
     );
   }
 
