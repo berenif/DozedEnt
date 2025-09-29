@@ -86,6 +86,7 @@ import {
   drawWeapon as _drawWeapon,
   drawBow as _drawBow,
   drawShield as _drawShield,
+  drawProceduralPlayer as _drawProceduralPlayer,
   renderPlayer as _renderPlayer,
 } from './renderer/characters.js';
 import {
@@ -304,6 +305,7 @@ export class GameRenderer {
   drawHealthPickup(x, y, size) { return _drawHealthPickup(this, x, y, size); }
 
   // Characters/effects
+  drawProceduralPlayer(state, position, baseRadius, transform) { return _drawProceduralPlayer(this, state, position, baseRadius, transform); }
   drawEnhancedCharacter(x, y, width, height, color, facing, state, stateTimer, effects) { return _drawEnhancedCharacter(this, x, y, width, height, color, facing, state, stateTimer, effects); }
   drawCharacter(x, y, width, height, color, facing, state, _frame) { return _drawCharacter(this, x, y, width, height, color, facing, state, _frame); }
   drawWeaponTrail(pos, facing, stateTimer) { return _drawWeaponTrail(this, pos, facing, stateTimer); }
