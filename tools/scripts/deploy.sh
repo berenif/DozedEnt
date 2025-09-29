@@ -18,6 +18,10 @@ fi
 echo "Installing dependencies..."
 npm ci
 
+# Build WASM modules first (required for game logic)
+echo "Building WASM modules..."
+npm run wasm:build || echo "Warning: WASM build failed or skipped"
+
 # Build the project (dist and other artifacts)
 echo "Building project..."
 npm run build:all

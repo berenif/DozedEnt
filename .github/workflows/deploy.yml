@@ -42,6 +42,11 @@ jobs:
         ./emsdk activate latest
         source ./emsdk_env.sh
         
+    - name: Build WASM modules
+      run: |
+        source emsdk/emsdk_env.sh
+        npm run wasm:build
+        
     - name: Build project
       run: |
         source emsdk/emsdk_env.sh

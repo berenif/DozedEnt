@@ -80,6 +80,7 @@
     "validate:github-pages": "node tools/scripts/validate-github-pages.js",
     "validate:public-deployment": "node tools/scripts/validate-public-deployment.js",
     "validate:protocol-versions": "node tools/scripts/validate-protocol-versions.js",
+    "deploy:build": "npm run wasm:build && npm run build:all && npm run build:public",
     "deploy:validate": "npm run validate:github-pages",
     "deploy:validate:public": "npm run validate:public-deployment",
     "deploy:validate:protocols": "npm run validate:protocol-versions",
