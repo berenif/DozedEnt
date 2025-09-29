@@ -45,6 +45,7 @@ jobs:
     - name: Build project
       run: |
         source emsdk/emsdk_env.sh
+        npm run wasm:build
         npm run build
         
     - name: Setup Pages
