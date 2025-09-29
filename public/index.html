@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="DozedEnt - A procedurally animated roguelite combat game">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="src/css/mobile.css">
   <style>
     html, body {
       margin: 0;
@@ -51,6 +52,41 @@
 <body>
   <div id="loading">Loading DozedEnt...</div>
   <canvas id="demo-canvas" aria-label="Dozed combat demo canvas"></canvas>
+  
+  <!-- Mobile Controls -->
+  <div class="mobile-controls" id="mobile-controls" style="display: none;">
+    <!-- Virtual Joystick -->
+    <div id="joystick" class="joystick">
+      <div id="joystick-base" class="joystick-base">
+        <div id="joystick-knob" class="joystick-knob"></div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div id="actions" class="actions">
+      <button class="action-btn" data-action="lightAttack" aria-label="Light Attack">
+        <span class="btn-emoji">⚡</span>
+        <div class="cooldown-overlay"></div>
+      </button>
+      <button class="action-btn" data-action="heavyAttack" aria-label="Heavy Attack">
+        <span class="btn-emoji">💥</span>
+        <div class="cooldown-overlay"></div>
+      </button>
+      <button class="action-btn" data-action="block" aria-label="Block">
+        <span class="btn-emoji">🛡️</span>
+        <div class="cooldown-overlay"></div>
+      </button>
+      <button class="action-btn" data-action="roll" aria-label="Roll">
+        <span class="btn-emoji">🔄</span>
+        <div class="cooldown-overlay"></div>
+      </button>
+      <button class="action-btn" data-action="special" aria-label="Special">
+        <span class="btn-emoji">✨</span>
+        <div class="cooldown-overlay"></div>
+      </button>
+    </div>
+  </div>
+  
   <script type="module" src="src/utils/wasm.js"></script>
   <script type="module" src="src/utils/wasm-lazy-loader.js"></script>
   <script type="module" src="src/utils/wasm-manager.js"></script>
