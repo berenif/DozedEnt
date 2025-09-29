@@ -453,7 +453,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
   
   // Ensure player starts with clean input state after initialization
   if (handles.set_blocking) {
-    handles.set_blocking(0, 0, 0, performance.now() / 1000);
+    handles.set_blocking(0, 0, 0);
   }
   
   // Also clear all inputs to ensure clean start
@@ -535,7 +535,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
         }
         // Force-clear in WASM if export exists
         if (api.exports && typeof api.exports.set_blocking === 'function') {
-          api.exports.set_blocking(0, 0, 0, performance.now() / 1000);
+          api.exports.set_blocking(0, 0, 0);
         }
       } catch (e) {
         console.warn('[Demo] unblock() failed:', e.message);
@@ -551,7 +551,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
         }
         // Also call direct blocking export if present
         if (api.exports && typeof api.exports.set_blocking === 'function') {
-          api.exports.set_blocking(v, 0, 0, performance.now() / 1000);
+          api.exports.set_blocking(v, 0, 0);
         }
       } catch (e) {
         console.warn('[Demo] forceBlock() failed:', e.message);

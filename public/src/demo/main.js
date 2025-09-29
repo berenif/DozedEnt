@@ -174,8 +174,7 @@ const buildOverlay = (state, now) => {
     wasmApi.exports.set_blocking(
       block,
       inputManager.lastMovementDirection.x,
-      inputManager.lastMovementDirection.y,
-      performance.now() / 1000
+      inputManager.lastMovementDirection.y
     );
   }
 
