@@ -117,6 +117,9 @@ export class UnifiedInputManager {
     initialize() {
         console.log('🎮 Initializing Unified Input Manager...');
         
+        // IMPORTANT: Clear all inputs first to ensure clean state
+        this.clearAllInputs();
+        
         this.setupKeyboardInput();
         this.setupMouseInput();
         
@@ -142,6 +145,14 @@ export class UnifiedInputManager {
         
         // Start input update loop
         this.startInputLoop();
+        
+        // Send initial clear state once WASM is ready
+        setTimeout(() => {
+            if (this.syncState.wasmReady) {
+                this.clearAllInputs();
+                console.log('✅ Sent initial clear input state to WASM');
+            }
+        }, 100);
         
         console.log(`✅ Unified Input Manager initialized - Mobile: ${this.isMobile}, Touch: ${this.hasTouch}, Gamepad: ${this.hasGamepad}`);
     }
@@ -508,9 +519,11 @@ export class UnifiedInputManager {
             typeof this.wasmManager.exports.set_player_input === 'function'
         );
         
-        // Log state changes
+        // Log state changes and clear inputs when WASM becomes ready
         if (!wasReady && this.syncState.wasmReady) {
             console.log('✅ WASM input system ready');
+            // Clear inputs when WASM becomes ready to ensure clean state
+            this.clearAllInputs();
         } else if (wasReady && !this.syncState.wasmReady) {
             console.warn('⚠️ WASM input system not ready');
         }
@@ -530,8 +543,22 @@ export class UnifiedInputManager {
         this.inputState.jump = false;
         this.inputState.pointer.down = false;
         
-        // Send cleared state to WASM
-        this.sendInputToWasm();
+        // Clear the input buffer as well
+        this.inputState.inputBuffer.clear();
+        
+        // Send cleared state to WASM only if ready
+        if (this.syncState.wasmReady) {
+            this.sendInputToWasm();
+            
+            // Also explicitly clear blocking state if the function exists
+            if (this.wasmManager?.exports?.set_blocking) {
+                try {
+                    this.wasmManager.exports.set_blocking(0, 0, 0, performance.now() / 1000);
+                } catch (e) {
+                    console.warn('Failed to clear blocking state:', e);
+                }
+            }
+        }
     }
     
     /**
