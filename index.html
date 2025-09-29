@@ -3,15 +3,660 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DozedEnt - Redirecting...</title>
-    <meta http-equiv="refresh" content="0; url=https://berenif.github.io/DozedEnt/public/index.html">
-    <link rel="canonical" href="https://berenif.github.io/DozedEnt/public/index.html">
+    <meta name="description" content="DozedEnt - WebAssembly-first multiplayer survival game with advanced AI and P2P networking">
+    <title>DozedEnt - P2P Survival Game</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #viewport {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #0f0f1e;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* HUD Elements */
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-bar {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            min-width: 200px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #bbb;
+            margin-bottom: 4px;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .health-bar .bar-fill {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .energy-bar .bar-fill {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+
+        .bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 250px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #joystick {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 150px;
+            height: 150px;
+            pointer-events: all;
+        }
+
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.3));
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(200, 200, 200, 0.5));
+            border: 2px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+        }
+
+        .action-buttons {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            display: grid;
+            grid-template-columns: repeat(2, 70px);
+            grid-template-rows: repeat(2, 70px);
+            gap: 15px;
+            pointer-events: all;
+        }
+
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4), rgba(0, 0, 0, 0.5));
+        }
+
+        .action-btn.attack {
+            grid-column: 1;
+            grid-row: 1;
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .action-btn.block {
+            grid-column: 2;
+            grid-row: 1;
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .action-btn.dodge {
+            grid-column: 1;
+            grid-row: 2;
+            border-color: #f39c12;
+            color: #f39c12;
+        }
+
+        .action-btn.special {
+            grid-column: 2;
+            grid-row: 2;
+            border-color: #9b59b6;
+            color: #9b59b6;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #9b59b6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .game-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #3498db, #9b59b6, #e74c3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-subtitle {
+            font-size: 16px;
+            color: #bbb;
+            margin-bottom: 40px;
+        }
+
+        /* Desktop Controls Info */
+        .controls-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 12px;
+            color: #bbb;
+            max-width: 250px;
+            z-index: 100;
+        }
+
+        .controls-info h3 {
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .controls-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .controls-info li {
+            margin: 4px 0;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .controls-info {
+                display: none;
+            }
+
+            .hud {
+                top: 10px;
+                left: 10px;
+            }
+
+            .stat-bar {
+                min-width: 150px;
+                padding: 6px 10px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #joystick,
+            .action-buttons {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <p>Redirecting to <a href="https://berenif.github.io/DozedEnt/public/index.html">DozedEnt Game</a>...</p>
-    <script>
-        // JavaScript fallback redirect
-        window.location.replace('https://berenif.github.io/DozedEnt/public/index.html');
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="game-title">DozedEnt</div>
+        <div class="game-subtitle">WebAssembly Survival Game</div>
+        <div class="loading-text">Loading...</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="loading-progress"></div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container">
+        <div id="viewport">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- HUD -->
+            <div class="hud">
+                <div class="stat-bar health-bar">
+                    <div class="stat-label">Health</div>
+                    <div class="bar-container">
+                        <div class="bar-fill" id="health-fill" style="width: 100%"></div>
+                        <div class="bar-text" id="health-text">100 / 100</div>
+                    </div>
+                </div>
+                <div class="stat-bar energy-bar">
+                    <div class="stat-label">Energy</div>
+                    <div class="bar-container">
+                        <div class="bar-fill" id="energy-fill" style="width: 100%"></div>
+                        <div class="bar-text" id="energy-text">100 / 100</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Controls Info -->
+            <div class="controls-info">
+                <h3>🎮 Controls</h3>
+                <ul>
+                    <li><span class="key">WASD</span> - Move</li>
+                    <li><span class="key">Space</span> - Attack</li>
+                    <li><span class="key">Shift</span> - Block</li>
+                    <li><span class="key">Ctrl</span> - Dodge</li>
+                    <li><span class="key">E</span> - Special</li>
+                </ul>
+            </div>
+
+            <!-- Mobile Controls -->
+            <div class="mobile-controls">
+                <!-- Joystick -->
+                <div id="joystick">
+                    <div class="joystick-base">
+                        <div class="joystick-stick" id="joystick-stick"></div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn attack" data-action="attack">⚔️</button>
+                    <button class="action-btn block" data-action="block">🛡️</button>
+                    <button class="action-btn dodge" data-action="dodge">💨</button>
+                    <button class="action-btn special" data-action="special">✨</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Initialization -->
+    <script type="module">
+        // Initialize canvas and basic setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingProgress = document.getElementById('loading-progress');
+
+        // Resize canvas to match viewport
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Update loading progress
+        function updateLoadingProgress(progress) {
+            loadingProgress.style.width = `${progress}%`;
+        }
+
+        // Simple initial rendering
+        function renderInitialScreen() {
+            ctx.fillStyle = '#0f0f1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('DozedEnt', canvas.width / 2, canvas.height / 2 - 50);
+            
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#bbb';
+            ctx.fillText('Initializing game systems...', canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        renderInitialScreen();
+        updateLoadingProgress(10);
+
+        // Load WASM and game systems
+        async function initializeGame() {
+            try {
+                updateLoadingProgress(30);
+
+                // Try to load the WASM utility module
+                let wasmUtils;
+                try {
+                    wasmUtils = await import('./src/utils/wasm.js');
+                    updateLoadingProgress(50);
+                } catch (e) {
+                    console.warn('WASM utilities not found, using fallback:', e);
+                    updateLoadingProgress(50);
+                }
+
+                // Initialize basic game state
+                window.gameState = {
+                    player: {
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        health: 100,
+                        maxHealth: 100,
+                        energy: 100,
+                        maxEnergy: 100
+                    },
+                    enemies: [],
+                    initialized: false
+                };
+
+                updateLoadingProgress(70);
+
+                // Try to load WASM module if available
+                if (wasmUtils && wasmUtils.loadWasm) {
+                    try {
+                        window.wasmExports = await wasmUtils.loadWasm('game.wasm');
+                        window.gameState.initialized = true;
+                        console.log('✓ WASM loaded successfully');
+                    } catch (e) {
+                        console.warn('WASM loading failed, using JavaScript fallback:', e);
+                    }
+                }
+
+                updateLoadingProgress(90);
+
+                // Setup input handlers
+                setupInputHandlers();
+
+                // Start game loop
+                startGameLoop();
+
+                updateLoadingProgress(100);
+
+                // Hide loading screen
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                }, 500);
+
+                console.log('✓ Game initialized');
+            } catch (error) {
+                console.error('Error initializing game:', error);
+                renderError(error.message);
+            }
+        }
+
+        // Setup input handlers
+        function setupInputHandlers() {
+            // Keyboard input
+            const keys = {};
+            window.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                handleKeyPress(e.key.toLowerCase());
+            });
+            window.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+            });
+
+            // Mobile action buttons
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const action = btn.dataset.action;
+                    handleAction(action);
+                });
+            });
+
+            // Joystick (simplified)
+            const joystick = document.getElementById('joystick');
+            const stick = document.getElementById('joystick-stick');
+            let joystickActive = false;
+
+            joystick.addEventListener('touchstart', () => {
+                joystickActive = true;
+            });
+            joystick.addEventListener('touchend', () => {
+                joystickActive = false;
+                stick.style.transform = 'translate(-50%, -50%)';
+            });
+        }
+
+        // Handle key presses
+        function handleKeyPress(key) {
+            switch(key) {
+                case ' ':
+                    handleAction('attack');
+                    break;
+                case 'shift':
+                    handleAction('block');
+                    break;
+                case 'control':
+                    handleAction('dodge');
+                    break;
+                case 'e':
+                    handleAction('special');
+                    break;
+            }
+        }
+
+        // Handle actions
+        function handleAction(action) {
+            console.log(`Action: ${action}`);
+            // This would normally call WASM functions
+            // For now, just log the action
+        }
+
+        // Update HUD
+        function updateHUD() {
+            const player = window.gameState.player;
+            
+            // Update health bar
+            const healthPercent = (player.health / player.maxHealth) * 100;
+            document.getElementById('health-fill').style.width = `${healthPercent}%`;
+            document.getElementById('health-text').textContent = `${Math.round(player.health)} / ${player.maxHealth}`;
+            
+            // Update energy bar
+            const energyPercent = (player.energy / player.maxEnergy) * 100;
+            document.getElementById('energy-fill').style.width = `${energyPercent}%`;
+            document.getElementById('energy-text').textContent = `${Math.round(player.energy)} / ${player.maxEnergy}`;
+        }
+
+        // Game loop
+        function startGameLoop() {
+            let lastTime = performance.now();
+
+            function gameLoop(currentTime) {
+                const deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+
+                // Clear canvas
+                ctx.fillStyle = '#0f0f1e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw grid (background)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < canvas.width; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+
+                // Draw player
+                const player = window.gameState.player;
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw player direction indicator
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(player.x + 8, player.y - 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Update HUD
+                updateHUD();
+
+                // Draw FPS
+                const fps = Math.round(1000 / deltaTime);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`FPS: ${fps}`, 10, canvas.height - 10);
+
+                // Draw status
+                ctx.fillText(`Status: ${window.gameState.initialized ? 'WASM Active' : 'JS Fallback'}`, 10, canvas.height - 30);
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Render error message
+        function renderError(message) {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Error Loading Game', canvas.width / 2, canvas.height / 2 - 30);
+            
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#bbb';
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2 + 10);
+            
+            ctx.fillText('Check console for details', canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        // Start initialization
+        initializeGame();
     </script>
 </body>
 </html>

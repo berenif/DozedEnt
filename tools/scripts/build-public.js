@@ -217,7 +217,19 @@ function copyDistFolder() {
 function copyDistFolderV2() {
   const distPath = join(projectRoot, 'dist')
   if (!existsSync(distPath)) {
-    console.log('  (i) dist folder not found, skipping')
+    console.log('  (i) dist folder not found, trying demos/dist as fallback')
+    
+    // Try to use demos/dist as core
+    const demosDistPath = join(projectRoot, 'demos', 'dist')
+    if (existsSync(demosDistPath)) {
+      try {
+        const destPath = join(publicDir, 'core')
+        cpSync(demosDistPath, destPath, { recursive: true })
+        console.log('  ✓ Copied demos/dist/ -> public/core/')
+      } catch (error) {
+        console.error('  ✗ Error copying demos/dist:', error.message)
+      }
+    }
     return
   }
   try {
@@ -462,7 +474,7 @@ function validatePublicFolder() {
   ]
   
   const requiredDirs = [
-    'core'
+    // 'core' - Made optional since we can use demos/dist or build it later
   ]
   
   const optionalDirs = [
