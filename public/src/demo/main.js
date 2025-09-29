@@ -21,6 +21,19 @@ const inputManager = createInputManager(wasmApi, {
   debugMode: false 
 });
 
+// Expose input manager for debugging (extend existing window.DZ)
+if (window.DZ) {
+  window.DZ.inputManager = inputManager;
+  window.DZ.enableInputDebug = () => {
+    inputManager.setDebugMode(true);
+    console.log('🐛 Input debug mode enabled');
+  };
+  window.DZ.disableInputDebug = () => {
+    inputManager.setDebugMode(false);
+    console.log('✅ Input debug mode disabled');
+  };
+}
+
 // Show mobile controls on touch devices
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   const mobileControls = document.getElementById('mobile-controls');

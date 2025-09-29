@@ -242,9 +242,16 @@ export class UnifiedInputManager {
             for (const touch of event.changedTouches) {
                 const element = document.elementFromPoint(touch.clientX, touch.clientY);
                 
+                if (this.config.debugInput) {
+                    console.log(`👆 Touch start at (${touch.clientX}, ${touch.clientY})`, element?.id || element?.className);
+                }
+                
                 // Handle joystick touch
-                if (element && (element.closest('#joystick') || element.closest('#joystick-base'))) {
+                if (element && (element.closest('#joystick') || element.closest('#joystick-base') || element.id === 'joystick-base' || element.id === 'joystick-knob')) {
                     event.preventDefault();
+                    if (this.config.debugInput) {
+                        console.log('🕹️ Joystick touch detected');
+                    }
                     this.handleJoystickStart(touch);
                     this.activeTouches.set(touch.identifier, { type: 'joystick', element });
                 }
@@ -252,6 +259,9 @@ export class UnifiedInputManager {
                 else if (element && element.closest('.action-btn')) {
                     event.preventDefault();
                     const actionBtn = element.closest('.action-btn');
+                    if (this.config.debugInput) {
+                        console.log('🎯 Action button touch detected:', actionBtn.dataset.action);
+                    }
                     this.handleActionButtonTouch(actionBtn, true);
                     this.activeTouches.set(touch.identifier, { type: 'button', element: actionBtn });
                 }
@@ -311,6 +321,8 @@ export class UnifiedInputManager {
         this.addEventListenerWithCleanup(document, 'touchmove', handleTouchMove, { passive: false });
         this.addEventListenerWithCleanup(document, 'touchend', handleTouchEnd, { passive: false });
         this.addEventListenerWithCleanup(document, 'touchcancel', handleTouchEnd, { passive: false });
+        
+        console.log('✅ Touch input handlers initialized for joystick and action buttons');
     }
     
     /**
@@ -383,14 +395,19 @@ export class UnifiedInputManager {
         this.inputState.direction.x = normalizedX;
         this.inputState.direction.y = normalizedY;
         
+        // Debug log for troubleshooting (only log if movement detected)
+        if (this.config.debugInput && (normalizedX !== 0 || normalizedY !== 0)) {
+            console.log(`🕹️ Joystick: (${normalizedX.toFixed(2)}, ${normalizedY.toFixed(2)})`);
+        }
+        
         // Update last movement direction for shield facing
         if (normalizedX !== 0 || normalizedY !== 0) {
             this.inputState.lastMovementDirection.x = normalizedX;
             this.inputState.lastMovementDirection.y = normalizedY;
         }
         
-        // Queue for WASM update
-        this.queueInputForWasm();
+        // Note: We don't queue for WASM here - main.js reads our inputState
+        // and sends to WASM in sync with the game loop
     }
     
     /**
@@ -416,8 +433,7 @@ export class UnifiedInputManager {
         this.inputState.direction.x = 0;
         this.inputState.direction.y = 0;
         
-        // Queue for WASM update
-        this.queueInputForWasm();
+        // Note: main.js reads our inputState and sends to WASM
     }
     
     /**
@@ -548,8 +564,7 @@ export class UnifiedInputManager {
             this.inputState.lastMovementDirection.y = this.inputState.direction.y;
         }
         
-        // Queue input for synchronized sending to WASM
-        this.queueInputForWasm();
+        // Note: main.js reads our inputState and sends to WASM
     }
     
     /**
@@ -649,6 +664,11 @@ export class UnifiedInputManager {
                 return;
             }
             
+            // Debug log for mobile joystick input
+            if (this.config.debugInput && (validation.inputX !== 0 || validation.inputY !== 0)) {
+                console.log(`📡 Sending to WASM: dir=(${validation.inputX.toFixed(2)}, ${validation.inputY.toFixed(2)})`);
+            }
+            
             // Send validated input to WASM
             this.wasmManager.exports.set_player_input(
                 validation.inputX,
@@ -700,10 +720,12 @@ export class UnifiedInputManager {
                 // Gamepad manager will update our input state directly
             }
             
-            // Process queued inputs if WASM is ready
-            if (this.syncState.wasmReady && this.syncState.inputQueue.length > 0) {
-                this.flushInputQueue();
-            }
+            // NOTE: We intentionally DO NOT flush inputs here because main.js
+            // game loop calls applyInput() which reads our inputState and sends
+            // to WASM in sync with the game update. Auto-flushing here would
+            // cause double-sends and timing issues.
+            // 
+            // The inputState is the source of truth that main.js reads from.
             
             // Continue loop
             requestAnimationFrame(updateInput);
