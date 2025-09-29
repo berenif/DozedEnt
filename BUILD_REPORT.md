@@ -1,56 +1,55 @@
 # Build Report
 
-Generated: 2025-09-29T10:55:01.877Z
-Duration: 33465ms
+Generated: 2025-09-29T19:02:29.266Z
+Duration: 3878ms
 
 ## Summary
 
 - **Modules Built**: 3
-- **Total Size**: 1717KB
+- **Total Size**: 20KB
 - **Optimization Savings**: 0 bytes
-- **Errors**: 3
-- **Warnings**: 3
+- **Errors**: 0
+- **Warnings**: 0
 
 ## File Sizes
 
-- **core/trystero-firebase.min.js**: 166KB
-- **core/trystero-ipfs.min.js**: 542KB
-- **core/trystero-mqtt.min.js**: 351KB
-- **core/trystero-nostr.min.js**: 13KB
-- **core/trystero-supabase.min.js**: 127KB
-- **core/trystero-torrent.min.js**: 13KB
-- **core/trystero-wasm.min.js**: 4KB
-- **animations/player-animator.js**: 126KB
-- **animations/player-animator.min.js**: 47KB
-- **animations/player-animator.umd.js**: 138KB
-- **animations/wolf-animation.js**: 76KB
-- **animations/wolf-animation.min.js**: 31KB
-- **animations/wolf-animation.umd.js**: 84KB
+- **core/trystero-firebase.min.js**: 0KB
+- **core/trystero-ipfs.min.js**: 0KB
+- **core/trystero-mqtt.min.js**: 0KB
+- **core/trystero-nostr.min.js**: 0KB
+- **core/trystero-supabase.min.js**: 0KB
+- **core/trystero-torrent.min.js**: 0KB
+- **core/trystero-wasm.min.js**: 1KB
+- **animations/player-animator.js**: 3KB
+- **animations/player-animator.min.js**: 1KB
+- **animations/player-animator.umd.js**: 3KB
+- **animations/wolf-animation.js**: 3KB
+- **animations/wolf-animation.min.js**: 2KB
+- **animations/wolf-animation.umd.js**: 4KB
+- **core/index.js**: 1KB
+- **animations/index.js**: 1KB
+- **index.js**: 0KB
 
 ## Errors
 
-- Missing expected file: core/index.js
-- Missing expected file: animations/index.js
-- Missing expected file: index.js
+No errors
 
 ## Warnings
 
-- Bundle size warning: core/trystero-ipfs.min.js is 542KB (threshold: 150KB)
-- Bundle size warning: core/trystero-mqtt.min.js is 351KB (threshold: 100KB)
-- Bundle size warning: core/trystero-supabase.min.js is 127KB (threshold: 120KB)
+No warnings
 
 ## Memory Optimization
 
-- **Pool Hit Rate**: 0.0%
-- **Total Allocations**: 0
-- **Total Deallocations**: 0
+- **Pool Hit Rate**: undefined
+- **Total Allocations**: undefined
+- **Total Deallocations**: undefined
 
 ## Dead Code Elimination
 
-- **Files Processed**: 0
-- **Bytes Removed**: 0
-- **Console Statements Removed**: 0
-- **Unused Imports Removed**: 0
+- **Files Processed**: undefined
+- **Bytes Removed**: undefined
+- **Console Statements Removed**: undefined
+- **Unused Imports Removed**: undefined
 
 ## Recommendations
 

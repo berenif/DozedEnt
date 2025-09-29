@@ -1,96 +1,51 @@
 {
-  "timestamp": "2025-09-29T10:55:01.877Z",
-  "duration": 33465,
+  "timestamp": "2025-09-29T19:02:29.266Z",
+  "duration": 3878,
   "stats": {
     "modulesBuilt": 3,
-    "totalSize": 1758533,
+    "totalSize": 20712,
     "optimizationSavings": 0,
-    "errors": [
-      "Missing expected file: core/index.js",
-      "Missing expected file: animations/index.js",
-      "Missing expected file: index.js"
-    ],
-    "warnings": [
-      "Bundle size warning: core/trystero-ipfs.min.js is 542KB (threshold: 150KB)",
-      "Bundle size warning: core/trystero-mqtt.min.js is 351KB (threshold: 100KB)",
-      "Bundle size warning: core/trystero-supabase.min.js is 127KB (threshold: 120KB)"
-    ],
+    "errors": [],
+    "warnings": [],
     "fileSizes": {
-      "core/trystero-firebase.min.js": 166,
-      "core/trystero-ipfs.min.js": 542,
-      "core/trystero-mqtt.min.js": 351,
-      "core/trystero-nostr.min.js": 13,
-      "core/trystero-supabase.min.js": 127,
-      "core/trystero-torrent.min.js": 13,
-      "core/trystero-wasm.min.js": 4,
-      "animations/player-animator.js": 126,
-      "animations/player-animator.min.js": 47,
-      "animations/player-animator.umd.js": 138,
-      "animations/wolf-animation.js": 76,
-      "animations/wolf-animation.min.js": 31,
-      "animations/wolf-animation.umd.js": 84
+      "core/trystero-firebase.min.js": 0,
+      "core/trystero-ipfs.min.js": 0,
+      "core/trystero-mqtt.min.js": 0,
+      "core/trystero-nostr.min.js": 0,
+      "core/trystero-supabase.min.js": 0,
+      "core/trystero-torrent.min.js": 0,
+      "core/trystero-wasm.min.js": 1,
+      "animations/player-animator.js": 3,
+      "animations/player-animator.min.js": 1,
+      "animations/player-animator.umd.js": 3,
+      "animations/wolf-animation.js": 3,
+      "animations/wolf-animation.min.js": 2,
+      "animations/wolf-animation.umd.js": 4,
+      "core/index.js": 1,
+      "animations/index.js": 1,
+      "index.js": 0
     }
   },
   "memoryStats": {
-    "allocated": 0,
-    "used": 0,
-    "gcCount": 0,
-    "lastGC": 0,
-    "peakUsage": 0,
-    "leakThreshold": 104857600,
-    "history": [],
-    "poolStats": {
-      "particles": {
-        "size": 200,
-        "maxSize": 1000
-      },
-      "effects": {
-        "size": 20,
-        "maxSize": 100
-      },
-      "animations": {
-        "size": 10,
-        "maxSize": 50
-      },
-      "vectors": {
-        "size": 100,
-        "maxSize": 500
-      },
-      "transforms": {
-        "size": 50,
-        "maxSize": 200
-      }
-    },
-    "performance": {
-      "poolHits": 0,
-      "poolMisses": 0,
-      "allocations": 0,
-      "deallocations": 0
-    }
+    "allocationsOptimized": 0,
+    "poolsCreated": 0,
+    "memorySaved": 0,
+    "currentMemoryUsage": 0,
+    "peakMemoryUsage": 0,
+    "poolsActive": 0
   },
   "poolEfficiency": {
-    "hitRate": "0.0%",
-    "hits": 0,
-    "misses": 0,
-    "allocations": 0,
-    "deallocations": 0
+    "poolsCreated": 0,
+    "totalAllocations": 0,
+    "efficiency": 0
   },
   "optimizationReport": {
     "summary": {
-      "filesProcessed": 0,
-      "totalBytesRemoved": 0,
-      "averageBytesPerFile": 0,
-      "consoleStatementsRemoved": 0,
-      "unusedImportsRemoved": 0
+      "functionsRemoved": 0,
+      "variablesRemoved": 0,
+      "bytesRemoved": 0
     },
     "recommendations": [],
-    "config": {
-      "removeConsoleInProduction": true,
-      "removeDebugCode": true,
-      "removeUnusedImports": true,
-      "removeUnusedVariables": true,
-      "removeComments": false,
-      "minifyWhitespace": true
-    }
+    "warnings": []
   }
 }
