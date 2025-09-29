@@ -1,4 +1,5 @@
 // Character drawings and combat VFX
+import { CharacterAnimator } from '../../animation/system/animation-system.js';
 
 export function drawEnhancedCharacter(renderer, x, y, width, height, color, facing, state, stateTimer, effects) {
   const ctx = renderer.ctx;
@@ -269,6 +270,107 @@ export function drawShield(renderer, character) {
   ctx.strokeRect(shieldX, shieldY, 15, character.height * 0.5);
 }
 
+// Procedural player rendering using CharacterAnimator's transform data
+export function drawProceduralPlayer(renderer, state, position, baseRadius, transform) {
+  const ctx = renderer.ctx;
+
+  // Trails (motion streaks)
+  const trails = Array.isArray(transform.trails) ? transform.trails : [];
+  if (trails.length > 0) {
+    ctx.save();
+    for (const trail of trails) {
+      const screenPos = renderer.worldToScreen(trail.x, trail.y);
+      const alpha = typeof trail.alpha === 'number' ? Math.min(Math.max(trail.alpha, 0), 1) : 0.35;
+      const scale = typeof trail.scale === 'number' ? trail.scale : 0.9;
+      const r = baseRadius * 0.9 * scale;
+      ctx.fillStyle = `rgba(147, 197, 253, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(screenPos.x, screenPos.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Secondary motion (e.g., cape/cloth chain)
+  const segments = Array.isArray(transform.secondaryMotion) ? transform.secondaryMotion : [];
+  if (segments.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const first = renderer.worldToScreen(segments[0].x, segments[0].y);
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < segments.length; i++) {
+      const p = renderer.worldToScreen(segments[i].x, segments[i].y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Main body
+  const renderSize = Math.max(64, Math.min(renderer.canvas.width, renderer.canvas.height) * 0.14);
+  const attacking = (typeof state.anim === 'string' && state.anim === 'attacking') || 
+                   (typeof state.animState === 'number' && state.animState === 2);
+  const blocking = !!state.block || !!state.isBlocking || 
+                  (typeof state.animState === 'number' && state.animState === 3);
+  const rolling = !!state.blocking || !!state.isRolling || 
+                  (typeof state.animState === 'number' && state.animState === 4);
+
+  ctx.save();
+  ctx.translate(position.x + (transform.offsetX ?? 0), position.y + (transform.offsetY ?? 0));
+  if (transform.rotation) {
+    ctx.rotate(transform.rotation);
+  }
+  ctx.scale(transform.scaleX ?? 1, transform.scaleY ?? 1);
+
+  ctx.shadowColor = attacking ? 'rgba(255, 120, 90, 0.55)' : 'rgba(80, 140, 255, 0.4)';
+  ctx.shadowBlur = rolling ? 28 : 18;
+
+  const bodyRadius = baseRadius * (blocking ? 1.15 : 1);
+  const grad = ctx.createRadialGradient(0, 0, bodyRadius * 0.3, 0, 0, bodyRadius);
+  if (blocking) {
+    grad.addColorStop(0, '#99f6e4');
+    grad.addColorStop(1, '#14b8a6');
+  } else if (attacking) {
+    grad.addColorStop(0, '#fdba74');
+    grad.addColorStop(1, '#f97316');
+  } else {
+    grad.addColorStop(0, '#bfdbfe');
+    grad.addColorStop(1, '#60a5fa');
+  }
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Direction indicator based on velocity
+  const speed = Math.hypot(state.velocityX ?? state.velX ?? 0, state.velocityY ?? state.velY ?? 0);
+  if (speed > 0.01) {
+    const dirX = Math.min(Math.max((state.velocityX ?? state.velX ?? 0) / Math.max(speed, 0.001), -1), 1);
+    const dirY = Math.min(Math.max((state.velocityY ?? state.velY ?? 0) / Math.max(speed, 0.001), -1), 1);
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(dirX * bodyRadius * 1.8, -dirY * bodyRadius * 1.8);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Shield overlay when blocking
+  if (blocking) {
+    ctx.save();
+    ctx.translate(position.x, position.y - renderSize * 0.45);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.beginPath();
+    ctx.arc(0, 0, renderSize * 0.55, Math.PI * 0.03, Math.PI * 0.97);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 export function renderPlayer(renderer) {
   if (!window.wasmExports) {return;}
 
@@ -314,48 +416,88 @@ export function renderPlayer(renderer) {
   );
   ctx.fill();
 
+  // Convert animation state names to match demo convention
   const animStateNames = [
     'idle', 'running', 'attacking', 'blocking', 'rolling', 'hurt', 'dead',
-    'jumping', 'double_jumping', 'landing', 'wall_sliding', 'dashing', 'charging_attack'
+    'jumping', 'doubleJumping', 'landing', 'wallSliding', 'dashing', 'chargingAttack'
   ];
   const currentAnimState = animStateNames[animState] || 'idle';
 
-  drawEnhancedCharacter(
-    renderer,
-    playerWorldPos.x,
-    playerWorldPos.y,
-    renderer.player.width,
-    renderer.player.height,
-    renderer.player.color,
-    renderer.player.facing,
-    currentAnimState,
-    stateTimer,
-    {
-      isGrounded,
-      isRolling,
-      isBlocking,
-      jumpCount,
-      isWallSliding,
-      velX,
-      velY,
-    }
-  );
+  // Convert to screen coordinates for procedural rendering
+  const screenPos = renderer.worldToScreen(playerWorldPos.x, playerWorldPos.y);
+  const baseRadius = Math.max(20, Math.min(renderer.canvas.width, renderer.canvas.height) * 0.035);
 
-  if (currentAnimState === 'attacking') {
-    drawWeaponTrail(renderer, playerWorldPos, renderer.player.facing, stateTimer);
+  // Create CharacterAnimator instance if not exists on renderer
+  if (!renderer.playerAnimator) {
+    renderer.playerAnimator = new CharacterAnimator();
+    renderer.lastAnimState = 0;
+    renderer.lastFacing = 'right';
+    renderer.lastAnimatorTime = performance.now();
   }
-  if (isBlocking) {
-    drawShieldEffect(renderer, playerWorldPos, renderer.player.facing);
+
+  // Update animator
+  const now = performance.now();
+  const deltaSeconds = Math.min(0.1, Math.max(0, (now - renderer.lastAnimatorTime) / 1000));
+  renderer.lastAnimatorTime = now;
+
+  // Set animation state if changed
+  const targetState = currentAnimState === 'running' ? 1 :
+                     currentAnimState === 'attacking' ? 2 :
+                     currentAnimState === 'blocking' ? 3 :
+                     currentAnimState === 'rolling' ? 4 :
+                     currentAnimState === 'hurt' ? 5 :
+                     currentAnimState === 'dead' ? 6 :
+                     currentAnimState === 'jumping' ? 7 :
+                     currentAnimState === 'doubleJumping' ? 8 :
+                     currentAnimState === 'landing' ? 9 :
+                     currentAnimState === 'wallSliding' ? 10 :
+                     currentAnimState === 'dashing' ? 11 :
+                     currentAnimState === 'chargingAttack' ? 12 : 0;
+
+  if (targetState !== renderer.lastAnimState) {
+    try {
+      renderer.playerAnimator.setAnimState(targetState);
+      renderer.lastAnimState = targetState;
+    } catch (error) {
+      console.warn('[Game] Unable to set animation state', currentAnimState, error);
+    }
   }
-  if (isRolling) {
-    drawRollTrail(renderer, playerWorldPos, velX, velY);
+
+  // Set facing direction
+  const velocityMagnitude = Math.hypot(velX, velY);
+  if (velocityMagnitude > 0.02) {
+    const velocityDir = velX < 0 ? 'left' : 'right';
+    if (velocityDir !== renderer.lastFacing) {
+      renderer.playerAnimator.setFacing(velocityDir);
+      renderer.lastFacing = velocityDir;
+    }
   }
-  if (isWallSliding) {
-    drawWallSlideEffect(renderer, playerWorldPos, renderer.player.facing);
-  }
-  if (!isGrounded && jumpCount > 0) {
-    drawAirborneEffects(renderer, playerWorldPos, jumpCount, velY);
-  }
+
+  // Get transform data from CharacterAnimator
+  const transform = renderer.playerAnimator.update(
+    deltaSeconds,
+    playerWorldPos,
+    { x: velX, y: velY },
+    !!isGrounded
+  ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+
+  // Create state object for procedural rendering
+  const playerState = {
+    x: playerWorldPos.x,
+    y: playerWorldPos.y,
+    vx: velX,
+    vy: velY,
+    velocityX: velX,
+    velocityY: velY,
+    grounded: !!isGrounded,
+    rolling: !!isRolling,
+    block: !!isBlocking,
+    anim: currentAnimState,
+    animState: animState
+  };
+
+  // Use procedural rendering instead of enhanced character drawing
+  drawProceduralPlayer(renderer, playerState, screenPos, baseRadius, transform);
 
   ctx.restore();
 }
