@@ -553,7 +553,7 @@ export class UnifiedInputManager {
             // Also explicitly clear blocking state if the function exists
             if (this.wasmManager?.exports?.set_blocking) {
                 try {
-                    this.wasmManager.exports.set_blocking(0, 0, 0, performance.now() / 1000);
+                    this.wasmManager.exports.set_blocking(0, 0, 0);
                 } catch (e) {
                     console.warn('Failed to clear blocking state:', e);
                 }
