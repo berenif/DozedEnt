@@ -67,6 +67,9 @@ export class GamepadManager {
       triggers: { left: 0, right: 0 }
     };
     
+    // Track animation frame for cleanup
+    this.pollingFrameId = null;
+    
     this.setupEventListeners();
     this.startPolling();
   }
@@ -161,7 +164,7 @@ export class GamepadManager {
         this.updateGamepads();
         this.lastInputTime = now;
       }
-      requestAnimationFrame(poll);
+      this.pollingFrameId = requestAnimationFrame(poll);
     };
     poll();
   }
@@ -468,6 +471,12 @@ export class GamepadManager {
    * Cleanup
    */
   destroy() {
+    // Cancel polling loop to prevent memory leak
+    if (this.pollingFrameId !== null) {
+      cancelAnimationFrame(this.pollingFrameId);
+      this.pollingFrameId = null;
+    }
+    
     this.gamepads.clear();
     this.activeGamepad = null;
   }

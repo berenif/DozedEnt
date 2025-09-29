@@ -81,6 +81,9 @@ export class InputManager {
             touches: new Map()
         };
         
+        // Track animation frame for cleanup
+        this.inputLoopFrameId = null;
+        
         this.init();
     }
     
@@ -617,7 +620,7 @@ export class InputManager {
             }
             // Input is now sent to WASM via GameStateManager.update()
             // this.sendInputToWasm(); // Disabled to prevent duplicate input
-            requestAnimationFrame(updateInput);
+            this.inputLoopFrameId = requestAnimationFrame(updateInput);
         };
         
         updateInput();
@@ -719,6 +722,12 @@ export class InputManager {
      * Cleanup
      */
     destroy() {
+        // Cancel input loop to prevent memory leak
+        if (this.inputLoopFrameId !== null) {
+            cancelAnimationFrame(this.inputLoopFrameId);
+            this.inputLoopFrameId = null;
+        }
+        
         // Cleanup gamepad manager
         if (this.gamepadManager) {
             this.gamepadManager.destroy();

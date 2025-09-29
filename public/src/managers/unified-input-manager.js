@@ -108,6 +108,9 @@ export class UnifiedInputManager {
             inputQueue: []
         };
         
+        // Track animation frame for cleanup
+        this.animationFrameId = null;
+        
         this.initialize();
     }
     
@@ -116,6 +119,14 @@ export class UnifiedInputManager {
      */
     initialize() {
         console.log('🎮 Initializing Unified Input Manager...');
+        
+        // Initialize key states for proper movement tracking
+        this.keyStates = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
         
         // IMPORTANT: Clear all inputs first to ensure clean state
         this.clearAllInputs();
@@ -146,11 +157,12 @@ export class UnifiedInputManager {
         // Start input update loop
         this.startInputLoop();
         
-        // Send initial clear state once WASM is ready
+        // DON'T send initial clear - it corrupts WASM state
+        // The input state defaults to all zeros anyway
         setTimeout(() => {
             if (this.syncState.wasmReady) {
-                this.clearAllInputs();
-                console.log('✅ Sent initial clear input state to WASM');
+                // Just verify state is zero, don't send anything
+                console.log('✅ Input manager ready, state defaults to zero');
             }
         }, 100);
         
@@ -188,6 +200,13 @@ export class UnifiedInputManager {
     setupMouseInput() {
         const handleMouseDown = (event) => {
             this.inputState.pointer.down = true;
+            
+            // FIXED: Only trigger attacks on canvas clicks, not document clicks
+            // This prevents accidental attacks when clicking outside the game
+            const canvas = document.getElementById('demo-canvas');
+            if (event.target !== canvas) {
+                return; // Ignore clicks outside canvas
+            }
             
             // Mouse buttons can trigger actions
             switch (event.button) {
@@ -510,19 +529,33 @@ export class UnifiedInputManager {
         action = validation.action;
         isPressed = validation.isPressed;
         
+        // Track individual key states for movement
+        if (!this.keyStates) {
+            this.keyStates = {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            };
+        }
+        
         // Update input state based on action
         switch (action) {
             case 'move-up':
-                this.inputState.direction.y = isPressed ? -1 : 0;
+                this.keyStates.up = isPressed;
+                this.updateDirectionFromKeyStates();
                 break;
             case 'move-down':
-                this.inputState.direction.y = isPressed ? 1 : 0;
+                this.keyStates.down = isPressed;
+                this.updateDirectionFromKeyStates();
                 break;
             case 'move-left':
-                this.inputState.direction.x = isPressed ? -1 : 0;
+                this.keyStates.left = isPressed;
+                this.updateDirectionFromKeyStates();
                 break;
             case 'move-right':
-                this.inputState.direction.x = isPressed ? 1 : 0;
+                this.keyStates.right = isPressed;
+                this.updateDirectionFromKeyStates();
                 break;
                 
             case 'light-attack':
@@ -565,6 +598,43 @@ export class UnifiedInputManager {
         }
         
         // Note: main.js reads our inputState and sends to WASM
+    }
+    
+    /**
+     * Update direction based on all currently pressed movement keys
+     */
+    updateDirectionFromKeyStates() {
+        // Calculate direction based on which keys are currently pressed
+        let x = 0;
+        let y = 0;
+        
+        if (this.keyStates.left) {
+            x -= 1;
+        }
+        if (this.keyStates.right) {
+            x += 1;
+        }
+        if (this.keyStates.up) {
+            y -= 1;
+        }
+        if (this.keyStates.down) {
+            y += 1;
+        }
+        
+        // Normalize diagonal movement to prevent faster diagonal speed
+        if (x !== 0 && y !== 0) {
+            const length = Math.sqrt(x * x + y * y);
+            x /= length;
+            y /= length;
+        }
+        
+        this.inputState.direction.x = x;
+        this.inputState.direction.y = y;
+        
+        // Debug log for movement (only when changed and debug enabled)
+        if (this.config.debugInput && (x !== 0 || y !== 0)) {
+            console.log(`🎮 Movement: (${x.toFixed(2)}, ${y.toFixed(2)}) - Keys: U:${this.keyStates.up} D:${this.keyStates.down} L:${this.keyStates.left} R:${this.keyStates.right}`);
+        }
     }
     
     /**
@@ -727,8 +797,8 @@ export class UnifiedInputManager {
             // 
             // The inputState is the source of truth that main.js reads from.
             
-            // Continue loop
-            requestAnimationFrame(updateInput);
+            // Continue loop (save ID for cleanup)
+            this.animationFrameId = requestAnimationFrame(updateInput);
         };
         
         updateInput();
@@ -769,6 +839,14 @@ export class UnifiedInputManager {
         this.inputState.special = false;
         this.inputState.jump = false;
         this.inputState.pointer.down = false;
+        
+        // Clear key states as well
+        if (this.keyStates) {
+            this.keyStates.up = false;
+            this.keyStates.down = false;
+            this.keyStates.left = false;
+            this.keyStates.right = false;
+        }
         
         // Clear the input buffer as well
         this.inputState.inputBuffer.clear();
@@ -837,6 +915,12 @@ export class UnifiedInputManager {
      */
     destroy() {
         console.log('🎮 Cleaning up Unified Input Manager...');
+        
+        // Cancel animation frame loop to prevent memory leak
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
         
         // Remove all event listeners
         for (const { target, event, handler, options } of this.eventListeners) {

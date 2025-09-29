@@ -21,6 +21,9 @@ class AchievementManager {
         
         // Start periodic achievement checking
         this.startAchievementChecking();
+
+        // Track timers for cleanup
+        this._intervals = new Set();
     }
     
     /**
@@ -48,9 +51,10 @@ class AchievementManager {
      * Start periodic achievement checking
      */
     startAchievementChecking() {
-        setInterval(() => {
+        const id = setInterval(() => {
             this.checkForNewAchievements();
         }, 1000); // Check every second
+        this._intervals.add(id);
     }
     
     /**
@@ -141,14 +145,19 @@ class AchievementManager {
             }, 100);
             
             // Auto-remove after delay
-            setTimeout(() => {
+            const removeTimeout = setTimeout(() => {
                 notification.style.transform = 'translateX(400px)';
-                setTimeout(() => {
+                const innerTimeout = setTimeout(() => {
                     if (notification.parentNode) {
                         notification.parentNode.removeChild(notification);
                     }
                 }, 300);
+                // Track nested timeout IDs for optional future cleanup
+                if (!this._timeouts) { this._timeouts = new Set(); }
+                this._timeouts.add(innerTimeout);
             }, 5000);
+            if (!this._timeouts) { this._timeouts = new Set(); }
+            this._timeouts.add(removeTimeout);
             
         } catch (error) {
             console.error('Error showing achievement notification:', error);
@@ -537,3 +546,23 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.AchievementManager = AchievementManager;
 }
+
+/**
+ * Lifecycle: provide explicit cleanup to prevent leaks when UI is torn down
+ */
+AchievementManager.prototype.destroy = function destroy() {
+    try {
+        if (this._intervals) {
+            for (const id of this._intervals) { clearInterval(id); }
+            this._intervals.clear();
+        }
+        if (this._timeouts) {
+            for (const id of this._timeouts) { clearTimeout(id); }
+            this._timeouts.clear();
+        }
+        this.notificationContainer = null;
+    } catch (e) {
+        // Best-effort cleanup
+        console.warn('AchievementManager destroy encountered an issue:', e);
+    }
+};

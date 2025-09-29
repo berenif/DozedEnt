@@ -291,22 +291,22 @@ export function drawProceduralPlayer(renderer, state, position, baseRadius, tran
     ctx.restore();
   }
 
-  // Secondary motion (e.g., cape/cloth chain)
-  const segments = Array.isArray(transform.secondaryMotion) ? transform.secondaryMotion : [];
-  if (segments.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    const first = renderer.worldToScreen(segments[0].x, segments[0].y);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < segments.length; i++) {
-      const p = renderer.worldToScreen(segments[i].x, segments[i].y);
-      ctx.lineTo(p.x, p.y);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
+  // Secondary motion (e.g., cape/cloth chain) - DISABLED
+  // const segments = Array.isArray(transform.secondaryMotion) ? transform.secondaryMotion : [];
+  // if (segments.length > 1) {
+  //   ctx.save();
+  //   ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+  //   ctx.lineWidth = 2;
+  //   ctx.beginPath();
+  //   const first = renderer.worldToScreen(segments[0].x, segments[0].y);
+  //   ctx.moveTo(first.x, first.y);
+  //   for (let i = 1; i < segments.length; i++) {
+  //     const p = renderer.worldToScreen(segments[i].x, segments[i].y);
+  //     ctx.lineTo(p.x, p.y);
+  //   }
+  //   ctx.stroke();
+  //   ctx.restore();
+  // }
 
   // Main body
   const renderSize = Math.max(64, Math.min(renderer.canvas.width, renderer.canvas.height) * 0.14);
