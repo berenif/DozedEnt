@@ -27,18 +27,20 @@ class PublicDeploymentValidator {
       'index.html',
       'favicon.ico',
       'game.wasm',
-      'game-host.wasm',
       '_config.yml',
       '.nojekyll'
     ]
-    this.requiredDirectories = ['core','assets','images']
+    this.requiredDirectories = ['core']
     this.optionalFiles = [
+      'game-host.wasm',
       'serve-modules.js',
       'trystero-wasm.min.js',
       'site.js',
       'deployment-info.json'
     ]
     this.optionalDirectories = [
+      'assets',
+      'images',
       'src',
       'data',
       'wasm'
@@ -162,7 +164,7 @@ class PublicDeploymentValidator {
    * Check WASM files
    */
   async checkWasmFiles() {
-    const wasmFiles = ['game.wasm', 'game-host.wasm']
+    const wasmFiles = ['game.wasm']
     
     for (const wasmFile of wasmFiles) {
       const wasmPath = join(publicPath, wasmFile)
@@ -178,6 +180,21 @@ class PublicDeploymentValidator {
         this.errors.push(`public/${wasmFile} is missing`)
       }
     }
+    
+    // Check optional game-host.wasm
+    const gameHostPath = join(publicPath, 'game-host.wasm')
+    if (existsSync(gameHostPath)) {
+      const stats = statSync(gameHostPath)
+      const sizeKB = Math.round(stats.size / 1024)
+      console.log(chalk.green(`  ✓ public/game-host.wasm exists (${sizeKB}KB)`))
+      
+      if (stats.size === 0) {
+        this.warnings.push(`public/game-host.wasm is empty`)
+      }
+    } else {
+      console.log(chalk.yellow(`  ⚠ public/game-host.wasm missing (optional)`))
+    }
+    
     // Check public/wasm folder
     const publicWasmPath = join(publicPath, 'wasm')
     if (existsSync(publicWasmPath)) {

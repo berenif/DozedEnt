@@ -1,11 +1,15 @@
 {
-  "timestamp": "2025-09-28T20:36:04.912Z",
-  "duration": 45659,
+  "timestamp": "2025-09-29T10:55:01.877Z",
+  "duration": 33465,
   "stats": {
     "modulesBuilt": 3,
-    "totalSize": 1770338,
+    "totalSize": 1758533,
     "optimizationSavings": 0,
-    "errors": [],
+    "errors": [
+      "Missing expected file: core/index.js",
+      "Missing expected file: animations/index.js",
+      "Missing expected file: index.js"
+    ],
     "warnings": [
       "Bundle size warning: core/trystero-ipfs.min.js is 542KB (threshold: 150KB)",
       "Bundle size warning: core/trystero-mqtt.min.js is 351KB (threshold: 100KB)",
@@ -19,15 +23,12 @@
       "core/trystero-supabase.min.js": 127,
       "core/trystero-torrent.min.js": 13,
       "core/trystero-wasm.min.js": 4,
-      "animations/player-animator.js": 129,
+      "animations/player-animator.js": 126,
       "animations/player-animator.min.js": 47,
-      "animations/player-animator.umd.js": 141,
-      "animations/wolf-animation.js": 78,
+      "animations/player-animator.umd.js": 138,
+      "animations/wolf-animation.js": 76,
       "animations/wolf-animation.min.js": 31,
-      "animations/wolf-animation.umd.js": 86,
-      "core/index.js": 1,
-      "animations/index.js": 1,
-      "index.js": 0
+      "animations/wolf-animation.umd.js": 84
     }
   },
   "memoryStats": {
@@ -76,7 +77,7 @@
   },
   "optimizationReport": {
     "summary": {
-      "filesProcessed": 1,
+      "filesProcessed": 0,
       "totalBytesRemoved": 0,
       "averageBytesPerFile": 0,
       "consoleStatementsRemoved": 0,

@@ -1,13 +1,23 @@
-name: Deploy
+name: Deploy DozedEnt to GitHub Pages (Public Folder)
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -19,15 +29,60 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         
     - name: Install dependencies
       run: npm ci
       
+    - name: Install PowerShell Core
+      run: |
+        wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        sudo apt-get update
+        sudo apt-get install -y powershell
+        
     - name: Setup Emscripten SDK
       run: |
         cd emsdk
         ./emsdk install latest
         ./emsdk activate latest
-        ./emsdk list
+        source ./emsdk_env.sh
+        em++ --version
+        
+    - name: Generate balance data
+      run: npm run balance:gen
+      
+    - name: Build WASM modules
+      run: npm run wasm:build:all
+      
+    - name: Build project
+      run: npm run build:all
+      
+    - name: Build public folder for deployment
+      run: npm run build:public
+      
+    - name: Validate public folder structure
+      run: npm run validate:public-deployment
+      
+    - name: Run deployment validation
+      run: npm run deploy:validate:public
+      
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './public'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

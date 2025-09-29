@@ -450,9 +450,15 @@ function validatePublicFolder() {
     'index.html',
     'favicon.ico',
     'game.wasm',
-    'game-host.wasm',
     '_config.yml',
     '.nojekyll'
+  ]
+  
+  const optionalFiles = [
+    'game-host.wasm',
+    'site.js',
+    'serve-modules.js',
+    'trystero-wasm.min.js'
   ]
   
   const requiredDirs = [
