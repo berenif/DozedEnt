@@ -48,6 +48,14 @@ export class UnifiedInputManager {
             lastMovementDirection: { x: 1, y: 0 } // Default facing right
         };
         
+        // Track pressed keys for proper movement accumulation
+        this.pressedKeys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+        
         // Configuration
         this.config = {
             bufferDuration: 120, // milliseconds for input buffer
@@ -513,16 +521,20 @@ export class UnifiedInputManager {
         // Update input state based on action
         switch (action) {
             case 'move-up':
-                this.inputState.direction.y = isPressed ? -1 : 0;
+                this.pressedKeys.up = isPressed;
+                this.updateMovementDirection();
                 break;
             case 'move-down':
-                this.inputState.direction.y = isPressed ? 1 : 0;
+                this.pressedKeys.down = isPressed;
+                this.updateMovementDirection();
                 break;
             case 'move-left':
-                this.inputState.direction.x = isPressed ? -1 : 0;
+                this.pressedKeys.left = isPressed;
+                this.updateMovementDirection();
                 break;
             case 'move-right':
-                this.inputState.direction.x = isPressed ? 1 : 0;
+                this.pressedKeys.right = isPressed;
+                this.updateMovementDirection();
                 break;
                 
             case 'light-attack':
@@ -565,6 +577,30 @@ export class UnifiedInputManager {
         }
         
         // Note: main.js reads our inputState and sends to WASM
+    }
+    
+    /**
+     * Update movement direction based on currently pressed keys
+     * This allows proper handling of multiple simultaneous key presses
+     */
+    updateMovementDirection() {
+        // Calculate Y direction (up/down)
+        let dirY = 0;
+        if (this.pressedKeys.up) dirY -= 1;
+        if (this.pressedKeys.down) dirY += 1;
+        
+        // Calculate X direction (left/right)
+        let dirX = 0;
+        if (this.pressedKeys.left) dirX -= 1;
+        if (this.pressedKeys.right) dirX += 1;
+        
+        // Update input state
+        this.inputState.direction.x = dirX;
+        this.inputState.direction.y = dirY;
+        
+        if (this.config.debugInput) {
+            console.log(`🎮 Movement updated: (${dirX}, ${dirY})`);
+        }
     }
     
     /**
@@ -769,6 +805,12 @@ export class UnifiedInputManager {
         this.inputState.special = false;
         this.inputState.jump = false;
         this.inputState.pointer.down = false;
+        
+        // Clear pressed keys tracking
+        this.pressedKeys.up = false;
+        this.pressedKeys.down = false;
+        this.pressedKeys.left = false;
+        this.pressedKeys.right = false;
         
         // Clear the input buffer as well
         this.inputState.inputBuffer.clear();
