@@ -21,6 +21,15 @@ const inputManager = createInputManager(wasmApi, {
   debugMode: false 
 });
 
+// Show mobile controls on touch devices
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+  const mobileControls = document.getElementById('mobile-controls');
+  if (mobileControls) {
+    mobileControls.style.display = 'flex';
+    console.log('✅ Mobile controls enabled');
+  }
+}
+
 // Clear any potential stuck inputs after initialization
 setTimeout(() => {
   if (inputManager && inputManager.clearAllInputs) {

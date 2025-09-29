@@ -227,32 +227,237 @@ export class UnifiedInputManager {
      * Setup touch input handling for mobile
      */
     setupTouchInput() {
-        // Touch controls will be implemented based on UI requirements
-        // For now, basic touch-to-move functionality
-        
-        const handleTouchStart = (event) => {
-            event.preventDefault();
-            const touch = event.touches[0];
-            this.inputState.pointer.x = touch.clientX;
-            this.inputState.pointer.y = touch.clientY;
-            this.inputState.pointer.down = true;
+        // Initialize joystick state
+        this.joystickState = {
+            active: false,
+            center: { x: 0, y: 0 },
+            maxDistance: 60,
+            touchId: null
         };
         
-        const handleTouchEnd = (event) => {
-            event.preventDefault();
-            this.inputState.pointer.down = false;
+        // Map of active touches for multi-touch support
+        this.activeTouches = new Map();
+        
+        const handleTouchStart = (event) => {
+            for (const touch of event.changedTouches) {
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                // Handle joystick touch
+                if (element && (element.closest('#joystick') || element.closest('#joystick-base'))) {
+                    event.preventDefault();
+                    this.handleJoystickStart(touch);
+                    this.activeTouches.set(touch.identifier, { type: 'joystick', element });
+                }
+                // Handle action button touch
+                else if (element && element.closest('.action-btn')) {
+                    event.preventDefault();
+                    const actionBtn = element.closest('.action-btn');
+                    this.handleActionButtonTouch(actionBtn, true);
+                    this.activeTouches.set(touch.identifier, { type: 'button', element: actionBtn });
+                }
+                // General touch tracking
+                else {
+                    this.inputState.pointer.x = touch.clientX;
+                    this.inputState.pointer.y = touch.clientY;
+                    this.inputState.pointer.down = true;
+                    this.activeTouches.set(touch.identifier, { type: 'general', element });
+                }
+            }
         };
         
         const handleTouchMove = (event) => {
-            event.preventDefault();
-            const touch = event.touches[0];
-            this.inputState.pointer.x = touch.clientX;
-            this.inputState.pointer.y = touch.clientY;
+            for (const touch of event.changedTouches) {
+                const touchData = this.activeTouches.get(touch.identifier);
+                if (!touchData) continue;
+                
+                // Handle joystick movement
+                if (touchData.type === 'joystick') {
+                    event.preventDefault();
+                    this.handleJoystickMove(touch);
+                }
+                // Update general pointer position
+                else {
+                    this.inputState.pointer.x = touch.clientX;
+                    this.inputState.pointer.y = touch.clientY;
+                }
+            }
+        };
+        
+        const handleTouchEnd = (event) => {
+            for (const touch of event.changedTouches) {
+                const touchData = this.activeTouches.get(touch.identifier);
+                if (!touchData) continue;
+                
+                // Handle joystick release
+                if (touchData.type === 'joystick') {
+                    event.preventDefault();
+                    this.handleJoystickEnd();
+                }
+                // Handle button release
+                else if (touchData.type === 'button') {
+                    event.preventDefault();
+                    this.handleActionButtonTouch(touchData.element, false);
+                }
+                // General touch end
+                else {
+                    this.inputState.pointer.down = false;
+                }
+                
+                this.activeTouches.delete(touch.identifier);
+            }
         };
         
         this.addEventListenerWithCleanup(document, 'touchstart', handleTouchStart, { passive: false });
-        this.addEventListenerWithCleanup(document, 'touchend', handleTouchEnd, { passive: false });
         this.addEventListenerWithCleanup(document, 'touchmove', handleTouchMove, { passive: false });
+        this.addEventListenerWithCleanup(document, 'touchend', handleTouchEnd, { passive: false });
+        this.addEventListenerWithCleanup(document, 'touchcancel', handleTouchEnd, { passive: false });
+    }
+    
+    /**
+     * Handle joystick touch start
+     */
+    handleJoystickStart(touch) {
+        const joystickBase = document.getElementById('joystick-base');
+        if (!joystickBase) return;
+        
+        const rect = joystickBase.getBoundingClientRect();
+        this.joystickState.active = true;
+        this.joystickState.touchId = touch.identifier;
+        this.joystickState.center = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+        };
+        this.joystickState.maxDistance = rect.width / 2 - 20;
+        
+        // Visual feedback
+        joystickBase.classList.add('active');
+        
+        this.handleJoystickMove(touch);
+    }
+    
+    /**
+     * Handle joystick movement
+     */
+    handleJoystickMove(touch) {
+        if (!this.joystickState.active) return;
+        
+        const center = this.joystickState.center;
+        const maxDist = this.joystickState.maxDistance;
+        
+        let deltaX = touch.clientX - center.x;
+        let deltaY = touch.clientY - center.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        // Constrain to max distance
+        if (distance > maxDist) {
+            const angle = Math.atan2(deltaY, deltaX);
+            deltaX = Math.cos(angle) * maxDist;
+            deltaY = Math.sin(angle) * maxDist;
+        }
+        
+        // Update knob visual position
+        const knob = document.getElementById('joystick-knob');
+        if (knob) {
+            knob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+        }
+        
+        // Calculate normalized input (-1 to 1)
+        const deadzone = 0.15;
+        let normalizedX = deltaX / maxDist;
+        let normalizedY = deltaY / maxDist;
+        const magnitude = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+        
+        // Apply deadzone
+        if (magnitude < deadzone) {
+            normalizedX = 0;
+            normalizedY = 0;
+        } else {
+            // Scale to account for deadzone
+            const adjustedMagnitude = (magnitude - deadzone) / (1 - deadzone);
+            const ratio = adjustedMagnitude / magnitude;
+            normalizedX *= ratio;
+            normalizedY *= ratio;
+        }
+        
+        // Update input state
+        this.inputState.direction.x = normalizedX;
+        this.inputState.direction.y = normalizedY;
+        
+        // Update last movement direction for shield facing
+        if (normalizedX !== 0 || normalizedY !== 0) {
+            this.inputState.lastMovementDirection.x = normalizedX;
+            this.inputState.lastMovementDirection.y = normalizedY;
+        }
+        
+        // Queue for WASM update
+        this.queueInputForWasm();
+    }
+    
+    /**
+     * Handle joystick release
+     */
+    handleJoystickEnd() {
+        this.joystickState.active = false;
+        this.joystickState.touchId = null;
+        
+        // Reset knob visual position
+        const knob = document.getElementById('joystick-knob');
+        if (knob) {
+            knob.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        // Remove visual feedback
+        const joystickBase = document.getElementById('joystick-base');
+        if (joystickBase) {
+            joystickBase.classList.remove('active');
+        }
+        
+        // Reset movement input
+        this.inputState.direction.x = 0;
+        this.inputState.direction.y = 0;
+        
+        // Queue for WASM update
+        this.queueInputForWasm();
+    }
+    
+    /**
+     * Handle action button touch
+     */
+    handleActionButtonTouch(button, pressed) {
+        const action = button.dataset.action;
+        if (!action) return;
+        
+        // Map action to input action
+        const actionMap = {
+            'lightAttack': 'light-attack',
+            'heavyAttack': 'heavy-attack',
+            'block': 'block',
+            'roll': 'roll',
+            'special': 'special'
+        };
+        
+        const inputAction = actionMap[action];
+        if (inputAction) {
+            this.handleInputAction(inputAction, pressed);
+            
+            // Visual feedback
+            if (pressed) {
+                button.classList.add('pressed');
+                // Haptic feedback if available
+                if (navigator.vibrate) {
+                    const vibrationMap = {
+                        'lightAttack': 20,
+                        'heavyAttack': 40,
+                        'special': 60,
+                        'block': 15,
+                        'roll': 30
+                    };
+                    navigator.vibrate(vibrationMap[action] || 20);
+                }
+            } else {
+                button.classList.remove('pressed');
+            }
+        }
     }
     
     /**
