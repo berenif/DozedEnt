@@ -3,7 +3,7 @@
 
 #pragma once
 
-#define BAL_BASE_SPEED 0.3
+#define BAL_BASE_SPEED 0.6
 #define BAL_ROLL_SPEED_MULTIPLIER 2.6
 #define BAL_PLAYER_ACCEL 12
 #define BAL_PLAYER_FRICTION 9

@@ -12,11 +12,59 @@ if (!canvas) {
 const renderer = createRenderer(canvas);
 const wasmApi = await createWasmApi();
 
+// Expose for debugging
+window.wasmApi = wasmApi;
+window.renderer = renderer;
+
+// Will be set after inputManager is created
+let inputManager = null;
+
+// CRITICAL: Initialize WASM immediately after creation
+// This ensures the player spawns at a valid position
+if (wasmApi.exports?.init_run) {
+  try {
+    const seed = BigInt(Date.now());
+    wasmApi.exports.init_run(seed, 0);
+    console.log('✅ [Main] WASM initialized at', new Date().toLocaleTimeString());
+    
+    // CRITICAL: Clear all input states immediately after init
+    // This prevents garbage memory values from causing auto-movement
+    wasmApi.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
+    console.log('✅ [Main] Input state cleared');
+    
+    // Verify initialization worked
+    let x = wasmApi.exports.get_x?.();
+    let y = wasmApi.exports.get_y?.();
+    console.log('✅ [Main] Player position after init_run:', x, y);
+    
+    // WORKAROUND: If position is corrupted, force it back to 0.5, 0.5
+    if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x - 0.5) > 0.1 || Math.abs(y - 0.5) > 0.1) {
+      console.warn('⚠️ [Main] Position corrupted after init_run, attempting fix...');
+      
+      // Use start() which also sets position to 0.5
+      if (wasmApi.exports?.start) {
+        wasmApi.exports.start();
+        x = wasmApi.exports.get_x?.();
+        y = wasmApi.exports.get_y?.();
+        console.log('✅ [Main] Position after start():', x, y);
+      }
+    }
+    
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      console.error('❌ [Main] WASM init failed - position is NaN');
+    } else {
+      console.log('✅ [Main] Player spawned successfully at', x, y);
+    }
+  } catch (initError) {
+    console.error('❌ [Main] WASM initialization failed:', initError);
+  }
+}
+
 // Small delay to ensure WASM is fully initialized before input manager
 await new Promise(resolve => setTimeout(resolve, 50));
 
 // Initialize unified input manager with legacy compatibility
-const inputManager = createInputManager(wasmApi, { 
+inputManager = createInputManager(wasmApi, { 
   useLegacyAdapter: true, 
   debugMode: false 
 });
@@ -34,6 +82,58 @@ if (window.DZ) {
   };
 }
 
+// NOTE: Removed automatic delayed input clearing (lines 136-162)
+// It was causing race conditions with user input and contradicting
+// the proper initialization sequence in unified-input-manager.js
+// The input manager already initializes with zero state by default
+
+// Debug helper: Force clear attack state (defined after inputManager is ready)
+window.clearAttacks = () => {
+  console.log('🔧 Manually clearing attack states...');
+  
+  // Send zero inputs multiple times to force WASM to process it
+  for (let i = 0; i < 10; i++) {
+    wasmApi.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
+    wasmApi.update(1/60); // Force update to process
+  }
+  
+  if (inputManager && inputManager.inputState) {
+    inputManager.inputState.lightAttack = false;
+    inputManager.inputState.heavyAttack = false;
+    inputManager.inputState.special = false;
+    inputManager.inputState.block = false;
+  }
+  
+  const state = wasmApi.getPlayerState();
+  console.log('✅ Attack states cleared. Animation now:', state.anim);
+};
+
+// Debug helper: Check movement state (defined after inputManager is ready)
+window.checkMovement = () => {
+  if (!inputManager) {
+    console.warn('⚠️ Input manager not initialized yet');
+    return;
+  }
+  
+  const state = wasmApi.getPlayerState();
+  console.log('📊 Movement Debug:');
+  console.log('  Position:', state.x.toFixed(3), state.y.toFixed(3));
+  console.log('  Velocity:', state.vx.toFixed(3), state.vy.toFixed(3));
+  console.log('  Animation:', state.anim);
+  console.log('  Stamina:', (state.stamina * 100).toFixed(0) + '%');
+  console.log('  Block:', state.block ? 'YES (blocks movement!)' : 'no');
+  console.log('  Rolling:', state.rolling ? 'YES' : 'no');
+  
+  const input = inputManager.inputState;
+  console.log('  Input Dir:', input.direction.x.toFixed(2), input.direction.y.toFixed(2));
+  console.log('  Attacks:', input.lightAttack ? 'LIGHT' : '', input.heavyAttack ? 'HEAVY' : '', input.special ? 'SPECIAL' : '');
+  
+  // Check for movement blockers
+  if (state.block) console.warn('⚠️ BLOCK is active - this prevents movement!');
+  if (state.anim === 'attacking') console.warn('⚠️ Attack animation may slow movement');
+  if (state.stamina < 0.1) console.warn('⚠️ Low stamina may affect movement');
+};
+
 // Show mobile controls on touch devices
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   const mobileControls = document.getElementById('mobile-controls');
@@ -43,18 +143,13 @@ if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   }
 }
 
-// Clear any potential stuck inputs after initialization
-setTimeout(() => {
-  if (inputManager && inputManager.clearAllInputs) {
-    inputManager.clearAllInputs();
-    console.log('✅ Demo: Cleared initial input state');
-  }
-}, 100);
-
 const step = 1 / 60;
 const maxSubSteps = 5;
 const speed = Number.isFinite(config.speed) ? config.speed : 1;
 const fpsCap = Number.isFinite(config.fps) ? Math.max(15, config.fps) : null;
+
+// Log game speed settings
+console.log('⚙️ Game speed:', speed, 'fps cap:', fpsCap || 'none');
 const frameInterval = fpsCap ? 1000 / fpsCap : 0;
 
 setFlag('timescale', speed);
@@ -65,9 +160,7 @@ if (fpsCap) {
 const optionalHandles = wasmApi.optionalHandles || {};
 
 const placeholderWorld = [
-  { x: -2.4, y: 1.2, r: 0.8, type: 'obstacle' },
-  { x: 1.8, y: 2.4, r: 0.6, type: 'obstacle' },
-  { x: 0, y: 3.2, r: 0.45, type: 'landmark' }
+  // Obstacles removed - empty world for free movement
 ];
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -75,41 +168,43 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const gatherEntities = () => {
   const entities = [];
 
-  const countFn = optionalHandles.get_obstacle_count;
-  const obstacleX = optionalHandles.get_obstacle_x;
-  const obstacleY = optionalHandles.get_obstacle_y;
-  const obstacleR = optionalHandles.get_obstacle_r;
+  // OBSTACLES DISABLED - return empty array for free movement
+  // const countFn = optionalHandles.get_obstacle_count;
+  // const obstacleX = optionalHandles.get_obstacle_x;
+  // const obstacleY = optionalHandles.get_obstacle_y;
+  // const obstacleR = optionalHandles.get_obstacle_r;
 
-  if (typeof countFn === 'function' && typeof obstacleX === 'function' && typeof obstacleY === 'function') {
-    const count = clamp(Number(countFn()), 0, 24);
-    for (let i = 0; i < count; i += 1) {
-      entities.push({
-        x: Number(obstacleX(i)),
-        y: Number(obstacleY(i)),
-        r: Math.max(0.2, Number(obstacleR?.(i) ?? 0.6)),
-        type: 'obstacle'
-      });
-    }
-  }
+  // if (typeof countFn === 'function' && typeof obstacleX === 'function' && typeof obstacleY === 'function') {
+  //   const count = clamp(Number(countFn()), 0, 24);
+  //   for (let i = 0; i < count; i += 1) {
+  //     entities.push({
+  //       x: Number(obstacleX(i)),
+  //       y: Number(obstacleY(i)),
+  //       r: Math.max(0.2, Number(obstacleR?.(i) ?? 0.6)),
+  //       type: 'obstacle'
+  //     });
+  //   }
+  // }
 
-  const landmarkCount = optionalHandles.get_landmark_count;
-  const landmarkX = optionalHandles.get_landmark_x;
-  const landmarkY = optionalHandles.get_landmark_y;
-  const landmarkR = optionalHandles.get_landmark_r;
+  // LANDMARKS DISABLED
+  // const landmarkCount = optionalHandles.get_landmark_count;
+  // const landmarkX = optionalHandles.get_landmark_x;
+  // const landmarkY = optionalHandles.get_landmark_y;
+  // const landmarkR = optionalHandles.get_landmark_r;
 
-  if (typeof landmarkCount === 'function' && typeof landmarkX === 'function' && typeof landmarkY === 'function') {
-    const count = clamp(Number(landmarkCount()), 0, 16);
-    for (let i = 0; i < count; i += 1) {
-      entities.push({
-        x: Number(landmarkX(i)),
-        y: Number(landmarkY(i)),
-        r: Math.max(0.2, Number(landmarkR?.(i) ?? 0.5)),
-        type: 'landmark'
-      });
-    }
-  }
+  // if (typeof landmarkCount === 'function' && typeof landmarkX === 'function' && typeof landmarkY === 'function') {
+  //   const count = clamp(Number(landmarkCount()), 0, 16);
+  //   for (let i = 0; i < count; i += 1) {
+  //     entities.push({
+  //       x: Number(landmarkX(i)),
+  //       y: Number(landmarkY(i)),
+  //       r: Math.max(0.2, Number(landmarkR?.(i) ?? 0.5)),
+  //       type: 'landmark'
+  //     });
+  //   }
+  // }
 
-  return entities.length ? entities : placeholderWorld;
+  return entities; // Return empty array - no obstacles or landmarks
 };
 
 let accumulator = 0;
@@ -152,29 +247,79 @@ const buildOverlay = (state, now) => {
   return { debug: true, lines: [...overlayLines] };
 };
 
-  const applyInput = () => {
+let stuckAttackWarned = false;
+let firstFrameCleared = false;
+const applyInput = () => {
+  // SAFETY: Guard against null inputManager
+  if (!inputManager || !inputManager.inputState) {
+    console.warn('⚠️ applyInput called before inputManager initialized');
+    return;
+  }
+  
+  // SAFETY: Force clear inputs on first frame to prevent garbage values
+  if (!firstFrameCleared) {
+    wasmApi.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
+    firstFrameCleared = true;
+    console.log('🧹 First frame input cleared');
+    return; // Skip this frame's input processing
+  }
+  
   // Allow console override via window.DZ.setFlag('inputOverride', { direction:{x,y}, roll, jump, lightAttack, heavyAttack, block, special })
   const flagsSnapshot = (window.DZ && typeof window.DZ.flags === 'function') ? window.DZ.flags() : null;
   const override = flagsSnapshot && typeof flagsSnapshot.inputOverride === 'object' ? flagsSnapshot.inputOverride : null;
   const input = override || inputManager.inputState;
   const dirX = clamp(input.direction?.x ?? 0, -1, 1);
-  const dirY = clamp(input.direction?.y ?? 0, -1, 1);
+  const dirY = -clamp(input.direction?.y ?? 0, -1, 1); // Invert Y: screen coords to game coords
+  
+  // DEBUG: Validate input values
+  if (!Number.isFinite(dirX) || !Number.isFinite(dirY)) {
+    console.error('🔴 Invalid input in applyInput:', { dirX, dirY, input });
+  }
+  
+  // SAFETY: Detect and clear stuck attack/block states
+  // ONLY run this when NOT using an override (overrides are intentional)
+  // This prevents stuck states from persisting in the real input manager
+  if (!override) {
+    // Clear stuck attack states
+    const hasAttackInput = inputManager.inputState.lightAttack || inputManager.inputState.heavyAttack;
+    const hasPointerDown = inputManager.inputState.pointer?.down;
+    
+    if (hasAttackInput && !hasPointerDown) {
+      if (!stuckAttackWarned) {
+        console.warn('⚠️ Detected stuck attack state, clearing...');
+        stuckAttackWarned = true;
+      }
+      inputManager.inputState.lightAttack = false;
+      inputManager.inputState.heavyAttack = false;
+    } else if (!hasAttackInput) {
+      // Reset warning flag when attacks are cleared
+      stuckAttackWarned = false;
+    }
+    
+    // Clear stuck block state
+    if (inputManager.inputState.block && !hasPointerDown) {
+      inputManager.inputState.block = false;
+    }
+    
+    // SAFETY: Force cancel attack animation if stuck
+    // Check if attack animation is active but no attack inputs
+    const state = wasmApi.getPlayerState();
+    if (state.anim === 'attacking' && !inputManager.inputState.lightAttack && !inputManager.inputState.heavyAttack && !inputManager.inputState.special) {
+      // Send multiple zero-attack frames to force cancel
+      wasmApi.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
+    }
+  }
   
   // Update last movement direction for shield facing
+  // Use inputState.lastMovementDirection to maintain proper reference
   if (dirX !== 0 || dirY !== 0) {
-    inputManager.lastMovementDirection.x = dirX;
-    inputManager.lastMovementDirection.y = dirY;
+    inputManager.inputState.lastMovementDirection.x = dirX;
+    inputManager.inputState.lastMovementDirection.y = dirY;
   }
   
   // Get block state - ensure it's properly read from input
   // IMPORTANT: Block should ONLY be active when explicitly pressed
-  let block = (input.block === true || input.block === 1) ? 1 : 0;
-  
-  // DEBUG: If block is somehow active without input, clear it
-  if (block === 1 && !input.block) {
-    console.warn('Block state latched without input - clearing');
-    block = 0;
-  }
+  const block = (input.block === true || input.block === 1) ? 1 : 0;
 
   wasmApi.setPlayerInput(
     dirX,
@@ -190,17 +335,21 @@ const buildOverlay = (state, now) => {
   // Synchronize blocking state explicitly to avoid latched blocks
   // Always call set_blocking with current state to ensure WASM state is correct
   if (wasmApi.exports?.set_blocking) {
+    const lastDir = inputManager.inputState.lastMovementDirection;
     wasmApi.exports.set_blocking(
       block,
-      inputManager.lastMovementDirection.x || 1,
-      inputManager.lastMovementDirection.y || 0
+      lastDir.x || 1,
+      lastDir.y || 0
     );
   }
 
-  // One-time log when override is active
+  // Log when override becomes active
   if (override && !window.__DZ_OVERRIDE_LOGGED__) {
     window.__DZ_OVERRIDE_LOGGED__ = true;
     console.info('[Demo] Using inputOverride from feature flags:', { dirX, dirY, ...override });
+  } else if (!override && window.__DZ_OVERRIDE_LOGGED__) {
+    // Reset flag when override is removed
+    window.__DZ_OVERRIDE_LOGGED__ = false;
   }
 };
 
@@ -211,8 +360,26 @@ const frame = (now) => {
 
   let iterations = 0;
   while (accumulator >= step && iterations < maxSubSteps) {
+    // DEBUG: Check position before update
+    const beforeX = wasmApi.exports.get_x?.();
+    const beforeY = wasmApi.exports.get_y?.();
+    
     applyInput();
     wasmApi.update(step);
+    
+    // DEBUG: Check position after update
+    const afterX = wasmApi.exports.get_x?.();
+    const afterY = wasmApi.exports.get_y?.();
+    
+    // Log if corruption detected
+    if (Number.isFinite(beforeX) && Number.isFinite(beforeY) && (!Number.isFinite(afterX) || !Number.isFinite(afterY))) {
+      console.error('🔴 CORRUPTION in update loop!');
+      console.error('  Before update:', beforeX, beforeY);
+      console.error('  After update:', afterX, afterY);
+      console.error('  dt:', step);
+      console.trace('Corruption trace:');
+    }
+    
     accumulator -= step;
     iterations += 1;
   }

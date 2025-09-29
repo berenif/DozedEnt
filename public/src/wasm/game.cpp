@@ -185,35 +185,10 @@ void init_run(unsigned long long seed, unsigned int start_weapon) {
   g_pos_x = corners[cornerIndex][0];
   g_pos_y = corners[cornerIndex][1];
 
-  // Generate obstacles deterministically, guaranteeing walkable space
-  generate_obstacles_walkable();
-  
-  // Generate hostile terrain hazards
-  generate_hazards();
-
-  // Generate simple deterministic landmarks (3) and exits (1)
-  g_landmark_count = 3;
-  for (int i = 0; i < (int)g_landmark_count; ++i) {
-    // keep away from edges a bit
-    g_landmarks_x[i] = 0.1f + 0.8f * rng_float01();
-    g_landmarks_y[i] = 0.1f + 0.8f * rng_float01();
-  }
-  g_exit_count = 1;
-  for (int i = 0; i < (int)g_exit_count; ++i) {
-    g_exits_x[i] = 0.1f + 0.8f * rng_float01();
-    g_exits_y[i] = 0.1f + 0.8f * rng_float01();
-  }
-
-  // Generate a simple platform for jumping if not in a biome that generates complex platforms
-  // This is a placeholder; more sophisticated platform generation should be biome-specific
-  if (g_current_biome == BiomeType::Forest || g_current_biome == BiomeType::Plains) {
-    g_obstacle_count = 1;
-    g_obstacles_x[0] = 0.5f;
-    g_obstacles_y[0] = 0.7f;
-    g_obstacles_r[0] = 0.1f; // Represents a platform
-  } else {
-    g_obstacle_count = 0;
-  }
+  // OBSTACLES DISABLED - Clear world for free movement
+  g_obstacle_count = 0;
+  g_landmark_count = 0;
+  g_exit_count = 0;
 
   // Spawn initial wolf packs - create 3 packs to maintain constant pressure
   unsigned int initial_pack_size = 3;

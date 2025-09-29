@@ -10,10 +10,10 @@ let deviceRatio = 1;
 const scratchVec = { x: 0, y: 0 };
 
 const worldBounds = {
-  minX: -5,
-  maxX: 5,
+  minX: 0,
+  maxX: 1,
   minY: 0,
-  maxY: 5
+  maxY: 1
 };
 
 // Procedural-only: no sprite sheet used
@@ -162,22 +162,6 @@ const drawProceduralPlayer = (state, position, baseRadius, transform) => {
     ctx.restore();
   }
 
-  // Secondary motion (e.g., cape/cloth chain)
-  const segments = Array.isArray(transform.secondaryMotion) ? transform.secondaryMotion : [];
-  if (segments.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    const first = wasmToCanvas(segments[0].x, segments[0].y);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < segments.length; i++) {
-      const p = wasmToCanvas(segments[i].x, segments[i].y);
-      ctx.lineTo(p.x, p.y);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
 
   // Main body
   const renderSize = Math.max(64, Math.min(width, height) * 0.14);
