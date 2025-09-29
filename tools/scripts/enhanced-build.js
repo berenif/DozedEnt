@@ -58,26 +58,29 @@ class EnhancedBuildSystem {
         await this.cleanDistDirectory();
       }
       
-      // 3. Run builds in parallel
+      // 3. Build WASM files
+      await this.buildWasm();
+      
+      // 4. Run builds in parallel
       await this.runBuilds();
       
-      // 4. Post-build optimization
+      // 5. Post-build optimization
       if (this.config.optimize) {
         await this.runPostBuildOptimization();
       }
       
-      // 5. Validate builds
+      // 6. Validate builds
       if (this.config.validate) {
         await this.validateBuilds();
       }
       
-      // 6. Copy WASM files
+      // 7. Copy WASM files
       await this.copyWasmFiles();
       
-      // 7. Organize dist folder structure
+      // 8. Organize dist folder structure
       await this.organizeDistFolder();
       
-      // 8. Generate report
+      // 9. Generate report
       if (this.config.generateReport) {
         await this.generateBuildReport();
       }
@@ -133,6 +136,28 @@ class EnhancedBuildSystem {
     } catch (error) {
       // Dist directory doesn't exist, that's fine
       console.log(chalk.yellow('ℹ Dist directory does not exist, will be created'));
+    }
+  }
+
+  /**
+   * Build WASM files
+   */
+  async buildWasm() {
+    console.log(chalk.blue('🔧 Building WASM files...'));
+    
+    try {
+      const startTime = Date.now();
+      execSync('npm run wasm:build', {
+        cwd: projectRoot,
+        stdio: 'inherit'
+      });
+      const duration = Date.now() - startTime;
+      console.log(chalk.green(`✓ WASM build completed successfully (${duration}ms)`));
+    } catch (error) {
+      // WASM build failure is not fatal - log warning and continue
+      const warning = `WASM build failed: ${error.message}`;
+      this.buildStats.warnings.push(warning);
+      console.log(chalk.yellow(`⚠ ${warning} - continuing with build process`));
     }
   }
 
