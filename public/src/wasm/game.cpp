@@ -440,10 +440,12 @@ void update(float dtSeconds) {
     update_achievement_progress(ACHIEVEMENT_SURVIVAL_TIME, (uint32_t)dtSeconds);
   }
   // Normalize input direction if needed
-  float len = g_input_x * g_input_x + g_input_y * g_input_y;
-  if (len > 0.f) {
-    // fast rsqrt approximation is unnecessary; use sqrt
-    len = __builtin_sqrtf(len);
+  // BUG FIX: Only normalize if magnitude > 1.0 to prevent amplifying small inputs
+  // Diagonal keyboard input (1, 1) has magnitude sqrt(2) ≈ 1.414, needs normalization to (0.707, 0.707)
+  // But analog stick input (0.5, 0.5) has magnitude 0.707, should NOT be normalized (would amplify to 0.707, 0.707)
+  float len_squared = g_input_x * g_input_x + g_input_y * g_input_y;
+  if (len_squared > 1.0f) {
+    float len = __builtin_sqrtf(len_squared);
     g_input_x /= len;
     g_input_y /= len;
   }
@@ -1063,7 +1065,10 @@ void update(float dtSeconds) {
       }
       
       // Check if player is trying to move into the wall
-      bool moving_into_wall = (wall_normal_x > 0 && g_input_x > 0) || (wall_normal_x < 0 && g_input_x < 0);
+      // BUG FIX: Inverted logic - wall_normal_x points FROM wall TO player
+      // So if wall is to the LEFT of player (dx > 0, wall_normal_x > 0), player presses LEFT (g_input_x < 0) to slide INTO it
+      // And if wall is to the RIGHT of player (dx < 0, wall_normal_x < 0), player presses RIGHT (g_input_x > 0) to slide INTO it
+      bool moving_into_wall = (wall_normal_x > 0 && g_input_x < 0) || (wall_normal_x < 0 && g_input_x > 0);
       
       if (touching_wall && moving_into_wall && g_vel_y > 0.05f) {
           g_is_wall_sliding = 1;  // Changed from true to 1 (int type)
@@ -1650,8 +1655,12 @@ int can_feint_heavy() {
 // Returns 1 if blocking state is active after this call, 0 if activation failed due to stamina
 __attribute__((export_name("set_blocking")))
 int set_blocking(int on, float faceX, float faceY) {
-  // normalize facing input
-  normalize(faceX, faceY);
+  // BUG FIX: normalize modifies by reference, so we need to normalize the values directly
+  // Previously, normalize was called on pass-by-value params which did nothing!
+  float normalized_x = faceX;
+  float normalized_y = faceY;
+  normalize(normalized_x, normalized_y);
+  
   // Keep input-intent in sync so external unblock calls fully clear state
   g_input_is_blocking = on ? 1 : 0;
   if (on) {
@@ -1672,12 +1681,12 @@ int set_blocking(int on, float faceX, float faceY) {
       if (g_stamina < 0.f) g_stamina = 0.f;
     }
     g_blocking = 1;
-    // keep facing updated while holding block
-    g_block_face_x = faceX;
-    g_block_face_y = faceY;
+    // keep facing updated while holding block (use normalized values)
+    g_block_face_x = normalized_x;
+    g_block_face_y = normalized_y;
     // player facing follows block facing while blocking
-    g_face_x = faceX;
-    g_face_y = faceY;
+    g_face_x = normalized_x;
+    g_face_y = normalized_y;
     return 1;
   } else {
     g_blocking = 0;
