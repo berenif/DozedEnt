@@ -36,11 +36,14 @@ void InputManager::update_input(float input_x, float input_y, int rolling, int j
 }
 
 void InputManager::normalize_movement_input() {
-    float len = current_input_.movement_x * current_input_.movement_x + 
-                current_input_.movement_y * current_input_.movement_y;
+    float len_squared = current_input_.movement_x * current_input_.movement_x + 
+                        current_input_.movement_y * current_input_.movement_y;
     
-    if (len > 0.0f) {
-        len = std::sqrt(len);
+    // BUG FIX: Only normalize if magnitude is GREATER than 1.0
+    // Normalizing inputs with magnitude < 1.0 would incorrectly amplify them
+    // For example, (0.5, 0.5) has magnitude 0.707, normalizing would make it (0.707, 0.707) - larger!
+    if (len_squared > 1.0f) {
+        float len = std::sqrt(len_squared);
         current_input_.movement_x /= len;
         current_input_.movement_y /= len;
     }
