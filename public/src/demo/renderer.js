@@ -1,4 +1,4 @@
-import { CharacterAnimator, AnimationPresets } from '../animation/system/animation-system.js';
+import { CharacterAnimator } from '../animation/system/animation-system.js';
 import { PLAYER_ANIM_CODES } from './wasm-api.js';
 
 let ctx = null;
@@ -16,19 +16,9 @@ const worldBounds = {
   maxY: 5
 };
 
-const spriteUrl = new URL('../images/player-sprites.png', import.meta.url).href;
-const playerSprite = new Image();
-let spriteReady = false;
-playerSprite.onload = () => { spriteReady = true; };
-playerSprite.onerror = () => {
-  spriteReady = false;
-  console.warn('[Demo] Failed to load player sprite sheet:', spriteUrl);
-};
-playerSprite.src = spriteUrl;
+// Procedural-only: no sprite sheet used
 
 const playerAnimator = new CharacterAnimator();
-const playerAnimations = AnimationPresets.createPlayerAnimations();
-Object.entries(playerAnimations).forEach(([name, animation]) => playerAnimator.addAnimation(name, animation));
 
 const IDLE_STATE = PLAYER_ANIM_CODES.idle ?? 0;
 let activeAnimState = IDLE_STATE;
@@ -151,6 +141,104 @@ const drawFallbackPlayer = (state, position, baseRadius) => {
   ctx.restore();
 };
 
+// Procedural player rendering using CharacterAnimator's transform data
+const drawProceduralPlayer = (state, position, baseRadius, transform) => {
+  ensureContext();
+
+  // Trails (motion streaks)
+  const trails = Array.isArray(transform.trails) ? transform.trails : [];
+  if (trails.length > 0) {
+    ctx.save();
+    for (const trail of trails) {
+      const tpos = wasmToCanvas(trail.x, trail.y);
+      const alpha = typeof trail.alpha === 'number' ? clamp(trail.alpha, 0, 1) : 0.35;
+      const scale = typeof trail.scale === 'number' ? trail.scale : 0.9;
+      const r = baseRadius * 0.9 * scale;
+      ctx.fillStyle = `rgba(147, 197, 253, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(tpos.x, tpos.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Secondary motion (e.g., cape/cloth chain)
+  const segments = Array.isArray(transform.secondaryMotion) ? transform.secondaryMotion : [];
+  if (segments.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const first = wasmToCanvas(segments[0].x, segments[0].y);
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < segments.length; i++) {
+      const p = wasmToCanvas(segments[i].x, segments[i].y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Main body
+  const renderSize = Math.max(64, Math.min(width, height) * 0.14);
+  const attacking = state.anim === 'attacking';
+  const blocking = !!state.block;
+  const rolling = !!state.rolling;
+
+  ctx.save();
+  ctx.translate(position.x + (transform.offsetX ?? 0), position.y + (transform.offsetY ?? 0));
+  if (transform.rotation) {
+    ctx.rotate(transform.rotation);
+  }
+  ctx.scale(transform.scaleX ?? 1, transform.scaleY ?? 1);
+
+  ctx.shadowColor = attacking ? 'rgba(255, 120, 90, 0.55)' : 'rgba(80, 140, 255, 0.4)';
+  ctx.shadowBlur = rolling ? 28 : 18;
+
+  const bodyRadius = baseRadius * (blocking ? 1.15 : 1);
+  const grad = ctx.createRadialGradient(0, 0, bodyRadius * 0.3, 0, 0, bodyRadius);
+  if (blocking) {
+    grad.addColorStop(0, '#99f6e4');
+    grad.addColorStop(1, '#14b8a6');
+  } else if (attacking) {
+    grad.addColorStop(0, '#fdba74');
+    grad.addColorStop(1, '#f97316');
+  } else {
+    grad.addColorStop(0, '#bfdbfe');
+    grad.addColorStop(1, '#60a5fa');
+  }
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Direction indicator based on velocity
+  const speed = Math.hypot(state.vx ?? 0, state.vy ?? 0);
+  if (speed > 0.01) {
+    const dirX = clamp((state.vx ?? 0) / Math.max(speed, 0.001), -1, 1);
+    const dirY = clamp((state.vy ?? 0) / Math.max(speed, 0.001), -1, 1);
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(dirX * bodyRadius * 1.8, -dirY * bodyRadius * 1.8);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Shield overlay when blocking
+  if (blocking) {
+    ctx.save();
+    ctx.translate(position.x, position.y - renderSize * 0.45);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.beginPath();
+    ctx.arc(0, 0, renderSize * 0.55, Math.PI * 0.03, Math.PI * 0.97);
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
 const drawPlayer = (state) => {
   ensureContext();
   const position = wasmToCanvas(state.x, state.y);
@@ -183,48 +271,7 @@ const drawPlayer = (state) => {
     { x: state.vx ?? 0, y: state.vy ?? 0 },
     state.grounded ?? true
   ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 };
-
-  const frame = playerAnimator.controller?.getCurrentFrame?.();
-  if (!spriteReady || !frame) {
-    drawFallbackPlayer(state, position, baseRadius);
-    return;
-  }
-
-  const renderSize = Math.max(64, Math.min(width, height) * 0.14);
-  const halfSize = renderSize / 2;
-
-  ctx.save();
-  ctx.translate(position.x + (transform.offsetX ?? 0), position.y + (transform.offsetY ?? 0));
-  if (transform.rotation) {
-    ctx.rotate(transform.rotation);
-  }
-  const flip = lastFacing === 'left' ? -1 : 1;
-  const scaleX = (transform.scaleX ?? 1) * flip;
-  const scaleY = transform.scaleY ?? 1;
-  ctx.scale(scaleX, scaleY);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(
-    playerSprite,
-    frame.x,
-    frame.y,
-    frame.width,
-    frame.height,
-    -halfSize,
-    -halfSize,
-    renderSize,
-    renderSize
-  );
-  ctx.restore();
-
-  if (state.block) {
-    ctx.save();
-    ctx.translate(position.x, position.y - renderSize * 0.45);
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
-    ctx.beginPath();
-    ctx.arc(0, 0, renderSize * 0.55, Math.PI * 0.03, Math.PI * 0.97);
-    ctx.fill();
-    ctx.restore();
-  }
+  drawProceduralPlayer(state, position, baseRadius, transform);
 };
 
 const drawObstacles = (obstacles) => {
