@@ -34,16 +34,11 @@ jobs:
         
     - name: Install dependencies
       run: npm ci
-      
-    - name: Install PowerShell Core
-      run: |
-        wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
-        sudo dpkg -i packages-microsoft-prod.deb
-        sudo apt-get update
-        sudo apt-get install -y powershell
         
     - name: Setup Emscripten SDK
       run: |
+        rm -rf emsdk
+        git clone https://github.com/emscripten-core/emsdk.git
         cd emsdk
         ./emsdk install latest
         ./emsdk activate latest
@@ -54,7 +49,9 @@ jobs:
       run: npm run balance:gen
       
     - name: Build WASM modules
-      run: npm run wasm:build:all
+      run: |
+        source emsdk/emsdk_env.sh
+        npm run wasm:build:all
       
     - name: Build project
       run: npm run build:all
