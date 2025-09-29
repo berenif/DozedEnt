@@ -484,6 +484,12 @@ void update(float dtSeconds) {
     g_input_special = 0;
   }
   
+  // SAFETY: Clear blocking state if no block input is present
+  // This prevents the player from getting stuck in a blocking state
+  if (!g_input_is_blocking && g_blocking) {
+    g_blocking = 0;
+  }
+  
   // Enhanced roll mechanics - different behavior for each roll state
   float speed_multiplier = 1.f;
   float friction_multiplier = 1.f;
@@ -648,9 +654,10 @@ void update(float dtSeconds) {
     g_player_latched = 0; g_latch_enemy_idx = -1;
   }
 
-  // Only halt movement when actual blocking state is active (not just the input intent),
-  // or when latched. This prevents getting stuck if block couldn't activate.
-  bool haltMovement = ((g_blocking && !g_is_rolling) || g_player_latched);
+  // CRITICAL FIX: Only halt movement when BOTH blocking AND block input are active
+  // This prevents getting stuck if g_blocking gets latched without actual input
+  // Also don't halt if rolling or if there's no actual block input
+  bool haltMovement = ((g_blocking && g_input_is_blocking && !g_is_rolling) || g_player_latched);
 
   // Compute desired velocity from input
   float desiredVX = haltMovement ? 0.f : (g_input_x * speed);
