@@ -27,7 +27,7 @@ This document details the comprehensive performance optimizations implemented to
 
 #### Implementation Details
 
-**File**: `src/wasm/wasm-manager.js`
+**File**: `public/src/wasm/wasm-manager.js`
 
 ```javascript
 // Before: Multiple individual calls
@@ -60,7 +60,7 @@ const playerState = wasmManager.getPlayerState(); // Batches all reads
 
 #### Implementation Details
 
-**File**: `src/game/game-state-manager.js`
+**File**: `public/src/game/game-state-manager.js`
 
 ```javascript
 // Optimized state update flow
@@ -94,7 +94,7 @@ updateStateFromWasm() {
 
 #### Implementation Details
 
-**File**: `src/utils/performance-lod-system.js`
+**File**: `public/src/utils/performance-lod-system.js`
 
 ```javascript
 // LOD distance thresholds
@@ -132,7 +132,7 @@ calculateEntityLOD(entity, camera) {
 
 #### Animation LOD Integration
 
-**File**: `src/animation/wolf-animation.js`
+**File**: `public/src/animation/wolf-animation.js`
 
 ```javascript
 renderAnimatedWolf(ctx, wolf, camera) {
@@ -172,7 +172,7 @@ renderAnimatedWolf(ctx, wolf, camera) {
 
 #### Core Profiler
 
-**File**: `src/utils/performance-profiler.js`
+**File**: `public/src/utils/performance-profiler.js`
 
 ```javascript
 // Frame timing
@@ -200,7 +200,7 @@ const summary = profiler.getMetricsSummary();
 
 #### Memory Optimizer
 
-**File**: `src/utils/memory-optimizer.js`
+**File**: `public/src/utils/memory-optimizer.js`
 
 ```javascript
 // Object pooling
@@ -227,7 +227,7 @@ pools = {
 
 #### Performance Dashboard
 
-**File**: `src/ui/performance-dashboard.js`
+**File**: `public/src/ui/performance-dashboard.js`
 
 Real-time performance monitoring UI with:
 - **Live Metrics**: Frame time, FPS, memory usage, WASM calls

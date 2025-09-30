@@ -18,7 +18,7 @@ DozedEnt/
 ├── 📄 game.wasm                    # Main WebAssembly module
 ├── 📄 favicon.ico                  # Site favicon
 ├── 📄 mocha.opts                   # Mocha test configuration
-├── 📄 index.html                   # Root redirect to docs/
+├── 📄 index.html                   # Root redirect to public/
 ├── 📄 GETTING_STARTED.md           # Getting started guide
 ├── 📄 BUILD_REPORT.json            # Build report data
 ├── 📄 BUILD_REPORT.md              # Build report documentation

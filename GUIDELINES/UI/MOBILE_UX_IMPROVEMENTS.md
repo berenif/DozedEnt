@@ -200,9 +200,9 @@ Comprehensive enhancement of the mobile gaming experience for DozedEnt, focusing
 
 ## 🔄 Files Modified
 
-1. `/workspace/public/src/css/mobile.css` - Major enhancements to styles
-2. `/workspace/public/index.html` - Updated overlay content
-3. `/workspace/public/src/ui/orientation-manager.js` - Added success checkmark feature
+1. `public/src/css/mobile.css` - Major enhancements to styles
+2. `public/index.html` - Updated overlay content
+3. `public/src/ui/orientation-manager.js` - Added success checkmark feature
 
 ## 🎨 Design Philosophy
 

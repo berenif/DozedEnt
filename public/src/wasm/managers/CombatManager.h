@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 // Forward declaration
 class PhysicsManager;
@@ -104,7 +105,8 @@ public:
     // Physics integration
     void set_physics_manager(PhysicsManager* pm) { physics_manager_ = pm; }
     void apply_knockback_impulse(float dir_x, float dir_y, float force);
-    void apply_attack_lunge(float facing_x, float facing_y);
+    void apply_enemy_knockback(uint32_t enemy_body_id, float dir_x, float dir_y, float force);
+    void apply_attack_lunge(float facing_x, float facing_y, bool is_heavy = false);
 
 private:
     CombatState state_;

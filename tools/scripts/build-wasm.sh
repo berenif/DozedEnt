@@ -45,7 +45,10 @@ build_game_wasm() {
         echo "Production build with maximum optimization"
     fi
     
-    cmd="em++ public/src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
+    # Collect all C++ source files
+    SOURCE_FILES="public/src/wasm/game_refactored.cpp public/src/wasm/GameGlobals.cpp public/src/wasm/managers/CombatManager.cpp public/src/wasm/managers/GameStateManager.cpp public/src/wasm/managers/InputManager.cpp public/src/wasm/managers/PlayerManager.cpp public/src/wasm/coordinators/GameCoordinator.cpp public/src/wasm/physics/PhysicsManager.cpp"
+    
+    cmd="em++ $SOURCE_FILES $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
     echo "Command: $cmd"
     
     if eval "$cmd"; then

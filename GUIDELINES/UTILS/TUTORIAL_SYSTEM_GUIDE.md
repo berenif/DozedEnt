@@ -468,4 +468,4 @@ class TutorialAnalytics {
 
 ---
 
-**Note**: The CSS for the tutorial system has already been added to `/workspace/public/src/css/mobile.css`. You only need to add the HTML structure and JavaScript implementation following the examples above.
+**Note**: The CSS for the tutorial system has already been added to `public/src/css/mobile.css`. You only need to add the HTML structure and JavaScript implementation following the examples above.

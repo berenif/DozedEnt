@@ -171,23 +171,23 @@ The input flow is:
 
 ## Files Modified
 
-1. **`/workspace/public/src/managers/unified-input-manager.js`**
+1. **`public/src/managers/unified-input-manager.js`**
    - **CRITICAL**: Removed automatic WASM input sending to prevent double-send race condition
    - Enhanced touch target detection to catch direct touches on joystick knob
    - Added debug logging throughout input pipeline
    - Added initialization confirmation log
    - Changed role from "input sender" to "input state holder"
 
-2. **`/workspace/public/src/demo/main.js`**
+2. **`public/src/demo/main.js`**
    - Exposed inputManager to window.DZ
    - Added DZ.enableInputDebug() and DZ.disableInputDebug()
 
-3. **`/workspace/MOBILE_INPUT_DEBUG.md`** (NEW)
+3. **`MOBILE_INPUT_DEBUG.md`** (NEW)
    - Comprehensive debugging guide
    - Common issues and fixes
    - Step-by-step troubleshooting
 
-4. **`/workspace/MOBILE_JOYSTICK_BUGFIX_SUMMARY.md`** (THIS FILE)
+4. **`MOBILE_JOYSTICK_BUGFIX_SUMMARY.md`** (THIS FILE)
    - Summary of changes and testing instructions
 
 ## Known Good Configuration

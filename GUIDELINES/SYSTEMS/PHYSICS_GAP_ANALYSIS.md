@@ -4,7 +4,7 @@
 
 ### ✅ What Exists (Headers Only)
 
-Located in `/workspace/public/src/wasm/`:
+Located in `public/src/wasm/`:
 
 1. **`physics_backbone.h`** (642 lines)
    - Vector3, Vector2, Matrix3, Quaternion math
@@ -97,7 +97,7 @@ Located in `/workspace/public/src/wasm/`:
 
 ## File-by-File Gap Analysis
 
-### `/workspace/src/managers/PlayerManager.cpp`
+### `src/managers/PlayerManager.cpp`
 
 **Current Implementation:**
 ```cpp
@@ -137,7 +137,7 @@ class PlayerEntity {  // Rename from PlayerManager
 
 ---
 
-### `/workspace/src/managers/CombatManager.cpp`
+### `src/managers/CombatManager.cpp`
 
 **Current Implementation:**
 ```cpp
@@ -181,7 +181,7 @@ class PhysicsCombatSystem {
 
 ---
 
-### `/workspace/src/coordinators/GameCoordinator.cpp`
+### `src/coordinators/GameCoordinator.cpp`
 
 **Current Implementation:**
 ```cpp
@@ -219,7 +219,7 @@ void GameCoordinator::update(float delta_time) {
 
 ---
 
-### `/workspace/src/game_refactored.cpp` (WASM Exports)
+### `src/game_refactored.cpp` (WASM Exports)
 
 **Current Implementation:**
 ```cpp
@@ -262,7 +262,7 @@ extern "C" {
 
 ---
 
-### `/workspace/src/CMakeLists.txt`
+### `src/CMakeLists.txt`
 
 **Current State:**
 ```cmake

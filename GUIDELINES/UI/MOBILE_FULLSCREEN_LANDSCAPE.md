@@ -24,7 +24,7 @@ Implemented an **enhanced, delightful** automatic fullscreen mode with landscape
 
 ## Changes Made
 
-### 1. Enhanced OrientationManager (`/workspace/public/src/ui/orientation-manager.js`)
+### 1. Enhanced OrientationManager (`public/src/ui/orientation-manager.js`)
 #### Core Fullscreen Features
 - `requestFullscreenAndOrientationLock()` method that:
   - Requests fullscreen mode on mobile devices using cross-browser compatible APIs
@@ -45,7 +45,7 @@ Implemented an **enhanced, delightful** automatic fullscreen mode with landscape
 - `releaseWakeLock()`: Releases wake lock when exiting fullscreen
 - `handleButtonTouchStart/End()`: Touch event handlers with visual and haptic feedback
 
-### 2. Main Game (`/workspace/public/index.html` & `/workspace/public/src/demo/main.js`)
+### 2. Main Game (`public/index.html` & `public/src/demo/main.js`)
 #### HTML Enhancements
 - Enhanced orientation overlay with:
   - Semantic ARIA roles and labels for accessibility
@@ -61,14 +61,14 @@ Implemented an **enhanced, delightful** automatic fullscreen mode with landscape
 - Mobile controls are shown automatically on touch devices
 - Orientation evaluation triggers on mobile device detection
 
-### 3. Multiplayer Mode (`/workspace/public/multiplayer.html` & `/workspace/public/src/multiplayer/multiplayer-main.js`)
+### 3. Multiplayer Mode (`public/multiplayer.html` & `public/src/multiplayer/multiplayer-main.js`)
 - Enhanced orientation overlay with multiplayer-specific messaging
 - Integrated OrientationManager in multiplayer coordinator
 - Fullscreen and orientation lock requested when multiplayer game starts
 - Mobile controls enabled for touch devices
 - Same delightful UX features as single-player mode
 
-### 4. Enhanced Mobile CSS (`/workspace/public/src/css/mobile.css`)
+### 4. Enhanced Mobile CSS (`public/src/css/mobile.css`)
 #### Visual Enhancements
 - **Animated Gradient Background**: 8s smooth color-shifting gradient on overlay
 - **Floating Particles**: 20 particles with random timing, positions, and animations

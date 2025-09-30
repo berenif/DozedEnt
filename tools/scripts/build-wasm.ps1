@@ -75,7 +75,19 @@ function Build-GameWasm {
         Write-Host "Production build with maximum optimization" -ForegroundColor Yellow
     }
     
-    $cmd = "em++ public/src/wasm/game.cpp $flags -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
+    # Collect all C++ source files
+    $sourceFiles = @(
+        "public/src/wasm/game_refactored.cpp",
+        "public/src/wasm/GameGlobals.cpp",
+        "public/src/wasm/managers/CombatManager.cpp",
+        "public/src/wasm/managers/GameStateManager.cpp",
+        "public/src/wasm/managers/InputManager.cpp",
+        "public/src/wasm/managers/PlayerManager.cpp",
+        "public/src/wasm/coordinators/GameCoordinator.cpp",
+        "public/src/wasm/physics/PhysicsManager.cpp"
+    )
+    
+    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
     Write-Host "Command: $cmd" -ForegroundColor Gray
     
     try {

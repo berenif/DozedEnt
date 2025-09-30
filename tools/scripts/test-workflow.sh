@@ -48,7 +48,7 @@ else
 fi
 
 # Check if generated file exists
-if [ -f "src/wasm/generated/balance_data.h" ]; then
+if [ -f "public/src/wasm/generated/balance_data.h" ]; then
     echo "   ✅ Generated balance_data.h exists"
 else
     echo "   ❌ Generated balance_data.h missing"

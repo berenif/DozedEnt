@@ -985,6 +985,9 @@ static void enemy_activate(int idx, EnemyType type, float x, float y) {
   e.lastCommunicationTime = -1000.f;
   e.targetLocked = 0;
   e.ambushReadyTime = -1000.f;
+  
+  // 🎮 CREATE PHYSICS BODY for enemy knockback
+  create_enemy_body(idx, e.x, e.y, 70.0f, 0.4f); // 70kg mass, 0.4 radius
   e.retreatUntilTime = -1000.f;
   // Initialize emotional state
   e.emotion = EmotionalState::Calm;

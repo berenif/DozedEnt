@@ -23,7 +23,7 @@ Successfully migrated DozedEnt to the latest WASM version using Emscripten SDK 4
 - `-s ALLOW_MEMORY_GROWTH=1` - Dynamic memory allocation
 - `-s EXPORT_ALL=0` - Selective function exports for smaller file size
 
-### 3. WASM Manager Enhancements (`src/utils/wasm-manager.js`)
+### 3. WASM Manager Enhancements (`public/src/utils/wasm-manager.js`)
 
 #### New Features Added:
 - **WASM 2.0 Feature Detection**: Added `checkWasm2Features()` method
@@ -37,7 +37,7 @@ Successfully migrated DozedEnt to the latest WASM version using Emscripten SDK 4
 - Multiple memories support
 - BigInt support verification
 
-### 4. WASM Lazy Loader Updates (`src/utils/wasm-lazy-loader.js`)
+### 4. WASM Lazy Loader Updates (`public/src/utils/wasm-lazy-loader.js`)
 
 #### Enhanced Import Objects:
 - **Multiple Memory Support**: Updated memory configuration for larger limits
@@ -125,8 +125,8 @@ The updated WASM manager automatically detects browser capabilities and falls ba
 
 ### Core Files:
 - `tools/scripts/build-wasm.ps1` - Updated build configuration
-- `src/utils/wasm-manager.js` - Enhanced WASM management
-- `src/utils/wasm-lazy-loader.js` - Improved lazy loading
+- `public/src/utils/wasm-manager.js` - Enhanced WASM management
+- `public/src/utils/wasm-lazy-loader.js` - Improved lazy loading
 
 ### Generated Files:
 - `game.wasm` - Updated WASM module (749.9 KB)

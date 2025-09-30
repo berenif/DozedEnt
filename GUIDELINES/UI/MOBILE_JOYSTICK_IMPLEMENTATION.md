@@ -206,17 +206,17 @@ set_player_input(
 
 ## Files Modified
 
-1. **`/workspace/public/index.html`**
+1. **`public/index.html`**
    - Added mobile controls HTML structure
    - Added CSS import for mobile.css
 
-2. **`/workspace/public/src/managers/unified-input-manager.js`**
+2. **`public/src/managers/unified-input-manager.js`**
    - Enhanced `setupTouchInput()` with full joystick implementation
    - Added `handleJoystickStart()`, `handleJoystickMove()`, `handleJoystickEnd()`
    - Added `handleActionButtonTouch()` for button handling
    - Integrated multi-touch tracking system
 
-3. **`/workspace/public/src/demo/main.js`**
+3. **`public/src/demo/main.js`**
    - Added automatic mobile controls detection
    - Shows controls on touch-capable devices
 

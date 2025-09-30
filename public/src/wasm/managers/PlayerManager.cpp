@@ -1,5 +1,5 @@
 #include "PlayerManager.h"
-#include "../core/GameGlobals.h"
+#include "../GameGlobals.h"
 #include <cmath>
 #include <algorithm>
 

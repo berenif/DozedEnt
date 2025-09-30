@@ -9,7 +9,7 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 ## 📚 Documents Created
 
 ### 1. **Complete Implementation Plan** 
-**Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_FIRST_IMPLEMENTATION_PLAN.md`
+**Location:** `GUIDELINES/SYSTEMS/PHYSICS_FIRST_IMPLEMENTATION_PLAN.md`
 
 **Contents:**
 - ✅ Executive summary with your exact requirements
@@ -31,7 +31,7 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 ---
 
 ### 2. **Gap Analysis**
-**Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_GAP_ANALYSIS.md`
+**Location:** `GUIDELINES/SYSTEMS/PHYSICS_GAP_ANALYSIS.md`
 
 **Contents:**
 - ✅ Current state assessment (what exists vs. what's missing)
@@ -47,7 +47,7 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 ---
 
 ### 3. **Header-to-Implementation Mapping**
-**Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_HEADER_TO_IMPLEMENTATION_MAP.md`
+**Location:** `GUIDELINES/SYSTEMS/PHYSICS_HEADER_TO_IMPLEMENTATION_MAP.md`
 
 **Contents:**
 - ✅ Maps existing headers to needed .cpp files
@@ -66,7 +66,7 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 ---
 
 ### 4. **Quick Wins Guide**
-**Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_QUICK_WINS.md`
+**Location:** `GUIDELINES/SYSTEMS/PHYSICS_QUICK_WINS.md`
 
 **Contents:**
 - ✅ 5 demonstrable features
@@ -85,7 +85,7 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 ---
 
 ### 5. **Documentation Index**
-**Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_DOCUMENTATION_INDEX.md`
+**Location:** `GUIDELINES/SYSTEMS/PHYSICS_DOCUMENTATION_INDEX.md`
 
 **Contents:**
 - ✅ Navigation guide for all physics docs

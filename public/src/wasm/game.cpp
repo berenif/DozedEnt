@@ -896,6 +896,11 @@ void update(float dtSeconds) {
             
             // Track attack landed statistics
             on_attack_landed_stats((uint32_t)(damage * 100));
+            
+            // 🎮 PHYSICS KNOCKBACK - Apply impulse to enemy
+            // Calculate knockback force based on attack type
+            float knockback_force = (g_attack_damage_mult > 1.5f) ? 35.0f : 20.0f; // Heavy vs Light
+            apply_enemy_knockback(i, dx, dy, knockback_force);
           }
           // Count wolf kills and trigger boon after 3 kills
           if (prevHealth > 0.f && e.health <= 0.f && e.type == EnemyType::Wolf) {

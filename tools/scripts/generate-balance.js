@@ -135,7 +135,7 @@ function main() {
 	out += define('BAL_SPAWN_SPREAD', sp.spread);
 	out += define('BAL_SPAWN_MARGIN', sp.spawnMargin);
 
-	const outDir = path.join(root, 'src', 'wasm', 'generated');
+	const outDir = path.join(root, 'public', 'src', 'wasm', 'generated');
 	ensureDir(outDir);
 	const outFile = path.join(outDir, 'balance_data.h');
 	fs.writeFileSync(outFile, out, 'utf8');

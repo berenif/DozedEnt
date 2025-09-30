@@ -1,6 +1,7 @@
 #include "InputManager.h"
-#include "../core/GameGlobals.h"
+#include "../GameGlobals.h"
 #include <cmath>
+#include <algorithm>
 
 InputManager::InputManager() {
     // Initialize input state

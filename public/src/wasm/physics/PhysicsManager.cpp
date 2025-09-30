@@ -21,7 +21,7 @@ void PhysicsManager::initialize(const PhysicsConfig& config) {
     player_body.position = FixedVector3::from_floats(0.5f, 0.5f, 0.0f);
     player_body.mass = Fixed::from_int(70);
     player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);
-    player_body.drag = Fixed::from_float(0.98f);
+    player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
     player_body.radius = Fixed::from_float(0.5f);
     bodies_.push_back(player_body);
 }
@@ -37,7 +37,7 @@ void PhysicsManager::reset() {
     player_body.position = FixedVector3::from_floats(0.5f, 0.5f, 0.0f);
     player_body.mass = Fixed::from_int(70);
     player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);
-    player_body.drag = Fixed::from_float(0.98f);
+    player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
     bodies_.push_back(player_body);
 }
 
@@ -68,6 +68,9 @@ void PhysicsManager::update(float delta_time) {
 void PhysicsManager::step(Fixed dt) {
     // Integrate forces for all dynamic bodies
     integrate_forces(dt);
+    
+    // Detect and resolve collisions
+    detect_and_resolve_collisions();
     
     // Update sleeping state for all bodies
     update_sleeping_bodies(config_.timestep_micros);
@@ -231,6 +234,62 @@ void PhysicsManager::set_position(uint32_t body_id, const FixedVector3& position
     }
     
     body->position = position;
+}
+
+void PhysicsManager::detect_and_resolve_collisions() {
+    // Simple sphere-sphere collision detection and response
+    for (size_t i = 0; i < bodies_.size(); ++i) {
+        if (!bodies_[i].should_simulate()) continue;
+        
+        for (size_t j = i + 1; j < bodies_.size(); ++j) {
+            if (!bodies_[j].should_simulate()) continue;
+            
+            // Calculate distance between bodies
+            FixedVector3 delta = bodies_[j].position - bodies_[i].position;
+            Fixed dist_sq = delta.length_squared();
+            Fixed combined_radius = bodies_[i].radius + bodies_[j].radius;
+            Fixed combined_radius_sq = combined_radius * combined_radius;
+            
+            // Check for collision
+            if (dist_sq < combined_radius_sq && dist_sq > Fixed::from_int(0)) {
+                // Wake both bodies
+                bodies_[i].wake();
+                bodies_[j].wake();
+                
+                // Calculate collision normal
+                Fixed dist = fixed_sqrt(dist_sq);
+                FixedVector3 normal = delta.normalized();
+                
+                // Calculate overlap amount
+                Fixed overlap = combined_radius - dist;
+                
+                // Separate bodies (proportional to inverse mass)
+                Fixed total_inv_mass = bodies_[i].inverse_mass + bodies_[j].inverse_mass;
+                if (total_inv_mass > Fixed::from_int(0)) {
+                    Fixed ratio_i = bodies_[i].inverse_mass / total_inv_mass;
+                    Fixed ratio_j = bodies_[j].inverse_mass / total_inv_mass;
+                    
+                    bodies_[i].position -= normal * overlap * ratio_i;
+                    bodies_[j].position += normal * overlap * ratio_j;
+                    
+                    // Apply collision impulse (elastic collision)
+                    FixedVector3 relative_velocity = bodies_[j].velocity - bodies_[i].velocity;
+                    Fixed velocity_along_normal = relative_velocity.dot(normal);
+                    
+                    // Only resolve if bodies are moving towards each other
+                    if (velocity_along_normal < Fixed::from_int(0)) {
+                        // Restitution coefficient (0.5 = somewhat bouncy)
+                        Fixed restitution = Fixed::from_float(0.5f);
+                        Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
+                        
+                        FixedVector3 impulse = normal * impulse_magnitude;
+                        bodies_[i].velocity -= impulse * bodies_[i].inverse_mass;
+                        bodies_[j].velocity += impulse * bodies_[j].inverse_mass;
+                    }
+                }
+            }
+        }
+    }
 }
 
 

@@ -8,6 +8,18 @@
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
     pointer-events: auto;
     z-index: 300;
+    display: none; /* Hidden by default, shown via JavaScript based on device */
+}
+
+/* Hide mobile controls on desktop devices with fine pointer */
+@media (pointer: fine) and (min-width: 769px) {
+    .mobile-controls {
+        display: none !important;
+    }
+    
+    #orientation-overlay {
+        display: none !important;
+    }
 }
 
 /* Joystick */

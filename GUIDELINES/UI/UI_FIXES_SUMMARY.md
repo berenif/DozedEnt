@@ -26,7 +26,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Modern Roguelite UI, Enhanced UI, and existing HUD were conflicting and duplicating elements.
 
 **Solution**:
-- Created `UICoordinator` system (`public/js/src/ui/ui-coordinator.js`) to manage UI system conflicts
+- Created `UICoordinator` system (`public/src/ui/ui-coordinator.js`) to manage UI system conflicts
 - Implemented conflict resolution strategies for overlapping systems
 - Added system registration and priority management
 - Automatically hides duplicate elements when higher-priority systems are active
@@ -55,7 +55,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Phase overlays weren't displaying correctly and had broken interactions.
 
 **Solution**:
-- Created dedicated `PhaseOverlayManager` (`public/js/src/ui/phase-overlay-manager.js`)
+- Created dedicated `PhaseOverlayManager` (`public/src/ui/phase-overlay-manager.js`)
 - Implemented proper phase change detection and overlay management
 - Fixed all phase overlay interactions (choice selection, risk escape, shop purchases)
 - Added proper event handling and WASM integration
@@ -65,7 +65,7 @@ Successfully fixed all major UI issues in the DozedEnt multiplayer survival game
 **Problem**: Multiple UI systems were creating redundant elements and causing performance issues.
 
 **Solution**:
-- Created `UIPerformanceOptimizer` (`public/js/src/ui/ui-performance-optimizer.js`)
+- Created `UIPerformanceOptimizer` (`public/src/ui/ui-performance-optimizer.js`)
 - Implemented element virtualization for damage numbers and particle effects
 - Added object pooling to prevent DOM bloat
 - Created update batching to reduce DOM thrashing
@@ -152,9 +152,9 @@ The UI system is now fully functional and optimized. Future enhancements could i
 - `public/js/src/css/game-viewport.css` - Game viewport styling
 
 ### New Components
-- `public/js/src/ui/ui-coordinator.js` - UI system coordination
-- `public/js/src/ui/phase-overlay-manager.js` - Phase overlay management
-- `public/js/src/ui/ui-performance-optimizer.js` - Performance optimization
+- `public/src/ui/ui-coordinator.js` - UI system coordination
+- `public/src/ui/phase-overlay-manager.js` - Phase overlay management
+- `public/src/ui/ui-performance-optimizer.js` - Performance optimization
 
 ## 🎉 Result
 

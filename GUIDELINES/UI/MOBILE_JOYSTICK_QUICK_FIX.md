@@ -56,7 +56,7 @@ With debug enabled (`DZ.enableInputDebug()`):
 
 3. Check for errors in console
 
-4. See `/workspace/MOBILE_INPUT_DEBUG.md` for full troubleshooting guide
+4. See `MOBILE_INPUT_DEBUG.md` for full troubleshooting guide
 
 ## Files Modified
 - `public/src/managers/unified-input-manager.js` ⭐

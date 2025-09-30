@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 /**
  * GameStateManager - Manages overall game state, phases, and core game loop coordination
@@ -25,6 +26,12 @@ public:
         Count = 4
     };
 
+    struct EnemyBodyMapping {
+        uint32_t physics_body_id;
+        int enemy_index;  // Index in enemy array
+        bool active;
+    };
+
     struct GameState {
         // Core game state
         GamePhase current_phase = GamePhase::Explore;
@@ -46,6 +53,11 @@ public:
         // Currency
         int gold = 0;
         int essence = 0;
+        
+        // Enemy physics tracking
+        int enemy_count = 0;
+        static constexpr int MAX_ENEMIES = 32;
+        EnemyBodyMapping enemy_bodies[MAX_ENEMIES];
         
         // Flags
         bool is_initialized = false;
@@ -93,6 +105,16 @@ public:
     int get_essence() const { return state_.essence; }
     bool is_initialized() const { return state_.is_initialized; }
     bool is_paused() const { return state_.is_paused; }
+    
+    // Enemy physics queries
+    int get_enemy_count() const { return state_.enemy_count; }
+    uint32_t get_enemy_body_id(int enemy_index) const;
+    int get_enemy_index_for_body(uint32_t body_id) const;
+    
+    // Enemy physics management
+    uint32_t register_enemy_body(int enemy_index, uint32_t physics_body_id);
+    void unregister_enemy_body(int enemy_index);
+    void clear_all_enemy_bodies();
     
     // Game control
     void pause();

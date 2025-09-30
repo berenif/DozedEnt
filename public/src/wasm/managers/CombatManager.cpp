@@ -1,5 +1,5 @@
 #include "CombatManager.h"
-#include "../core/GameGlobals.h"
+#include "../GameGlobals.h"
 #include "../physics/PhysicsManager.h"
 #include "../physics/PhysicsTypes.h"
 #include <cmath>
@@ -320,7 +320,7 @@ void CombatManager::apply_knockback_impulse(float dir_x, float dir_y, float forc
     physics_manager_->apply_impulse(0, impulse);
 }
 
-void CombatManager::apply_attack_lunge(float facing_x, float facing_y) {
+void CombatManager::apply_attack_lunge(float facing_x, float facing_y, bool is_heavy) {
     if (!physics_manager_) {
         return;
     }
@@ -330,9 +330,29 @@ void CombatManager::apply_attack_lunge(float facing_x, float facing_y) {
         return;
     }
     
+    // Heavy attacks lunge farther
+    float lunge_force = is_heavy ? 8.0f : 5.0f;
+    
     // Apply lunge impulse in facing direction
     FixedVector3 lunge_dir = FixedVector3::from_floats(facing_x, facing_y, 0.0f).normalized();
-    FixedVector3 impulse = lunge_dir * Fixed::from_float(5.0f);
+    FixedVector3 impulse = lunge_dir * Fixed::from_float(lunge_force);
     physics_manager_->apply_impulse(0, impulse);
+}
+
+void CombatManager::apply_enemy_knockback(uint32_t enemy_body_id, float dir_x, float dir_y, float force) {
+    if (!physics_manager_) {
+        return;
+    }
+    
+    // Calculate knockback based on attack type
+    float knockback_multiplier = 1.0f;
+    
+    // Heavy attacks deal more knockback
+    // TODO: Could make this configurable per attack type
+    
+    // Apply knockback impulse to enemy body
+    FixedVector3 direction = FixedVector3::from_floats(dir_x, dir_y, 0.0f).normalized();
+    FixedVector3 impulse = direction * Fixed::from_float(force * knockback_multiplier);
+    physics_manager_->apply_impulse(enemy_body_id, impulse);
 }
 

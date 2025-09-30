@@ -7,6 +7,10 @@ GameCoordinator::GameCoordinator() {
 void GameCoordinator::initialize(unsigned long long seed, unsigned int start_weapon) {
     // Initialize physics first (deterministic foundation)
     PhysicsConfig physics_config;
+    
+    // Top-down game: disable gravity
+    physics_config.gravity = FixedVector3::zero();
+    
     physics_manager_.initialize(physics_config);
     
     // Wire physics into combat manager

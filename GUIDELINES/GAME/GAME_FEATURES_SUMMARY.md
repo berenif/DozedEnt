@@ -113,9 +113,9 @@
 ### Files Modified/Created:
 - `index.html`: Enhanced with 5-button mobile controls and phase overlays
 - `site.js`: Complete phase system integration and event handling
-- `src/wasm/wasm-manager.js`: Extended WASM API with all phase functions
+- `public/src/wasm/wasm-manager.js`: Extended WASM API with all phase functions
 - `src/css/mobile.css`: Enhanced mobile control styling
-- `src/input/enhanced-mobile-controls.js`: Advanced touch input system
+- `public/src/input/enhanced-mobile-controls.js`: Advanced touch input system
 
 ### Key Functions Added:
 - Phase transition handlers (`handlePhaseChange`, `showChoicePhase`, etc.)

@@ -7,26 +7,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Source files for the refactored architecture
 set(MANAGER_SOURCES
-    managers/InputManager.cpp
-    managers/PlayerManager.cpp
-    managers/CombatManager.cpp
-    managers/GameStateManager.cpp
+    src/wasm/managers/InputManager.cpp
+    src/wasm/managers/PlayerManager.cpp
+    src/wasm/managers/CombatManager.cpp
+    src/wasm/managers/GameStateManager.cpp
 )
 
 set(COORDINATOR_SOURCES
-    coordinators/GameCoordinator.cpp
+    src/wasm/coordinators/GameCoordinator.cpp
 )
 
 set(CORE_SOURCES
-    core/GameGlobals.cpp
+    src/wasm/GameGlobals.cpp
 )
 
 set(PHYSICS_SOURCES
-    physics/PhysicsManager.cpp
+    src/wasm/physics/PhysicsManager.cpp
 )
 
 set(MAIN_SOURCES
-    game_refactored.cpp
+    src/wasm/game_refactored.cpp
 )
 
 # All sources
@@ -41,10 +41,10 @@ set(ALL_SOURCES
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/managers
-    ${CMAKE_CURRENT_SOURCE_DIR}/coordinators
-    ${CMAKE_CURRENT_SOURCE_DIR}/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/physics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/managers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/coordinators
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/physics
 )
 
 # Create executable for testing (when not building for WASM)
@@ -90,10 +90,10 @@ add_library(game_refactored_lib STATIC ${ALL_SOURCES})
 
 target_include_directories(game_refactored_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/managers
-    ${CMAKE_CURRENT_SOURCE_DIR}/coordinators
-    ${CMAKE_CURRENT_SOURCE_DIR}/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/physics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/managers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/coordinators
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/physics
 )
 
 # Compiler flags for the library

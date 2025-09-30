@@ -13,7 +13,7 @@ Demonstrate basic physics simulation working - gravity, collision, restitution.
 
 ### Implementation
 
-**File:** `/workspace/demos/bouncing-ball-physics.cpp`
+**File:** `demos/bouncing-ball-physics.cpp`
 
 ```cpp
 #include "../src/physics/PhysicsTypes.h"
@@ -119,7 +119,7 @@ Show combat knockback using physics impulses instead of scripted animation.
 
 ### Implementation
 
-**File:** `/workspace/src/demo/player-knockback-demo.cpp`
+**File:** `src/demo/player-knockback-demo.cpp`
 
 ```cpp
 // Temporary: Add physics knockback to existing PlayerManager
@@ -204,7 +204,7 @@ Pick up, carry, and throw a physics object that damages enemies on contact.
 
 ### Implementation
 
-**File:** `/workspace/src/demo/barrel-throw-demo.cpp`
+**File:** `src/demo/barrel-throw-demo.cpp`
 
 ```cpp
 struct PhysicsBarrel {
@@ -399,7 +399,7 @@ Different surface materials affect movement physics.
 
 ### Implementation
 
-**File:** `/workspace/src/demo/surface-friction-demo.cpp`
+**File:** `src/demo/surface-friction-demo.cpp`
 
 ```cpp
 enum SurfaceType {
@@ -509,7 +509,7 @@ Environmental hazard that applies constant force.
 
 ### Implementation
 
-**File:** `/workspace/src/demo/wind-zone-demo.cpp`
+**File:** `src/demo/wind-zone-demo.cpp`
 
 ```cpp
 struct WindZone {

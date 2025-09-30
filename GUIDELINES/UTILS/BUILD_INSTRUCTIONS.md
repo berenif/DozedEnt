@@ -140,7 +140,7 @@ npm test
 ### Loading WASM Module
 ```javascript
 // Using WasmManager (recommended)
-import { WasmManager } from './src/wasm/wasm-manager.js';
+import { WasmManager } from './public/src/wasm/wasm-manager.js';
 
 const wasmManager = new WasmManager();
 await wasmManager.initialize();

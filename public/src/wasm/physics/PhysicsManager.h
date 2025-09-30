@@ -69,6 +69,7 @@ private:
     void integrate_forces(Fixed dt);
     void apply_world_bounds(RigidBody& body);
     void update_sleeping_bodies(int32_t timestep_micros);
+    void detect_and_resolve_collisions();
     
     // Utility
     uint32_t generate_body_id() { 

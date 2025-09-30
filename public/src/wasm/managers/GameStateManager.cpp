@@ -1,5 +1,5 @@
 #include "GameStateManager.h"
-#include "../core/GameGlobals.h"
+#include "../GameGlobals.h"
 #include <algorithm>
 
 GameStateManager::GameStateManager() {
@@ -243,5 +243,82 @@ void GameStateManager::reset_progression_state() {
 void GameStateManager::advance_rng() {
     // Linear Congruential Generator (LCG) - same as original
     state_.rng_state = state_.rng_state * 1664525 + 1013904223;
+}
+
+// ============================================================================
+// Enemy Physics Management
+// ============================================================================
+
+uint32_t GameStateManager::get_enemy_body_id(int enemy_index) const {
+    if (enemy_index < 0 || enemy_index >= GameState::MAX_ENEMIES) {
+        return 0;
+    }
+    
+    for (int i = 0; i < state_.enemy_count; ++i) {
+        if (state_.enemy_bodies[i].active && state_.enemy_bodies[i].enemy_index == enemy_index) {
+            return state_.enemy_bodies[i].physics_body_id;
+        }
+    }
+    
+    return 0;  // Not found
+}
+
+int GameStateManager::get_enemy_index_for_body(uint32_t body_id) const {
+    for (int i = 0; i < state_.enemy_count; ++i) {
+        if (state_.enemy_bodies[i].active && state_.enemy_bodies[i].physics_body_id == body_id) {
+            return state_.enemy_bodies[i].enemy_index;
+        }
+    }
+    
+    return -1;  // Not found
+}
+
+uint32_t GameStateManager::register_enemy_body(int enemy_index, uint32_t physics_body_id) {
+    if (enemy_index < 0 || enemy_index >= GameState::MAX_ENEMIES) {
+        return 0;
+    }
+    
+    // Check if already registered
+    for (int i = 0; i < state_.enemy_count; ++i) {
+        if (state_.enemy_bodies[i].enemy_index == enemy_index) {
+            // Update existing registration
+            state_.enemy_bodies[i].physics_body_id = physics_body_id;
+            state_.enemy_bodies[i].active = true;
+            return physics_body_id;
+        }
+    }
+    
+    // Add new registration
+    if (state_.enemy_count < GameState::MAX_ENEMIES) {
+        state_.enemy_bodies[state_.enemy_count].physics_body_id = physics_body_id;
+        state_.enemy_bodies[state_.enemy_count].enemy_index = enemy_index;
+        state_.enemy_bodies[state_.enemy_count].active = true;
+        state_.enemy_count++;
+        return physics_body_id;
+    }
+    
+    return 0;  // Out of slots
+}
+
+void GameStateManager::unregister_enemy_body(int enemy_index) {
+    for (int i = 0; i < state_.enemy_count; ++i) {
+        if (state_.enemy_bodies[i].enemy_index == enemy_index) {
+            state_.enemy_bodies[i].active = false;
+            
+            // Compact array by moving last element to this slot
+            if (i < state_.enemy_count - 1) {
+                state_.enemy_bodies[i] = state_.enemy_bodies[state_.enemy_count - 1];
+            }
+            state_.enemy_count--;
+            return;
+        }
+    }
+}
+
+void GameStateManager::clear_all_enemy_bodies() {
+    state_.enemy_count = 0;
+    for (int i = 0; i < GameState::MAX_ENEMIES; ++i) {
+        state_.enemy_bodies[i].active = false;
+    }
 }
 

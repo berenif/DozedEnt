@@ -46,7 +46,7 @@ This document defines the comprehensive error handling and edge case management 
 
 ### 🎯 Core Components
 
-#### 1. WASM Error Handler (`src/utils/game-error-handler.js`)
+#### 1. WASM Error Handler (`public/src/utils/game-error-handler.js`)
 Handles all WASM-related errors with intelligent recovery strategies.
 
 **Features:**
@@ -67,7 +67,7 @@ if (result.action === 'reset_wasm') {
 }
 ```
 
-#### 2. Browser API Fallbacks (`src/utils/browser-api-fallbacks.js`)
+#### 2. Browser API Fallbacks (`public/src/utils/browser-api-fallbacks.js`)
 Provides graceful degradation for unsupported browser APIs.
 
 **Supported APIs:**
@@ -90,7 +90,7 @@ if (!capabilities.webAudio) {
 }
 ```
 
-#### 3. Input Validator (`src/utils/input-validator.js`)
+#### 3. Input Validator (`public/src/utils/input-validator.js`)
 Validates and sanitizes all user input to prevent exploits and handle edge cases.
 
 **Validation Types:**
@@ -112,7 +112,7 @@ if (movement.blocked) {
 }
 ```
 
-#### 4. Network Error Recovery (`src/utils/network-error-recovery.js`)
+#### 4. Network Error Recovery (`public/src/utils/network-error-recovery.js`)
 Handles network failures with multiple recovery strategies.
 
 **Recovery Strategies:**
@@ -131,7 +131,7 @@ if (result.success) {
 }
 ```
 
-#### 5. Error Reporter (`src/utils/error-reporter.js`)
+#### 5. Error Reporter (`public/src/utils/error-reporter.js`)
 Comprehensive error collection, analysis, and reporting system.
 
 **Features:**

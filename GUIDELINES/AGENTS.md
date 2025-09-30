@@ -54,6 +54,7 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 
 ### Build, Deploy, and Testing
 - [Development Workflow](./BUILD/DEVELOPMENT_WORKFLOW.md) — Complete development cycle guide for AI agents.
+- [WASM Feature Implementation Guide](./WASM_FEATURE_IMPLEMENTATION_GUIDE.md) — **NEW!** Complete reference for implementing features, creating demos, and WASM setup.
 - [WASM API Reference](./BUILD/API.md) — **Canonical API surface** - definitive function signatures and behavior.
 - [Testing Framework](./BUILD/TESTING.md) — Current testing infrastructure (54+ tests, 5.15% coverage, 680% improvement).
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.

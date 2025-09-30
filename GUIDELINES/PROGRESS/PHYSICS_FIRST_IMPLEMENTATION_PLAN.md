@@ -47,7 +47,7 @@ Phase 5: Optimization & Polish
 ### Tasks
 
 #### 0.1: Architecture Design
-**File:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_ARCHITECTURE.md`
+**File:** `GUIDELINES/SYSTEMS/PHYSICS_ARCHITECTURE.md`
 
 ```markdown
 # Physics-First Architecture
@@ -74,8 +74,8 @@ GameCoordinator
 
 #### 0.2: Build System Integration
 **Files to modify:**
-- `/workspace/src/CMakeLists.txt` - Add physics sources
-- `/workspace/tools/scripts/build-wasm.sh` - Ensure physics headers included
+- `src/CMakeLists.txt` - Add physics sources
+- `tools/scripts/build-wasm.sh` - Ensure physics headers included
 
 **New files:**
 ```
@@ -97,7 +97,7 @@ src/
 ```
 
 #### 0.3: Core Data Structures
-**File:** `/workspace/src/physics/PhysicsTypes.h`
+**File:** `src/physics/PhysicsTypes.h`
 
 ```cpp
 #pragma once
@@ -165,7 +165,7 @@ struct ForceApplication {
 ```
 
 #### 0.4: Physics Manager Interface
-**File:** `/workspace/src/physics/PhysicsManager.h`
+**File:** `src/physics/PhysicsManager.h`
 
 ```cpp
 #pragma once
@@ -262,7 +262,7 @@ private:
 ### Tasks
 
 #### 1.1: Rigid Body Integration
-**File:** `/workspace/src/physics/ForceIntegrator.cpp`
+**File:** `src/physics/ForceIntegrator.cpp`
 
 ```cpp
 // Implement Verlet integration for stability
@@ -289,7 +289,7 @@ void ForceIntegrator::integrate_forces(std::vector<RigidBody>& bodies, float dt)
 ```
 
 #### 1.2: Collision Detection
-**File:** `/workspace/src/physics/CollisionManager.cpp`
+**File:** `src/physics/CollisionManager.cpp`
 
 Implement:
 - **Broad phase:** Spatial hash grid (8x8m cells for mobile performance)
@@ -346,7 +346,7 @@ public:
 ```
 
 #### 1.3: Collision Resolution
-**File:** `/workspace/src/physics/CollisionResolver.cpp`
+**File:** `src/physics/CollisionResolver.cpp`
 
 Implement impulse-based resolution:
 
@@ -384,7 +384,7 @@ void resolve_collision(RigidBody& a, RigidBody& b, const CollisionContact& conta
 ```
 
 #### 1.4: Mobile Performance Optimization
-**File:** `/workspace/src/physics/PhysicsConfig.h`
+**File:** `src/physics/PhysicsConfig.h`
 
 ```cpp
 // Mobile-first performance settings
@@ -464,7 +464,7 @@ void test_physics_performance() {
 ### Tasks
 
 #### 2.1: Combat Physics Model
-**File:** `/workspace/src/combat/PhysicsCombatSystem.h`
+**File:** `src/combat/PhysicsCombatSystem.h`
 
 ```cpp
 class PhysicsCombatSystem {
@@ -518,7 +518,7 @@ private:
 ```
 
 #### 2.2: Momentum-Based Damage
-**File:** `/workspace/src/combat/DamageCalculation.cpp`
+**File:** `src/combat/DamageCalculation.cpp`
 
 ```cpp
 void PhysicsCombatSystem::process_hit(
@@ -567,7 +567,7 @@ void PhysicsCombatSystem::process_hit(
 ```
 
 #### 2.3: Attack Animations Drive Physics
-**File:** `/workspace/src/combat/AttackController.cpp`
+**File:** `src/combat/AttackController.cpp`
 
 ```cpp
 class AttackController {
@@ -611,7 +611,7 @@ public:
 ```
 
 #### 2.4: Stamina Affects Physics
-**File:** `/workspace/src/combat/StaminaPhysics.cpp`
+**File:** `src/combat/StaminaPhysics.cpp`
 
 ```cpp
 void update_stamina_physics_effects(CombatState& state, RigidBody& body) {
@@ -686,7 +686,7 @@ void test_momentum_damage() {
 ### Tasks
 
 #### 3.1: Enemy Entity System
-**File:** `/workspace/src/entities/EnemyEntity.cpp`
+**File:** `src/entities/EnemyEntity.cpp`
 
 ```cpp
 class EnemyEntity {
@@ -744,7 +744,7 @@ public:
 ```
 
 #### 3.2: Enemy Attack Physics
-**File:** `/workspace/src/entities/EnemyAttacks.cpp`
+**File:** `src/entities/EnemyAttacks.cpp`
 
 ```cpp
 void EnemyEntity::execute_attack(PhysicsManager& physics, PhysicsCombatSystem& combat) {
@@ -790,7 +790,7 @@ void EnemyEntity::execute_attack(PhysicsManager& physics, PhysicsCombatSystem& c
 ```
 
 #### 3.3: Ragdoll System
-**File:** `/workspace/src/entities/RagdollSystem.cpp`
+**File:** `src/entities/RagdollSystem.cpp`
 
 ```cpp
 class RagdollSystem {
@@ -876,7 +876,7 @@ private:
 ### Tasks
 
 #### 4.1: Grab System
-**File:** `/workspace/src/interaction/GrabSystem.h`
+**File:** `src/interaction/GrabSystem.h`
 
 ```cpp
 class GrabSystem {
@@ -915,7 +915,7 @@ private:
 ```
 
 #### 4.2: Grab Implementation
-**File:** `/workspace/src/interaction/GrabSystem.cpp`
+**File:** `src/interaction/GrabSystem.cpp`
 
 ```cpp
 bool GrabSystem::try_grab(uint32_t player_id, PhysicsManager& physics) {
@@ -988,7 +988,7 @@ void GrabSystem::throw_object(uint32_t player_id, Vector3 throw_direction,
 ```
 
 #### 4.3: Push/Pull System
-**File:** `/workspace/src/interaction/PushPullSystem.cpp`
+**File:** `src/interaction/PushPullSystem.cpp`
 
 ```cpp
 class PushPullSystem {
@@ -1032,7 +1032,7 @@ private:
 ```
 
 #### 4.4: Environmental Combat Integration
-**File:** `/workspace/src/interaction/EnvironmentalCombat.cpp`
+**File:** `src/interaction/EnvironmentalCombat.cpp`
 
 ```cpp
 class EnvironmentalCombat {
@@ -1139,7 +1139,7 @@ Demo 4: Shield Block Reflection
 ### Tasks
 
 #### 5.1: Performance Profiling
-**File:** `/workspace/src/physics/PhysicsProfiler.h`
+**File:** `src/physics/PhysicsProfiler.h`
 
 ```cpp
 class PhysicsProfiler {
@@ -1173,7 +1173,7 @@ private:
 ```
 
 #### 5.2: Sleep System
-**File:** `/workspace/src/physics/SleepSystem.cpp`
+**File:** `src/physics/SleepSystem.cpp`
 
 ```cpp
 class SleepSystem {
@@ -1215,7 +1215,7 @@ public:
 ```
 
 #### 5.3: LOD Physics System
-**File:** `/workspace/src/physics/PhysicsLOD.cpp`
+**File:** `src/physics/PhysicsLOD.cpp`
 
 ```cpp
 class PhysicsLOD {
@@ -1256,7 +1256,7 @@ private:
 ```
 
 #### 5.4: Mobile-Specific Optimizations
-**File:** `/workspace/src/physics/MobileOptimizations.cpp`
+**File:** `src/physics/MobileOptimizations.cpp`
 
 ```cpp
 namespace MobileOptimizations {

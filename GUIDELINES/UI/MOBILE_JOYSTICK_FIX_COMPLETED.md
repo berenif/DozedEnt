@@ -12,21 +12,21 @@ Modified `UnifiedInputManager` to be a **state holder only**. It captures touch 
 ## Changes Made
 
 ### Core Fix
-**File:** `/workspace/public/src/managers/unified-input-manager.js`
+**File:** `public/src/managers/unified-input-manager.js`
 
 1. **Removed auto-flush in `startInputLoop()`**: The input loop now only checks WASM readiness, it no longer flushes the input queue
 2. **Removed `queueInputForWasm()` calls**: From `handleJoystickMove()`, `handleJoystickEnd()`, and `handleInputAction()`
 3. **Added comments**: Explaining why we don't auto-send
 
 ### Debug Tools Added
-**File:** `/workspace/public/src/demo/main.js`
+**File:** `public/src/demo/main.js`
 
 - Exposed `DZ.inputManager` for console access
 - Added `DZ.enableInputDebug()` to turn on debug logging
 - Added `DZ.disableInputDebug()` to turn it off
 
 ### Debug Logging Added
-**File:** `/workspace/public/src/managers/unified-input-manager.js`
+**File:** `public/src/managers/unified-input-manager.js`
 
 - Touch event detection logs
 - Joystick movement value logs
@@ -34,7 +34,7 @@ Modified `UnifiedInputManager` to be a **state holder only**. It captures touch 
 - Initialization confirmation
 
 ### Enhanced Touch Detection
-**File:** `/workspace/public/src/managers/unified-input-manager.js`
+**File:** `public/src/managers/unified-input-manager.js`
 
 Added direct ID checks for `joystick-base` and `joystick-knob` in addition to `closest()` checks, ensuring touches on the knob itself are captured.
 
@@ -90,13 +90,13 @@ DZ.enableInputDebug()
 5. Check console logs on desktop
 
 ## Files Modified
-- `/workspace/public/src/managers/unified-input-manager.js` ⭐ (critical changes)
-- `/workspace/public/src/demo/main.js`
+- `public/src/managers/unified-input-manager.js` ⭐ (critical changes)
+- `public/src/demo/main.js`
 
 ## Files Created
-- `/workspace/MOBILE_INPUT_DEBUG.md` (debugging guide)
-- `/workspace/MOBILE_JOYSTICK_BUGFIX_SUMMARY.md` (detailed summary)
-- `/workspace/MOBILE_JOYSTICK_FIX_COMPLETED.md` (this file)
+- `MOBILE_INPUT_DEBUG.md` (debugging guide)
+- `MOBILE_JOYSTICK_BUGFIX_SUMMARY.md` (detailed summary)
+- `MOBILE_JOYSTICK_FIX_COMPLETED.md` (this file)
 
 ## Verification Checklist
 - [x] Removed double input sending
@@ -112,4 +112,4 @@ DZ.enableInputDebug()
 The mobile joystick should now work correctly. If it doesn't:
 1. Enable debug mode: `DZ.enableInputDebug()`
 2. Check console logs to see where the pipeline breaks
-3. Refer to `/workspace/MOBILE_INPUT_DEBUG.md` for troubleshooting steps
+3. Refer to `MOBILE_INPUT_DEBUG.md` for troubleshooting steps

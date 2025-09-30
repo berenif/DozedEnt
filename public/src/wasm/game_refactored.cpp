@@ -11,7 +11,7 @@
 
 #include <cmath>
 #include "coordinators/GameCoordinator.h"
-#include "core/GameGlobals.h"
+#include "GameGlobals.h"
 #include "physics/PhysicsManager.h"
 #include "physics/PhysicsTypes.h"
 
@@ -319,6 +319,124 @@ float get_physics_player_vel_y() {
 __attribute__((export_name("get_physics_perf_ms")))
 float get_physics_perf_ms() {
     return g_coordinator.get_physics_manager().get_last_step_time_ms();
+}
+
+// ---- Enemy Physics Functions ----
+
+__attribute__((export_name("create_enemy_body")))
+uint32_t create_enemy_body(int enemy_index, float x, float y, float mass, float radius) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    // Create physics body for enemy
+    RigidBody enemy_body;
+    enemy_body.position = FixedVector3::from_floats(x, y, 0.0f);
+    enemy_body.mass = Fixed::from_float(mass);
+    enemy_body.inverse_mass = Fixed::from_float(1.0f / mass);
+    enemy_body.drag = Fixed::from_float(0.92f);  // Slightly less drag than player
+    enemy_body.radius = Fixed::from_float(radius);
+    
+    uint32_t body_id = physics_mgr.create_body(enemy_body);
+    
+    // Register with game state manager
+    game_state_mgr.register_enemy_body(enemy_index, body_id);
+    
+    return body_id;
+}
+
+__attribute__((export_name("destroy_enemy_body")))
+void destroy_enemy_body(int enemy_index) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    uint32_t body_id = game_state_mgr.get_enemy_body_id(enemy_index);
+    if (body_id > 0) {
+        physics_mgr.destroy_body(body_id);
+        game_state_mgr.unregister_enemy_body(enemy_index);
+    }
+}
+
+__attribute__((export_name("get_enemy_body_x")))
+float get_enemy_body_x(int enemy_index) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    uint32_t body_id = game_state_mgr.get_enemy_body_id(enemy_index);
+    if (body_id > 0) {
+        const RigidBody* body = physics_mgr.get_body(body_id);
+        if (body) {
+            return body->position.x.to_float();
+        }
+    }
+    
+    return 0.0f;
+}
+
+__attribute__((export_name("get_enemy_body_y")))
+float get_enemy_body_y(int enemy_index) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    uint32_t body_id = game_state_mgr.get_enemy_body_id(enemy_index);
+    if (body_id > 0) {
+        const RigidBody* body = physics_mgr.get_body(body_id);
+        if (body) {
+            return body->position.y.to_float();
+        }
+    }
+    
+    return 0.0f;
+}
+
+__attribute__((export_name("apply_enemy_knockback")))
+void apply_enemy_knockback(int enemy_index, float dir_x, float dir_y, float force) {
+    auto& combat_mgr = g_coordinator.get_combat_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    uint32_t body_id = game_state_mgr.get_enemy_body_id(enemy_index);
+    if (body_id > 0) {
+        combat_mgr.apply_enemy_knockback(body_id, dir_x, dir_y, force);
+    }
+}
+
+__attribute__((export_name("apply_attack_lunge")))
+void apply_attack_lunge(float facing_x, float facing_y, int is_heavy) {
+    auto& combat_mgr = g_coordinator.get_combat_manager();
+    combat_mgr.apply_attack_lunge(facing_x, facing_y, is_heavy != 0);
+}
+
+__attribute__((export_name("set_enemy_body_position")))
+void set_enemy_body_position(int enemy_index, float x, float y) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& game_state_mgr = g_coordinator.get_game_state_manager();
+    
+    uint32_t body_id = game_state_mgr.get_enemy_body_id(enemy_index);
+    if (body_id > 0) {
+        physics_mgr.set_position(body_id, FixedVector3::from_floats(x, y, 0.0f));
+    }
+}
+
+__attribute__((export_name("get_enemy_body_count")))
+int get_enemy_body_count() {
+    return g_coordinator.get_game_state_manager().get_enemy_count();
+}
+
+__attribute__((export_name("clear_all_enemy_bodies")))
+void clear_all_enemy_bodies() {
+    g_coordinator.get_game_state_manager().clear_all_enemy_bodies();
+}
+
+__attribute__((export_name("sync_player_position_from_physics")))
+void sync_player_position_from_physics() {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    auto& player_mgr = g_coordinator.get_player_manager();
+    
+    // Get player body (ID 0)
+    const RigidBody* player_body = physics_mgr.get_body(0);
+    if (player_body) {
+        // TODO: Add method to PlayerManager to set position from physics
+        // For now, physics is the authority for position
+    }
 }
 
 } // extern "C"
