@@ -23,20 +23,27 @@
 #joystick-base {
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 100%);
+    border: 3px solid rgba(255, 255, 255, 0.4);
     border-radius: 50%;
     position: relative;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.15),
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 3px 10px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 #joystick-base.active {
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 242, 96, 0.8);
     box-shadow: 
-        inset 0 0 20px rgba(255, 255, 255, 0.2),
-        0 0 20px rgba(255, 255, 255, 0.3);
+        inset 0 0 30px rgba(255, 255, 255, 0.3),
+        0 0 30px rgba(0, 242, 96, 0.6),
+        0 0 60px rgba(0, 242, 96, 0.4),
+        0 6px 20px rgba(0, 0, 0, 0.4);
+    background: radial-gradient(circle, rgba(0, 242, 96, 0.2) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.05) 100%);
 }
 
 #joystick-knob {
@@ -45,17 +52,25 @@
     left: 50%;
     width: 40px;
     height: 40px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-    border: 2px solid #fff;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+    border: 3px solid #fff;
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    transition: all 0.1s ease;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 #joystick-base.active #joystick-knob {
-    background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
+    background: radial-gradient(circle, #00f260 0%, rgba(0, 242, 96, 0.9) 50%, rgba(255, 255, 255, 0.8) 100%);
+    border-color: #00f260;
+    box-shadow: 0 4px 20px rgba(0, 242, 96, 0.6),
+                0 2px 10px rgba(0, 0, 0, 0.4),
+                0 0 30px rgba(0, 242, 96, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: translate(-50%, -50%) scale(1.05);
 }
 
 /* Direction indicators */
@@ -90,8 +105,8 @@
 .action-btn {
     width: 70px;
     height: 70px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+    border: 3px solid rgba(255, 255, 255, 0.4);
     border-radius: 50%;
     color: #fff;
     font-size: 14px;
@@ -100,11 +115,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     user-select: none;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                0 3px 10px rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 /* Button type-specific colors */
@@ -157,9 +176,12 @@
 }
 
 .action-btn.enhanced-btn {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
-    border: 2px solid var(--btn-color, rgba(255, 255, 255, 0.3));
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+    border: 3px solid var(--btn-color, rgba(255, 255, 255, 0.4));
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                0 3px 10px rgba(0, 0, 0, 0.3),
+                0 0 20px var(--btn-color, rgba(255, 255, 255, 0.2)),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
 }
 
 .action-btn.enhanced-btn .btn-emoji {
@@ -182,15 +204,20 @@
 
 .action-btn:active,
 .action-btn.pressed {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(0.95);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+    transform: scale(0.92);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5),
+                inset 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn.enhanced-btn:active,
 .action-btn.enhanced-btn.pressed {
-    background: linear-gradient(135deg, var(--btn-color), rgba(255, 255, 255, 0.1));
+    background: linear-gradient(135deg, var(--btn-color), rgba(255, 255, 255, 0.2));
     border-color: var(--btn-color);
+    box-shadow: 0 3px 12px var(--btn-color),
+                0 0 30px var(--btn-color),
+                inset 0 3px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(0.92);
 }
 
 .action-btn:disabled {
@@ -227,7 +254,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3d5ca6 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     display: none; /* Hidden by default, JS will show if needed */
     flex-direction: column;
     justify-content: center;
@@ -237,15 +264,18 @@
     overflow: hidden;
     touch-action: none;
     -webkit-overflow-scrolling: touch;
-    animation: gradientShift 8s ease infinite;
+    animation: gradientShift 12s ease infinite;
 }
 
 @keyframes gradientShift {
     0%, 100% { 
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3d5ca6 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     }
-    50% { 
-        background: linear-gradient(135deg, #2a5298 0%, #3d5ca6 50%, #1e3c72 100%);
+    33% { 
+        background: linear-gradient(135deg, #764ba2 0%, #f093fb 50%, #667eea 100%);
+    }
+    66% { 
+        background: linear-gradient(135deg, #f093fb 0%, #667eea 50%, #764ba2 100%);
     }
 }
 
@@ -258,15 +288,18 @@
 
 #orientation-overlay .overlay-content {
     text-align: center;
-    max-width: 90vw;
-    padding: 40px 20px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 20px;
-    backdrop-filter: blur(15px);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    animation: contentFadeIn 0.5s ease-out, contentFloat 3s ease-in-out infinite;
+    max-width: 85vw;
+    padding: 50px 30px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 30px;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4),
+                0 10px 40px rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -2px 10px rgba(0, 0, 0, 0.1);
+    animation: contentFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), contentFloat 4s ease-in-out infinite;
     position: relative;
     z-index: 10;
 }
@@ -293,37 +326,46 @@
 
 #orientation-overlay h2 {
     color: #fff;
-    margin-bottom: 20px;
-    font-size: 2.5em;
-    font-weight: bold;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-    animation: titleGlow 2s ease-in-out infinite;
+    margin-bottom: 25px;
+    font-size: 2.8em;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    text-shadow: 0 3px 25px rgba(0, 0, 0, 0.6),
+                 0 0 30px rgba(255, 255, 255, 0.2);
+    animation: titleGlow 3s ease-in-out infinite;
 }
 
 @keyframes titleGlow {
     0%, 100% {
-        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+        text-shadow: 0 3px 25px rgba(0, 0, 0, 0.6),
+                     0 0 30px rgba(255, 255, 255, 0.2);
+        transform: scale(1);
     }
     50% {
-        text-shadow: 0 2px 30px rgba(255, 255, 255, 0.3),
-                     0 0 40px rgba(66, 153, 225, 0.5);
+        text-shadow: 0 4px 35px rgba(255, 255, 255, 0.4),
+                     0 0 60px rgba(102, 126, 234, 0.6),
+                     0 0 80px rgba(240, 147, 251, 0.4);
+        transform: scale(1.02);
     }
 }
 
 #orientation-overlay p {
-    color: #e6f0ff;
+    color: #ffffff;
     text-align: center;
-    margin-bottom: 30px;
-    font-size: 1.2em;
-    line-height: 1.5;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    margin-bottom: 35px;
+    font-size: 1.25em;
+    line-height: 1.6;
+    font-weight: 400;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    opacity: 0.95;
 }
 
 #orientation-overlay .rotation-icon {
-    font-size: 4em;
-    margin-bottom: 20px;
-    animation: rotate 2s ease-in-out infinite;
-    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
+    font-size: 5em;
+    margin-bottom: 30px;
+    animation: rotate 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 5px 20px rgba(0, 0, 0, 0.4))
+            drop-shadow(0 0 30px rgba(255, 255, 255, 0.3));
     transform-origin: center;
 }
 
@@ -332,8 +374,15 @@
 }
 
 @keyframes rotate {
-    0%, 100% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(90deg) scale(1.1); }
+    0%, 100% { 
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 5px 20px rgba(0, 0, 0, 0.4));
+    }
+    50% { 
+        transform: rotate(90deg) scale(1.15);
+        filter: drop-shadow(0 8px 30px rgba(255, 255, 255, 0.5))
+                drop-shadow(0 0 40px rgba(102, 126, 234, 0.6));
+    }
 }
 
 @keyframes encouragePulse {
@@ -343,48 +392,57 @@
 }
 
 #overlay-start {
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    background: linear-gradient(135deg, #00f260 0%, #0575e6 100%);
     color: #fff;
     border: none;
-    padding: 18px 40px;
-    border-radius: 30px;
-    font-size: 18px;
+    padding: 20px 50px;
+    border-radius: 40px;
+    font-size: 20px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    font-weight: bold;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    letter-spacing: 2.5px;
+    box-shadow: 0 10px 30px rgba(0, 242, 96, 0.4),
+                0 5px 15px rgba(5, 117, 230, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1);
     position: relative;
     overflow: hidden;
-    animation: buttonPulse 2s ease-in-out infinite;
+    animation: buttonPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes buttonPulse {
     0%, 100% {
-        box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 242, 96, 0.4),
+                    0 5px 15px rgba(5, 117, 230, 0.3),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        transform: translateY(0) scale(1);
     }
     50% {
-        box-shadow: 0 8px 35px rgba(74, 144, 226, 0.6),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-                    0 0 30px rgba(74, 144, 226, 0.5);
+        box-shadow: 0 15px 45px rgba(0, 242, 96, 0.6),
+                    0 8px 25px rgba(5, 117, 230, 0.5),
+                    0 0 40px rgba(0, 242, 96, 0.4),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px) scale(1.02);
     }
 }
 
 #overlay-start:hover {
-    background: linear-gradient(135deg, #357abd 0%, #2868a8 100%);
-    transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 12px 35px rgba(74, 144, 226, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, #00d084 0%, #0468d0 100%);
+    transform: scale(1.1) translateY(-3px);
+    box-shadow: 0 15px 50px rgba(0, 242, 96, 0.7),
+                0 10px 30px rgba(5, 117, 230, 0.5),
+                0 0 60px rgba(0, 242, 96, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4);
 }
 
 #overlay-start:active,
 #overlay-start.pressed {
-    transform: scale(0.96) translateY(1px);
-    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4),
-                inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: scale(0.98) translateY(0);
+    box-shadow: 0 5px 20px rgba(0, 242, 96, 0.5),
+                0 3px 10px rgba(5, 117, 230, 0.4),
+                inset 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Ripple effect */
@@ -1140,6 +1198,420 @@ body.orientation-overlay-active {
     width: 100% !important;
     height: 100% !important;
     touch-action: none !important;
+}
+
+/* ===========================================
+   TUTORIAL OVERLAY & ONBOARDING
+   =========================================== */
+
+/* Tutorial overlay container */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    animation: fadeIn 0.4s ease-out;
+    pointer-events: auto;
+}
+
+.tutorial-overlay.active {
+    display: flex;
+}
+
+/* Tutorial card */
+.tutorial-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 30px;
+    padding: 40px 30px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: #fff;
+    text-align: center;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.tutorial-card h3 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #00f260;
+    text-shadow: 0 2px 10px rgba(0, 242, 96, 0.5);
+    font-weight: 900;
+}
+
+.tutorial-card p {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    opacity: 0.95;
+}
+
+/* Tutorial controls showcase */
+.tutorial-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin: 30px 0;
+}
+
+.tutorial-control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    min-width: 120px;
+    transition: all 0.3s ease;
+}
+
+.tutorial-control-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 242, 96, 0.5);
+    transform: translateY(-3px);
+}
+
+.tutorial-control-icon {
+    font-size: 2.5em;
+    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
+}
+
+.tutorial-control-label {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Tutorial button */
+.tutorial-btn {
+    background: linear-gradient(135deg, #00f260 0%, #0575e6 100%);
+    color: #fff;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 25px rgba(0, 242, 96, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    margin-top: 20px;
+}
+
+.tutorial-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 242, 96, 0.6),
+                0 0 40px rgba(0, 242, 96, 0.4);
+}
+
+.tutorial-btn:active {
+    transform: translateY(0) scale(1);
+}
+
+/* Skip tutorial link */
+.skip-tutorial {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9em;
+    margin-top: 15px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.skip-tutorial:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Progress dots */
+.tutorial-progress {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 25px;
+}
+
+.tutorial-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.tutorial-dot.active {
+    background: #00f260;
+    box-shadow: 0 0 15px rgba(0, 242, 96, 0.6);
+    transform: scale(1.3);
+}
+
+/* ===========================================
+   ENHANCED MICRO-INTERACTIONS & POLISH
+   =========================================== */
+
+/* Button press feedback animation */
+@keyframes buttonPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.action-btn.animate-press {
+    animation: buttonPress 0.2s ease-out;
+}
+
+/* Success feedback flash */
+@keyframes successFlash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; background: rgba(0, 242, 96, 0.4); }
+}
+
+.action-btn.success-flash {
+    animation: successFlash 0.3s ease-out;
+}
+
+/* Joystick activation pulse */
+@keyframes joystickPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+#joystick-base.activating {
+    animation: joystickPulse 0.3s ease-out;
+}
+
+/* Floating hints for controls */
+.control-hint {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    animation: hintFadeIn 0.3s ease-out;
+    opacity: 0.9;
+}
+
+@keyframes hintFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
+}
+
+.control-hint::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+/* Touch ripple effect enhancement */
+.touch-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    animation: rippleExpand 0.6s ease-out;
+}
+
+@keyframes rippleExpand {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* Loading spinner for game initialization */
+.loading-spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #00f260;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    z-index: 1001;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Performance indicator dot */
+.performance-indicator {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00f260;
+    box-shadow: 0 0 15px rgba(0, 242, 96, 0.6);
+    z-index: 100;
+    opacity: 0.8;
+    animation: performancePulse 2s ease-in-out infinite;
+}
+
+@keyframes performancePulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.performance-indicator.warning {
+    background: #ff9800;
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.6);
+}
+
+.performance-indicator.error {
+    background: #f44336;
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+}
+
+/* Combo counter display */
+.combo-display {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3em;
+    font-weight: 900;
+    color: #00f260;
+    text-shadow: 0 0 30px rgba(0, 242, 96, 0.8),
+                 0 4px 20px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    z-index: 1000;
+    animation: comboAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes comboAppear {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Screen shake effect */
+@keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    10%, 30%, 50%, 70%, 90% { transform: translate(-5px, 5px); }
+    20%, 40%, 60%, 80% { transform: translate(5px, -5px); }
+}
+
+body.screen-shake {
+    animation: screenShake 0.5s ease-out;
+}
+
+/* Action button specific color themes */
+.action-btn[data-action="lightAttack"] {
+    --btn-color: #4CAF50;
+}
+
+.action-btn[data-action="heavyAttack"] {
+    --btn-color: #FF5722;
+}
+
+.action-btn[data-action="block"] {
+    --btn-color: #2196F3;
+}
+
+.action-btn[data-action="roll"] {
+    --btn-color: #9C27B0;
+}
+
+.action-btn[data-action="special"] {
+    --btn-color: #FF9800;
+}
+
+/* Glow effect for ready actions */
+.action-btn.ready-glow {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                0 3px 10px rgba(0, 0, 0, 0.3),
+                0 0 30px var(--btn-color),
+                0 0 60px var(--btn-color),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    animation: readyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes readyPulse {
+    0%, 100% {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                    0 3px 10px rgba(0, 0, 0, 0.3),
+                    0 0 30px var(--btn-color),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                    0 3px 10px rgba(0, 0, 0, 0.3),
+                    0 0 40px var(--btn-color),
+                    0 0 80px var(--btn-color),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    }
 }
 
 /* Prevent zoom on double tap when orientation overlay is active */
