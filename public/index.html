@@ -7,7 +7,7 @@
   <meta name="description" content="DozedEnt - A procedurally animated roguelite combat game">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="src/css/mobile.css">
-  <link rel="stylesheet" href="../src/css/desktop-ui.css">
+  <link rel="stylesheet" href="src/css/desktop-ui.css">
   <style>
     html, body {
       margin: 0;
@@ -341,8 +341,6 @@
     </div>
   </div>
   
-  <script type="module" src="../src/utils/device-detector.js"></script>
-  <script type="module" src="../src/ui/desktop-ui-manager.js"></script>
   <script type="module" src="src/utils/wasm.js"></script>
   <script type="module" src="src/utils/wasm-lazy-loader.js"></script>
   <script type="module" src="src/utils/wasm-manager.js"></script>
@@ -352,8 +350,8 @@
   <script type="module" src="src/demo/main.js"></script>
   <script type="module">
     // Import device detector and desktop UI manager
-    import { deviceDetector } from '../src/utils/device-detector.js';
-    import { DesktopUIManager } from '../src/ui/desktop-ui-manager.js';
+    import { deviceDetector } from './src/utils/device-detector.js';
+    import { DesktopUIManager } from './src/ui/desktop-ui-manager.js';
 
     // Initialize device detection and UI
     let desktopUI = null;
