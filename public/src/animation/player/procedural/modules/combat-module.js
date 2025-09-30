@@ -18,6 +18,9 @@ export default class CombatModule {
             leftHand: { x: -12, y: -2 },
             rightHand: { x: 12, y: -2 }
         }
+        // Attack trail tracking for visual feedback
+        this.attackTrail = []
+        this.lastAttackState = 'idle'
     }
 
     apply(deltaTime, pose, context) {
@@ -33,12 +36,49 @@ export default class CombatModule {
         let targetRight = { ...baseRight }
 
         if (state === 'attacking') {
+            // Enhanced attack animation with anticipation, swing, and follow-through
+            const attackType = context.attackType || 'light'
+            const isHeavy = attackType === 'heavy'
             const swing = Math.sin(normalizedTime * Math.PI)
             const reach = this.config.attackReach * (context.attackStrength ?? 1)
-            targetRight.x = facing * (reach * swing)
-            targetRight.y = -6 - swing * 6
-            targetLeft.x = facing * (reach * 0.35)
-            targetLeft.y = -8 - swing * 2
+            
+            // Anticipation phase (0-0.3): pull back
+            // Active phase (0.3-0.7): swing forward
+            // Recovery phase (0.7-1.0): return to neutral
+            let anticipation = 0
+            let activeSwing = 0
+            let recovery = 0
+            
+            if (normalizedTime < 0.3) {
+                // Pull back during anticipation
+                anticipation = normalizedTime / 0.3
+                targetRight.x = facing * (-8 * anticipation)
+                targetRight.y = -4 - anticipation * 4
+                targetLeft.x = facing * (-4 * anticipation)
+                targetLeft.y = -6
+            } else if (normalizedTime < 0.7) {
+                // Active swing phase with maximum reach
+                activeSwing = (normalizedTime - 0.3) / 0.4
+                const swingCurve = Math.sin(activeSwing * Math.PI)
+                targetRight.x = facing * (reach * swingCurve)
+                targetRight.y = -6 - swingCurve * 8
+                targetLeft.x = facing * (reach * 0.35 * swingCurve)
+                targetLeft.y = -8 - swingCurve * 3
+            } else {
+                // Recovery phase - return to guard position
+                recovery = (normalizedTime - 0.7) / 0.3
+                const recoveryCurve = 1 - recovery
+                targetRight.x = facing * (reach * 0.3 * recoveryCurve)
+                targetRight.y = -4 - recoveryCurve * 2
+                targetLeft.x = facing * 4
+                targetLeft.y = -6
+            }
+            
+            // Heavy attacks have more exaggerated motion
+            if (isHeavy) {
+                targetRight.y -= 2
+                targetRight.x *= 1.3
+            }
         } else if (state === 'blocking') {
             targetRight.x = facing * 10
             targetRight.y = this.config.blockGuardHeight
@@ -73,12 +113,47 @@ export default class CombatModule {
         pose.rightArm.elbow.x = (pose.rightArm.shoulder.x + pose.rightArm.hand.x) * 0.5
         pose.rightArm.elbow.y = (pose.rightArm.shoulder.y + pose.rightArm.hand.y) * 0.5 + 4
 
+        // Track attack trail for visual effects
+        if (state === 'attacking') {
+            // Add current hand position to trail during active swing phase
+            if (normalizedTime >= 0.3 && normalizedTime <= 0.7) {
+                this.attackTrail.push({
+                    x: this.currentTargets.rightHand.x,
+                    y: this.currentTargets.rightHand.y,
+                    alpha: 1.0,
+                    time: Date.now()
+                })
+                // Keep trail limited to last 8 positions
+                if (this.attackTrail.length > 8) {
+                    this.attackTrail.shift()
+                }
+            }
+            
+            // Fade and clean up trail
+            const now = Date.now()
+            this.attackTrail = this.attackTrail.filter(point => {
+                const age = (now - point.time) / 1000
+                point.alpha = Math.max(0, 1 - age * 5) // Fade over 0.2 seconds
+                return point.alpha > 0
+            })
+        } else {
+            // Clear trail when not attacking
+            if (this.lastAttackState === 'attacking' && state !== 'attacking') {
+                this.attackTrail = []
+            }
+        }
+        
+        this.lastAttackState = state
+
         return {
             handTargets: {
                 left: { ...this.currentTargets.leftHand },
                 right: { ...this.currentTargets.rightHand }
             },
-            poseState: state
+            poseState: state,
+            attackTrail: [...this.attackTrail], // Copy for rendering
+            isAttacking: state === 'attacking',
+            attackPhase: state === 'attacking' ? (normalizedTime < 0.3 ? 'anticipation' : normalizedTime < 0.7 ? 'active' : 'recovery') : 'none'
         }
     }
 }
