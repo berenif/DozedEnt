@@ -116,9 +116,16 @@ export class InputManager {
         this.inputState.pointer.down = false;
         this.resetMovementInput();
         
-        // Also clear WASM blocking state
-        if (this.wasmManager && this.wasmManager.exports && this.wasmManager.exports.set_blocking) {
-          this.wasmManager.exports.set_blocking(0, 1, 0);
+        // Also clear WASM state comprehensively
+        if (this.wasmManager && this.wasmManager.exports) {
+          // Clear blocking state
+          if (this.wasmManager.exports.set_blocking) {
+            this.wasmManager.exports.set_blocking(0, 1, 0);
+          }
+          // Clear all player input in WASM
+          if (this.wasmManager.exports.set_player_input) {
+            this.wasmManager.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
+          }
         }
       } catch (_) { /* ignore */ }
     });

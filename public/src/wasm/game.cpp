@@ -661,6 +661,7 @@ void update(float dtSeconds) {
   }
 
   // If movement halted due to block/latch, zero horizontal velocity
+  // (vertical velocity intentionally preserved for gravity/jumping)
   if (haltMovement) { g_vel_x = 0.f; }
 
   // Integrate and resolve collisions against world and enemies
