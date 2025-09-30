@@ -1,33 +1,52 @@
-# 📁 Physics Implementation Documentation
+# 📁 Progress & Implementation Documentation
 
-This directory contains comprehensive planning and implementation guides for integrating physics-driven combat into DozedEnt.
+This directory contains comprehensive planning and implementation guides for major feature development in DozedEnt, including physics integration and player ability systems.
 
 ---
 
 ## 🚀 **START HERE**
 
-### **For Implementation**
+### 🎮 **Player Ability Upgrade System** (NEW)
+**[PLAYER_ABILITY_SUMMARY.md](./PLAYER_ABILITY_SUMMARY.md)** ⭐  
+Complete plan for character-specific abilities, progression system, and advanced combat mechanics.
+
+**Quick Links**:
+- [Full Technical Plan](./PLAYER_ABILITY_UPGRADE_PLAN.md) - 8-week implementation roadmap
+- [Quick Start Guide](./PLAYER_ABILITY_QUICK_START.md) - Day-by-day implementation
+- [Visual Roadmap](./PLAYER_ABILITY_ROADMAP.md) - Timeline and dependencies
+
+---
+
+### ⚙️ **Physics Integration**
 **[PHYSICS_INTEGRATION_IMPLEMENTATION_GUIDE.md](./PHYSICS_INTEGRATION_IMPLEMENTATION_GUIDE.md)** ⭐  
-Complete technical specifications with all code templates, WASM exports, and visual demos. Everything you need to start building.
+Complete technical specifications with all code templates, WASM exports, and visual demos for physics-driven combat.
 
-### **For Quick Reference**
-**[PHYSICS_QUICK_START.md](./PHYSICS_QUICK_START.md)**  
-Condensed roadmap, file checklist, and quick links for fast navigation.
-
-### **For Overview**
-**[PHYSICS_IMPLEMENTATION_SUMMARY.md](./PHYSICS_IMPLEMENTATION_SUMMARY.md)**  
-Delivery summary: what was created, key decisions, validation strategy.
+**Quick Links**:
+- [Physics Quick Start](./PHYSICS_QUICK_START.md) - Fast navigation
+- [Implementation Summary](./PHYSICS_IMPLEMENTATION_SUMMARY.md) - Delivery overview
+- [Physics Integration Complete](./PHYSICS_INTEGRATION_COMPLETE.md) - API reference
 
 ---
 
 ## 📚 Document Guide
 
-### Implementation Guides (Current)
+### 🎮 Player Ability System (NEW)
+- **[PLAYER_ABILITY_SUMMARY.md](./playerl/PLAYER_ABILITY_SUMMARY.md)** - Overview and navigation
+- **[PLAYER_ABILITY_UPGRADE_PLAN.md](./playerl/PLAYER_ABILITY_UPGRADE_PLAN.md)** - Complete 8-week technical plan
+- **[PLAYER_ABILITY_QUICK_START.md](./playerl/PLAYER_ABILITY_QUICK_START.md)** - Day-by-day implementation guide
+- **[PLAYER_ABILITY_ROADMAP.md](./playerl/PLAYER_ABILITY_ROADMAP.md)** - Visual timeline and dependencies
+- **[PLAYER_ANIMATION_PLAN.md](./playerl/PLAYER_ANIMATION_PLAN.md)** ⭐ - Animation implementation (Days 3-5)
+- **[ANIMATION_QUICK_START.md](./playerl/ANIMATION_QUICK_START.md)** - Animation quick reference
+- **[WEEK1_PROGRESS.md](./playerl/WEEK1_PROGRESS.md)** - Week 1 implementation progress
+
+### ⚙️ Physics Integration
 - **[PHYSICS_INTEGRATION_IMPLEMENTATION_GUIDE.md](./PHYSICS_INTEGRATION_IMPLEMENTATION_GUIDE.md)** - Main implementation doc with code templates
+- **[PHYSICS_INTEGRATION_COMPLETE.md](./PHYSICS_INTEGRATION_COMPLETE.md)** - Complete API reference
 - **[PHYSICS_QUICK_START.md](./PHYSICS_QUICK_START.md)** - Fast navigation and getting started
 - **[PHYSICS_IMPLEMENTATION_SUMMARY.md](./PHYSICS_IMPLEMENTATION_SUMMARY.md)** - Delivery overview
+- **[PHYSICS_COMBAT_ENHANCEMENTS_SUMMARY.md](./PHYSICS_COMBAT_ENHANCEMENTS_SUMMARY.md)** - Sprint summary
 
-### Planning Documents (Reference)
+### 📖 Planning Documents (Reference)
 - **[PHYSICS_FIRST_IMPLEMENTATION_PLAN.md](./PHYSICS_FIRST_IMPLEMENTATION_PLAN.md)** - Detailed original plan
 - **[PHYSICS_PLANNING_COMPLETE.md](./PHYSICS_PLANNING_COMPLETE.md)** - Earlier planning iterations
 

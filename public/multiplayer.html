@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DozedEnt - Multiplayer</title>
+  
+  <!-- Import Map for Trystero -->
+  <script type="importmap">
+    {
+      "imports": {
+        "trystero/torrent": "../node_modules/trystero/src/torrent.js",
+        "trystero/firebase": "../node_modules/trystero/src/firebase.js",
+        "trystero/ipfs": "../node_modules/trystero/src/ipfs.js",
+        "trystero/mqtt": "../node_modules/trystero/src/mqtt.js",
+        "trystero/supabase": "../node_modules/trystero/src/supabase.js",
+        "trystero/nostr": "../node_modules/trystero/src/nostr.js"
+      }
+    }
+  </script>
+  
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="src/css/mobile.css">
   <style>
@@ -630,6 +645,21 @@
               <div class="stat-value" id="player-games">0</div>
               <div class="stat-label">Games</div>
             </div>
+          </div>
+        </div>
+
+        <div class="player-info-section">
+          <h2>Network Settings</h2>
+          <label style="color: #8899cc; display: block; margin-bottom: 8px;">Provider:</label>
+          <select id="network-provider-select" class="player-name-input" style="cursor: pointer;">
+            <option value="torrent">BitTorrent (Recommended)</option>
+            <option value="firebase">Firebase (Requires config)</option>
+            <option value="ipfs">IPFS (Decentralized)</option>
+            <option value="mqtt">MQTT (Custom server)</option>
+            <option value="supabase">Supabase (Modern)</option>
+          </select>
+          <div style="margin-top: 10px; color: #667799; font-size: 0.9em;">
+            <span id="network-status">🟢 Connected</span>
           </div>
         </div>
 

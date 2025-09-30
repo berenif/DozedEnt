@@ -2,8 +2,8 @@
 # This file configures how GitHub Pages serves your site
 
 # Basic site settings
-title: Trystero
-description: Serverless WebRTC matchmaking for painless P2P
+title: DozedEnt
+description: WASM-first multiplayer survival game with roguelite combat
 baseurl: "" # Will be set to repository name for GitHub Pages deployment
 url: "" # Your custom domain or leave empty for github.io domain
 

@@ -5,6 +5,10 @@ import { createRenderer } from './renderer.js';
 import { createInputManager } from '../managers/input-migration-adapter.js';
 // Import OrientationManager for mobile fullscreen and orientation lock
 import { OrientationManager } from '../ui/orientation-manager.js';
+// Import AbilityManager for character abilities
+import { AbilityManager, CHARACTER_TYPE } from '../game/abilities/ability-manager.js';
+// Import VFX Manager for visual effects
+import { VFXManager } from '../game/vfx/vfx-manager.js';
 
 const canvas = document.getElementById('demo-canvas');
 if (!canvas) {
@@ -20,6 +24,12 @@ window.renderer = renderer;
 
 // Will be set after inputManager is created
 let inputManager = null;
+
+// VFX manager for visual effects
+let vfxManager = null;
+
+// Ability manager for character-specific abilities
+let abilityManager = null;
 
 // CRITICAL: Initialize WASM immediately after creation
 // This ensures the player spawns at a valid position
@@ -71,9 +81,17 @@ inputManager = createInputManager(wasmApi, {
   debugMode: false 
 });
 
-// Expose input manager for debugging (extend existing window.DZ)
+// Initialize VFX manager
+vfxManager = new VFXManager(canvas);
+
+// Initialize ability manager for Warden (default character)
+abilityManager = new AbilityManager(wasmApi, vfxManager, CHARACTER_TYPE.WARDEN);
+
+// Expose input manager, VFX manager, and ability manager for debugging (extend existing window.DZ)
 if (window.DZ) {
   window.DZ.inputManager = inputManager;
+  window.DZ.vfxManager = vfxManager;
+  window.DZ.abilityManager = abilityManager;
   window.DZ.enableInputDebug = () => {
     inputManager.setDebugMode(true);
     console.log('🐛 Input debug mode enabled');
@@ -164,6 +182,40 @@ if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   // Request fullscreen and orientation lock on mobile
   orientationManager.evaluateOrientation();
 }
+
+// Spawn a few wolves for the demo if the WASM export exists
+const spawnWolvesIfAvailable = (count = 5) => {
+  try {
+    const exp = wasmApi?.exports;
+    if (!exp) return;
+    if (typeof exp.spawn_wolves === 'function') {
+      exp.spawn_wolves(count);
+      console.log(`🐺 Spawned ${count} wolves via spawn_wolves()`);
+    } else if (typeof exp.spawn_wolf === 'function') {
+      // Fallback: circle around player
+      const px = exp.get_x?.() ?? 0.5;
+      const py = exp.get_y?.() ?? 0.5;
+      const dist = 0.15;
+      for (let i = 0; i < count; i += 1) {
+        const angle = (i / Math.max(1, count)) * Math.PI * 2;
+        const x = Math.max(0, Math.min(1, px + dist * Math.cos(angle)));
+        const y = Math.max(0, Math.min(1, py + dist * Math.sin(angle)));
+        exp.spawn_wolf(x, y, i % 5);
+      }
+      console.log(`🐺 Spawned ${count} wolves via spawn_wolf fallback`);
+    }
+  } catch (e) {
+    console.warn('⚠️ Failed to spawn wolves:', e?.message || e);
+  }
+};
+
+// Expose manual spawn on DZ for debugging
+if (window.DZ) {
+  window.DZ.spawnWolves = (n = 5) => spawnWolvesIfAvailable(n);
+}
+
+// Auto-spawn a few wolves shortly after init so they’re visible
+setTimeout(() => spawnWolvesIfAvailable(5), 200);
 
 const step = 1 / 60;
 const maxSubSteps = 5;
@@ -387,6 +439,17 @@ const frame = (now) => {
     const beforeY = wasmApi.exports.get_y?.();
     
     applyInput();
+    
+    // Update abilities (if input manager exists)
+    if (abilityManager && inputManager) {
+      abilityManager.update(step, inputManager.inputState);
+    }
+    
+    // Update VFX systems
+    if (vfxManager) {
+      vfxManager.update(step);
+    }
+    
     wasmApi.update(step);
     
     // DEBUG: Check position after update
@@ -426,7 +489,33 @@ const frame = (now) => {
 
     renderer.clear();
     renderer.drawObstacles(gatherEntities());
+    renderer.drawWolves({ ...wasmApi.exports, ...(wasmApi.optionalHandles || {}) }); // Render wolves (exports + optional)
     renderer.drawPlayer(state);
+    
+    // Render abilities after player
+    if (abilityManager) {
+      const cameraState = {
+        x: state.x || 0.5,
+        y: state.y || 0.5,
+        scale: 1.0,
+        width: canvas.width,
+        height: canvas.height
+      };
+      abilityManager.render(renderer.ctx, cameraState);
+    }
+    
+    // Render VFX effects
+    if (vfxManager) {
+      const cameraState = {
+        x: state.x || 0.5,
+        y: state.y || 0.5,
+        scale: 1.0,
+        width: canvas.width,
+        height: canvas.height
+      };
+      vfxManager.render(renderer.ctx, cameraState);
+    }
+    
     renderer.drawOverlays(state, overlayInfo);
     lastRenderTime = now;
   }

@@ -83,17 +83,20 @@ function Build-GameWasm {
         "public/src/wasm/managers/GameStateManager.cpp",
         "public/src/wasm/managers/InputManager.cpp",
         "public/src/wasm/managers/PlayerManager.cpp",
+        "public/src/wasm/managers/WolfManager.cpp",
         "public/src/wasm/coordinators/GameCoordinator.cpp",
         "public/src/wasm/physics/PhysicsManager.cpp"
     )
     
-    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./game.wasm"
+    # Keep all exports with __attribute__((export_name)) by not using EXPORT_ALL=0
+    # This ensures bash ability functions and other exports are included
+    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -o ./public/wasm/game.wasm"
     Write-Host "Command: $cmd" -ForegroundColor Gray
     
     try {
         Invoke-Expression $cmd
         if ($LASTEXITCODE -eq 0) {
-            $sizeBytes = (Get-Item "game.wasm").Length
+            $sizeBytes = (Get-Item "public/wasm/game.wasm").Length
             $sizeKB = [math]::Round($sizeBytes / 1KB, 1)
             Write-Host "game.wasm built successfully ($sizeKB KB)" -ForegroundColor Green
             return $true
@@ -161,10 +164,15 @@ if ($success) {
     # Show build artifacts
     Write-Host ""
     Write-Host "Build artifacts:" -ForegroundColor Cyan
-    Get-Item "*.wasm" -ErrorAction SilentlyContinue | ForEach-Object {
+    Get-Item "public/wasm/*.wasm" -ErrorAction SilentlyContinue | ForEach-Object {
         $sizeBytes = $_.Length
         $sizeKB = [math]::Round($sizeBytes / 1KB, 1)
         Write-Host "  $($_.Name) - $sizeKB KB" -ForegroundColor White
+    }
+    Get-Item "*.wasm" -ErrorAction SilentlyContinue | ForEach-Object {
+        $sizeBytes = $_.Length
+        $sizeKB = [math]::Round($sizeBytes / 1KB, 1)
+        Write-Host "  $($_.Name) - $sizeKB KB (legacy location)" -ForegroundColor DarkGray
     }
     
     Write-Host ""

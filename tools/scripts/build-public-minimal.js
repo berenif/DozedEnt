@@ -76,14 +76,14 @@ function injectBuildInfoAndModifyPaths(srcPath, destPath) {
     structure: {
       mainFiles: ['index.html', 'site.js', 'favicon.ico'],
       references: ['../dist/', '../src/', '../assets/', '../data/', '../images/'],
-      wasmFiles: ['../dist/wasm/game.wasm', '../dist/wasm/game-host.wasm']
+      wasmFiles: ['../public/wasm/game.wasm', '../public/wasm/game-host.wasm']
     },
     notes: [
       'Minimal public folder - no file duplication',
       'All assets referenced from original locations',
       'dist/ folder referenced as ../dist/',
       'src/ folder referenced as ../src/',
-      'WASM files referenced from ../dist/wasm/',
+      'WASM files referenced from ../public/wasm/',
       'Assets referenced from ../assets/, ../data/, ../images/'
     ]
   }
@@ -96,7 +96,7 @@ function injectBuildInfoAndModifyPaths(srcPath, destPath) {
   htmlContent = htmlContent.replace(/src="\.\/assets\//g, 'src="../assets/')
   htmlContent = htmlContent.replace(/src="\.\/data\//g, 'src="../data/')
   htmlContent = htmlContent.replace(/src="\.\/images\//g, 'src="../images/')
-  htmlContent = htmlContent.replace(/src="\.\/wasm\//g, 'src="../dist/wasm/')
+  htmlContent = htmlContent.replace(/src="\.\/wasm\//g, 'src="../public/wasm/')
   htmlContent = htmlContent.replace(/src="\.\/core\//g, 'src="../dist/core/')
   htmlContent = htmlContent.replace(/src="\.\/animations\//g, 'src="../dist/animations/')
   

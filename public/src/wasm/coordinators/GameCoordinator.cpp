@@ -19,11 +19,14 @@ void GameCoordinator::initialize(unsigned long long seed, unsigned int start_wea
     // Initialize game state
     game_state_manager_.initialize(seed, start_weapon);
     
+    // Initialize wolf manager
+    wolf_manager_.initialize(this);
+    
     // Reset all managers to clean state
     player_manager_.reset_to_spawn();
     input_manager_.clear_input_latches();
     
-    // TODO: Initialize other systems (enemies, world, etc.)
+    // TODO: Initialize other systems (world, etc.)
     
     is_initialized_ = true;
 }
@@ -45,6 +48,7 @@ void GameCoordinator::reset(unsigned long long new_seed) {
     // Reset all managers
     player_manager_.reset_to_spawn();
     input_manager_.clear_input_latches();
+    wolf_manager_.clear_all();
     
     // TODO: Reset other systems
 }
@@ -59,6 +63,7 @@ void GameCoordinator::update(float delta_time) {
     update_input_processing(delta_time);
     update_player_systems(delta_time);
     update_combat_systems(delta_time);
+    wolf_manager_.update(delta_time);  // Update wolf AI and behavior
     update_game_state(delta_time);
     
     // Coordinate cross-system interactions
@@ -127,16 +132,25 @@ void GameCoordinator::coordinate_combat_actions() {
 void GameCoordinator::coordinate_movement_and_combat() {
     // Coordinate movement restrictions based on combat state
     const auto& combat_state = combat_manager_.get_state();
+    auto& player_state = player_manager_.get_state_mutable();
     
-    // Modify player movement based on combat state
+    // Reset speed multiplier each frame
+    player_state.speed_multiplier = 1.0f;
+    
+    // Reduce movement speed during attacks
     if (combat_state.attack_state != CombatManager::AttackState::Idle) {
-        // Reduce movement speed during attacks
-        // TODO: Apply movement restrictions to player manager
+        if (combat_state.attack_state == CombatManager::AttackState::Windup) {
+            player_state.speed_multiplier = 0.5f;  // 50% speed during windup
+        } else if (combat_state.attack_state == CombatManager::AttackState::Active) {
+            player_state.speed_multiplier = 0.3f;  // 30% speed during active attack
+        } else if (combat_state.attack_state == CombatManager::AttackState::Recovery) {
+            player_state.speed_multiplier = 0.6f;  // 60% speed during recovery
+        }
     }
     
-    if (combat_state.is_blocking) {
-        // Reduce movement speed while blocking
-        // TODO: Apply blocking movement restrictions
+    // Reduce movement speed while blocking (doesn't stack with attack speed reduction)
+    if (combat_state.is_blocking && combat_state.attack_state == CombatManager::AttackState::Idle) {
+        player_state.speed_multiplier = 0.4f;  // 40% speed while blocking
     }
 }
 

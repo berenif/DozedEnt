@@ -32,29 +32,7 @@
       width: 100vw;
       height: 100vh;
       display: block;
-      background: radial-gradient(circle at 50% 30%, #111a28 0%, #060810 70%, #030408 100%);
-    }
-
-    /* Animated gradient background */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: 
-        radial-gradient(ellipse at 20% 30%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 70%, rgba(138, 43, 226, 0.12) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(0, 150, 255, 0.08) 0%, transparent 70%);
-      animation: gradientShift 15s ease infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    @keyframes gradientShift {
-      0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
-      50% { opacity: 0.8; transform: scale(1.1) rotate(5deg); }
+      background: #05070b;
     }
 
     #loading {
@@ -79,38 +57,14 @@
       transform: translate(-50%, -50%);
       text-align: center;
       z-index: 1000;
-      background: 
-        linear-gradient(135deg, rgba(10, 20, 40, 0.98) 0%, rgba(18, 30, 52, 0.95) 100%);
-      border: 2px solid transparent;
+      background: rgba(10, 20, 40, 0.95);
+      border: 2px solid rgba(0, 212, 255, 0.5);
       border-radius: 24px;
       padding: 50px 60px;
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 100px rgba(0, 212, 255, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
       animation: menuEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
       max-width: 90vw;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #main-menu::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: linear-gradient(45deg, #00d4ff, #8a2be2, #00d4ff);
-      border-radius: 24px;
-      z-index: -1;
-      animation: borderGlow 3s ease infinite;
-    }
-
-    @keyframes borderGlow {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
     }
 
     @keyframes menuEntrance {
@@ -130,27 +84,11 @@
 
     #main-menu h1 {
       font-size: 4em;
-      background: linear-gradient(135deg, #00d4ff 0%, #4dd0ff 50%, #00a8cc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #00d4ff;
       margin-bottom: 10px;
       font-weight: 900;
       letter-spacing: 2px;
-      text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-      animation: titlePulse 3s ease-in-out infinite;
-      position: relative;
-    }
-
-    @keyframes titlePulse {
-      0%, 100% { 
-        filter: brightness(1);
-        transform: scale(1);
-      }
-      50% { 
-        filter: brightness(1.2);
-        transform: scale(1.02);
-      }
+      text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
     }
 
     #main-menu p {
@@ -167,71 +105,40 @@
       width: 320px;
       padding: 18px 35px;
       margin: 18px auto;
-      background: linear-gradient(135deg, #00d4ff 0%, #0096dd 100%);
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      background: #00d4ff;
+      border: none;
       border-radius: 12px;
-      color: #ffffff;
+      color: #05070b;
       font-weight: bold;
       font-size: 1.25em;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 
-        0 8px 20px rgba(0, 212, 255, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-      position: relative;
-      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    .menu-btn::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.5s, height 0.5s;
-    }
-
-    .menu-btn:hover::before {
-      width: 300%;
-      height: 300%;
-    }
-
     .menu-btn:hover {
-      transform: translateY(-5px) scale(1.03);
-      box-shadow: 
-        0 12px 30px rgba(0, 212, 255, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4),
-        0 0 40px rgba(0, 212, 255, 0.4);
-      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.6);
+      background: #4dd0ff;
     }
 
     .menu-btn:active {
-      transform: translateY(-2px) scale(1);
-      box-shadow: 
-        0 6px 15px rgba(0, 212, 255, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
     }
 
     .menu-btn.secondary {
-      background: linear-gradient(135deg, #667799 0%, #495870 100%);
-      color: #e8f0ff;
-      box-shadow: 
-        0 6px 18px rgba(102, 119, 153, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      background: #667799;
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(102, 119, 153, 0.4);
     }
 
     .menu-btn.secondary:hover {
-      transform: translateY(-5px) scale(1.03);
-      box-shadow: 
-        0 10px 25px rgba(102, 119, 153, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3),
-        0 0 30px rgba(102, 119, 153, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(102, 119, 153, 0.6);
+      background: #7788aa;
     }
 
     /* Responsive adjustments */
@@ -340,6 +247,17 @@
       </button>
     </div>
   </div>
+
+  <!-- Wolf Controls (Desktop) -->
+  <div id="wolf-controls" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; display: none; z-index: 100;">
+    <h3 style="margin: 0 0 10px 0; color: #4ecca3; font-size: 14px;">🐺 Wolves</h3>
+    <button id="spawn-1-wolf" style="display: block; width: 100%; margin-bottom: 8px; padding: 8px; background: #4ecca3; border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">Spawn 1 Wolf</button>
+    <button id="spawn-5-wolves" style="display: block; width: 100%; margin-bottom: 8px; padding: 8px; background: #4ecca3; border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">Spawn 5 Wolves</button>
+    <button id="clear-wolves" style="display: block; width: 100%; padding: 8px; background: #ff6b6b; border: none; border-radius: 4px; color: #fff; font-weight: bold; cursor: pointer;">Clear All</button>
+    <div style="margin-top: 10px; font-size: 12px; color: #ccc;">
+      Wolves: <strong id="wolf-count-display" style="color: #4ecca3;">0</strong>
+    </div>
+  </div>
   
   <script type="module" src="src/utils/wasm.js"></script>
   <script type="module" src="src/utils/wasm-lazy-loader.js"></script>
@@ -444,11 +362,240 @@
           desktopUI.show();
         }
         
+        // Show wolf controls on desktop
+        const wolfControls = document.getElementById('wolf-controls');
+        if (wolfControls && deviceDetector.shouldShowDesktopControls()) {
+          wolfControls.style.display = 'block';
+          initWolfControls();
+        }
+        
         // Start game (existing behavior)
         setTimeout(() => {
           loading?.classList.add('hidden');
         }, 1000);
       };
+
+      // Initialize wolf controls
+      function initWolfControls() {
+        const spawn1Btn = document.getElementById('spawn-1-wolf');
+        const spawn5Btn = document.getElementById('spawn-5-wolves');
+        const clearBtn = document.getElementById('clear-wolves');
+        const countDisplay = document.getElementById('wolf-count-display');
+
+        // Wait for wasmApi to be available with exports
+        if (!window.wasmApi || !window.wasmApi.exports) {
+          console.log('⏳ Waiting for wasmApi to load...');
+          setTimeout(initWolfControls, 100);
+          return;
+        }
+
+        // Debug: Log what's available on wasmApi
+        console.log('🔍 wasmApi properties:', Object.keys(window.wasmApi));
+        console.log('🔍 wasmApi.exports type:', typeof window.wasmApi.exports);
+        console.log('🔍 wasmApi.exports keys:', Object.keys(window.wasmApi.exports));
+        
+        if (window.DZ) {
+          console.log('🔍 window.DZ properties:', Object.keys(window.DZ));
+          if (window.DZ.exports) {
+            console.log('🔍 DZ.exports keys sample:', Object.keys(window.DZ.exports).slice(0, 10));
+          }
+        }
+        
+        // CRITICAL: Access RAW WASM exports directly!
+        // wasm-api.js filters exports, but we need ALL of them for wolf functions
+        let wasmExports = {};
+        let rawWasmExports = null;
+        
+        // Try to get raw WASM instance exports (contains ALL 104 functions)
+        if (window.wasmApi && window.wasmApi.memory) {
+          console.log('🔍 Searching for raw WASM instance...');
+          
+          // The memory object is shared with the WASM instance
+          // We need to find the WebAssembly.Instance that created it
+          try {
+            // Check if there's a module or instance stored
+            if (window.wasmApi.loaderInfo) {
+              console.log('🔍 loaderInfo:', Object.keys(window.wasmApi.loaderInfo));
+            }
+          } catch (e) {
+            console.error('Error accessing loaderInfo:', e);
+          }
+        }
+        
+        // Fallback: Use what we can access
+        if (window.DZ && window.DZ.exports) {
+          console.log('✅ Using DZ.exports + DZ.optional');
+          wasmExports = { ...window.DZ.exports, ...window.DZ.optional };
+        } else if (window.wasmApi) {
+          wasmExports = { ...window.wasmApi.exports };
+        }
+        
+        // CRITICAL: Also check wasmApi.optionalHandles directly!
+        if (window.wasmApi && window.wasmApi.optionalHandles) {
+          console.log('🔍 Found wasmApi.optionalHandles with', Object.keys(window.wasmApi.optionalHandles).length, 'functions');
+          console.log('🔍 optionalHandles keys:', Object.keys(window.wasmApi.optionalHandles));
+          Object.assign(wasmExports, window.wasmApi.optionalHandles);
+        }
+        
+        // HACK: The WASM module IS loaded, we just can't access it through the wrapper
+        // Let's call the functions directly through the global scope
+        // When WASM loads, it creates global functions we can access
+        console.log('🔍 Checking global WASM functions...');
+        if (typeof globalThis.spawn_wolves === 'function') {
+          console.log('✅ Found spawn_wolves in globalThis!');
+          wasmExports.spawn_wolves = globalThis.spawn_wolves;
+        }
+        if (typeof globalThis.get_enemy_count === 'function') {
+          wasmExports.get_enemy_count = globalThis.get_enemy_count;
+        }
+        if (typeof globalThis.get_wolf_count === 'function') {
+          wasmExports.get_wolf_count = globalThis.get_wolf_count;
+        }
+        if (typeof globalThis.clear_enemies === 'function') {
+          wasmExports.clear_enemies = globalThis.clear_enemies;
+        }
+        
+        // Make sure exports has actual functions (not just empty object)
+        const exportCount = Object.keys(wasmExports).length;
+        if (exportCount < 10) {
+          console.log('⏳ Waiting for WASM exports to populate... (currently ' + exportCount + ')');
+          setTimeout(initWolfControls, 100);
+          return;
+        }
+
+        console.log('✅ wasmApi loaded with ' + exportCount + ' exports, initializing wolf controls');
+        
+        // Log ALL available functions
+        console.log('📦 Total WASM exports:', Object.keys(wasmExports).length);
+        
+        // Log available wolf/enemy functions
+        const wolfFuncs = Object.keys(wasmExports).filter(k => 
+          k.includes('wolf') || k.includes('enemy') || k.includes('spawn')
+        );
+        console.log('🐺 Available wolf/enemy/spawn functions:', wolfFuncs);
+        
+        // Check specific functions we need
+        console.log('🔍 Checking required functions:');
+        console.log('  - spawn_wolves:', typeof wasmExports.spawn_wolves);
+        console.log('  - spawn_wolf:', typeof wasmExports.spawn_wolf);
+        console.log('  - get_enemy_count:', typeof wasmExports.get_enemy_count);
+        console.log('  - get_wolf_count:', typeof wasmExports.get_wolf_count);
+        console.log('  - clear_enemies:', typeof wasmExports.clear_enemies);
+
+        // Check if spawn_wolves exists
+        if (typeof wasmExports.spawn_wolves === 'function') {
+          console.log('✅ spawn_wolves found in WASM');
+        } else if (typeof wasmExports.spawn_wolf === 'function') {
+          // Create fallback spawn_wolves using spawn_wolf
+          console.log('⚠️ spawn_wolves not found, creating fallback using spawn_wolf...');
+          wasmExports.spawn_wolves = function(count) {
+            const playerX = wasmExports.get_x?.() || 0.5;
+            const playerY = wasmExports.get_y?.() || 0.5;
+            for (let i = 0; i < count; i++) {
+              const angle = (i / count) * Math.PI * 2;
+              const dist = 0.15;
+              const x = Math.max(0, Math.min(1, playerX + dist * Math.cos(angle)));
+              const y = Math.max(0, Math.min(1, playerY + dist * Math.sin(angle)));
+              wasmExports.spawn_wolf(x, y, i % 5);
+            }
+          };
+        } else {
+          console.error('❌ CRITICAL: Neither spawn_wolves nor spawn_wolf found! Wolf system not available.');
+          console.error('❌ You need to rebuild WASM with wolf support: npm run wasm:build');
+          // Create dummy function that shows error
+          wasmExports.spawn_wolves = function() {
+            alert('Wolf system not available in WASM!\n\nRebuild with: npm run wasm:build');
+          };
+        }
+
+        // Create fallback clear_enemies if it doesn't exist
+        if (typeof wasmExports.clear_enemies === 'function') {
+          console.log('✅ clear_enemies found in WASM');
+        } else if (typeof wasmExports.remove_wolf === 'function') {
+          console.log('⚠️ clear_enemies not found, creating fallback with remove_wolf...');
+          wasmExports.clear_enemies = function() {
+            // Use get_wolf_count or get_enemy_count
+            const count = (wasmExports.get_wolf_count?.() || wasmExports.get_enemy_count?.() || 0);
+            for (let i = count - 1; i >= 0; i--) {
+              wasmExports.remove_wolf(i);
+            }
+          };
+        } else {
+          console.warn('⚠️ clear_enemies not available - no remove function found');
+          wasmExports.clear_enemies = function() {
+            console.warn('❌ clear_enemies not available');
+          };
+        }
+
+        // Update wolf count display
+        function updateWolfCount() {
+          let count = 0;
+          if (typeof wasmExports.get_enemy_count === 'function') {
+            count = wasmExports.get_enemy_count();
+          } else if (typeof wasmExports.get_wolf_count === 'function') {
+            count = wasmExports.get_wolf_count();
+          }
+          if (countDisplay) {
+            countDisplay.textContent = count;
+          }
+        }
+
+        // Spawn 1 wolf
+        spawn1Btn?.addEventListener('click', () => {
+          console.log('🐺 Spawn 1 wolf button clicked');
+          if (typeof wasmExports.spawn_wolves === 'function') {
+            console.log('🐺 Calling spawn_wolves(1)...');
+            try {
+              wasmExports.spawn_wolves(1);
+              updateWolfCount();
+              console.log('✅ Successfully spawned 1 wolf');
+            } catch (error) {
+              console.error('❌ Error spawning wolf:', error);
+            }
+          } else {
+            console.error('❌ spawn_wolves function not available!');
+          }
+        });
+
+        // Spawn 5 wolves
+        spawn5Btn?.addEventListener('click', () => {
+          console.log('🐺 Spawn 5 wolves button clicked');
+          if (typeof wasmExports.spawn_wolves === 'function') {
+            console.log('🐺 Calling spawn_wolves(5)...');
+            try {
+              wasmExports.spawn_wolves(5);
+              updateWolfCount();
+              console.log('✅ Successfully spawned 5 wolves');
+            } catch (error) {
+              console.error('❌ Error spawning wolves:', error);
+            }
+          } else {
+            console.error('❌ spawn_wolves function not available!');
+          }
+        });
+
+        // Clear all wolves
+        clearBtn?.addEventListener('click', () => {
+          console.log('🐺 Clear wolves button clicked');
+          if (typeof wasmExports.clear_enemies === 'function') {
+            console.log('🐺 Calling clear_enemies()...');
+            try {
+              wasmExports.clear_enemies();
+              updateWolfCount();
+              console.log('✅ Successfully cleared all wolves');
+            } catch (error) {
+              console.error('❌ Error clearing wolves:', error);
+            }
+          } else {
+            console.error('❌ clear_enemies function not available!');
+          }
+        });
+        
+        console.log('✅ Wolf control event listeners attached');
+
+        // Update count periodically
+        setInterval(updateWolfCount, 500);
+      }
 
       playSoloBtn?.addEventListener('click', startGame);
 

@@ -106,6 +106,73 @@ float get_speed() {
     return g_coordinator.get_player_manager().get_speed();
 }
 
+__attribute__((export_name("get_facing_x")))
+float get_facing_x() {
+    return g_coordinator.get_player_manager().get_facing_x();
+}
+
+__attribute__((export_name("get_facing_y")))
+float get_facing_y() {
+    return g_coordinator.get_player_manager().get_facing_y();
+}
+
+// ---- Warden Shoulder Bash Abilities ----
+
+__attribute__((used)) __attribute__((export_name("start_charging_bash")))
+void start_charging_bash() {
+    g_coordinator.get_player_manager().start_charging_bash();
+}
+
+__attribute__((used)) __attribute__((export_name("release_bash")))
+void release_bash() {
+    g_coordinator.get_player_manager().release_bash();
+}
+
+__attribute__((used)) __attribute__((export_name("get_bash_charge_level")))
+float get_bash_charge_level() {
+    return g_coordinator.get_player_manager().get_bash_charge_level();
+}
+
+__attribute__((used)) __attribute__((export_name("is_bash_active")))
+int is_bash_active() {
+    return g_coordinator.get_player_manager().is_bash_active() ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("is_bash_charging")))
+int is_bash_charging() {
+    return g_coordinator.get_player_manager().is_bash_charging() ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("get_bash_targets_hit")))
+int get_bash_targets_hit() {
+    return g_coordinator.get_player_manager().get_bash_targets_hit();
+}
+
+__attribute__((used)) __attribute__((export_name("get_bash_hitbox_x")))
+float get_bash_hitbox_x() {
+    return g_coordinator.get_player_manager().get_bash_hitbox().x;
+}
+
+__attribute__((used)) __attribute__((export_name("get_bash_hitbox_y")))
+float get_bash_hitbox_y() {
+    return g_coordinator.get_player_manager().get_bash_hitbox().y;
+}
+
+__attribute__((used)) __attribute__((export_name("get_bash_hitbox_radius")))
+float get_bash_hitbox_radius() {
+    return g_coordinator.get_player_manager().get_bash_hitbox().radius;
+}
+
+__attribute__((used)) __attribute__((export_name("is_bash_hitbox_active")))
+int is_bash_hitbox_active() {
+    return g_coordinator.get_player_manager().get_bash_hitbox().active ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("check_bash_collision")))
+int check_bash_collision(float target_x, float target_y, float target_radius) {
+    return g_coordinator.get_player_manager().check_bash_collision(target_x, target_y, target_radius) ? 1 : 0;
+}
+
 // ---- Game State Getters ----
 
 __attribute__((export_name("get_phase")))
@@ -436,6 +503,168 @@ void sync_player_position_from_physics() {
     if (player_body) {
         // TODO: Add method to PlayerManager to set position from physics
         // For now, physics is the authority for position
+    }
+}
+
+// ---- Wolf Enemy System ----
+
+__attribute__((export_name("spawn_wolf")))
+void spawn_wolf(float x, float y, int type) {
+    g_coordinator.get_wolf_manager().spawn_wolf(x, y, static_cast<WolfType>(type));
+}
+
+__attribute__((export_name("spawn_wolves")))
+void spawn_wolves(int count) {
+    // Spawn wolves in a circle around the player for testing
+    auto& player_mgr = g_coordinator.get_player_manager();
+    float player_x = player_mgr.get_x();
+    float player_y = player_mgr.get_y();
+    
+    for (int i = 0; i < count; i++) {
+        float angle = (float)i / (float)count * 6.28318f; // 2*PI
+        float dist = 0.15f; // Distance from player
+        float x = player_x + dist * cosf(angle);
+        float y = player_y + dist * sinf(angle);
+        
+        // Clamp to world bounds
+        x = (x < 0.0f) ? 0.0f : (x > 1.0f) ? 1.0f : x;
+        y = (y < 0.0f) ? 0.0f : (y > 1.0f) ? 1.0f : y;
+        
+        // Alternate between wolf types
+        WolfType type = static_cast<WolfType>(i % 5);
+        g_coordinator.get_wolf_manager().spawn_wolf(x, y, type);
+    }
+}
+
+__attribute__((export_name("clear_enemies")))
+void clear_enemies() {
+    g_coordinator.get_wolf_manager().clear_all();
+}
+
+__attribute__((export_name("get_wolf_count")))
+int get_wolf_count() {
+    return g_coordinator.get_wolf_manager().get_wolf_count();
+}
+
+__attribute__((export_name("get_enemy_count")))
+int get_enemy_count() {
+    return g_coordinator.get_wolf_manager().get_wolf_count();
+}
+
+__attribute__((export_name("get_wolf_x")))
+float get_wolf_x(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->x.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_enemy_x")))
+float get_enemy_x(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->x.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_y")))
+float get_wolf_y(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->y.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_enemy_y")))
+float get_enemy_y(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->y.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_enemy_type")))
+int get_enemy_type(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? static_cast<int>(wolf->type) : 0;
+}
+
+__attribute__((export_name("get_enemy_state")))
+int get_enemy_state(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? static_cast<int>(wolf->state) : 0;
+}
+
+__attribute__((export_name("get_enemy_role")))
+int get_enemy_role(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? static_cast<int>(wolf->pack_role) : 0;
+}
+
+__attribute__((export_name("get_enemy_fatigue")))
+float get_enemy_fatigue(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    if (!wolf) {
+        return 0.0f;
+    }
+    // Calculate fatigue as inverse of health (1.0 = dead, 0.0 = full health)
+    return 1.0f - (wolf->health / wolf->max_health);
+}
+
+__attribute__((export_name("get_wolf_state")))
+int get_wolf_state(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? static_cast<int>(wolf->state) : 0;
+}
+
+__attribute__((export_name("get_wolf_health")))
+float get_wolf_health(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->health : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_facing_x")))
+float get_wolf_facing_x(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->facing_x.to_float() : 1.0f;
+}
+
+__attribute__((export_name("get_wolf_facing_y")))
+float get_wolf_facing_y(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->facing_y.to_float() : 0.0f;
+}
+
+// Animation data exports (for JS rendering)
+__attribute__((export_name("get_wolf_body_stretch")))
+float get_wolf_body_stretch(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->body_stretch : 1.0f;
+}
+
+__attribute__((export_name("get_wolf_head_pitch")))
+float get_wolf_head_pitch(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->head_pitch : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_head_yaw")))
+float get_wolf_head_yaw(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->head_yaw : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_tail_wag")))
+float get_wolf_tail_wag(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->tail_wag : 0.0f;
+}
+
+__attribute__((export_name("damage_wolf")))
+void damage_wolf(int wolf_index, float damage, float knockback_x, float knockback_y) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    if (wolf) {
+        g_coordinator.get_wolf_manager().damage_wolf(wolf->id, damage, knockback_x, knockback_y);
+    }
+}
+
+__attribute__((export_name("remove_wolf")))
+void remove_wolf(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    if (wolf) {
+        g_coordinator.get_wolf_manager().remove_wolf(wolf->id);
     }
 }
 

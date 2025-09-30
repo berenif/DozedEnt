@@ -5,6 +5,7 @@
 
 import { idGenerator } from '../utils/deterministic-id-generator.js'
 import { LobbyAnalytics } from '../utils/lobby-analytics.js'
+import { NetworkManager } from './NetworkManager.js'
 
 export class EnhancedRoomManager {
   constructor(appId = 'default-game', config = {}) {
@@ -33,6 +34,10 @@ export class EnhancedRoomManager {
     this.currentRoom = null
     this.localPlayer = null
     this.isHost = false
+    
+    // Network manager
+    this.networkManager = null
+    this.networkEnabled = false
     
     // Event listeners
     this.eventListeners = new Map()
@@ -100,6 +105,220 @@ export class EnhancedRoomManager {
     if (this.config.enableMatchmaking) {
       this.initializeMatchmaking()
     }
+  }
+
+  /**
+   * Set network manager and enable networking
+   */
+  async setNetworkManager(networkManager) {
+    this.networkManager = networkManager
+    this.networkEnabled = true
+    
+    console.log('🌐 Network manager connected to room manager')
+    
+    // Set up network callbacks
+    this.networkManager.callbacks.onPeerJoined = (peerId) => {
+      console.log('👋 Network peer joined:', peerId)
+    }
+    
+    this.networkManager.callbacks.onPeerLeft = (peerId) => {
+      console.log('👋 Network peer left:', peerId)
+      this.handlePeerDisconnect(peerId)
+    }
+    
+    // Set up message handlers
+    this.setupNetworkHandlers()
+  }
+
+  /**
+   * Set up network message handlers
+   */
+  setupNetworkHandlers() {
+    if (!this.networkManager) return
+    
+    // Handle room state updates from other peers
+    this.networkManager.onMessage('roomState', (data, peerId) => {
+      this.handleRemoteRoomState(data, peerId)
+    })
+    
+    // Handle player join notifications
+    this.networkManager.onMessage('playerJoin', (data, peerId) => {
+      this.handleRemotePlayerJoin(data, peerId)
+    })
+    
+    // Handle player leave notifications
+    this.networkManager.onMessage('playerLeave', (data, peerId) => {
+      this.handleRemotePlayerLeave(data, peerId)
+    })
+    
+    // Handle player ready state
+    this.networkManager.onMessage('playerReady', (data, peerId) => {
+      this.handleRemotePlayerReady(data, peerId)
+    })
+    
+    // Handle chat messages
+    this.networkManager.onMessage('chatMessage', (data, peerId) => {
+      this.handleRemoteChatMessage(data, peerId)
+    })
+    
+    // Handle game start signal
+    this.networkManager.onMessage('gameStart', (data, peerId) => {
+      this.handleRemoteGameStart(data, peerId)
+    })
+  }
+
+  /**
+   * Handle remote room state update
+   */
+  handleRemoteRoomState(data, peerId) {
+    console.log('📥 Received room state from peer:', peerId)
+    // Merge remote room state with local state
+    if (data.roomId && this.rooms.has(data.roomId)) {
+      const room = this.rooms.get(data.roomId)
+      // Update room properties
+      Object.assign(room, data.roomData)
+    }
+  }
+
+  /**
+   * Handle remote player join
+   */
+  handleRemotePlayerJoin(data, peerId) {
+    console.log('📥 Remote player joined:', data)
+    
+    if (!this.currentRoom) return
+    
+    // Add player to current room if not already present
+    if (!this.currentRoom.players.has(data.playerId)) {
+      const player = {
+        id: data.playerId,
+        name: data.playerName,
+        role: this.playerRoles.PLAYER,
+        isReady: false,
+        rating: data.rating || 1000,
+        stats: data.stats || {},
+        joinedAt: Date.now(),
+        peerId: peerId
+      }
+      
+      this.currentRoom.players.set(player.id, player)
+      this.players.set(player.id, { roomId: this.currentRoom.id, ...player })
+      
+      // Emit event
+      this.emit('onPlayerJoin', player)
+    }
+  }
+
+  /**
+   * Handle remote player leave
+   */
+  handleRemotePlayerLeave(data, peerId) {
+    console.log('📥 Remote player left:', data)
+    
+    if (!this.currentRoom) return
+    
+    // Remove player from room
+    if (this.currentRoom.players.has(data.playerId)) {
+      const player = this.currentRoom.players.get(data.playerId)
+      this.currentRoom.players.delete(data.playerId)
+      this.players.delete(data.playerId)
+      
+      // Emit event
+      this.emit('onPlayerLeave', player)
+    }
+  }
+
+  /**
+   * Handle remote player ready state
+   */
+  handleRemotePlayerReady(data, peerId) {
+    console.log('📥 Remote player ready state:', data)
+    
+    if (!this.currentRoom) return
+    
+    if (this.currentRoom.players.has(data.playerId)) {
+      const player = this.currentRoom.players.get(data.playerId)
+      player.isReady = data.ready
+    }
+  }
+
+  /**
+   * Handle remote chat message
+   */
+  handleRemoteChatMessage(data, peerId) {
+    const message = {
+      id: data.messageId || Date.now(),
+      player: data.playerName,
+      text: data.text,
+      timestamp: data.timestamp || Date.now()
+    }
+    
+    // Emit chat event
+    this.emit('onChatMessage', message)
+  }
+
+  /**
+   * Handle remote game start
+   */
+  handleRemoteGameStart(data, peerId) {
+    console.log('📥 Game starting (initiated by peer):', peerId)
+    
+    if (this.currentRoom) {
+      this.currentRoom.status = this.roomStates.IN_PROGRESS
+      this.emit('onRoomStateChange', this.currentRoom.status)
+    }
+  }
+
+  /**
+   * Handle peer disconnection
+   */
+  handlePeerDisconnect(peerId) {
+    if (!this.currentRoom) return
+    
+    // Find and remove player with this peerId
+    for (const [playerId, player] of this.currentRoom.players.entries()) {
+      if (player.peerId === peerId) {
+        console.log('👋 Removing disconnected player:', player.name)
+        this.currentRoom.players.delete(playerId)
+        this.players.delete(playerId)
+        this.emit('onPlayerLeave', player)
+        break
+      }
+    }
+  }
+
+  /**
+   * Broadcast room state to all peers
+   */
+  broadcastRoomState() {
+    if (!this.networkEnabled || !this.networkManager || !this.currentRoom) return
+    
+    const roomData = {
+      roomId: this.currentRoom.id,
+      roomData: {
+        name: this.currentRoom.name,
+        status: this.currentRoom.status,
+        playerCount: this.currentRoom.players.size,
+        maxPlayers: this.currentRoom.maxPlayers
+      }
+    }
+    
+    this.networkManager.broadcastToRoom({
+      type: 'roomState',
+      data: roomData
+    })
+  }
+
+  /**
+   * Broadcast to room (for external use)
+   */
+  broadcastToRoom(messageType, data) {
+    if (!this.networkEnabled || !this.networkManager) return
+    
+    this.networkManager.broadcastToRoom({
+      type: messageType,
+      data: data
+    })
   }
 
   /**
@@ -238,6 +457,19 @@ export class EnhancedRoomManager {
       // Store room
       this.rooms.set(roomId, room)
       
+      // Create network room if network is enabled
+      if (this.networkEnabled && this.networkManager) {
+        try {
+          await this.networkManager.createRoom(roomId, {
+            appId: this.appId,
+            roomData: room
+          })
+          console.log('🌐 Network room created')
+        } catch (error) {
+          console.error('❌ Failed to create network room:', error)
+        }
+      }
+      
       // Persist if enabled
       if (this.config.enablePersistence) {
         this.persistRoom(room)
@@ -327,6 +559,30 @@ export class EnhancedRoomManager {
       // Set current room and player
       this.currentRoom = room
       this.localPlayer = player
+      
+      // Join network room if network is enabled
+      if (this.networkEnabled && this.networkManager) {
+        try {
+          await this.networkManager.joinRoom(roomId, {
+            playerId: player.id,
+            playerName: player.name
+          })
+          console.log('🌐 Joined network room')
+          
+          // Broadcast player join to other peers
+          this.networkManager.broadcastToRoom({
+            type: 'playerJoin',
+            data: {
+              playerId: player.id,
+              playerName: player.name,
+              rating: player.rating,
+              stats: player.stats
+            }
+          })
+        } catch (error) {
+          console.error('❌ Failed to join network room:', error)
+        }
+      }
       
       // Add to team if enabled
       if (room.teams && options.team) {

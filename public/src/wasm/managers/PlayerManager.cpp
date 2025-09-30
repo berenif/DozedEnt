@@ -11,6 +11,14 @@ void PlayerManager::update(float delta_time) {
     // Update physics
     update_physics(delta_time);
     
+    // Update bash state
+    if (bash_state_.is_charging) {
+        update_bash_charge(delta_time);
+    }
+    if (bash_state_.is_active) {
+        update_active_bash(delta_time);
+    }
+    
     // Regenerate stamina
     regenerate_stamina(delta_time);
     
@@ -23,7 +31,12 @@ void PlayerManager::update(float delta_time) {
 }
 
 void PlayerManager::update_movement(float input_x, float input_y, float delta_time) {
-    if (delta_time <= 0.0f) return;
+    if (delta_time <= 0.0f) {
+        return;
+    }
+    
+    // Update facing direction based on input
+    update_facing_direction(input_x, input_y);
     
     // Apply movement input
     float target_vel_x = input_x * MOVE_SPEED * state_.speed_multiplier;
@@ -127,11 +140,16 @@ float PlayerManager::get_speed() const {
 }
 
 void PlayerManager::apply_friction(float delta_time) {
-    const float friction = 0.85f;
-    float friction_factor = std::pow(friction, delta_time);
+    // Much stronger friction - player should stop quickly when input is released
+    const float friction = 12.0f; // Higher = faster stopping
+    float friction_factor = 1.0f / (1.0f + friction * delta_time);
     
     state_.vel_x *= friction_factor;
     state_.vel_y *= friction_factor;
+    
+    // Clamp near-zero velocities to exactly zero to prevent drift
+    if (std::abs(state_.vel_x) < 0.001f) state_.vel_x = 0.0f;
+    if (std::abs(state_.vel_y) < 0.001f) state_.vel_y = 0.0f;
 }
 
 void PlayerManager::handle_collisions() {
@@ -159,5 +177,175 @@ void PlayerManager::update_wall_sliding_state() {
     // Simple wall detection (TODO: improve with proper collision detection)
     bool near_wall = (state_.pos_x <= 0.1f || state_.pos_x >= 0.9f);
     state_.is_wall_sliding = near_wall && !state_.is_grounded && state_.vel_y < 0.0f;
+}
+
+// ========== Warden Shoulder Bash Implementation ==========
+
+bool PlayerManager::can_bash() const {
+    return state_.stamina >= BASH_STAMINA_COST && !bash_state_.is_active && !bash_state_.is_charging;
+}
+
+void PlayerManager::start_charging_bash() {
+    if (!can_bash()) {
+        return;
+    }
+    
+    bash_state_.is_charging = true;
+    bash_state_.charge_time = 0.0f;
+    bash_state_.targets_hit = 0;
+    
+    // Slow movement during charge
+    state_.speed_multiplier = BASH_CHARGE_SLOW_FACTOR;
+}
+
+void PlayerManager::update_bash_charge(float dt) {
+    if (!bash_state_.is_charging) {
+        return;
+    }
+    
+    // Increment charge time (capped at max_charge)
+    bash_state_.charge_time += dt;
+    bash_state_.charge_time = std::min(bash_state_.charge_time, bash_state_.max_charge);
+    
+    // Update force multiplier based on charge level
+    bash_state_.force_multiplier = Fixed::from_float(1.0f + bash_state_.charge_time);
+}
+
+void PlayerManager::release_bash() {
+    if (!bash_state_.is_charging) {
+        return;
+    }
+    
+    // Check minimum charge requirement
+    if (bash_state_.charge_time < BASH_MIN_CHARGE) {
+        // Release without executing bash
+        bash_state_.is_charging = false;
+        state_.speed_multiplier = 1.0f;
+        return;
+    }
+    
+    // Execute bash
+    bash_state_.is_charging = false;
+    bash_state_.is_active = true;
+    bash_state_.duration = BASH_DURATION;
+    
+    // Apply forward lunge (simplified - will integrate with physics manager later)
+    float bash_force = BASH_BASE_FORCE * bash_state_.force_multiplier.to_float();
+    state_.vel_x += state_.facing_x * bash_force * 0.1f;
+    state_.vel_y += state_.facing_y * bash_force * 0.1f;
+    
+    // Consume stamina (scales with charge)
+    consume_stamina(BASH_STAMINA_COST * bash_state_.force_multiplier.to_float());
+    
+    // Restore speed multiplier
+    state_.speed_multiplier = 1.0f;
+    
+    // TODO: Create bash hitbox when physics integration is complete
+}
+
+void PlayerManager::update_active_bash(float dt) {
+    if (!bash_state_.is_active) {
+        return;
+    }
+    
+    // Decrease bash duration
+    bash_state_.duration -= dt;
+    
+    // End bash when duration expires
+    if (bash_state_.duration <= 0.0f) {
+        bash_state_.is_active = false;
+        bash_state_.targets_hit = 0;
+    }
+    
+    // TODO: Check for bash collisions with enemies
+}
+
+void PlayerManager::on_bash_hit(uint32_t target_id) {
+    if (!bash_state_.is_active) {
+        return;
+    }
+    
+    bash_state_.targets_hit++;
+    
+    // Extend bash duration slightly on hit
+    bash_state_.duration += 0.1f;
+    
+    // Restore stamina on successful hit (reward aggression)
+    state_.stamina = std::min(1.0f, state_.stamina + BASH_STAMINA_REFUND);
+    
+    // TODO: Apply knockback to target when physics integration is complete
+    // TODO: Apply stun status effect to target
+}
+
+void PlayerManager::update_facing_direction(float input_x, float input_y) {
+    // Only update facing if there's significant input
+    const float min_input = 0.1f;
+    if (std::abs(input_x) > min_input || std::abs(input_y) > min_input) {
+        // Normalize the facing direction
+        float length = std::sqrt(input_x * input_x + input_y * input_y);
+        if (length > 0.001f) {
+            state_.facing_x = input_x / length;
+            state_.facing_y = input_y / length;
+        }
+    }
+}
+
+// Bash getters
+float PlayerManager::get_bash_charge_level() const {
+    if (!bash_state_.is_charging) {
+        return 0.0f;
+    }
+    return bash_state_.charge_time / bash_state_.max_charge;
+}
+
+bool PlayerManager::is_bash_active() const {
+    return bash_state_.is_active;
+}
+
+bool PlayerManager::is_bash_charging() const {
+    return bash_state_.is_charging;
+}
+
+uint32_t PlayerManager::get_bash_targets_hit() const {
+    return bash_state_.targets_hit;
+}
+
+PlayerManager::BashHitbox PlayerManager::get_bash_hitbox() const {
+    BashHitbox hitbox;
+    
+    if (!bash_state_.is_active) {
+        hitbox.active = false;
+        return hitbox;
+    }
+    
+    hitbox.active = true;
+    hitbox.radius = bash_state_.hitbox_radius;
+    
+    // Calculate hitbox position in front of player
+    hitbox.x = state_.pos_x + state_.facing_x * bash_state_.hitbox_offset;
+    hitbox.y = state_.pos_y + state_.facing_y * bash_state_.hitbox_offset;
+    
+    return hitbox;
+}
+
+bool PlayerManager::check_bash_collision(float target_x, float target_y, float target_radius) const {
+    if (!bash_state_.is_active) {
+        return false;
+    }
+    
+    BashHitbox hitbox = get_bash_hitbox();
+    if (!hitbox.active) {
+        return false;
+    }
+    
+    // Circle-circle collision detection
+    float dx = target_x - hitbox.x;
+    float dy = target_y - hitbox.y;
+    float dist_sq = dx * dx + dy * dy;
+    
+    float combined_radius = hitbox.radius + target_radius;
+    float combined_radius_sq = combined_radius * combined_radius;
+    
+    return dist_sq <= combined_radius_sq;
 }
 

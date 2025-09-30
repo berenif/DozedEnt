@@ -4,6 +4,7 @@
 #include "../managers/PlayerManager.h"
 #include "../managers/CombatManager.h"
 #include "../managers/GameStateManager.h"
+#include "../managers/WolfManager.h"
 #include "../physics/PhysicsManager.h"
 
 /**
@@ -33,12 +34,14 @@ public:
     CombatManager& get_combat_manager() { return combat_manager_; }
     GameStateManager& get_game_state_manager() { return game_state_manager_; }
     PhysicsManager& get_physics_manager() { return physics_manager_; }
+    WolfManager& get_wolf_manager() { return wolf_manager_; }
     
     const InputManager& get_input_manager() const { return input_manager_; }
     const PlayerManager& get_player_manager() const { return player_manager_; }
     const CombatManager& get_combat_manager() const { return combat_manager_; }
     const GameStateManager& get_game_state_manager() const { return game_state_manager_; }
     const PhysicsManager& get_physics_manager() const { return physics_manager_; }
+    const WolfManager& get_wolf_manager() const { return wolf_manager_; }
 
 private:
     // Manager instances
@@ -47,6 +50,7 @@ private:
     CombatManager combat_manager_;
     GameStateManager game_state_manager_;
     PhysicsManager physics_manager_;
+    WolfManager wolf_manager_;
     
     // Coordination state
     bool is_initialized_ = false;

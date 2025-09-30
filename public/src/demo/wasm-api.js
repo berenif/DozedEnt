@@ -14,8 +14,6 @@ const REQUIRED_EXPORTS = [
   'get_is_grounded',
   'get_is_rolling',
   'get_block_state',
-  'get_player_anim_state',
-  'get_player_state_timer',
   'get_stamina',
   'get_hp',
   'init_run',
@@ -32,7 +30,13 @@ const DIRECT_PATHS = [
 const OPTIONAL_PATTERNS = [
   /^get_weapon_/, 
   /^get_landmark_/, 
-  /^get_exit_/
+  /^get_exit_/,
+  /wolf/,
+  /enemy/,
+  /spawn/,
+  /bash/, // include ability-related functions like start_charging_bash, release_bash, etc.
+  /get_player_anim_state/,
+  /get_player_state_timer/
 ];
 
 export const PLAYER_ANIM_CODES = Object.freeze({
@@ -444,8 +448,10 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
     stateCache.grounded = toBool(groundedRaw);
     stateCache.rolling = toBool(rollingRaw);
     stateCache.block = toBool(blockRaw);
-    stateCache.anim = normalizeAnim(coerceNumber(handles.get_player_anim_state(), 0));
-    stateCache.animT = coerceNumber(handles.get_player_state_timer(), 0);
+    const animStateValue = (optionalHandles.get_player_anim_state?.() ?? exports.get_player_anim_state?.() ?? 0);
+    stateCache.anim = normalizeAnim(coerceNumber(animStateValue, 0));
+    const animTimerValue = (optionalHandles.get_player_state_timer?.() ?? exports.get_player_state_timer?.() ?? 0);
+    stateCache.animT = coerceNumber(animTimerValue, 0);
     stateCache.stamina = coerceNumber(handles.get_stamina(), 1);
     stateCache.hp = coerceNumber(handles.get_hp(), 1);
     return stateCache;
@@ -478,11 +484,23 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
   let currentSeed = initialSeed;
   let cachedWeapon = initialWeapon;
 
+  // Merge required handles with bound passthroughs for all other exported functions.
+  // This ensures ability functions (e.g., start_charging_bash) are available via api.exports
+  const mergedExports = { ...handles };
+  for (const name in exports) {
+    if (!Object.prototype.hasOwnProperty.call(mergedExports, name)) {
+      const fn = exports[name];
+      if (typeof fn === 'function') {
+        mergedExports[name] = fn.bind(exports);
+      }
+    }
+  }
+
   const api = {
     isFallback: loaderInfo.fallback,
     loaderInfo,
     memory,
-    exports: handles, // Expose raw WASM exports for input manager
+    exports: mergedExports, // Expose full WASM exports (required + optional)
     start: handles.start,
     update: (dt) => {
       const delta = Number.isFinite(dt) ? dt : 1 / 60;

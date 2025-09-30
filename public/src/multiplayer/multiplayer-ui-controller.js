@@ -30,6 +30,10 @@ export class RoomLobbyUI {
       playerRating: document.getElementById('player-rating'),
       playerGames: document.getElementById('player-games'),
       
+      // Network settings
+      networkProviderSelect: document.getElementById('network-provider-select'),
+      networkStatus: document.getElementById('network-status'),
+      
       // Current room
       currentRoomSection: document.getElementById('current-room-section'),
       currentRoomName: document.getElementById('current-room-name'),
@@ -93,6 +97,12 @@ export class RoomLobbyUI {
       }
     })
     
+    // Network provider selector
+    this.elements.networkProviderSelect?.addEventListener('change', async (e) => {
+      const provider = e.target.value
+      await this.coordinator.changeNetworkProvider(provider)
+    })
+    
     // Ready button
     this.elements.readyBtn?.addEventListener('click', () => {
       this.coordinator.toggleReady()
@@ -135,19 +145,22 @@ export class RoomLobbyUI {
       return
     }
     
-    this.elements.roomList.innerHTML = rooms.map(room => `
-      <div class="room-item" data-room-id="${room.id}">
-        <div class="room-item-header">
-          <div class="room-name">${this.escapeHtml(room.name)}</div>
-          <div class="room-players">${room.players?.length || 0}/${room.maxPlayers}</div>
+    this.elements.roomList.innerHTML = rooms.map(room => {
+      const playerCount = room.players instanceof Map ? room.players.size : (room.players?.length || 0)
+      return `
+        <div class="room-item" data-room-id="${room.id}">
+          <div class="room-item-header">
+            <div class="room-name">${this.escapeHtml(room.name)}</div>
+            <div class="room-players">${playerCount}/${room.maxPlayers}</div>
+          </div>
+          <div class="room-info">
+            <span>🎮 ${this.getGameModeLabel(room.gameMode)}</span>
+            <span>🏠 ${this.getRoomTypeLabel(room.type)}</span>
+            <span>⚡ ${this.getRoomStatusLabel(room.status)}</span>
+          </div>
         </div>
-        <div class="room-info">
-          <span>🎮 ${this.getGameModeLabel(room.gameMode)}</span>
-          <span>🏠 ${this.getRoomTypeLabel(room.type)}</span>
-          <span>⚡ ${this.getRoomStatusLabel(room.status)}</span>
-        </div>
-      </div>
-    `).join('')
+      `
+    }).join('')
     
     // Add click handlers to room items
     this.elements.roomList.querySelectorAll('.room-item').forEach(item => {
@@ -179,7 +192,10 @@ export class RoomLobbyUI {
   updatePlayerList(room) {
     if (!this.elements.playerListContainer || !room) return
     
-    const players = room.players || []
+    // Convert Map to Array if needed
+    const players = room.players instanceof Map 
+      ? Array.from(room.players.values())
+      : (Array.isArray(room.players) ? room.players : [])
     this.elements.playerCount.textContent = players.length
     
     this.elements.playerListContainer.innerHTML = players.map(player => `

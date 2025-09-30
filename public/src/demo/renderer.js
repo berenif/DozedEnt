@@ -1,5 +1,6 @@
 import { CharacterAnimator } from '../animation/system/animation-system.js';
 import { PLAYER_ANIM_CODES } from './wasm-api.js';
+import { WolfRenderer } from '../renderer/WolfRenderer.js';
 
 let ctx = null;
 let canvas = null;
@@ -16,6 +17,16 @@ const worldBounds = {
   maxY: 1
 };
 
+// Camera state for smooth following
+const camera = {
+  x: 0.5,  // Camera center in world coordinates (0-1)
+  y: 0.5,
+  targetX: 0.5,
+  targetY: 0.5,
+  smoothing: 0.1,  // Camera smoothing factor (lower = smoother but slower)
+  zoom: 0.5  // View size in world units (0.5 = half the world visible)
+};
+
 // Procedural-only: no sprite sheet used
 
 const playerAnimator = new CharacterAnimator();
@@ -29,9 +40,39 @@ playerAnimator.setFacing(lastFacing);
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+// Update camera to follow target position smoothly
+const updateCamera = (targetX, targetY, deltaTime) => {
+  // Set target position
+  camera.targetX = clamp(targetX, worldBounds.minX, worldBounds.maxX);
+  camera.targetY = clamp(targetY, worldBounds.minY, worldBounds.maxY);
+  
+  // Smooth interpolation (exponential smoothing)
+  const smoothing = 1 - Math.pow(1 - camera.smoothing, deltaTime * 60);
+  camera.x += (camera.targetX - camera.x) * smoothing;
+  camera.y += (camera.targetY - camera.y) * smoothing;
+  
+  // Snap if very close
+  if (Math.abs(camera.x - camera.targetX) < 0.001) {
+    camera.x = camera.targetX;
+  }
+  if (Math.abs(camera.y - camera.targetY) < 0.001) {
+    camera.y = camera.targetY;
+  }
+};
+
 const wasmToCanvas = (x, y) => {
-  const nx = (x - worldBounds.minX) / (worldBounds.maxX - worldBounds.minX);
-  const ny = (y - worldBounds.minY) / (worldBounds.maxY - worldBounds.minY);
+  // Calculate visible world bounds based on camera position and zoom
+  const halfZoom = camera.zoom / 2;
+  const visibleMinX = camera.x - halfZoom;
+  const visibleMaxX = camera.x + halfZoom;
+  const visibleMinY = camera.y - halfZoom;
+  const visibleMaxY = camera.y + halfZoom;
+  
+  // Convert world position to normalized coordinates relative to camera view
+  const nx = (x - visibleMinX) / (visibleMaxX - visibleMinX);
+  const ny = (y - visibleMinY) / (visibleMaxY - visibleMinY);
+  
+  // Convert to canvas coordinates
   scratchVec.x = nx * width;
   scratchVec.y = height - (ny * height);
   return scratchVec;
@@ -225,12 +266,16 @@ const drawProceduralPlayer = (state, position, baseRadius, transform) => {
 
 const drawPlayer = (state) => {
   ensureContext();
-  const position = wasmToCanvas(state.x, state.y);
-  const baseRadius = Math.max(20, Math.min(width, height) * 0.035);
-
+  
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   const deltaSeconds = Math.min(0.1, Math.max(0, (now - lastAnimatorTime) / 1000));
   lastAnimatorTime = now;
+  
+  // Update camera to follow player
+  updateCamera(state.x, state.y, deltaSeconds);
+  
+  const position = wasmToCanvas(state.x, state.y);
+  const baseRadius = Math.max(20, Math.min(width, height) * 0.035);
 
   const stateName = typeof state.anim === 'string' ? state.anim : 'idle';
   const targetState = PLAYER_ANIM_CODES[stateName] ?? IDLE_STATE;
@@ -309,6 +354,21 @@ const drawOverlays = (state, overlayInfo) => {
   ctx.restore();
 };
 
+// Wolf renderer instance
+let wolfRenderer = null;
+
+// Draw wolves from WASM
+const drawWolves = (wasmExports) => {
+  ensureContext();
+  
+  if (!wolfRenderer) {
+    wolfRenderer = new WolfRenderer(ctx, canvas);
+  }
+  
+  // Render all wolves using current camera state
+  wolfRenderer.render(wasmExports, camera);
+};
+
 export const createRenderer = (targetCanvas) => {
   canvas = targetCanvas;
   ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
@@ -332,7 +392,24 @@ export const createRenderer = (targetCanvas) => {
     drawPlayer,
     drawObstacles,
     drawOverlays,
+    drawWolves,
     wasmToCanvas,
-    dispose: () => window.removeEventListener('resize', onResize)
+    // Camera controls
+    getCamera: () => ({ ...camera }),
+    setCameraZoom: (zoom) => { camera.zoom = clamp(zoom, 0.1, 2.0); },
+    setCameraSmoothing: (smoothing) => { camera.smoothing = clamp(smoothing, 0.01, 1.0); },
+    resetCamera: () => {
+      camera.x = 0.5;
+      camera.y = 0.5;
+      camera.targetX = 0.5;
+      camera.targetY = 0.5;
+    },
+    dispose: () => window.removeEventListener('resize', onResize),
+    // Wolf renderer configuration
+    setWolfDebugMode: (options) => {
+      if (wolfRenderer) {
+        wolfRenderer.setDebugMode(options);
+      }
+    }
   };
 };

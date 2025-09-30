@@ -8,10 +8,12 @@ import { EnhancedMultiplayerSync } from '../netcode/enhanced-multiplayer-sync.js
 import { RoomLobbyUI } from './multiplayer-ui-controller.js'
 import { MultiplayerGameController } from './multiplayer-game-controller.js'
 import { OrientationManager } from '../ui/orientation-manager.js'
+import { NetworkManager } from '../netcode/NetworkManager.js'
 
 class MultiplayerCoordinator {
   constructor() {
     this.roomManager = null
+    this.networkManager = null
     this.multiplayerSync = null
     this.uiController = null
     this.gameController = null
@@ -34,6 +36,17 @@ class MultiplayerCoordinator {
     console.log('🎮 Initializing multiplayer system...')
     
     try {
+      // Initialize Network Manager
+      this.networkManager = new NetworkManager({
+        defaultProvider: 'torrent',
+        appId: 'dozedent-multiplayer',
+        enableReconnection: true
+      })
+      
+      // Initialize network with default provider
+      await this.networkManager.initialize('torrent')
+      console.log('✅ Network manager initialized')
+      
       // Initialize Room Manager
       this.roomManager = new EnhancedRoomManager('dozedent-multiplayer', {
         maxRooms: 50,
@@ -43,6 +56,9 @@ class MultiplayerCoordinator {
         enableChat: true,
         enableAnalytics: true
       })
+      
+      // Connect network manager to room manager
+      await this.roomManager.setNetworkManager(this.networkManager)
       
       // Initialize Multiplayer Sync (will be configured when game starts)
       this.multiplayerSync = new EnhancedMultiplayerSync({
@@ -102,7 +118,8 @@ class MultiplayerCoordinator {
       }
     } catch (error) {
       console.error('❌ Failed to initialize multiplayer:', error)
-      this.showError('Failed to initialize multiplayer system. Please refresh the page.')
+      // Can't use this.showError here because uiController might not be initialized yet
+      alert('Failed to initialize multiplayer system. Please refresh the page.\n\nError: ' + error.message)
     }
   }
   
@@ -411,13 +428,23 @@ class MultiplayerCoordinator {
   getNetworkIntegration() {
     return {
       sendToPeer: (peerId, message) => {
-        this.roomManager.sendToPeer?.(peerId, message)
+        if (this.networkManager) {
+          this.networkManager.sendToPeer(peerId, {
+            type: 'gameSync',
+            data: message
+          })
+        }
       },
       broadcastMessage: (message) => {
-        this.roomManager.broadcastToRoom?.('gameSync', message)
+        if (this.networkManager) {
+          this.networkManager.broadcastToRoom({
+            type: 'gameSync',
+            data: message
+          })
+        }
       },
       getPeerConnection: (peerId) => {
-        return this.roomManager.peers?.get(peerId)
+        return this.networkManager?.getPeerConnection(peerId)
       }
     }
   }
@@ -467,6 +494,30 @@ class MultiplayerCoordinator {
       localStorage.setItem('dozedent.player.id', id)
     }
     return id
+  }
+  
+  async changeNetworkProvider(providerId) {
+    try {
+      console.log('🔄 Changing network provider to:', providerId)
+      this.showStatus('Switching network provider...', 'info')
+      
+      // Leave current room if in one
+      if (this.state.currentRoom) {
+        await this.leaveRoom()
+      }
+      
+      // Reinitialize network manager with new provider
+      await this.networkManager.initialize(providerId)
+      
+      // Reconnect room manager
+      await this.roomManager.setNetworkManager(this.networkManager)
+      
+      this.showStatus(`Switched to ${providerId} provider`, 'success')
+      console.log('✅ Network provider changed to:', providerId)
+    } catch (error) {
+      console.error('❌ Failed to change provider:', error)
+      this.showError('Failed to switch provider: ' + error.message)
+    }
   }
   
   // UI Helpers

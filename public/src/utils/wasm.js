@@ -42,6 +42,9 @@ const defaultEnv = memory => ({
     memory,
     abort: () => { throw new Error('wasm abort') },
     abort_: () => { throw new Error('wasm abort_') },
+    emscripten_notify_memory_growth: (index) => {
+      // Called when WASM memory grows (ALLOW_MEMORY_GROWTH=1)
+    },
     // Console helpers – optional for debugging
     __console_log: (ptr, len) => {
       const view = new Uint8Array(memory.buffer, ptr, len)

@@ -1,4 +1,5 @@
 #pragma once
+#include "../physics/FixedPoint.h"
 
 /**
  * PlayerManager - Manages player state, movement, and basic properties
@@ -27,6 +28,33 @@ public:
         // Timing
         float state_timer = 0.0f;
         float speed_multiplier = 1.0f;
+        
+        // Facing direction for abilities
+        float facing_x = 1.0f;
+        float facing_y = 0.0f;
+    };
+    
+    struct ShoulderBashState {
+        bool is_active = false;
+        bool is_charging = false;
+        float duration = 0.0f;
+        float charge_time = 0.0f;
+        float max_charge = 1.0f;
+        Fixed force_multiplier;
+        uint32_t targets_hit = 0;
+        
+        // Hitbox properties
+        float hitbox_radius = 0.05f;  // Normalized world space (5% of world)
+        float hitbox_offset = 0.04f;  // Offset from player position
+        
+        ShoulderBashState() : force_multiplier(Fixed::from_int(1)) {}
+    };
+    
+    struct BashHitbox {
+        float x = 0.0f;
+        float y = 0.0f;
+        float radius = 0.0f;
+        bool active = false;
     };
 
     PlayerManager();
@@ -54,8 +82,30 @@ public:
     void apply_jump();
     void apply_wall_slide(float delta_time);
     
+    // Warden Shoulder Bash abilities
+    void start_charging_bash();
+    void update_bash_charge(float dt);
+    void release_bash();
+    void update_active_bash(float dt);
+    void on_bash_hit(uint32_t target_id);
+    bool can_bash() const;
+    
+    // Bash getters
+    float get_bash_charge_level() const;
+    bool is_bash_active() const;
+    bool is_bash_charging() const;
+    uint32_t get_bash_targets_hit() const;
+    BashHitbox get_bash_hitbox() const;
+    
+    // Collision detection
+    bool check_bash_collision(float target_x, float target_y, float target_radius) const;
+    
+    // Facing direction
+    void update_facing_direction(float input_x, float input_y);
+    
     // Getters
     const PlayerState& get_state() const { return state_; }
+    PlayerState& get_state_mutable() { return state_; }
     float get_x() const { return state_.pos_x; }
     float get_y() const { return state_.pos_y; }
     float get_vel_x() const { return state_.vel_x; }
@@ -66,15 +116,26 @@ public:
     int get_jump_count() const { return state_.jump_count; }
     bool is_wall_sliding() const { return state_.is_wall_sliding; }
     float get_speed() const;
+    float get_facing_x() const { return state_.facing_x; }
+    float get_facing_y() const { return state_.facing_y; }
 
 private:
     PlayerState state_;
+    ShoulderBashState bash_state_;
     
     // Movement constants
-    static constexpr float MOVE_SPEED = 0.8f;
+    static constexpr float MOVE_SPEED = 0.3f;  // Reduced from 0.8f for better control
     static constexpr float STAMINA_REGEN_RATE = 0.4f;
     static constexpr float MAX_JUMP_COUNT = 2;
     static constexpr float WALL_SLIDE_SPEED = 0.3f;
+    
+    // Bash constants
+    static constexpr float BASH_MIN_CHARGE = 0.3f;
+    static constexpr float BASH_STAMINA_COST = 0.3f;
+    static constexpr float BASH_DURATION = 0.6f;
+    static constexpr float BASH_BASE_FORCE = 15.0f;
+    static constexpr float BASH_CHARGE_SLOW_FACTOR = 0.5f;
+    static constexpr float BASH_STAMINA_REFUND = 0.1f;
     
     // Helper methods
     void apply_friction(float delta_time);

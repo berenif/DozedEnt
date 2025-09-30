@@ -818,6 +818,109 @@ export class ParticleSystem {
             blendMode: 'screen'
         }))
     }
+
+    /**
+     * Spawn bash charge particles
+     * @param {number} x - World X position
+     * @param {number} y - World Y position
+     * @param {number} level - Charge level (0-1)
+     */
+    spawnChargeParticles(x, y, level) {
+        const count = Math.floor(2 + level * 3);
+        const color = {
+            r: 255,
+            g: Math.floor(170 + level * 85),
+            b: 0
+        };
+        
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 0.1 + Math.random() * 0.2;
+            const distance = 20 + Math.random() * 30;
+            
+            this.addParticle(new Particle(
+                x + Math.cos(angle) * distance,
+                y + Math.sin(angle) * distance,
+                {
+                    vx: -Math.cos(angle) * speed,
+                    vy: -Math.sin(angle) * speed,
+                    color: color,
+                    size: 2 + level * 2,
+                    life: 0.5 + level * 0.3,
+                    alpha: 0.8,
+                    alphaDecay: 0.95,
+                    sizeDecay: 0.98,
+                    glow: true,
+                    glowSize: 2 + level * 2,
+                    blendMode: 'screen'
+                }
+            ));
+        }
+    }
+
+    /**
+     * Spawn bash impact shockwave
+     * @param {number} x - World X position
+     * @param {number} y - World Y position
+     * @param {number} force - Impact force (0-1)
+     */
+    spawnImpactShockwave(x, y, force) {
+        const particleCount = Math.floor(15 + force * 20);
+        const radius = 30 + force * 50;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2;
+            const speed = (2 + force * 3) * 60;
+            
+            this.addParticle(new Particle(x, y, {
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                color: { r: 255, g: 170, b: 0 },
+                size: 4 + force * 4,
+                life: 0.4 + force * 0.3,
+                alpha: 0.9,
+                alphaDecay: 0.9,
+                sizeDecay: 0.95,
+                friction: 0.95,
+                glow: true,
+                glowSize: 3,
+                blendMode: 'screen'
+            }));
+        }
+        
+        // Add dust cloud
+        this.createDustCloud(x, y, radius);
+    }
+
+    /**
+     * Spawn hit sparks
+     * @param {number} x - World X position
+     * @param {number} y - World Y position
+     * @param {number} count - Number of sparks
+     */
+    spawnHitSparks(x, y, count = 10) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = (1 + Math.random() * 2) * 60;
+            
+            this.addParticle(new Particle(x, y, {
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 30,
+                ay: 150,
+                color: { r: 255, g: 200 + Math.random() * 55, b: 100 },
+                size: 2 + Math.random() * 2,
+                life: 0.3 + Math.random() * 0.3,
+                alpha: 1.0,
+                alphaDecay: 0.92,
+                sizeDecay: 0.96,
+                friction: 0.98,
+                glow: true,
+                glowSize: 2,
+                shape: 'circle',
+                blendMode: 'screen'
+            }));
+        }
+    }
 }
 
 export default ParticleSystem
