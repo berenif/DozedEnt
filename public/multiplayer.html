@@ -659,13 +659,19 @@
   <div id="game-container">
     <canvas id="demo-canvas" aria-label="DozedEnt multiplayer game canvas"></canvas>
     
-    <!-- Orientation Overlay for Mobile -->
-    <div id="orientation-overlay">
+    <!-- Orientation Overlay for Mobile - Enhanced UX -->
+    <div id="orientation-overlay" role="dialog" aria-labelledby="orientation-title" aria-describedby="orientation-desc">
       <div class="overlay-content">
-        <div class="rotation-icon">📱➡️🔄</div>
-        <h2>Rotate Your Device</h2>
-        <p>Please rotate your device to landscape mode for the best gaming experience.</p>
-        <button id="overlay-start">Start Game</button>
+        <div class="rotation-icon" aria-hidden="true">📱➡️🔄</div>
+        <h2 id="orientation-title">Rotate Your Device</h2>
+        <p id="orientation-desc">Turn your device sideways for an immersive multiplayer experience with better controls and visibility.</p>
+        <div class="tilt-indicator" aria-hidden="true">↻ Keep rotating...</div>
+        <button id="overlay-start" aria-label="Start multiplayer game in fullscreen mode">
+          🎮 Start Multiplayer
+        </button>
+        <p style="font-size: 0.85em; color: rgba(255, 255, 255, 0.6); margin-top: 20px;">
+          ✨ Fullscreen · 🔒 Landscape Lock · 💡 Screen Always On
+        </p>
       </div>
     </div>
     
