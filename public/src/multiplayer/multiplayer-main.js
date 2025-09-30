@@ -7,6 +7,7 @@ import { EnhancedRoomManager } from '../netcode/enhanced-room-manager.js'
 import { EnhancedMultiplayerSync } from '../netcode/enhanced-multiplayer-sync.js'
 import { RoomLobbyUI } from './multiplayer-ui-controller.js'
 import { MultiplayerGameController } from './multiplayer-game-controller.js'
+import { OrientationManager } from '../ui/orientation-manager.js'
 
 class MultiplayerCoordinator {
   constructor() {
@@ -14,6 +15,7 @@ class MultiplayerCoordinator {
     this.multiplayerSync = null
     this.uiController = null
     this.gameController = null
+    this.orientationManager = null
     this.initialized = false
     
     this.state = {
@@ -58,6 +60,21 @@ class MultiplayerCoordinator {
       // Initialize Game Controller
       this.gameController = new MultiplayerGameController(this)
       
+      // Initialize OrientationManager for mobile devices
+      this.orientationManager = new OrientationManager({
+        detectMobileDevice: () => {
+          const userAgent = (navigator.userAgent || '').toLowerCase()
+          const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+          const smallViewport = window.innerWidth <= 768
+          const mobileRegex = /android|webos|iphone|ipod|blackberry|iemobile|opera mini|ipad|tablet/
+          return mobileRegex.test(userAgent) || hasTouch || smallViewport
+        },
+        onOrientationChange: (isLandscape) => {
+          console.log('📱 Orientation changed:', isLandscape ? 'landscape' : 'portrait')
+        }
+      })
+      this.orientationManager.initialize()
+      
       // Set up event listeners
       this.setupEventListeners()
       
@@ -72,6 +89,17 @@ class MultiplayerCoordinator {
       
       // Show initial rooms
       await this.refreshRooms()
+      
+      // Enable mobile controls if needed
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        const mobileControls = document.getElementById('mobile-controls')
+        if (mobileControls) {
+          mobileControls.style.display = 'flex'
+          console.log('✅ Mobile controls enabled')
+        }
+        // Evaluate orientation for mobile
+        this.orientationManager.evaluateOrientation()
+      }
     } catch (error) {
       console.error('❌ Failed to initialize multiplayer:', error)
       this.showError('Failed to initialize multiplayer system. Please refresh the page.')
@@ -345,6 +373,11 @@ class MultiplayerCoordinator {
       
       // Hide lobby, show game
       this.uiController.showGame()
+      
+      // Request fullscreen and orientation lock on mobile when game starts
+      if (this.orientationManager && this.orientationManager.detectMobileDevice()) {
+        await this.orientationManager.requestFullscreenAndOrientationLock()
+      }
       
       console.log('✅ Multiplayer game started')
       this.showStatus('Game started!', 'success')

@@ -125,6 +125,16 @@
   <div id="loading" class="hidden">Loading DozedEnt...</div>
   <canvas id="demo-canvas" aria-label="Dozed combat demo canvas"></canvas>
   
+  <!-- Orientation Overlay for Mobile -->
+  <div id="orientation-overlay">
+    <div class="overlay-content">
+      <div class="rotation-icon">📱➡️🔄</div>
+      <h2>Rotate Your Device</h2>
+      <p>Please rotate your device to landscape mode for the best gaming experience.</p>
+      <button id="overlay-start">Start Game</button>
+    </div>
+  </div>
+  
   <!-- Mobile Controls -->
   <div class="mobile-controls" id="mobile-controls" style="display: none;">
     <!-- Virtual Joystick -->
@@ -174,10 +184,49 @@
       const playMultiplayerBtn = document.getElementById('play-multiplayer-btn');
       const viewDemoBtn = document.getElementById('view-demo-btn');
 
-      playSoloBtn?.addEventListener('click', () => {
+      // Helper function to request fullscreen on mobile
+      const requestMobileFullscreen = async () => {
+        const isMobile = /android|webos|iphone|ipod|blackberry|iemobile|opera mini|ipad|tablet/i.test(navigator.userAgent);
+        const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        if (isMobile || hasTouch) {
+          try {
+            const element = document.documentElement;
+            
+            if (element.requestFullscreen) {
+              await element.requestFullscreen({ navigationUI: 'hide' });
+            } else if (element.webkitRequestFullscreen) {
+              await element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+              await element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+              await element.msRequestFullscreen();
+            }
+            
+            console.log('✅ Fullscreen activated');
+            
+            // Lock orientation to landscape after entering fullscreen
+            if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+              try {
+                await window.screen.orientation.lock('landscape');
+                console.log('✅ Orientation locked to landscape');
+              } catch (err) {
+                console.warn('⚠️ Could not lock orientation:', err.message);
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not enter fullscreen:', error.message);
+          }
+        }
+      };
+
+      playSoloBtn?.addEventListener('click', async () => {
         mainMenu?.classList.add('hidden');
         const loading = document.getElementById('loading');
         loading?.classList.remove('hidden');
+        
+        // Request fullscreen on mobile
+        await requestMobileFullscreen();
         
         // Start solo game (existing behavior)
         setTimeout(() => {
@@ -190,10 +239,13 @@
         window.location.href = 'multiplayer.html';
       });
 
-      viewDemoBtn?.addEventListener('click', () => {
+      viewDemoBtn?.addEventListener('click', async () => {
         mainMenu?.classList.add('hidden');
         const loading = document.getElementById('loading');
         loading?.classList.remove('hidden');
+        
+        // Request fullscreen on mobile
+        await requestMobileFullscreen();
         
         // View demo (existing behavior)
         setTimeout(() => {
