@@ -93,7 +93,7 @@ Performance → Profile WASM/JS boundary → Optimize bottlenecks → Measure
 - Performance maintained ✓
 
 ### Core Game Loop Changes
-**Files to check**: `GAME/IMPLEMENTATION_SUMMARY.md`, `GAME/CORE_LOOP_CHECKLIST.md`
+**Files to check**: `GAME/GAME_FEATURES_SUMMARY.md`, `GAME/CORE_LOOP_CHECKLIST.md`
 
 ```
 1. Understand 8-phase structure

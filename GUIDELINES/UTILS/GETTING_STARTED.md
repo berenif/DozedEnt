@@ -121,7 +121,7 @@ wolves.forEach(wolf => {
 
 ## Resources
 
-- [Full API Documentation](API.md)
-- [Animation System Guide](PLAYER_ANIMATIONS.md)
-- [Wolf AI Documentation](WOLF_AI.md)
-- [Lobby System Guide](LOBBY_SYSTEM.md)
+- [Full API Documentation](../BUILD/API.md)
+- [Animation System Guide](../ANIMATION/PLAYER_ANIMATIONS.md)
+- [Wolf AI Documentation](../AI/WOLF_AI.md)
+- [Lobby System Guide](../MULTIPLAYER/LOBBY_SYSTEM.md)

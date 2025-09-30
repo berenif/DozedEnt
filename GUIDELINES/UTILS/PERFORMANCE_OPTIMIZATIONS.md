@@ -383,7 +383,7 @@ npm test -- --grep "Memory"
 
 - [AGENTS.md](../AGENTS.md) - Architecture principles
 - [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - Performance targets
-- [TESTING.md](./TESTING.md) - Testing procedures
+- [TESTING.md](../BUILD/TESTING.md) - Testing procedures
 - [BUILD_INSTRUCTIONS.md](./BUILD_INSTRUCTIONS.md) - Build optimization
 
 ---

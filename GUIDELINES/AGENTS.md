@@ -45,7 +45,7 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 - [Player Animations](./ANIMATION/PLAYER_ANIMATIONS.md) — States, transitions, effects, input mapping, API, performance considerations, and troubleshooting.
 
 ### Game Core Loop
-- [Implementation Summary](./GAME/IMPLEMENTATION_SUMMARY.md) — End-to-end features for all phases (Explore → Fight → Choose → PowerUp → Risk → Escalate → CashOut → Reset), exports, testing, and performance.
+- [Game Features Summary](./GAME/GAME_FEATURES_SUMMARY.md) — End-to-end features for all phases (Explore → Fight → Choose → PowerUp → Risk → Escalate → CashOut → Reset), exports, testing, and performance.
 - [Core Loop Checklist](./GAME/CORE_LOOP_CHECKLIST.md) — Per-feature validation for determinism, WASM-only logic, API constraints, phase-specific criteria, and tests.
 
 ### Multiplayer (Lobby & Rooms)
@@ -55,10 +55,11 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 ### Build, Deploy, and Testing
 - [Development Workflow](./BUILD/DEVELOPMENT_WORKFLOW.md) — Complete development cycle guide for AI agents.
 - [WASM API Reference](./BUILD/API.md) — **Canonical API surface** - definitive function signatures and behavior.
-- [Testing Framework](./BUILD/TESTING.md) — Current testing infrastructure (54 tests, 5.15% coverage, 680% improvement).
+- [Testing Framework](./BUILD/TESTING.md) — Current testing infrastructure (54+ tests, 5.15% coverage, 680% improvement).
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.
 - [Balance Data Guide](./UTILS/BALANCE_DATA.md) — Externalized constants, JSON schema, generator, workflow.
 - [Deploy to GitHub Pages](./UTILS/DEPLOY_GITHUB_PAGES.md) — CI/CD workflow, setup, custom domains, troubleshooting.
+- [Project Structure](./PROJECT_STRUCTURE.md) — Complete project layout and file organization guide.
 
 ## WASM API Reference
 
@@ -83,7 +84,7 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 | `get_block_state()` | Query blocking status | None | `1` if blocking, `0` otherwise |
 | `handle_incoming_attack(ax, ay, dirX, dirY, nowSeconds)` | Process incoming attack | Attack parameters | `-1`: ignore<br>`0`: hit<br>`1`: block<br>`2`: perfect parry |
 
-*See [GAME/IMPLEMENTATION_SUMMARY.md](./GAME/IMPLEMENTATION_SUMMARY.md) for complete API documentation.*
+*See [GAME/GAME_FEATURES_SUMMARY.md](./GAME/GAME_FEATURES_SUMMARY.md) for complete API documentation.*
 
 ##### 📊 Game Phases (Complete Implementation)
 ```cpp
@@ -210,10 +211,11 @@ function restartGame() {
 - [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (vendored in `emsdk/`)
 - C++17 compatible compiler
 - Node.js 20+ (for build tools)
+- CMake (for C++ build system)
 
 ### 📦 Build Commands
 
-Use the provided scripts, which set environment variables and output to the project root as `game.wasm` (and `game-host.wasm` when requested):
+Use the provided scripts in `tools/scripts/`, which set environment variables and output to the project root as `game.wasm` (and `game-host.wasm` when requested):
 
 #### Windows (PowerShell)
 ```powershell
@@ -325,7 +327,7 @@ wasmModule.init_run(gameSeed, startWeapon);
 
 #### Adding New Choices/Boons
 
-1. **Define in WASM** (game.cpp):
+1. **Define in WASM** (src/game_refactored.cpp):
 ```cpp
 struct Choice {
     uint32_t id;
@@ -356,7 +358,7 @@ extern "C" {
 }
 ```
 
-3. **Render in JS**:
+3. **Render in JS** (public/src/):
 ```javascript
 function renderChoice(choice) {
     // Only visual representation
@@ -399,7 +401,7 @@ function renderChoice(choice) {
 #### WASM Module Won't Load
 ```javascript
 // Check for CORS issues
-fetch('game.wasm')
+fetch('wasm/game.wasm')  // Located in public/wasm/ or root
     .then(response => response.arrayBuffer())
     .then(bytes => WebAssembly.instantiate(bytes))
     .catch(error => console.error('WASM load failed:', error));
@@ -426,6 +428,7 @@ fetch('game.wasm')
 - **Small Binary**: ~43KB WASM module with 60+ export functions
 - **No GC Pressure**: All state in WASM linear memory
 - **Multiplayer Ready**: Room-based P2P networking with host authority
+- **C++ Source**: Game logic in `src/` (C++), UI in `public/src/` (JavaScript)
 
 ### 🎯 Performance Targets
 - Frame time: ≤ 16ms (60 FPS)
@@ -445,11 +448,12 @@ fetch('game.wasm')
 ## Testing Framework
 
 ### 🧪 Current Test Coverage
-- **54 tests passing** - Core functionality verified
+- **54+ tests passing** - Core functionality verified (in `test/unit/`)
 - **Golden Test**: 60-second deterministic gameplay validation
 - **Pity Timer Test**: Choice system guarantee verification
 - **Performance Test**: Frame time and memory monitoring
 - **Phase Transition Test**: Complete core loop verification
+- **Integration Tests**: Multiplayer and networking validation
 
 ### 🔬 Test Categories
 1. **Unit Tests**: Individual module functionality
@@ -463,7 +467,7 @@ fetch('game.wasm')
 # Run end-to-end Playwright tests
 npm test
 
-# Unit tests (mocha)
+# Unit tests (mocha) - 53+ tests in test/unit/
 npm run test:unit
 
 # Coverage for unit tests
@@ -471,6 +475,10 @@ npm run test:coverage
 
 # CI check: unit + coverage thresholds
 npm run test:all
+
+# Run specific test categories
+npm run test:integration  # Integration tests
+npm run test:performance  # Performance tests
 ```
 
 ### 📋 Testing Checklist

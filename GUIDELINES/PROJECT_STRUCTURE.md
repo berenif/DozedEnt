@@ -14,57 +14,90 @@ DozedEnt/
 ├── 📄 LICENSE                      # MIT License
 ├── 📄 package.json                 # Node.js dependencies and scripts
 ├── 📄 package-lock.json            # Dependency lock file
-├── 📄 PERSISTENCE_SYSTEM.md        # Persistence system documentation
-├── 📄 PROJECT_STRUCTURE.md         # This file
 ├── 📄 _config.yml                  # Jekyll configuration (root)
 ├── 📄 game.wasm                    # Main WebAssembly module
-├── 📄 site.js                      # Main game controller
 ├── 📄 favicon.ico                  # Site favicon
 ├── 📄 mocha.opts                   # Mocha test configuration
+├── 📄 index.html                   # Root redirect to docs/
+├── 📄 GETTING_STARTED.md           # Getting started guide
+├── 📄 BUILD_REPORT.json            # Build report data
+├── 📄 BUILD_REPORT.md              # Build report documentation
+├── 📄 WASM_EXPORTS.json            # WASM exports reference
+├── 📄 serve-dev.js                 # Development server
+├── 📄 test-wasm-node.js            # WASM testing utility
+├── 📄 tmp_modify.py                # Temporary modification script
 │
 ├── 📂 public/                      # 🌐 GitHub Pages deployment directory
 │   ├── 📄 index.html               # Main game page
 │   ├── 📄 favicon.ico              # Site favicon
-│   ├── 📄 README.md                # Live demo documentation
 │   ├── 📄 _config.yml              # Jekyll configuration for GitHub Pages
-│   ├── 📂 js/                      # JavaScript modules
-│   │   ├── 📄 site.js              # Main game controller
-│   │   └── 📂 src/                 # Source modules (copied from src/)
+│   ├── 📄 _headers                  # HTTP headers configuration
+│   ├── 📄 ANIMATION_IMPLEMENTATION_SUMMARY.md
+│   ├── 📄 demo.html                # Demo page
+│   ├── 📄 multiplayer.html         # Multiplayer demo
+│   ├── 📄 wasm-test.html           # WASM testing page
+│   ├── 📄 test-animation.html      # Animation testing
+│   ├── 📄 test-player-movement.html # Player movement testing
+│   ├── 📄 create-sprite-sheet.html # Sprite sheet creation
+│   ├── 📄 integration-test.js      # Integration testing
+│   ├── 📄 WASM_EXPORTS.json        # WASM exports reference
+│   ├── 📂 src/                     # JavaScript source modules
+│   │   ├── 📂 ai/                  # Enemy AI systems
+│   │   ├── 📂 animation/           # Animation systems
+│   │   ├── 📂 audio/               # Audio management
+│   │   ├── 📂 css/                 # Stylesheets
+│   │   ├── 📂 effects/             # Visual effects
+│   │   ├── 📂 game/                # Core game logic
+│   │   ├── 📂 gameentity/          # Game entities
+│   │   ├── 📂 gameplay/            # Gameplay systems
+│   │   ├── 📂 images/              # Image assets
+│   │   ├── 📂 input/               # Input handling
+│   │   ├── 📂 lobby/               # Lobby system
+│   │   ├── 📂 multiplayer/         # Multiplayer features
+│   │   ├── 📂 netcode/             # Networking code
+│   │   ├── 📂 ui/                  # User interface
+│   │   ├── 📂 utils/               # Utility functions
+│   │   ├── 📂 wasm/                # WebAssembly integration
+│   │   ├── 📂 sound/               # Sound system
+│   │   ├── 📂 managers/            # Game managers
+│   │   ├── 📂 config/              # Configuration files
+│   │   ├── 📂 demo/                # Demo components
+│   │   └── 📂 templates/           # Template files
+│   ├── 📂 core/                    # Core networking modules
 │   ├── 📂 wasm/                    # WebAssembly modules
-│   │   └── 📄 game.wasm            # Main game engine
-│   ├── 📂 assets/                  # Game assets (copied from assets/)
-│   │   └── 📂 audio/               # Audio files
-│   ├── 📂 css/                     # Stylesheets
-│   └── 📂 images/                  # Images and visual assets
+│   │   ├── 📄 game.wasm            # Main game engine
+│   │   └── 📄 game-host.wasm       # Host-authoritative module
+│   └── 📂 data/                    # Game data
+│       └── 📂 balance/             # Balance configuration
+│           ├── 📄 enemies.json     # Enemy stats
+│           └── 📄 player.json      # Player stats
 │
-├── 📂 src/                         # 💻 Source code
-│   ├── 📂 ai/                      # Enemy AI systems
-│   ├── 📂 animation/               # Animation systems
-│   ├── 📂 audio/                   # Audio management
-│   ├── 📂 css/                     # Stylesheets
-│   ├── 📂 effects/                 # Visual effects
-│   ├── 📂 game/                    # Core game logic
-│   ├── 📂 gameentity/              # Game entities
-│   ├── 📂 gameplay/                # Gameplay systems
-│   ├── 📂 images/                  # Image assets
-│   ├── 📂 input/                   # Input handling
-│   ├── 📂 lobby/                   # Lobby system
-│   ├── 📂 multiplayer/             # Multiplayer features
-│   ├── 📂 netcode/                 # Networking code
-│   ├── 📂 ui/                      # User interface
-│   ├── 📂 utils/                   # Utility functions
-│   ├── 📂 wasm/                    # WebAssembly integration
-│   ├── 📄 host-authority.js        # Host authority system
-│   ├── 📄 lobby-analytics.js       # Lobby analytics
-│   └── 📄 sound-system.js          # Sound system
-│
-├── 📂 assets/                      # 🎵 Game assets
-│   └── 📂 audio/                   # Audio files
-│       ├── 📂 ambient/             # Ambient sounds
-│       ├── 📂 music/               # Background music
-│       ├── 📂 sfx/                 # Sound effects
-│       ├── 📂 ui/                  # UI sounds
-│       └── 📂 wolf/                # Wolf sounds
+├── 📂 src/                         # 💻 C++ Source code (WASM)
+│   ├── 📄 CMakeLists.txt           # CMake build configuration
+│   ├── 📄 game_refactored.cpp      # Main game logic (C++)
+│   ├── 📄 FEATURES_TO_SOURCE_MAP.md # Feature mapping documentation
+│   ├── 📄 PHYSICS_PROGRESS.md      # Physics implementation progress
+│   ├── 📄 README_REFACTORING.md    # Refactoring documentation
+│   ├── 📂 coordinators/            # Game coordinators
+│   │   ├── 📄 GameCoordinator.cpp  # Game coordination logic
+│   │   └── 📄 GameCoordinator.h    # Game coordinator header
+│   ├── 📂 core/                    # Core game systems
+│   │   ├── 📄 GameGlobals.cpp      # Global game state
+│   │   └── 📄 GameGlobals.h        # Global game state header
+│   ├── 📂 managers/                # Game managers
+│   │   ├── 📄 CombatManager.cpp    # Combat system
+│   │   ├── 📄 CombatManager.h      # Combat system header
+│   │   ├── 📄 GameStateManager.cpp # Game state management
+│   │   ├── 📄 GameStateManager.h   # Game state header
+│   │   ├── 📄 InputManager.cpp     # Input handling
+│   │   ├── 📄 InputManager.h       # Input handling header
+│   │   ├── 📄 PlayerManager.cpp    # Player management
+│   │   ├── 📄 PlayerManager.h      # Player management header
+│   │   ├── 📄 input-system-test.js # Input system testing
+│   │   └── 📄 README.md            # Managers documentation
+│   └── 📂 wasm/                    # WebAssembly integration
+│       └── 📂 generated/           # Generated WASM files
+│           └── 📄 balance_data.h   # Balance data header
 │
 ├── 📂 data/                        # 📊 Game data
 │   └── 📂 balance/                 # Balance configuration
@@ -72,18 +105,27 @@ DozedEnt/
 │       └── 📄 player.json          # Player stats
 │
 ├── 📂 GUIDELINES/                  # 📚 Development documentation
-│   ├── 📄 README.md                # Documentation index
 │   ├── 📄 AGENTS.md                # Main architecture guide
+│   ├── 📄 API.md                   # API documentation
+│   ├── 📄 Feature-overview.md      # Feature overview
+│   ├── 📄 MIME_TYPE_FIX.md         # MIME type fixes
+│   ├── 📄 PROJECT_STRUCTURE.md     # This file
+│   ├── 📄 PUBLIC_DEPLOYMENT.md     # Deployment guide
 │   ├── 📂 AI/                      # AI documentation
 │   ├── 📂 ANIMATION/               # Animation documentation
 │   ├── 📂 BUILD/                   # Build documentation
 │   ├── 📂 FIGHT/                   # Combat documentation
 │   ├── 📂 GAME/                    # Game loop documentation
 │   ├── 📂 MULTIPLAYER/             # Multiplayer documentation
+│   ├── 📂 PAST CHOICES/            # Past choice documentation
+│   ├── 📂 PROGRESS/                # Progress documentation
 │   ├── 📂 SYSTEMS/                 # Systems documentation
+│   ├── 📂 UI/                      # UI documentation
 │   └── 📂 UTILS/                   # Utilities documentation
 │
 ├── 📂 tools/                       # 🛠️ Development tools
+│   ├── 📄 API.md                   # API documentation
+│   ├── 📄 GETTING_STARTED.md       # Tools getting started
 │   ├── 📂 config/                  # Configuration files
 │   │   ├── 📄 eslint.config.js     # ESLint configuration
 │   │   ├── 📄 playwright.config.js # Playwright configuration
@@ -91,28 +133,74 @@ DozedEnt/
 │   │   ├── 📄 rollup.config.animations.js # Animations build
 │   │   └── 📄 rollup.config.wolf.js # Wolf build config
 │   ├── 📂 scripts/                 # Build and utility scripts
-│   │   ├── 📄 server.js            # Development server
+│   │   ├── 📄 build-docs.js        # Documentation builder
+│   │   ├── 📄 build-public.js      # Public build script
+│   │   ├── 📄 build-wasm.sh        # WASM build script
+│   │   ├── 📄 build-wasm.ps1       # WASM build script (Windows)
 │   │   ├── 📄 deploy.sh            # Deployment script
-│   │   └── 📂 scripts/             # Original scripts directory
-│   └── 📂 build/                   # Build artifacts (temporary)
+│   │   ├── 📄 server.js            # Development server
+│   │   ├── 📄 generate-balance.js  # Balance data generator
+│   │   ├── 📄 generate-sprite-sheet.js # Sprite sheet generator
+│   │   ├── 📄 performance-optimizer.js # Performance optimization
+│   │   └── [25+ more build scripts]
+│   └── 📂 build/                   # Build tools and utilities
 │
 ├── 📂 test/                        # 🧪 Test files
-│   ├── 📂 unit/                    # Unit tests
+│   ├── 📂 unit/                    # Unit tests (53 files)
 │   ├── 📂 integration/             # Integration tests
 │   ├── 📂 performance/             # Performance tests
-│   └── 📂 certs/                   # Test certificates
+│   ├── 📂 ai/                      # AI tests
+│   ├── 📂 animation/               # Animation tests
+│   ├── 📂 certs/                   # Test certificates
+│   ├── 📄 [20+ test spec files]    # Various test specifications
+│   ├── 📄 setup.js                 # Test setup
+│   ├── 📄 tests.js                 # Test runner
+│   └── 📄 [10+ test HTML files]    # Browser test pages
 │
 ├── 📂 demos/                       # 🎮 Demo files
-│   ├── 📄 procedural-wolf-demo.html
-│   └── 📄 simple-player-demo.html
+│   ├── 📄 comprehensive-module-test.html
+│   ├── 📄 test-module-loading.html
+│   └── 📂 dist/                    # Demo distribution files
+│
+├── 📂 build/                       # 📦 Build artifacts
+│   ├── 📄 _config.yml              # Build configuration
+│   ├── 📄 index.js                 # Built index
+│   ├── 📄 README.md                # Build documentation
+│   ├── 📂 animations/              # Animation builds
+│   ├── 📂 core/                    # Core builds
+│   ├── 📂 legacy/                  # Legacy builds
+│   ├── 📂 reports/                 # Build reports
+│   ├── 📂 sourcemaps/              # Source maps
+│   └── 📂 wasm/                    # WASM builds
+│
+├── 📂 dist/                        # 📦 Distribution files
+│   ├── 📄 index.js                 # Distribution index
+│   ├── 📄 README.md                # Distribution documentation
+│   ├── 📂 animations/              # Animation distributions
+│   ├── 📂 core/                    # Core distributions
+│   ├── 📂 legacy/                  # Legacy distributions
+│   ├── 📂 reports/                 # Distribution reports
+│   ├── 📂 sourcemaps/              # Source maps
+│   └── 📂 wasm/                    # WASM distributions
 │
 ├── 📂 coverage/                    # 📊 Test coverage reports
-├── 📂 dist/                        # 📦 Distribution files
+│   ├── 📄 index.html               # Coverage report
+│   ├── 📄 coverage-final.json      # Coverage data
+│   ├── 📄 lcov.info                # LCOV coverage data
+│   └── 📂 lcov-report/             # LCOV report files
+│
 ├── 📂 emsdk/                       # 🔧 Emscripten SDK
+│   ├── 📄 emsdk.py                 # Emscripten SDK manager
+│   ├── 📄 emsdk_env.sh             # Environment setup (Linux/Mac)
+│   ├── 📄 emsdk_env.bat            # Environment setup (Windows)
+│   ├── 📄 emsdk_env.ps1            # Environment setup (PowerShell)
+│   ├── 📂 upstream/                # Upstream Emscripten
+│   ├── 📂 node/                    # Node.js for Emscripten
+│   ├── 📂 python/                  # Python for Emscripten
+│   └── 📂 [build tools and configs]
+│
+├── 📂 test-results/                # 🧪 Test results
 ├── 📂 node_modules/                # 📦 Node.js dependencies
-├── 📂 .github/                     # ⚙️ GitHub configuration
-│   └── 📂 workflows/               # GitHub Actions workflows
-│       └── 📄 deploy-github-pages.yml
 └── 📄 .gitignore                   # Git ignore rules
 ```
 
@@ -176,8 +264,9 @@ npm test
 
 ### Core Game Files
 - **`game.wasm`** - Main WebAssembly game engine
-- **`site.js`** - JavaScript game controller and UI
-- **`index.html`** - Main game page with UI elements
+- **`public/index.html`** - Main game page with UI elements
+- **`public/src/`** - JavaScript game modules and UI
+- **`src/game_refactored.cpp`** - C++ game logic (compiled to WASM)
 
 ### Configuration Files
 - **`package.json`** - Node.js project configuration
@@ -186,14 +275,16 @@ npm test
 
 ### Documentation
 - **`README.md`** - Main project documentation
-- **`public/README.md`** - Live demo documentation
 - **`GUIDELINES/`** - Comprehensive development guides
 - **`PROJECT_STRUCTURE.md`** - This structure guide
+- **`GETTING_STARTED.md`** - Getting started guide
+- **`BUILD_REPORT.md`** - Build documentation
 
 ### Development Tools
-- **`tools/scripts/`** - Build and utility scripts
-- **`tools/config/`** - Configuration files
-- **`.github/workflows/`** - GitHub Actions CI/CD
+- **`tools/scripts/`** - Build and utility scripts (34 files)
+- **`tools/config/`** - Configuration files (5 files)
+- **`tools/build/`** - Build tools and utilities
+- **`emsdk/`** - Emscripten SDK for WASM compilation
 
 ---
 
@@ -205,6 +296,7 @@ npm test
 - ❌ Manual deployment process
 - ❌ Inconsistent asset organization
 - ❌ Difficult navigation for new developers
+- ❌ Incorrect documentation of actual structure
 
 ### After (Improvements)
 - ✅ Clean separation of concerns
@@ -214,6 +306,8 @@ npm test
 - ✅ Clear documentation structure
 - ✅ Improved developer experience
 - ✅ Better project maintainability
+- ✅ Accurate documentation of actual structure
+- ✅ WASM-first architecture properly documented
 
 ---
 
@@ -224,6 +318,7 @@ npm test
 3. **Test deployment** - Verify automated build and deploy process
 4. **Update documentation links** - Ensure all internal links work
 5. **Monitor performance** - Check load times and optimization
+6. **Maintain structure accuracy** - Keep this document updated with actual project changes
 
 ---
 

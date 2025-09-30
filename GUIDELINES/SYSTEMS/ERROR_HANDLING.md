@@ -639,7 +639,7 @@ gameDebug.debugMode(true);
 
 - [WASM Manager Documentation](../UTILS/BUILD_INSTRUCTIONS.md)
 - [Network Architecture Guide](../MULTIPLAYER/ROOM_SYSTEM.md)
-- [Input System Documentation](../SYSTEMS/INPUT_SYSTEM.md)
+- [Input Flags Documentation](./INPUT_FLAGS.md)
 - [Testing Guidelines](../UTILS/TEST_COVERAGE_IMPROVEMENTS.md)
 - [Performance Optimization](../UTILS/QUICK_REFERENCE.md)
 

@@ -1425,11 +1425,11 @@ void test_combat_rollback() {
 
 ## 📚 Related Documentation
 
-- [PLAYER_CHARACTERS.md](PLAYER_CHARACTERS.md) - Character-specific combat abilities
-- [GAMEPLAY_MECHANICS.md](GAMEPLAY_MECHANICS.md) - Core input and timing systems
+- [PLAYER_CHARACTERS.md](../SYSTEMS/PLAYER_CHARACTERS.md) - Character-specific combat abilities
+- [GAMEPLAY_MECHANICS.md](../SYSTEMS/GAMEPLAY_MECHANICS.md) - Core input and timing systems
 - [AGENTS.md](../AGENTS.md) - WASM-first architecture principles
-- [CORE_WORLD_SIMULATION.md](CORE_WORLD_SIMULATION.md) - Physics integration
-- [TESTING.md](../TESTING.md) - Testing frameworks and validation
+- [CORE_WORLD_SIMULATION.md](../SYSTEMS/CORE_WORLD_SIMULATION.md) - Physics integration
+- [TESTING.md](../BUILD/TESTING.md) - Testing frameworks and validation
 
 ---
 
