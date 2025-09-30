@@ -72,32 +72,30 @@ DozedEnt/
 │           ├── 📄 enemies.json     # Enemy stats
 │           └── 📄 player.json      # Player stats
 │
-├── 📂 src/                         # 💻 C++ Source code (WASM)
-│   ├── 📄 CMakeLists.txt           # CMake build configuration
-│   ├── 📄 game_refactored.cpp      # Main game logic (C++)
-│   ├── 📄 FEATURES_TO_SOURCE_MAP.md # Feature mapping documentation
-│   ├── 📄 PHYSICS_PROGRESS.md      # Physics implementation progress
-│   ├── 📄 README_REFACTORING.md    # Refactoring documentation
-│   ├── 📂 coordinators/            # Game coordinators
-│   │   ├── 📄 GameCoordinator.cpp  # Game coordination logic
-│   │   └── 📄 GameCoordinator.h    # Game coordinator header
-│   ├── 📂 core/                    # Core game systems
+├── 📂 src/                         # 💻 C++ Source code (WASM) - ACTIVE FILES ONLY
+│   ├── 📂 wasm/                    # WebAssembly C++ source (public/src/wasm/)
+│   │   ├── 📄 game_refactored.cpp  # Main game entry point with WASM exports
+│   │   ├── 📄 game-host.cpp        # Host-authoritative module for multiplayer
 │   │   ├── 📄 GameGlobals.cpp      # Global game state
-│   │   └── 📄 GameGlobals.h        # Global game state header
-│   ├── 📂 managers/                # Game managers
-│   │   ├── 📄 CombatManager.cpp    # Combat system
-│   │   ├── 📄 CombatManager.h      # Combat system header
-│   │   ├── 📄 GameStateManager.cpp # Game state management
-│   │   ├── 📄 GameStateManager.h   # Game state header
-│   │   ├── 📄 InputManager.cpp     # Input handling
-│   │   ├── 📄 InputManager.h       # Input handling header
-│   │   ├── 📄 PlayerManager.cpp    # Player management
-│   │   ├── 📄 PlayerManager.h      # Player management header
-│   │   ├── 📄 input-system-test.js # Input system testing
-│   │   └── 📄 README.md            # Managers documentation
-│   └── 📂 wasm/                    # WebAssembly integration
-│       └── 📂 generated/           # Generated WASM files
-│           └── 📄 balance_data.h   # Balance data header
+│   │   ├── 📄 GameGlobals.h        # Global state header
+│   │   ├── 📂 managers/            # Manager pattern (single responsibility)
+│   │   │   ├── 📄 CombatManager.cpp/h    # Combat system (attack, block, parry)
+│   │   │   ├── 📄 GameStateManager.cpp/h # Game state & phase management
+│   │   │   ├── 📄 InputManager.cpp/h     # Input processing & validation
+│   │   │   ├── 📄 PlayerManager.cpp/h    # Player state & resources
+│   │   │   └── 📄 README.md              # Manager documentation
+│   │   ├── 📂 coordinators/        # Coordinator pattern (orchestration)
+│   │   │   └── 📄 GameCoordinator.cpp/h  # Coordinates all managers
+│   │   ├── 📂 physics/             # Physics system (deterministic)
+│   │   │   ├── 📄 PhysicsManager.cpp/h   # Physics simulation
+│   │   │   ├── 📄 PhysicsTypes.h         # Physics type definitions
+│   │   │   └── 📄 FixedPoint.h           # Fixed-point math for determinism
+│   │   └── 📂 generated/           # Auto-generated files
+│   │       └── 📄 balance_data.h         # Balance data from JSON
+│   │
+│   ├── 📂 ui/                      # UI-specific source (src/ui/)
+│   ├── 📂 utils/                   # Utility source (src/utils/)
+│   └── 📂 css/                     # Stylesheets (src/css/)
 │
 ├── 📂 data/                        # 📊 Game data
 │   └── 📂 balance/                 # Balance configuration
@@ -122,6 +120,16 @@ DozedEnt/
 │   ├── 📂 SYSTEMS/                 # Systems documentation
 │   ├── 📂 UI/                      # UI documentation
 │   └── 📂 UTILS/                   # Utilities documentation
+│
+├── 📂 archive/                     # 🗄️ Legacy code archive
+│   └── 📂 legacy-wasm/             # Archived WASM files (cleanup Sept 2025)
+│       ├── 📄 README.md            # Archive documentation
+│       ├── 📄 game.cpp             # Original monolithic implementation (2,745 lines)
+│       └── 📂 headers/             # 27 legacy header-only files
+│           ├── 📄 enemies.h        # Enemy AI definitions (1,354 lines)
+│           ├── 📄 internal_core.h  # Core game structures
+│           ├── 📄 status_effects.h # Status effect system
+│           └── ... 24 more files   # See CLEANUP_PLAN.md
 │
 ├── 📂 tools/                       # 🛠️ Development tools
 │   ├── 📄 API.md                   # API documentation
