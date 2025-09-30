@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OrientationManager coordinates the mobile orientation overlay and start gating.
  * It ensures the game only starts when devices that require landscape orientation
  * are correctly aligned, pausing and resuming the game loop as needed.
@@ -189,9 +189,41 @@ export class OrientationManager {
    * Handle clicks on the overlay start button.
    */
   handleOverlayStartClick() {
-    this.requestOrientationLock();
+    this.requestFullscreenAndOrientationLock();
     this.hideOverlay();
     this.executePendingStart();
+  }
+
+  /**
+   * Request fullscreen and lock orientation to landscape on mobile devices.
+   * This provides the best immersive experience for mobile gameplay.
+   */
+  async requestFullscreenAndOrientationLock() {
+    // First, request fullscreen if on mobile
+    if (this.detectMobileDevice()) {
+      try {
+        const element = document.documentElement;
+        
+        // Try different fullscreen API methods for cross-browser compatibility
+        if (element.requestFullscreen) {
+          await element.requestFullscreen({ navigationUI: 'hide' });
+        } else if (element.webkitRequestFullscreen) {
+          await element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+          await element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+          await element.msRequestFullscreen();
+        }
+        
+        console.log('✅ Entered fullscreen mode');
+      } catch (error) {
+        console.warn('⚠️ Could not enter fullscreen:', error.message);
+        // Continue even if fullscreen fails
+      }
+    }
+    
+    // Then lock orientation to landscape
+    this.requestOrientationLock();
   }
 
   /**
@@ -199,7 +231,8 @@ export class OrientationManager {
    */
   requestOrientationLock() {
     if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-      window.screen.orientation.lock('landscape').catch(() => {
+      window.screen.orientation.lock('landscape').catch((error) => {
+        console.warn('⚠️ Could not lock orientation:', error.message);
         // Many browsers will reject this; failure is acceptable.
       });
     }

@@ -3,6 +3,8 @@ import { createWasmApi } from './wasm-api.js';
 import { createRenderer } from './renderer.js';
 // Import the new unified input system with legacy compatibility
 import { createInputManager } from '../managers/input-migration-adapter.js';
+// Import OrientationManager for mobile fullscreen and orientation lock
+import { OrientationManager } from '../ui/orientation-manager.js';
 
 const canvas = document.getElementById('demo-canvas');
 if (!canvas) {
@@ -134,6 +136,23 @@ window.checkMovement = () => {
   if (state.stamina < 0.1) console.warn('⚠️ Low stamina may affect movement');
 };
 
+// Initialize OrientationManager for mobile devices
+const orientationManager = new OrientationManager({
+  detectMobileDevice: () => {
+    const userAgent = (navigator.userAgent || '').toLowerCase();
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const smallViewport = window.innerWidth <= 768;
+    const mobileRegex = /android|webos|iphone|ipod|blackberry|iemobile|opera mini|ipad|tablet/;
+    return mobileRegex.test(userAgent) || hasTouch || smallViewport;
+  },
+  onOrientationChange: (isLandscape) => {
+    console.log('📱 Orientation changed:', isLandscape ? 'landscape' : 'portrait');
+  }
+});
+
+// Initialize the orientation manager
+orientationManager.initialize();
+
 // Show mobile controls on touch devices
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   const mobileControls = document.getElementById('mobile-controls');
@@ -141,6 +160,9 @@ if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
     mobileControls.style.display = 'flex';
     console.log('✅ Mobile controls enabled');
   }
+  
+  // Request fullscreen and orientation lock on mobile
+  orientationManager.evaluateOrientation();
 }
 
 const step = 1 / 60;
