@@ -362,9 +362,31 @@ export class OrientationManager {
     this.overlayElement.appendChild(celebration);
     this.triggerHapticFeedback('celebration');
     
+    // Add success checkmark
+    this.showSuccessCheckmark();
+    
     setTimeout(() => {
       celebration.classList.add('fade-out');
       setTimeout(() => celebration.remove(), 300);
+    }, 1500);
+  }
+  
+  /**
+   * Show success checkmark animation
+   */
+  showSuccessCheckmark() {
+    const checkmark = document.createElement('div');
+    checkmark.className = 'success-checkmark show';
+    checkmark.innerHTML = `
+      <svg viewBox="0 0 100 100">
+        <path d="M20,50 L40,70 L80,30" stroke="#4ade80" stroke-width="8" fill="none" />
+      </svg>
+    `;
+    document.body.appendChild(checkmark);
+    
+    setTimeout(() => {
+      checkmark.classList.remove('show');
+      setTimeout(() => checkmark.remove(), 500);
     }, 1500);
   }
   

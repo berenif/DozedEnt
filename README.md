@@ -12,6 +12,16 @@
 
 **DozedEnt** is a cutting-edge **WebAssembly-first multiplayer survival game** featuring advanced AI, responsive combat, and serverless P2P networking. Built with performance and determinism as core principles, it demonstrates modern web game development techniques.
 
+### 🆕 Latest: Premium Mobile Experience (v2.0)
+We've completely overhauled the mobile UI with:
+- ✨ **Modern Design**: Vibrant gradients, glass-morphism, multi-layer shadows
+- 🎮 **Enhanced Controls**: Color-coded buttons, glow effects, improved feedback
+- 📚 **Tutorial System**: Optional onboarding for new players
+- ⚡ **Rich Interactions**: Animations, haptics, visual effects
+- 📱 **Optimized**: GPU-accelerated, < 1% FPS impact
+
+👉 [See Full Details](IMPROVEMENTS_SUMMARY.md) | [Try Demo](public/mobile-demo.html)
+
 ### ⚡ Key Features
 - **🎯 5-Button Combat** - Responsive fighting system with precise timing
 - **🧠 Intelligent AI** - Advanced wolf pack behavior with coordinated strategies
