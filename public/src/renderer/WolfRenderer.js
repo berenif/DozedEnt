@@ -47,6 +47,8 @@ export class WolfRenderer {
     this.canvas = canvas;
     this.worldWidth = 1.0; // WASM normalized coordinates (0-1)
     this.worldHeight = 1.0;
+    // Per-wolf animation pacing derived from actual velocity
+    this._wolfAnim = new Map(); // key: index -> { phase, lastSpeed }
     
     // Animation timing
     this.animationTime = 0;
@@ -81,7 +83,7 @@ export class WolfRenderer {
     // Render each wolf
     for (let i = 0; i < wolfCount; i++) {
       const wolfState = this.readWolfState(wasmExports, i);
-      this.renderWolf(wolfState, camera);
+      this.renderWolf(wolfState, camera, deltaTime);
     }
   }
 
@@ -99,7 +101,10 @@ export class WolfRenderer {
       type: wasmExports.get_enemy_type(index) || WOLF_TYPES.NORMAL,
       state: wasmExports.get_enemy_state(index) || WOLF_STATES.IDLE,
       role: wasmExports.get_enemy_role?.(index) || PACK_ROLES.SKIRMISHER,
-      fatigue: wasmExports.get_enemy_fatigue?.(index) || 0
+      fatigue: wasmExports.get_enemy_fatigue?.(index) || 0,
+      // Optional velocity for animation pacing; default to 0 if not exported
+      vx: (wasmExports.get_enemy_vx?.(index)) || 0,
+      vy: (wasmExports.get_enemy_vy?.(index)) || 0
     };
   }
 
@@ -108,7 +113,7 @@ export class WolfRenderer {
    * @param {Object} wolf - Wolf state data
    * @param {Object} camera - Camera transform
    */
-  renderWolf(wolf, camera) {
+  renderWolf(wolf, camera, deltaTime) {
     // Convert normalized WASM coords (0-1) to screen coords
     const screenPos = this.wasmToScreen(wolf.x, wolf.y, camera);
     
@@ -116,17 +121,20 @@ export class WolfRenderer {
     const baseSize = this.getWolfSize(wolf.type);
     const size = baseSize * camera.zoom;
 
+    // Compute animation parameters synchronized to movement
+    const anim = this.computeAnimParams(wolf, deltaTime);
+
     // Save context state
     this.ctx.save();
 
     // Draw wolf body
-    this.drawWolfBody(screenPos.x, screenPos.y, size, wolf);
+    this.drawWolfBody(screenPos.x, screenPos.y, size, wolf, anim);
 
     // Draw wolf head
     this.drawWolfHead(screenPos.x, screenPos.y, size, wolf);
 
     // Draw legs
-    this.drawWolfLegs(screenPos.x, screenPos.y, size, wolf);
+    this.drawWolfLegs(screenPos.x, screenPos.y, size, wolf, anim);
 
     // Draw tail
     this.drawWolfTail(screenPos.x, screenPos.y, size, wolf);
@@ -147,7 +155,7 @@ export class WolfRenderer {
   /**
    * Draw wolf body (torso)
    */
-  drawWolfBody(x, y, size, wolf) {
+  drawWolfBody(x, y, size, wolf, anim) {
     const ctx = this.ctx;
     const color = this.getWolfColor(wolf.type);
     
@@ -157,8 +165,8 @@ export class WolfRenderer {
     const bodyX = x - bodyLength / 2;
     const bodyY = y - bodyHeight / 2;
 
-    // State-based animation
-    const bounce = this.getStateBounce(wolf.state);
+    // State + speed-based body bounce synced to gait
+    const bounce = anim.bodyBounce;
     
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -270,7 +278,7 @@ export class WolfRenderer {
   /**
    * Draw wolf legs (4 legs with animation)
    */
-  drawWolfLegs(x, y, size, wolf) {
+  drawWolfLegs(x, y, size, wolf, anim) {
     const ctx = this.ctx;
     const color = this.darkenColor(this.getWolfColor(wolf.type), 0.3);
     
@@ -278,9 +286,9 @@ export class WolfRenderer {
     const legWidth = size * 0.1;
     const legSpacing = size * 0.4;
 
-    // Animate legs based on movement state
-    const walkCycle = Math.sin(this.animationTime * 10) * 0.2;
-    const isMoving = this.isWolfMoving(wolf.state);
+    // Animate legs based on actual speed-derived phase
+    const walkCycle = anim.walkCycle;
+    const isMoving = anim.speed > 0.005;
 
     // Front legs
     this.drawLeg(x - legSpacing, y, legLength, legWidth, color, isMoving ? walkCycle : 0);
@@ -449,6 +457,35 @@ export class WolfRenderer {
       return Math.sin(this.animationTime * 15) * 2;
     }
     return 0;
+  }
+
+  // Compute speed-synchronized animation parameters for a wolf
+  computeAnimParams(wolf, deltaTime) {
+    const key = wolf.index >>> 0;
+    let rec = this._wolfAnim.get(key);
+    if (!rec) {
+      rec = { phase: 0, lastSpeed: 0 };
+      this._wolfAnim.set(key, rec);
+    }
+    const vx = Number.isFinite(wolf.vx) ? wolf.vx : 0;
+    const vy = Number.isFinite(wolf.vy) ? wolf.vy : 0;
+    const speed = Math.hypot(vx, vy); // normalized units per second
+    // Map speed to stride frequency (cycles/sec). Use nominal stride length ~0.22 world units
+    const strideLen = 0.22;
+    const rawFreq = strideLen > 1e-4 ? speed / strideLen : 0;
+    const freq = Math.min(3.8, Math.max(0, rawFreq));
+    // Advance phase in radians
+    rec.phase = (rec.phase + (Math.PI * 2) * freq * Math.max(0, deltaTime)) % (Math.PI * 2);
+    // Leg swing amplitude scales with speed
+    const legAmp = Math.min(0.25, speed * 1.2);
+    const walkCycle = Math.sin(rec.phase) * legAmp;
+    // Body bounce blends state bounce with speed-based bounce (cap to ~3px)
+    const speedBounceMax = 3;
+    const speedBounce = Math.sin(rec.phase * 2) * Math.min(speedBounceMax, speed / 0.25 * 1.5);
+    const stateBounce = this.getStateBounce(wolf.state);
+    const bodyBounce = stateBounce + speedBounce;
+    rec.lastSpeed = speed;
+    return { phase: rec.phase, speed, walkCycle, bodyBounce };
   }
 
   /**

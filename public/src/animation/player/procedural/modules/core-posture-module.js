@@ -25,7 +25,8 @@ export default class CorePostureModule {
     apply(deltaTime, pose, context) {
         const velocity = context.velocity || { x: 0, y: 0 }
         const facing = context.facing ?? 1
-        const maxSpeed = context.maxSpeed ?? 240
+        // Use normalized WASM movement max (~0.3 units/sec) for lean scaling
+        const maxSpeed = context.maxSpeed ?? 0.3
         const normalizedTime = context.normalizedTime ?? 0
         const isGrounded = context.isGrounded ?? true
         const pelvisOverlay = context.pelvisOffset ?? 0

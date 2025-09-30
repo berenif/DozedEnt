@@ -343,7 +343,7 @@ const applyInput = () => {
   const override = flagsSnapshot && typeof flagsSnapshot.inputOverride === 'object' ? flagsSnapshot.inputOverride : null;
   const input = override || inputManager.inputState;
   const dirX = clamp(input.direction?.x ?? 0, -1, 1);
-  const dirY = -clamp(input.direction?.y ?? 0, -1, 1); // Invert Y: screen coords to game coords
+  const dirY = clamp(input.direction?.y ?? 0, -1, 1); // Invert Y: screen coords to game coords
   
   // DEBUG: Validate input values
   if (!Number.isFinite(dirX) || !Number.isFinite(dirY)) {

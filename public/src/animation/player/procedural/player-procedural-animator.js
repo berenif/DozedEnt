@@ -49,7 +49,8 @@ export default class PlayerProceduralAnimator {
             velocity,
             momentum,
             speed,
-            maxSpeed: inputContext.maxSpeed ?? 260,
+            // Normalize default maxSpeed to match WASM player's MOVE_SPEED (0.3 units/sec)
+            maxSpeed: inputContext.maxSpeed ?? 0.3,
             normalizedTime: inputContext.normalizedTime ?? 0,
             stridePhase: inputContext.stridePhase,
             isGrounded: inputContext.isGrounded ?? true,

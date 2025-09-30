@@ -286,6 +286,19 @@ export class AnimatedPlayer {
         const velocityX = Number.isFinite(fx) ? fx : 0
         const velocityY = Number.isFinite(fy) ? fy : 0
 
+        // Scale running animation playback speed to match velocity ratio (normalized)
+        const maxSpeedNorm = 0.3
+        const velMag = Math.hypot(velocityX, velocityY)
+        const speedRatio = Math.max(0, Math.min(1, maxSpeedNorm > 0 ? velMag / maxSpeedNorm : 0))
+        if (this.animator && this.animator.controller && this.animator.controller.currentAnimation) {
+            // Idle keeps default speed; running scales with movement
+            if (this.state === 'running') {
+                this.animator.controller.setSpeed(0.9 + 1.2 * speedRatio)
+            } else {
+                this.animator.controller.setSpeed(1)
+            }
+        }
+
         const baseTransform = this.animator.update(
             deltaTime,
             { x: this.x, y: this.y },
@@ -901,12 +914,16 @@ export class AnimatedPlayer {
         // These should also be driven by WASM if precise synchronization is needed
         const currentVx = globalThis.wasmExports?.get_vel_x?.() ?? 0;
         const currentVy = globalThis.wasmExports?.get_vel_y?.() ?? 0;
-        const isMovingNow = Math.hypot(currentVx, currentVy) > 10
+        // Use normalized movement threshold (~3% of max speed)
+        const isMovingNow = Math.hypot(currentVx, currentVy) > 0.009
         if (isMovingNow) {
             // left foot considered planted near stridePhase ~ 0.0; right near ~0.5
             // The stridePhase needs to be driven by WASM's locomotion state.
             // For now, let's keep a local stridePhase but eventually it should be removed.
-            this.stridePhase = (this.stridePhase + deltaTime * this.gaitRate) % 1; // Keep local for now
+            // Match gait rate to normalized speed ratio to keep cadence consistent
+            const speedNorm = Math.min(1, Math.hypot(currentVx, currentVy) / 0.3)
+            const cadence = 1.4 + speedNorm * 1.4
+            this.stridePhase = (this.stridePhase + deltaTime * cadence) % 1
             const lf = (this.stridePhase < 0.25 || this.stridePhase > 0.75)
             this.ik.left.locked = lf
             this.ik.right.locked = !lf

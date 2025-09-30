@@ -13,7 +13,10 @@ export default class LocomotionModule {
             strideLength: config.strideLength ?? 12,
             stepHeight: config.stepHeight ?? 5,
             stanceWidth: config.stanceWidth ?? 8,
-            maxStrideSpeed: config.maxStrideSpeed ?? 220,
+            // Match WASM normalized movement speed (~0.3 units/sec)
+            // Map normalized speed into animation-friendly units internally
+            maxStrideSpeed: config.maxStrideSpeed ?? 0.3,
+            // Base phase speed tuned for normalized speeds
             phaseSpeed: config.phaseSpeed ?? 2.2
         }
         this.phase = 0
@@ -22,6 +25,7 @@ export default class LocomotionModule {
 
     apply(deltaTime, pose, context) {
         const velocity = context.velocity || { x: 0, y: 0 }
+        // Speed is in WASM normalized units/sec
         const speed = context.speed ?? Math.hypot(velocity.x, velocity.y)
         const facing = context.facing ?? 1
         const isGrounded = context.isGrounded ?? true
@@ -33,6 +37,7 @@ export default class LocomotionModule {
         const moving = speedRatio > 0.05 && isGrounded
 
         if (moving) {
+            // Increase cadence with speed in normalized space
             const strideRate = this.config.phaseSpeed + speedRatio * this.config.phaseSpeed
             this.phase = (this.phase + deltaTime * strideRate) % 1
         } else {
