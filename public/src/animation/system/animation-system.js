@@ -1433,11 +1433,16 @@ export const AnimationPresets = {
                 new AnimationFrame(160, 32, 32, 32, 100)
             ]),
             attacking: new Animation('attacking', [
-                new AnimationFrame(0, 64, 32, 32, 50),
-                new AnimationFrame(32, 64, 32, 32, 50),
-                new AnimationFrame(64, 64, 32, 32, 100),
-                new AnimationFrame(96, 64, 32, 32, 50)
-            ], { loop: false }),
+                new AnimationFrame(0, 64, 32, 32, 80),      // Anticipation - wind up
+                new AnimationFrame(32, 64, 32, 32, 60),     // Start of swing
+                new AnimationFrame(64, 64, 32, 32, 80),     // Impact frame - held longer
+                new AnimationFrame(96, 64, 32, 32, 80)      // Recovery - return to guard
+            ], { loop: false, onFrame: (frameIndex, frameData) => {
+                // Frame 2 is the impact frame - trigger hit detection here
+                if (frameIndex === 2) {
+                    // Hit detection window is active
+                }
+            }}),
             blocking: new Animation('blocking', [
                 new AnimationFrame(0, 96, 32, 32, 100)
             ], { loop: false }),
