@@ -828,10 +828,36 @@ void update(float dtSeconds) {
     g_vel_y *= hazardSpeedMod;
   }
 
+  // Helper functions to get correct attack timings based on attack type
+  auto get_current_windup_duration = []() -> float {
+    switch (g_current_attack_type) {
+      case AttackType::Light: return LIGHT_WINDUP_SEC;
+      case AttackType::Heavy: return HEAVY_WINDUP_SEC;
+      case AttackType::Special: return SPECIAL_WINDUP_SEC;
+      default: return ATTACK_WINDUP_SEC;
+    }
+  };
+  auto get_current_active_duration = []() -> float {
+    switch (g_current_attack_type) {
+      case AttackType::Light: return LIGHT_ACTIVE_SEC;
+      case AttackType::Heavy: return HEAVY_ACTIVE_SEC;
+      case AttackType::Special: return SPECIAL_ACTIVE_SEC;
+      default: return ATTACK_ACTIVE_SEC;
+    }
+  };
+  auto get_current_recovery_duration = []() -> float {
+    switch (g_current_attack_type) {
+      case AttackType::Light: return LIGHT_RECOVERY_SEC;
+      case AttackType::Heavy: return HEAVY_RECOVERY_SEC;
+      case AttackType::Special: return SPECIAL_RECOVERY_SEC;
+      default: return ATTACK_RECOVERY_SEC;
+    }
+  };
+
   // Advance player attack state and resolve hits
   if (dtSeconds > 0.f) {
     if (g_attack_state == AttackState::Windup) {
-      if ((g_time_seconds - g_attack_state_time) >= ATTACK_WINDUP_SEC) {
+      if ((g_time_seconds - g_attack_state_time) >= get_current_windup_duration()) {
         g_attack_state = AttackState::Active;
         g_attack_state_time = g_time_seconds;
       }
@@ -905,12 +931,12 @@ void update(float dtSeconds) {
           e.vy += dy * ATTACK_KNOCKBACK;
         }
       }
-      if ((g_time_seconds - g_attack_state_time) >= ATTACK_ACTIVE_SEC) {
+      if ((g_time_seconds - g_attack_state_time) >= get_current_active_duration()) {
         g_attack_state = AttackState::Recovery;
         g_attack_state_time = g_time_seconds;
       }
     } else if (g_attack_state == AttackState::Recovery) {
-      if ((g_time_seconds - g_attack_state_time) >= ATTACK_RECOVERY_SEC) {
+      if ((g_time_seconds - g_attack_state_time) >= get_current_recovery_duration()) {
         g_attack_state = AttackState::Idle;
         g_attack_state_time = g_time_seconds;
       }
@@ -924,28 +950,6 @@ void update(float dtSeconds) {
   // Enemies tick (deterministic; driven entirely by WASM state)
   // ------------------------------------------------------------
   if (dtSeconds > 0.f) {
-    // Advance player attack state timings
-    switch (g_attack_state) {
-      case AttackState::Windup:
-        if ((g_time_seconds - g_attack_state_time) >= ATTACK_WINDUP_SEC) {
-          g_attack_state = AttackState::Active;
-          g_attack_state_time = g_time_seconds;
-        }
-        break;
-      case AttackState::Active:
-        if ((g_time_seconds - g_attack_state_time) >= ATTACK_ACTIVE_SEC) {
-          g_attack_state = AttackState::Recovery;
-          g_attack_state_time = g_time_seconds;
-        }
-        break;
-      case AttackState::Recovery:
-        if ((g_time_seconds - g_attack_state_time) >= ATTACK_RECOVERY_SEC) {
-          g_attack_state = AttackState::Idle;
-          g_attack_state_time = g_time_seconds;
-        }
-        break;
-      case AttackState::Idle: default: break;
-    }
     // Update scent field first (used by perception)
     scent_step(dtSeconds);
     // Update pack morale and track casualties
