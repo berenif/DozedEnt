@@ -416,7 +416,7 @@ Very High Complexity:
 
 ## Quick Wins for Demo
 
-### Win 1: Bouncing Ball (4 hours)
+### Win 1: Bouncing Ball
 ```cpp
 // Minimal physics demo
 PhysicsManager physics;
@@ -435,7 +435,7 @@ for (int i = 0; i < 600; i++) {  // 10 seconds
 }
 ```
 
-### Win 2: Player Knockback (8 hours)
+### Win 2: Player Knockback
 ```cpp
 // Add impulse to existing player
 void apply_player_knockback(Vector3 direction, float force) {
@@ -454,7 +454,7 @@ void apply_player_knockback(Vector3 direction, float force) {
 }
 ```
 
-### Win 3: Throw Object (16 hours)
+### Win 3: Throw Object
 ```cpp
 // Grabbable barrel
 uint32_t barrel_id = create_physics_barrel(player_position + forward * 2.0f);
@@ -485,7 +485,7 @@ if (input.throw_pressed && grabbed_object_ != INVALID_ID) {
 | Physics feels bad (floaty/imprecise) | Low | Medium | Tunable parameters per entity type, playtesting |
 | Integration breaks existing features | High | High | Phased rollout, keep old code, extensive testing |
 | WASM binary too large | Low | Medium | Code splitting, lazy loading, compression |
-| Development takes longer than 10 weeks | Medium | Low | Phased delivery, MVP first, polish later |
+| Development timeline extends | Medium | Low | Phased delivery, MVP first, polish later |
 
 ---
 
@@ -514,19 +514,18 @@ if (input.throw_pressed && grabbed_object_ != INVALID_ID) {
 
 ---
 
-## Estimated Effort
+## Implementation Scope
 
-| Phase | Duration | Engineer-Weeks |
-|-------|----------|----------------|
-| Phase 0: Foundation | 2 weeks | 2 |
-| Phase 1: Core Physics | 2 weeks | 2 |
-| Phase 2: Combat | 2 weeks | 2 |
-| Phase 3: Enemies | 1 week | 1 |
-| Phase 4: Interaction | 2 weeks | 2 |
-| Phase 5: Polish | 2 weeks | 2 |
-| **Total** | **11 weeks** | **11** |
+| Phase | Complexity |
+|-------|-----------|
+| Phase 0: Foundation | Medium |
+| Phase 1: Core Physics | High |
+| Phase 2: Combat | High |
+| Phase 3: Enemies | Medium |
+| Phase 4: Interaction | Medium |
+| Phase 5: Polish | High |
 
-**Note:** This assumes 1 full-time engineer. With 2 engineers working in parallel, could potentially complete in 6-7 weeks (with some tasks parallelizable).
+**Note:** Phases can be tracked in `/src/PHYSICS_PROGRESS.md` for milestone completion.
 
 ---
 

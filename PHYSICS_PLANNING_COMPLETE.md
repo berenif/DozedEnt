@@ -13,13 +13,13 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 
 **Contents:**
 - ✅ Executive summary with your exact requirements
-- ✅ 6-phase breakdown (10-week timeline)
-  - Phase 0: Foundation & Architecture (Week 1-2)
-  - Phase 1: Core Physics Engine (Week 2-3)
-  - Phase 2: Physics-Driven Combat (Week 4-5)
-  - Phase 3: Enemy Physics Integration (Week 6)
-  - Phase 4: Direct Interaction Systems (Week 7-8)
-  - Phase 5: Optimization & Polish (Week 9-10)
+- ✅ 6-phase breakdown with dependencies
+  - Phase 0: Foundation & Architecture
+  - Phase 1: Core Physics Engine
+  - Phase 2: Physics-Driven Combat
+  - Phase 3: Enemy Physics Integration
+  - Phase 4: Direct Interaction Systems
+  - Phase 5: Optimization & Polish
 - ✅ Detailed code examples for each component
 - ✅ Mobile-first optimization strategies
 - ✅ Performance targets (100 objects @ 60fps)
@@ -69,18 +69,16 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 **Location:** `/workspace/GUIDELINES/SYSTEMS/PHYSICS_QUICK_WINS.md`
 
 **Contents:**
-- ✅ 5 demonstrable features in first 2 weeks
-  1. **Bouncing Ball** (4-6 hours) - Basic physics working
-  2. **Player Knockback** (6-8 hours) - Physics impulses in combat
-  3. **Barrel Throw** (12-16 hours) - Grab/throw/damage mechanics
-  4. **Ice Surface** (4 hours) - Material friction affects movement
-  5. **Wind Zone** (6 hours) - Environmental force application
+- ✅ 5 demonstrable proof-of-concept features
+  1. **Bouncing Ball** - Basic physics working
+  2. **Player Knockback** - Physics impulses in combat
+  3. **Barrel Throw** - Grab/throw/damage mechanics
+  4. **Ice Surface** - Material friction affects movement
+  5. **Wind Zone** - Environmental force application
 - ✅ Complete implementation code for each
 - ✅ JavaScript integration examples
-- ✅ 5-minute stakeholder demo script
+- ✅ Demo scripts
 - ✅ Success criteria per win
-
-**Total time:** 32-40 hours (4-5 days) for proof of concept
 
 ---
 
@@ -89,9 +87,9 @@ Your physics-first implementation planning is **COMPLETE**. Based on your requir
 
 **Contents:**
 - ✅ Navigation guide for all physics docs
-- ✅ How-to-use guide per role (PM, Tech Lead, Engineer, Stakeholder)
+- ✅ Usage guide for different workflows
 - ✅ Current state vs. target state summary
-- ✅ Timeline overview
+- ✅ Phase sequence overview
 - ✅ Getting started checklist
 - ✅ Common Q&A
 
@@ -104,15 +102,15 @@ Based on your answers, here's how each requirement is handled:
 ### ✅ Complete Physics Overhaul (Not Incremental)
 - **Plan:** Complete manager refactoring in Phases 2-3
 - **Approach:** Replace PlayerManager/CombatManager, not augment
-- **Timeline:** Weeks 4-6 for full replacement
+- **Sequence:** Phases 2-3 for full replacement
 
 ### ✅ Combat Physics Priority
-- **Phase 2 (Weeks 4-5):** Entire phase dedicated to physics-driven combat
+- **Phase 2:** Entire phase dedicated to physics-driven combat
 - **Features:** Momentum damage, impulse knockback, physics hitboxes
 - **Code:** 700-line PhysicsCombatSystem replaces CombatManager
 
 ### ✅ Enemy Physics Integration
-- **Phase 3 (Week 6):** Full enemy entity conversion
+- **Phase 3:** Full enemy entity conversion
 - **Approach:** AI applies forces, not direct control
 - **Features:** Ragdoll on death, physics-based attacks
 
@@ -122,9 +120,9 @@ Based on your answers, here's how each requirement is handled:
 - **Result:** Momentum, sliding, surface friction all physics-based
 
 ### ✅ Direct Interaction
-- **Phase 4 (Weeks 7-8):** Grab, throw, push systems
+- **Phase 4:** Grab, throw, push systems
 - **Features:** Pick up objects, throw as projectiles, push heavy objects
-- **Demo:** Quick Win #3 (Barrel Throw) proves concept in week 2
+- **Demo:** Quick Win #3 (Barrel Throw) proves concept early
 
 ### ✅ Mobile-First Optimization
 - **Strategy:** LOD system, sleep system, spatial partition
@@ -156,46 +154,44 @@ Based on your answers, here's how each requirement is handled:
 | Test code | 1,000 |
 | **Total** | **11,076** |
 
-### Timeline
+### Implementation Phases
 - **Phases:** 6 phases (0-5)
-- **Duration:** 10 weeks (1 engineer) or 6-7 weeks (2 parallel engineers)
-- **Quick wins:** Week 1-2 (proof of concept)
-- **MVP:** Week 3-4 (core physics working)
-- **Full features:** Week 8 (all interactions working)
-- **Polish:** Week 9-10 (optimization, documentation)
+- **Quick wins:** Foundation phase (proof of concept)
+- **MVP:** Core physics phase (core physics working)
+- **Full features:** Phase 4 (all interactions working)
+- **Polish:** Phase 5 (optimization, documentation)
 
-### Resources Required
-- **Engineers:** 1 full-time (or 2 for faster delivery)
-- **Duration:** 10-11 weeks
+### Technical Requirements
 - **Test devices:** Mid-tier mobile for performance validation
 - **Expertise:** C++ physics, WASM, JavaScript integration
+- **Progress tracking:** `/src/PHYSICS_PROGRESS.md`
 
 ---
 
 ## 🚀 Next Steps
 
-### Immediate (This Week)
+### Getting Started
 1. **Review documents** - Read Implementation Plan
-2. **Approve scope** - Confirm 10-week timeline acceptable
-3. **Assign resources** - Allocate engineer(s)
-4. **Kickoff Phase 0** - Create directory structure
+2. **Review scope** - Understand technical requirements
+3. **Prepare environment** - Set up development tools
+4. **Begin Phase 0** - Create directory structure
 
-### Week 1
+### Foundation Phase
 1. **Phase 0 tasks** - Move headers, update build system
-2. **Quick Win #1** - Bouncing ball demo (4-6 hours)
-3. **Quick Win #2** - Player knockback (6-8 hours)
-4. **Quick Win #4** - Ice surface (4 hours)
+2. **Quick Win #1** - Bouncing ball demo
+3. **Quick Win #2** - Player knockback
+4. **Quick Win #4** - Ice surface
 
-### Week 2
+### Core Physics Phase
 1. **Phase 1 start** - Begin PhysicsManager implementation
-2. **Quick Win #5** - Wind zone (6 hours)
-3. **Quick Win #3** - Barrel throw (12-16 hours)
-4. **Stakeholder demo** - Show 5 quick wins (5-minute presentation)
+2. **Quick Win #5** - Wind zone
+3. **Quick Win #3** - Barrel throw
+4. **Validation** - Show 5 quick wins demo
 
-### Week 3+
+### Subsequent Phases
 1. **Follow Implementation Plan** - Phase-by-phase execution
-2. **Track deliverables** - Use phase checklists
-3. **Demo after each phase** - Show progress to stakeholders
+2. **Track deliverables** - Update `/src/PHYSICS_PROGRESS.md`
+3. **Validate each phase** - Test and verify completion
 
 ---
 

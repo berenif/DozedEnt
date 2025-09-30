@@ -6,7 +6,7 @@ This document outlines **quick, demonstrable wins** that can showcase physics-ba
 
 ---
 
-## Quick Win #1: Bouncing Ball Demo (4-6 hours)
+## Quick Win #1: Bouncing Ball Demo
 
 ### Goal
 Demonstrate basic physics simulation working - gravity, collision, restitution.
@@ -112,7 +112,7 @@ function render() {
 
 ---
 
-## Quick Win #2: Player Knockback Impulse (6-8 hours)
+## Quick Win #2: Player Knockback Impulse
 
 ### Goal
 Show combat knockback using physics impulses instead of scripted animation.
@@ -197,7 +197,7 @@ if (attackHit) {
 
 ---
 
-## Quick Win #3: Barrel Throw Projectile (12-16 hours)
+## Quick Win #3: Barrel Throw Projectile
 
 ### Goal
 Pick up, carry, and throw a physics object that damages enemies on contact.
@@ -392,7 +392,7 @@ function update(dt) {
 
 ---
 
-## Quick Win #4: Ice Surface Friction (4 hours)
+## Quick Win #4: Ice Surface Friction
 
 ### Goal
 Different surface materials affect movement physics.
@@ -502,7 +502,7 @@ function updatePlayerSurface() {
 
 ---
 
-## Quick Win #5: Wind Knockback Zone (6 hours)
+## Quick Win #5: Wind Knockback Zone
 
 ### Goal
 Environmental hazard that applies constant force.
@@ -618,17 +618,15 @@ function update(dt) {
 
 ---
 
-## Implementation Timeline
+## Implementation Sequence
 
-| Quick Win | Time | Prerequisites | Phase |
-|-----------|------|---------------|-------|
-| **#1: Bouncing Ball** | 4-6 hours | None | Week 1 |
-| **#2: Player Knockback** | 6-8 hours | PlayerManager | Week 1 |
-| **#4: Ice Surface** | 4 hours | PlayerManager | Week 1 |
-| **#5: Wind Zone** | 6 hours | Force application | Week 2 |
-| **#3: Barrel Throw** | 12-16 hours | Collision detection | Week 2 |
-
-**Total:** 32-40 hours (4-5 days)
+| Quick Win | Prerequisites | Phase |
+|-----------|---------------|-------|
+| **#1: Bouncing Ball** | None | Foundation |
+| **#2: Player Knockback** | PlayerManager | Foundation |
+| **#4: Ice Surface** | PlayerManager | Foundation |
+| **#5: Wind Zone** | Force application | Core Physics |
+| **#3: Barrel Throw** | Collision detection | Core Physics |
 
 ---
 
@@ -651,7 +649,7 @@ For stakeholder demos, show in this order:
 5. **Barrel Throw** (2 minutes)
    - "Direct interaction with physics objects creates emergent combat"
 
-**Total demo:** 5-6 minutes showing 5 different physics features
+**Total demo:** Comprehensive demonstration of 5 different physics features
 
 ---
 
@@ -678,4 +676,4 @@ Once these 5 demos are working, you have:
 
 ---
 
-*These quick wins require ~40 hours but provide immediate, demonstrable value and proof that physics-first design achieves emergent gameplay goals.*
+*These quick wins provide immediate, demonstrable value and proof that physics-first design achieves emergent gameplay goals.*

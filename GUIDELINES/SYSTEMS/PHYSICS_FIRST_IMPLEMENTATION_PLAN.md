@@ -21,22 +21,22 @@ This document outlines the complete redesign of the game to be **physics-first**
 ## 🗺️ Phase Overview
 
 ```
-Phase 0: Foundation & Architecture [Week 1-2]
+Phase 0: Foundation & Architecture
   ↓
-Phase 1: Core Physics Engine [Week 2-3]
+Phase 1: Core Physics Engine
   ↓
-Phase 2: Physics-Driven Combat [Week 4-5]
+Phase 2: Physics-Driven Combat
   ↓
-Phase 3: Enemy Physics Integration [Week 6]
+Phase 3: Enemy Physics Integration
   ↓
-Phase 4: Direct Interaction Systems [Week 7-8]
+Phase 4: Direct Interaction Systems
   ↓
-Phase 5: Optimization & Polish [Week 9-10]
+Phase 5: Optimization & Polish
 ```
 
 ---
 
-## 🎯 Phase 0: Foundation & Architecture (Week 1-2)
+## 🎯 Phase 0: Foundation & Architecture
 
 ### Objectives
 - Establish physics-first architecture
@@ -251,7 +251,7 @@ private:
 
 ---
 
-## 🔧 Phase 1: Core Physics Engine (Week 2-3)
+## 🔧 Phase 1: Core Physics Engine
 
 ### Objectives
 - Implement full rigid body simulation
@@ -453,7 +453,7 @@ void test_physics_performance() {
 
 ---
 
-## ⚔️ Phase 2: Physics-Driven Combat (Week 4-5)
+## ⚔️ Phase 2: Physics-Driven Combat
 
 ### Objectives
 - Replace CombatManager with physics-based damage
@@ -675,7 +675,7 @@ void test_momentum_damage() {
 
 ---
 
-## 👾 Phase 3: Enemy Physics Integration (Week 6)
+## 👾 Phase 3: Enemy Physics Integration
 
 ### Objectives
 - Enemies as physics entities
@@ -865,7 +865,7 @@ private:
 
 ---
 
-## 🤲 Phase 4: Direct Interaction Systems (Week 7-8)
+## 🤲 Phase 4: Direct Interaction Systems
 
 ### Objectives
 - Pick up and throw objects
@@ -1128,7 +1128,7 @@ Demo 4: Shield Block Reflection
 
 ---
 
-## ⚡ Phase 5: Optimization & Polish (Week 9-10)
+## ⚡ Phase 5: Optimization & Polish
 
 ### Objectives
 - Achieve stable 60fps with 100 objects on mobile
@@ -1372,7 +1372,7 @@ Each phase should complete with:
 
 ---
 
-## 🚀 Quick Wins (Demonstrable in Week 1-2)
+## 🚀 Quick Wins (Early Demonstration)
 
 Even during foundation phase, these can showcase physics:
 
@@ -1414,4 +1414,4 @@ Even during foundation phase, these can showcase physics:
 
 ---
 
-**This is a comprehensive overhaul. Expect 10 weeks of focused development for full implementation. Each phase is milestone-driven with clear deliverables.**
+**This is a comprehensive overhaul. Each phase is milestone-driven with clear deliverables. Track progress in `/src/PHYSICS_PROGRESS.md`.**

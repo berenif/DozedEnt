@@ -10,24 +10,22 @@ This index provides a complete guide to the physics-first redesign documentation
 
 ### 1. **Implementation Plan** ⭐ START HERE
 **File:** `PHYSICS_FIRST_IMPLEMENTATION_PLAN.md`  
-**Purpose:** Complete 10-week roadmap for physics overhaul  
-**Audience:** Project leads, senior engineers  
+**Purpose:** Complete roadmap for physics overhaul  
 **Contents:**
 - Executive summary
-- 6-phase breakdown (Weeks 0-10)
-- Phase objectives and deliverables
+- 6-phase breakdown with objectives
+- Phase deliverables
 - Success metrics
 - Risk mitigation
-- Resource estimates
+- Technical requirements
 
-**When to use:** Planning, sprint organization, milestone tracking
+**When to use:** Planning, implementation sequence, milestone tracking
 
 ---
 
 ### 2. **Gap Analysis** 🔍
 **File:** `PHYSICS_GAP_ANALYSIS.md`  
 **Purpose:** Detailed comparison of current vs. required state  
-**Audience:** Engineers, architects  
 **Contents:**
 - What exists (headers only)
 - What's missing (implementations)
@@ -36,14 +34,13 @@ This index provides a complete guide to the physics-first redesign documentation
 - Code volume estimates
 - Migration path
 
-**When to use:** Understanding scope, assessing technical debt, estimating effort
+**When to use:** Understanding scope, assessing technical debt, identifying dependencies
 
 ---
 
 ### 3. **Header-to-Implementation Map** 🗺️
 **File:** `PHYSICS_HEADER_TO_IMPLEMENTATION_MAP.md`  
 **Purpose:** Maps existing headers to needed implementations  
-**Audience:** Implementers, code reviewers  
 **Contents:**
 - Header location → implementation file mapping
 - Line count estimates
@@ -52,22 +49,21 @@ This index provides a complete guide to the physics-first redesign documentation
 - Priority matrix
 - Build system changes
 
-**When to use:** Task assignment, dependency tracking, build planning
+**When to use:** Task planning, dependency tracking, build configuration
 
 ---
 
 ### 4. **Quick Wins** ⚡
 **File:** `PHYSICS_QUICK_WINS.md`  
-**Purpose:** 5 demonstrable features in first 2 weeks  
-**Audience:** Developers, stakeholders  
+**Purpose:** 5 demonstrable features for early validation  
 **Contents:**
-- 5 self-contained demos (4-16 hours each)
+- 5 self-contained proof-of-concept demos
 - Implementation code samples
 - JavaScript integration
 - Demo scripts
-- 5-minute stakeholder presentation
+- Success criteria
 
-**When to use:** Early validation, proof of concept, stakeholder demos
+**When to use:** Early validation, proof of concept, feature demonstration
 
 ---
 
@@ -87,29 +83,29 @@ These documents already exist and define the target system:
 
 ## 🎯 How to Use This Documentation
 
-### For Project Managers
+### Understanding the System
 1. Read **Implementation Plan** executive summary
-2. Review phase breakdown and timelines
-3. Check resource estimates and risk mitigation
-4. Track progress against deliverables
+2. Review phase breakdown and dependencies
+3. Check risk mitigation strategies
+4. Track progress using `/src/PHYSICS_PROGRESS.md`
 
-### For Technical Leads
+### Technical Implementation
 1. Start with **Gap Analysis** to understand scope
 2. Use **Header-to-Implementation Map** for task breakdown
-3. Assign **Quick Wins** to prove concepts early
+3. Build **Quick Wins** to prove concepts early
 4. Reference **Implementation Plan** for architecture decisions
 
-### For Engineers
-1. Check **Header-to-Implementation Map** for your assigned component
+### Development Workflow
+1. Check **Header-to-Implementation Map** for component details
 2. Review dependencies and complexity rating
 3. Implement according to **Implementation Plan** phase guidelines
 4. Use **Quick Wins** as working examples
 
-### For Stakeholders
-1. Watch **Quick Wins** demos (5-minute presentation)
+### Progress Tracking
+1. Monitor **Quick Wins** demos for proof-of-concept validation
 2. Review **Implementation Plan** success metrics
-3. Track progress via phase deliverables
-4. Understand emergent gameplay vision
+3. Update checkboxes in `/src/PHYSICS_PROGRESS.md`
+4. Verify emergent gameplay patterns
 
 ---
 
@@ -161,27 +157,12 @@ These documents already exist and define the target system:
 
 ---
 
-## ⏱️ Timeline Overview
-
-```
-Week 1-2:   Phase 0 - Foundation + Quick Win #1-2
-Week 2-3:   Phase 1 - Core Physics Engine + Quick Win #3-5
-Week 4-5:   Phase 2 - Physics-Driven Combat
-Week 6:     Phase 3 - Enemy Physics Integration
-Week 7-8:   Phase 4 - Direct Interaction Systems
-Week 9-10:  Phase 5 - Optimization & Polish
-```
-
-**Total:** 10 weeks (1 engineer) or 6-7 weeks (2 engineers parallel)
-
----
-
 ## 🚀 Getting Started
 
-### Step 1: Approval
+### Step 1: Review
 - [ ] Review Implementation Plan
-- [ ] Approve scope and timeline
-- [ ] Assign resources
+- [ ] Understand phase dependencies
+- [ ] Assess technical requirements
 
 ### Step 2: Phase 0 (Foundation)
 - [ ] Create directory structure
@@ -192,28 +173,22 @@ Week 9-10:  Phase 5 - Optimization & Polish
 ### Step 3: Quick Win #1 (Bouncing Ball)
 - [ ] Implement simple physics demo
 - [ ] Verify compilation
-- [ ] Show to stakeholders
+- [ ] Validate proof-of-concept
 
 ### Step 4: Continue with Phases 1-5
-- [ ] Follow Implementation Plan
-- [ ] Track against deliverables
-- [ ] Demo after each phase
+- [ ] Follow Implementation Plan sequence
+- [ ] Track against deliverables in `/src/PHYSICS_PROGRESS.md`
+- [ ] Validate each phase completion
 
 ---
 
 ## 📝 Document Maintenance
 
 ### When to Update
-- **After each phase:** Mark deliverables complete
+- **After each phase:** Mark deliverables complete in `/src/PHYSICS_PROGRESS.md`
 - **When scope changes:** Update Implementation Plan
 - **When dependencies change:** Update Header-to-Implementation Map
 - **When gaps identified:** Update Gap Analysis
-
-### Who Updates
-- **Implementation Plan:** Project lead
-- **Gap Analysis:** Technical lead
-- **Header Map:** Engineers (as implemented)
-- **Quick Wins:** Demo owner
 
 ---
 
@@ -266,35 +241,33 @@ Week 9-10:  Phase 5 - Optimization & Polish
 **Q: Can we do this incrementally without full refactor?**  
 A: No. Current code directly manipulates position, incompatible with physics-first. Need clean separation.
 
-**Q: Why 10 weeks? Can we go faster?**  
-A: 5,400 lines of new code + 1,200 lines refactored + testing. 2 engineers could parallelize to 6-7 weeks.
+**Q: What is the scope of work?**  
+A: 5,400 lines of new code + 1,200 lines refactored + comprehensive testing across 6 phases.
 
 **Q: What if performance doesn't hit 60fps?**  
 A: LOD system, sleep system, and spatial partition designed for this. Quick Win #1 validates performance early.
 
 **Q: How do we maintain existing gameplay feel?**  
-A: Tunable parameters (mass, friction, drag) per entity type. Playtest and adjust.
+A: Tunable parameters (mass, friction, drag) per entity type. Iterative adjustment based on testing.
 
 **Q: What about multiplayer determinism?**  
-A: Fixed timestep, seeded RNG, golden replays. Tested from Phase 1.
+A: Fixed timestep, seeded RNG, golden replays. Validated from Phase 1 onwards.
 
 ---
 
 ## 🎯 Next Actions
 
 1. **Read Implementation Plan** - Understand full scope
-2. **Review Quick Wins** - See what's possible in week 1-2
-3. **Approve or modify plan** - Provide feedback
-4. **Kick off Phase 0** - Start foundation work
-5. **Track progress** - Use phase deliverables as checkpoints
+2. **Review Quick Wins** - See proof-of-concept demonstrations
+3. **Review plan** - Assess technical requirements
+4. **Begin Phase 0** - Start foundation work
+5. **Track progress** - Update `/src/PHYSICS_PROGRESS.md` regularly
 
 ---
 
-**Documentation Version:** 1.0  
-**Last Updated:** January 2025  
-**Owner:** Physics Overhaul Team  
-**Status:** Planning Phase
+**Documentation Version:** 1.1  
+**Status:** Implementation Ready
 
 ---
 
-*This documentation set provides everything needed to execute a complete physics-first redesign. Start with the Implementation Plan, validate with Quick Wins, and track progress with the Gap Analysis and Header Map.*
+*This documentation set provides everything needed to execute a complete physics-first redesign. Start with the Implementation Plan, validate with Quick Wins, and track progress using `/src/PHYSICS_PROGRESS.md`.*
