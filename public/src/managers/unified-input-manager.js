@@ -9,6 +9,7 @@
  */
 
 import { InputValidator } from './input-validator.js';
+import { ThreeButtonInputAdapter } from '../input/ThreeButtonInputAdapter.js';
 
 export class UnifiedInputManager {
     constructor(wasmManager) {
@@ -24,7 +25,12 @@ export class UnifiedInputManager {
             // Movement (normalized -1 to 1)
             direction: { x: 0, y: 0 },
             
-            // 5-button combat system (boolean states)
+            // Three-button physical inputs (J/L/K)
+            leftHand: false,
+            rightHand: false,
+            special3: false,
+
+            // Derived 5-action outputs (fed to WASM)
             lightAttack: false,    // A1 - J or 1
             heavyAttack: false,    // A2 - K or 2  
             block: false,          // Block - Shift or 3
@@ -69,19 +75,16 @@ export class UnifiedInputManager {
             ['ArrowDown', 'move-down'],
             ['ArrowRight', 'move-right'],
             
-            // 5-button combat system
-            ['KeyJ', 'light-attack'],    // J/1: Light Attack
-            ['Digit1', 'light-attack'],
-            ['KeyK', 'heavy-attack'],    // K/2: Heavy Attack
-            ['Digit2', 'heavy-attack'],
-            ['KeyL', 'special'],         // L/5: Special Attack
-            ['Digit5', 'special'],
+            // 3-button combat input (J/L/K)
+            ['KeyJ', 'left-hand'],
+            ['KeyL', 'right-hand'],
+            ['KeyK', 'special3'],
             ['ShiftLeft', 'block'],      // Shift/3: Block/Parry
             ['ShiftRight', 'block'],
-            ['Digit3', 'block'],
+            // 'Digit3' intentionally unused in 3-button mode
             ['ControlLeft', 'roll'],     // Ctrl/4: Roll
             ['ControlRight', 'roll'],
-            ['Digit4', 'roll'],
+            // 'Digit4' intentionally unused in 3-button mode
             ['Space', 'roll'],           // Space as alternative roll
             
             // UI Controls
@@ -108,6 +111,9 @@ export class UnifiedInputManager {
             inputQueue: []
         };
         
+        // Three-button adapter
+        this._threeBtn = new ThreeButtonInputAdapter();
+
         // Track animation frame for cleanup
         this.animationFrameId = null;
         
@@ -541,6 +547,15 @@ export class UnifiedInputManager {
         
         // Update input state based on action
         switch (action) {
+            case 'left-hand':
+                this.inputState.leftHand = isPressed;
+                break;
+            case 'right-hand':
+                this.inputState.rightHand = isPressed;
+                break;
+            case 'special3':
+                this.inputState.special3 = isPressed;
+                break;
             case 'move-up':
                 this.keyStates.up = isPressed;
                 this.updateDirectionFromKeyStates();
@@ -788,6 +803,33 @@ export class UnifiedInputManager {
             // Update gamepad input if available
             if (this.gamepadManager) {
                 // Gamepad manager will update our input state directly
+            }
+            
+            // Derive 5-action outputs from 3-button adapter each frame
+            try {
+                const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                const derived = this._threeBtn.update({
+                    leftHandDown: this.inputState.leftHand,
+                    rightHandDown: this.inputState.rightHand,
+                    specialDown: this.inputState.special3,
+                    moveX: this.inputState.direction.x,
+                    moveY: this.inputState.direction.y,
+                    nowMs
+                });
+
+                // Merge with any direct toggles, respecting adapter precedence
+                this.inputState.lightAttack = Boolean(this.inputState.lightAttack || derived.lightAttack);
+                this.inputState.heavyAttack = Boolean(this.inputState.heavyAttack || derived.heavyAttack);
+                this.inputState.block = Boolean(this.inputState.block || derived.block);
+
+                if (derived.roll) {
+                    this.inputState.roll = true;
+                    this.inputState.special = false;
+                } else if (derived.special) {
+                    this.inputState.special = true;
+                }
+            } catch (_) {
+                // Adapter errors are non-fatal
             }
             
             // NOTE: We intentionally DO NOT flush inputs here because main.js

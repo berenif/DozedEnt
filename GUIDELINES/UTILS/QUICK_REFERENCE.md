@@ -10,13 +10,18 @@
 
 ### 🎮 Core Systems Overview
 
-#### Combat System (5-Button Layout)
+#### Combat System (3-Button Layout)
 ```
-J/1: Light Attack  (50ms windup, 80ms active, 150ms recovery)
-K/2: Heavy Attack  (150ms windup, 120ms active, 250ms recovery) - Can feint
-Shift/3: Block/Parry (Hold=guard, Tap=120ms parry window)
-Ctrl/4: Roll       (300ms i-frames + 200ms slide)
-L/5: Special      (200ms windup, 150ms active, 300ms recovery)
+J: Left Hand  (press=Light, hold=Heavy)
+L: Right Hand (press=Light, hold=Heavy)
+K: Special
+
+Block/Parry:
+- Without shield: Hold J+L = Block; perfect-timing press = Parry (120 ms)
+- With shield: Hold J = Block; perfect-timing tap = Parry (no damage)
+
+Roll:
+- K + Direction = Roll (300ms i-frames + 200ms slide)
 ```
 
 #### Game Loop (8 Phases)
@@ -147,7 +152,7 @@ renderPlayer(newX, wasmModule.get_y());
 - **WASM API reference**: **`BUILD/API.md`** (canonical function signatures)
 - **Development workflow**: **`BUILD/DEVELOPMENT_WORKFLOW.md`** (complete dev cycle)
 - **Testing procedures**: **`BUILD/TESTING.md`** (current framework, 54 tests)
-- **Combat implementation**: `FIGHT/5-BUTTON_COMBAT_IMPLEMENTATION.md`
+- **Combat implementation**: `FIGHT/3-BUTTON_COMBAT_IMPLEMENTATION.md`
 - **AI behavior**: `AI/ENEMY_AI.md` or `AI/WOLF_AI.md`
 - **Animation issues**: `ANIMATION/PLAYER_ANIMATIONS.md`
 - **Core loop validation**: `GAME/CORE_LOOP_CHECKLIST.md`

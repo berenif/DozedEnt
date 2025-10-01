@@ -1,4 +1,5 @@
 import { CharacterAnimator } from '../animation/system/animation-system.js';
+import PlayerRenderer from '../renderer/player/TopDownPlayerRenderer.js';
 import { PLAYER_ANIM_CODES } from './wasm-api.js';
 import { WolfRenderer } from '../renderer/WolfRenderer.js';
 
@@ -30,6 +31,7 @@ const camera = {
 // Procedural-only: no sprite sheet used
 
 const playerAnimator = new CharacterAnimator();
+let playerRenderer = null;
 
 const IDLE_STATE = PLAYER_ANIM_CODES.idle ?? 0;
 let activeAnimState = IDLE_STATE;
@@ -294,13 +296,21 @@ const drawPlayer = (state) => {
   }
   playerAnimator.setFacing(lastFacing);
 
+  // Initialize procedural player renderer lazily
+  if (!playerRenderer) {
+    playerRenderer = new PlayerRenderer(ctx, canvas);
+  }
+
+  // Use CharacterAnimator only for simple overlay (breathing, wobble) if needed
   const transform = playerAnimator.update(
     deltaSeconds,
     { x: state.x, y: state.y },
     { x: state.vx ?? 0, y: state.vy ?? 0 },
     state.grounded ?? true
   ) || { scaleX: 1, scaleY: 1, rotation: 0, offsetX: 0, offsetY: 0 };
-  drawProceduralPlayer(state, position, baseRadius, transform);
+
+  // Render full procedural player using modular rig
+  playerRenderer.render(state, wasmToCanvas, baseRadius);
 };
 
 const drawObstacles = (obstacles) => {

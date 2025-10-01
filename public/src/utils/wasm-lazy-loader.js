@@ -424,7 +424,8 @@ export class WasmLazyLoader {
     try {
       const response = await fetch(url, {
         signal: controller.signal,
-        cache: 'force-cache', // Use browser cache aggressively
+        // Ensure latest WASM is fetched unless overridden via options
+        cache: (options && options.fetchOptions && options.fetchOptions.cache) || 'no-store',
         ...(options.fetchOptions || {})
       });
 

@@ -37,12 +37,12 @@ Comprehensive desktop and mobile device detection with optimized UI/UX for each 
 ### 2. Desktop UI Manager (`src/ui/desktop-ui-manager.js`)
 Provides a clean, optimized experience for desktop users with:
 
-#### Control Hints Display
+#### Control Hints Display (3-Button Layout)
 - **Keyboard shortcuts** prominently displayed
 - **Sections**:
   - Movement: W/A/S/D
-  - Combat: J (Light), K (Heavy), L (Special)
-  - Defense: Shift (Block), Space (Roll)
+  - Combat: J (Left Hand), K (Special), L (Right Hand)
+  - Defense: Hold J+L = Block (or J with shield); Parry = perfect timing; Roll = K + direction
 - **Toggle functionality** to show/hide hints (H key)
 - **Beautiful glass-morphism** design matching game aesthetic
 
@@ -61,7 +61,7 @@ Provides a clean, optimized experience for desktop users with:
 - `F11` - Toggle fullscreen
 - `ESC` - Pause/Menu
 - `H` - Toggle control hints
-- Standard game controls (WASD, J/K/L, Shift, Space)
+- Standard game controls (WASD, J/K/L with 3-button layout)
 
 ### 3. CSS Optimization (`src/css/desktop-ui.css`)
 

@@ -7,7 +7,7 @@ The FIGHT folder contains the complete implementation documentation and specific
 ## 🎯 Implementation Status: 
 
 
-- ✅ **5-Button Combat System** - Complete with proper timing windows
+- ✅ **3-Button Combat System** - Per-hand attacks, inferred Block/Parry/Roll
 - ✅ **Weapon System** - Character-specific weapons with unique properties  
 - ✅ **Parry & Block System** - Frame-perfect timing mechanics
 - ✅ **Roll & I-Frames** - Invulnerability and momentum systems
@@ -17,7 +17,7 @@ The FIGHT folder contains the complete implementation documentation and specific
 ## 📚 Documentation Files
 
 ### Core Implementation Guides
-- **[5-BUTTON_COMBAT_IMPLEMENTATION.md](./5-BUTTON_COMBAT_IMPLEMENTATION.md)** - Complete 5-button combat system with timing specifications
+- **[3-BUTTON_COMBAT_IMPLEMENTATION.md](./3-BUTTON_COMBAT_IMPLEMENTATION.md)** - Current 3-button combat system with timing specifications
 - **[COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md)** - Comprehensive combat architecture and state machine design
 - **[WEAPONS_IMPLEMENTATION.md](./WEAPONS_IMPLEMENTATION.md)** - Character-specific weapon system with stats and properties
 
@@ -27,13 +27,18 @@ The FIGHT folder contains the complete implementation documentation and specific
 
 ## 🎮 Combat System Quick Reference
 
-### Controls Layout
+### Controls Layout (3-Button)
 ```
-J/1: Light Attack  - Fast, combo-friendly (50ms windup, 80ms active, 150ms recovery)
-K/2: Heavy Attack  - High damage, can feint (150ms windup, 120ms active, 250ms recovery)  
-Shift/3: Block/Parry - Hold to guard, tap for 120ms parry window
-Ctrl/4: Roll       - 300ms i-frames + momentum slide
-L/5: Special      - Character-specific abilities (200ms windup, 150ms active, 300ms recovery)
+J: Left Hand  (press=Light, hold=Heavy)
+L: Right Hand (press=Light, hold=Heavy)
+K: Special
+
+Block/Parry:
+- Without shield: Hold J+L = Block; perfect-timing press = Parry (120 ms)
+- With shield: Hold J = Block; perfect-timing tap = Parry (no damage)
+
+Roll:
+- K + Direction = Roll (300ms i-frames + 200ms slide)
 ```
 
 ### Character Weapons
@@ -77,7 +82,7 @@ The combat system exports 60+ functions covering:
 ### 🔧 Integration Points
 - **Animation System** - Combat states drive animation transitions
 - **AI System** - Enemies respect combat timing and i-frames
-- **Input System** - 5-button layout with proper buffering
+- **Input System** - 3-button layout with proper buffering
 - **Multiplayer** - All combat synchronized via WASM state
 
 ## 🚀 Usage Examples

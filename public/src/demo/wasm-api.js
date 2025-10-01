@@ -78,11 +78,16 @@ const resolveBaseUrls = (relativePaths) => {
   const baseDir = baseHref.endsWith('/') ? baseHref : baseHref.replace(/[^/]*$/, '');
   const origins = [baseHref, baseDir, `${window.location.origin}/`];
 
+  // Prefer stable build timestamp when available, fallback to current time
+  const version = (window.__BUILD__ && window.__BUILD__.buildTime) || (window.__BUILD__ && window.__BUILD__.version) || String(Date.now());
+
   relativePaths.forEach(path => {
     origins.forEach(origin => {
       try {
-        const resolved = new URL(path, origin).href;
-        candidates.add(resolved);
+        const u = new URL(path, origin);
+        // Append cache-busting version so latest WASM is always fetched
+        u.searchParams.set('v', version);
+        candidates.add(u.href);
       } catch {
         // ignore invalid url
       }

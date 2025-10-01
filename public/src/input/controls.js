@@ -485,13 +485,11 @@ class MobileGameControls {
         // Clear existing buttons
         actionsContainer.innerHTML = '';
         
-        // Create 5-button combat system buttons
+        // Create three-button layout (Left, Special, Right)
         const buttons = [
-            { action: 'lightAttack', emoji: '⚡', title: 'Light Attack (J/1)', color: '#ffaa00' },
-            { action: 'heavyAttack', emoji: '💥', title: 'Heavy Attack (K/2)', color: '#ff4444' },
-            { action: 'block', emoji: '🛡️', title: 'Block (Shift/3)', color: '#4488ff' },
-            { action: 'roll', emoji: '🔄', title: 'Roll (Space/4)', color: '#44ff44' },
-            { action: 'special', emoji: '✨', title: 'Special (L/5)', color: '#ff44ff' }
+            { action: 'leftHand', emoji: '👊', title: 'Left Hand (J)', color: '#ffaa00' },
+            { action: 'special3', emoji: '✨', title: 'Special / Roll (K + dir)', color: '#44ff44' },
+            { action: 'rightHand', emoji: '✋', title: 'Right Hand (L)', color: '#ff4444' }
         ];
         
         buttons.forEach(btn => {
@@ -545,7 +543,10 @@ class MobileGameControls {
         
         // Handle action through InputManager if available
         if (this.inputManager) {
-            // InputManager will handle the actual input
+            // Drive three-button booleans on InputManager directly
+            if (action === 'leftHand') this.inputManager.inputState.leftHand = true;
+            if (action === 'rightHand') this.inputManager.inputState.rightHand = true;
+            if (action === 'special3') this.inputManager.inputState.special3 = true;
             return;
         }
         
@@ -557,8 +558,14 @@ class MobileGameControls {
      * Handle action end
      */
     handleActionEnd(action, button) {
-        // Remove visual feedback
+        // Remove visual feedback and clear InputManager flags
         button.classList.remove('pressed');
+        if (this.inputManager) {
+            const action = this.getButtonAction(button);
+            if (action === 'leftHand') this.inputManager.inputState.leftHand = false;
+            if (action === 'rightHand') this.inputManager.inputState.rightHand = false;
+            if (action === 'special3') this.inputManager.inputState.special3 = false;
+        }
     }
     
     /**

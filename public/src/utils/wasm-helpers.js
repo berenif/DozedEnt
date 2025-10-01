@@ -252,7 +252,7 @@ export class WasmModuleLoader {
       // Load from URL
       if (this.options.streaming && WebAssembly.instantiateStreaming) {
         try {
-          const response = await fetch(source);
+          const response = await fetch(source, { cache: 'no-store' });
           if (!response.ok) {
             throw new Error(`Failed to fetch WASM module: ${response.statusText}`);
           }
@@ -272,7 +272,7 @@ export class WasmModuleLoader {
       }
       
       // Fallback to ArrayBuffer loading
-      const response = await fetch(source);
+      const response = await fetch(source, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`Failed to fetch WASM module: ${response.statusText}`);
       }

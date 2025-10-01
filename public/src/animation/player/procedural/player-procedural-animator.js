@@ -1,7 +1,11 @@
 import PlayerProceduralRig from './player-procedural-rig.js'
 import CorePostureModule from './modules/core-posture-module.js'
 import LocomotionModule from './modules/locomotion-module.js'
+import FootIKModule from './modules/foot-ik-module.js'
+import SpineModule from './modules/spine-module.js'
 import CombatModule from './modules/combat-module.js'
+import ArmIKModule from './modules/arm-ik-module.js'
+import HeadGazeModule from './modules/head-gaze-module.js'
 import SecondaryMotionModule from './modules/secondary-motion-module.js'
 import EnvironmentModule from './modules/environment-module.js'
 
@@ -23,7 +27,11 @@ export default class PlayerProceduralAnimator {
         this.modules = {
             core: new CorePostureModule(options.core),
             locomotion: new LocomotionModule(options.locomotion),
+            footIK: new FootIKModule(options.footIK),
+            spine: new SpineModule(options.spine),
             combat: new CombatModule(options.combat),
+            armIK: new ArmIKModule(options.armIK),
+            headGaze: new HeadGazeModule(options.headGaze),
             secondary: new SecondaryMotionModule(options.secondary),
             environment: new EnvironmentModule(options.environment)
         }
@@ -97,18 +105,41 @@ export default class PlayerProceduralAnimator {
         const context = this.buildContext(deltaTime, contextInput)
         const pose = this.rig.createWorkingPose()
 
+        // Module execution order for human-like motion:
+        // 1. Core posture establishes COM and breathing baseline
         const posture = this.modules.core.apply(deltaTime, pose, context)
         context.posture = posture
         context.stridePhase = context.stridePhase ?? posture?.stridePhase ?? context.normalizedTime
 
+        // 2. Locomotion calculates stride phase and foot targets
         const locomotion = this.modules.locomotion.apply(deltaTime, pose, context)
         context.locomotion = locomotion
         context.stridePhase = locomotion?.stridePhase ?? context.stridePhase
 
+        // 3. Foot IK resolves foot targets into knee/ankle/toe positions
+        const footIK = this.modules.footIK.apply(deltaTime, pose, context)
+        context.footIK = footIK
+
+        // 4. Spine creates multi-segment bending and counter-rotation
+        const spine = this.modules.spine.apply(deltaTime, pose, context)
+        context.spine = spine
+
+        // 5. Combat determines hand targets based on state
         const combat = this.modules.combat.apply(deltaTime, pose, context)
         context.combat = combat
 
+        // 6. Arm IK resolves hand targets into elbow/wrist positions with proper bending
+        const armIK = this.modules.armIK.apply(deltaTime, pose, context)
+        context.armIK = armIK
+
+        // 7. Head gaze adds stabilization and look-at behavior
+        const headGaze = this.modules.headGaze.apply(deltaTime, pose, context)
+        context.headGaze = headGaze
+
+        // 8. Secondary motion adds cloth, hair, equipment inertia
         const secondary = this.modules.secondary.apply(deltaTime, pose, context)
+
+        // 9. Environment applies wind, temperature, ground coupling
         const environmental = this.modules.environment.apply(deltaTime, pose, context)
 
         this.rig.commitPose(pose)
@@ -126,7 +157,13 @@ export default class PlayerProceduralAnimator {
                 speed: context.speed,
                 lean: posture?.lean ?? 0,
                 wind: environmental?.wind ?? 0,
-                shiver: environmental?.shiver ?? 0
+                shiver: environmental?.shiver ?? 0,
+                footPlanted: {
+                    left: footIK?.leftFootPlanted ?? false,
+                    right: footIK?.rightFootPlanted ?? false
+                },
+                spineCounterRotation: spine?.counterRotation ?? 0,
+                headYaw: headGaze?.yaw ?? 0
             }
         }
 

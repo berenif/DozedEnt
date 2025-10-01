@@ -35,6 +35,23 @@ void PlayerManager::update_movement(float input_x, float input_y, float delta_ti
         return;
     }
     
+    // Instant stop when there's no movement input (prevents glide)
+    // Preserve momentum during active bash to avoid cancelling ability movement
+    {
+        const float input_mag_sq = input_x * input_x + input_y * input_y;
+        if (input_mag_sq < 1e-6f) {
+            // Track last input as zero for input-aware friction
+            state_.last_input_x = 0.0f;
+            state_.last_input_y = 0.0f;
+            if (!bash_state_.is_active) {
+                state_.vel_x = 0.0f;
+                state_.vel_y = 0.0f;
+            }
+            // No need to update position or collisions when stationary
+            return;
+        }
+    }
+
     // Update facing direction based on input
     update_facing_direction(input_x, input_y);
     
@@ -42,10 +59,24 @@ void PlayerManager::update_movement(float input_x, float input_y, float delta_ti
     float target_vel_x = input_x * MOVE_SPEED * state_.speed_multiplier;
     float target_vel_y = input_y * MOVE_SPEED * state_.speed_multiplier;
     
-    // Smooth velocity transition
-    const float acceleration = 8.0f;
-    state_.vel_x += (target_vel_x - state_.vel_x) * acceleration * delta_time;
-    state_.vel_y += (target_vel_y - state_.vel_y) * acceleration * delta_time;
+    // Smooth velocity transition with quick-turn assistance
+    float accel_x = ACCELERATION;
+    float accel_y = ACCELERATION;
+    
+    // If reversing direction on an axis, apply a boost to overcome inertia faster
+    if (target_vel_x != 0.0f && state_.vel_x != 0.0f && (target_vel_x * state_.vel_x) < 0.0f) {
+        accel_x *= TURN_BOOST;
+    }
+    if (target_vel_y != 0.0f && state_.vel_y != 0.0f && (target_vel_y * state_.vel_y) < 0.0f) {
+        accel_y *= TURN_BOOST;
+    }
+    
+    state_.vel_x += (target_vel_x - state_.vel_x) * accel_x * delta_time;
+    state_.vel_y += (target_vel_y - state_.vel_y) * accel_y * delta_time;
+    
+    // Track last input for input-aware friction
+    state_.last_input_x = input_x;
+    state_.last_input_y = input_y;
     
     // Update position
     state_.pos_x += state_.vel_x * delta_time;
@@ -140,16 +171,18 @@ float PlayerManager::get_speed() const {
 }
 
 void PlayerManager::apply_friction(float delta_time) {
-    // Much stronger friction - player should stop quickly when input is released
-    const float friction = 12.0f; // Higher = faster stopping
+    // Input-aware friction: lower damping while input is held for responsiveness,
+    // higher damping when idle to stop quickly
+    float input_mag = std::abs(state_.last_input_x) + std::abs(state_.last_input_y);
+    const float friction = (input_mag > 0.05f) ? FRICTION_WHEN_MOVING : FRICTION_WHEN_IDLE;
     float friction_factor = 1.0f / (1.0f + friction * delta_time);
     
     state_.vel_x *= friction_factor;
     state_.vel_y *= friction_factor;
     
     // Clamp near-zero velocities to exactly zero to prevent drift
-    if (std::abs(state_.vel_x) < 0.001f) state_.vel_x = 0.0f;
-    if (std::abs(state_.vel_y) < 0.001f) state_.vel_y = 0.0f;
+    if (std::abs(state_.vel_x) < 0.0005f) state_.vel_x = 0.0f;  // Reduced threshold from 0.001f
+    if (std::abs(state_.vel_y) < 0.0005f) state_.vel_y = 0.0f;  // Reduced threshold from 0.001f
 }
 
 void PlayerManager::handle_collisions() {
@@ -165,8 +198,12 @@ void PlayerManager::handle_collisions() {
 }
 
 void PlayerManager::update_grounded_state() {
-    // Simple ground detection (TODO: improve with proper collision detection)
-    state_.is_grounded = (state_.pos_y <= 0.1f);
+    // More permissive ground detection - assume grounded unless actively falling/jumping
+    // This allows movement animation to work properly
+    const bool isFalling = state_.vel_y > 0.1f;  // Moving upward significantly
+    const bool isHighUp = state_.pos_y > 0.3f;   // Very high up
+    
+    state_.is_grounded = !isFalling && !isHighUp;
     
     if (state_.is_grounded) {
         state_.jump_count = 0;

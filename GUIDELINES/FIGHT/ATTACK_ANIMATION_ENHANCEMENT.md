@@ -178,20 +178,20 @@ Features:
 - Particle effects visualization
 
 ### Test Scenarios
-1. **Single Attack**: Press J for light attack
-2. **Heavy Attack**: Press K for heavy attack
+1. **Left-Hand Attack**: Press J (short = light, hold = heavy)
+2. **Right-Hand Attack**: Press L (short = light, hold = heavy)
 3. **Combo**: Click "Attack Combo" button
 4. **Movement + Attack**: Move with WASD while attacking
-5. **Block Cancel**: Start heavy attack, press Shift to cancel
+5. **Block/Parry**: Hold J+L to block (or J with shield); tap for parry window
+6. **Roll**: Press K + direction to roll
 
 ## 🎯 Combat System Compliance
 
-### 5-Button Combat Integration
-✅ Light Attack (J/1): 300ms total duration
-✅ Heavy Attack (K/2): 520ms total duration
-✅ Block (Shift/3): Can cancel heavy attacks
-✅ Roll (Ctrl/4): Independent of attack system
-✅ Special (L/5): Future character-specific abilities
+### 3-Button Combat Integration
+✅ Left/Right Hand: press=Light, hold=Heavy
+✅ Block/Parry: Hold J+L (or J with shield) / perfect-timing tap (120 ms)
+✅ Roll: K + direction (300ms i-frames + 200ms slide)
+✅ Special: K (when not used for roll gesture)
 
 ### Timing Synchronization
 - Animation frames match WASM timing constants

@@ -80,9 +80,9 @@ function render(ctx) {
 |-------|---------|----------|---------|
 | **Idle** | No input | Continuous | Breathing animation |
 | **Running** | WASD/Arrows | While moving | Speed-based animation |
-| **Attack** | Space/J | 0.4s | Damage dealing, particles |
-| **Block** | Shift/K (hold) | While held | 50% damage reduction |
-| **Roll** | Ctrl/L | 0.4s | Invulnerability, speed boost |
+| **Attack** | J/L (press=Light, hold=Heavy) | 0.4s | Damage dealing, particles |
+| **Block** | Hold J+L (or J with shield) | While held | Damage reduction |
+| **Roll** | K + Direction | 0.4s | Invulnerability, speed boost |
 | **Hurt** | Take damage | 0.3s | Knockback, red flash |
 | **Dead** | Health = 0 | Until respawn | No input accepted |
 
@@ -215,7 +215,7 @@ renderer.addEntity(player)
 renderer.render()
 ```
 
-## Controls Reference
+## Controls Reference (3-Button Layout)
 
 ### Keyboard Controls
 
@@ -225,9 +225,11 @@ renderer.render()
 | **q** | Move Left | ← Arrow |
 | **s** | Move Down | ↓ Arrow |
 | **d** | Move Right | → Arrow |
-| **Space** | Attack | J |
-| **Shift** | Block (Hold) | K |
-| **Ctrl** | Roll/Dodge | L |
+| **J** | Left Hand (press=Light, hold=Heavy) | — |
+| **L** | Right Hand (press=Light, hold=Heavy) | — |
+| **K** | Special | — |
+| Hold **J+L** | Block | Hold **J** (with shield) |
+| **K** + Direction | Roll/Dodge | — |
 
 ### Gamepad Support (Future)
 

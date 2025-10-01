@@ -7,7 +7,8 @@
 namespace {
     constexpr float PI = 3.14159265359f;
     constexpr float BASE_WOLF_SPEED = 0.25f;  // Normalized 0-1 space (slightly slower than player's 0.3)
-    constexpr float WOLF_FRICTION = 0.85f;
+    // Time-based friction coefficient (per second), similar scale to player
+    constexpr float WOLF_FRICTION = 12.0f;
     constexpr float ATTACK_ANTICIPATION_TIME = 0.3f;
     constexpr float ATTACK_EXECUTE_TIME = 0.2f;
     constexpr float ATTACK_RECOVERY_TIME = 0.3f;
@@ -312,8 +313,11 @@ void WolfManager::on_state_enter(Wolf& wolf, WolfState new_state) {
 
 void WolfManager::update_idle_behavior(Wolf& wolf, float delta_time) {
     // Just stand still, look around
-    wolf.vx *= Fixed::from_float(WOLF_FRICTION);
-    wolf.vy *= Fixed::from_float(WOLF_FRICTION);
+    // Apply time-based friction to bleed off any residual motion
+    float friction_factor = 1.0f / (1.0f + WOLF_FRICTION * std::max(0.0f, delta_time));
+    Fixed f = Fixed::from_float(friction_factor);
+    wolf.vx *= f;
+    wolf.vy *= f;
     
     // Subtle head movement
     wolf.head_yaw = std::sin(wolf.state_timer * 2.0f) * 0.2f;
@@ -328,7 +332,8 @@ void WolfManager::update_patrol_behavior(Wolf& wolf, float delta_time) {
     wolf.facing_x = Fixed::from_float(patrol_x);
     wolf.facing_y = Fixed::from_float(patrol_y);
     
-    Fixed move_speed = Fixed::from_float(wolf.speed * 0.3f * delta_time);
+    // Set per-second velocity; physics integrates using delta_time
+    Fixed move_speed = Fixed::from_float(wolf.speed * 0.3f);
     wolf.vx = wolf.facing_x * move_speed;
     wolf.vy = wolf.facing_y * move_speed;
 }
@@ -398,7 +403,8 @@ void WolfManager::update_retreat_behavior(Wolf& wolf, float delta_time) {
         wolf.facing_x = dx / distance;
         wolf.facing_y = dy / distance;
         
-        Fixed move_speed = Fixed::from_float(wolf.speed * delta_time);
+        // Per-second velocity; integrated in physics
+        Fixed move_speed = Fixed::from_float(wolf.speed);
         wolf.vx = wolf.facing_x * move_speed;
         wolf.vy = wolf.facing_y * move_speed;
     }
@@ -433,7 +439,8 @@ void WolfManager::move_towards_player(Wolf& wolf, float delta_time) {
         wolf.facing_y = dy / distance;
         
         if (delta_time > 0.0f) {
-            Fixed move_speed = Fixed::from_float(wolf.speed * delta_time);
+            // Set per-second velocity; position integrates with dt in physics
+            Fixed move_speed = Fixed::from_float(wolf.speed);
             wolf.vx = wolf.facing_x * move_speed;
             wolf.vy = wolf.facing_y * move_speed;
         }
@@ -459,8 +466,10 @@ void WolfManager::circle_strafe(Wolf& wolf, float delta_time) {
     
     Fixed length = fixed_sqrt(strafe_x * strafe_x + strafe_y * strafe_y);
     if (length > Fixed::from_int(0)) {
-        wolf.vx = (strafe_x / length) * Fixed::from_float(wolf.speed * 0.7f * delta_time);
-        wolf.vy = (strafe_y / length) * Fixed::from_float(wolf.speed * 0.7f * delta_time);
+        // Set per-second strafe velocity; physics integrates using delta_time
+        Fixed speed = Fixed::from_float(wolf.speed * 0.7f);
+        wolf.vx = (strafe_x / length) * speed;
+        wolf.vy = (strafe_y / length) * speed;
         
         // Keep facing player
         wolf.facing_x = dx / fixed_sqrt(dx * dx + dy * dy);
@@ -491,13 +500,16 @@ bool WolfManager::is_player_in_attack_range(const Wolf& wolf) const {
 // ============================================================================
 
 void WolfManager::update_wolf_physics(Wolf& wolf, float delta_time) {
-    // Apply velocity
-    wolf.x += wolf.vx;
-    wolf.y += wolf.vy;
+    // Integrate position with time-scaled velocity (match player integration style)
+    Fixed dt = Fixed::from_float(std::max(0.0f, delta_time));
+    wolf.x += wolf.vx * dt;
+    wolf.y += wolf.vy * dt;
     
-    // Apply friction
-    wolf.vx *= Fixed::from_float(WOLF_FRICTION);
-    wolf.vy *= Fixed::from_float(WOLF_FRICTION);
+    // Apply time-based friction to velocities
+    float friction_factor = 1.0f / (1.0f + WOLF_FRICTION * std::max(0.0f, delta_time));
+    Fixed f = Fixed::from_float(friction_factor);
+    wolf.vx *= f;
+    wolf.vy *= f;
     
     // Boundary checks (keep in world bounds 0-1)
     if (wolf.x < Fixed::from_int(0)) {

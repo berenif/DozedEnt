@@ -652,6 +652,18 @@ float get_wolf_tail_wag(int index) {
     return wolf ? wolf->tail_wag : 0.0f;
 }
 
+__attribute__((export_name("get_enemy_vx")))
+float get_enemy_vx(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->vx.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_enemy_vy")))
+float get_enemy_vy(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->vy.to_float() : 0.0f;
+}
+
 __attribute__((export_name("damage_wolf")))
 void damage_wolf(int wolf_index, float damage, float knockback_x, float knockback_y) {
     const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);

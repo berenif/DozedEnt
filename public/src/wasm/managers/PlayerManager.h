@@ -32,6 +32,10 @@ public:
         // Facing direction for abilities
         float facing_x = 1.0f;
         float facing_y = 0.0f;
+        
+        // Last input (for input-aware friction)
+        float last_input_x = 0.0f;
+        float last_input_y = 0.0f;
     };
     
     struct ShoulderBashState {
@@ -128,6 +132,12 @@ private:
     static constexpr float STAMINA_REGEN_RATE = 0.4f;
     static constexpr float MAX_JUMP_COUNT = 2;
     static constexpr float WALL_SLIDE_SPEED = 0.3f;
+    
+    // Tuning constants for responsiveness
+    static constexpr float ACCELERATION = 16.0f;      // Faster acceleration for snappier input
+    static constexpr float TURN_BOOST = 2.5f;         // Extra boost when reversing direction
+    static constexpr float FRICTION_WHEN_IDLE = 8.0f;  // Reduced from 14.0f for better responsiveness
+    static constexpr float FRICTION_WHEN_MOVING = 1.5f; // Reduced from 3.0f for smoother movement
     
     // Bash constants
     static constexpr float BASH_MIN_CHARGE = 0.3f;

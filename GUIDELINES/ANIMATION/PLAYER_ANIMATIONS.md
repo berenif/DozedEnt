@@ -165,17 +165,19 @@ const playerAnimations = {
 
 ## Controls and Input
 
-### Default Control Scheme
+### Default Control Scheme (3-Button Layout)
 
 | Action | Primary Key | Alternative Key |
-|--------|------------|-----------------|
+|--------|-------------|-----------------|
 | Move Up | W | Arrow Up |
 | Move Down | S | Arrow Down |
 | Move Left | A | Arrow Left |
 | Move Right | D | Arrow Right |
-| Attack | Space | J |
-| Block (Hold) | Shift | K |
-| Roll/Dodge | Ctrl | L |
+| Left Hand Attack | J (press = Light, hold = Heavy) | — |
+| Right Hand Attack | L (press = Light, hold = Heavy) | — |
+| Special | K | — |
+| Block (Hold) | Hold J+L | Hold J (with shield) |
+| Roll/Dodge | K + Direction | — |
 
 ### Input Processing
 

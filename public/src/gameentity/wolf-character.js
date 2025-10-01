@@ -4,9 +4,10 @@
 import WolfAnimationSystem from '../animation/enemy/wolf-animation.js'
 
 export class WolfCharacter {
-    constructor(x, y, type = 'normal', wasmModule = null, id = -1) {
-        // Assign ID
+    constructor(x, y, type = 'normal', wasmModule = null, id = -1, wasmIndex = -1) {
+        // Assign ID and WASM array index
         this.id = id;
+        this.wasmIndex = wasmIndex; // Array index in WASM wolves vector (0, 1, 2...)
 
         // Position and physics
         this.position = { x, y }
@@ -189,19 +190,20 @@ export class WolfCharacter {
         // Update animation system with WASM data
         if (this.wasmModule) {
             try {
-                // Get current WASM enemy data for this wolf
+                // Get current WASM enemy data for this wolf using array index (not ID!)
+                const wasmIndex = this.wasmIndex >= 0 ? this.wasmIndex : this.id - 1; // Fallback: ID-1 = index
                 const wasmEnemyType = typeof this.wasmModule.get_enemy_type === 'function' ? 
-                    this.wasmModule.get_enemy_type(this.id) : 0;
+                    this.wasmModule.get_enemy_type(wasmIndex) : 0;
                 const wasmEnemyState = typeof this.wasmModule.get_enemy_state === 'function' ? 
-                    this.wasmModule.get_enemy_state(this.id) : 0;
+                    this.wasmModule.get_enemy_state(wasmIndex) : 0;
                 const wasmEnemyFacingX = typeof this.wasmModule.get_enemy_face_x === 'function' ? 
-                    this.wasmModule.get_enemy_face_x(this.id) : 1;
+                    this.wasmModule.get_enemy_face_x(wasmIndex) : 1;
                 const wasmEnemyFacingY = typeof this.wasmModule.get_enemy_face_y === 'function' ? 
-                    this.wasmModule.get_enemy_face_y(this.id) : 0;
+                    this.wasmModule.get_enemy_face_y(wasmIndex) : 0;
                 const wasmEnemyVX = typeof this.wasmModule.get_enemy_vx === 'function' ? 
-                    this.wasmModule.get_enemy_vx(this.id) : 0;
+                    this.wasmModule.get_enemy_vx(wasmIndex) : 0;
                 const wasmEnemyVY = typeof this.wasmModule.get_enemy_vy === 'function' ? 
-                    this.wasmModule.get_enemy_vy(this.id) : 0;
+                    this.wasmModule.get_enemy_vy(wasmIndex) : 0;
 
                 // Update wolf's JS-side state based on WASM state
                 this.type = this.getWolfTypeFromWasm(wasmEnemyType);
@@ -218,16 +220,35 @@ export class WolfCharacter {
                 this.velocity.y = wasmEnemyVY;
 
                 this.animationSystem.applyAnimation(this, deltaTime);
+                
+                // WASM already handles physics (position integration, friction, etc.)
+                // So we skip JS-side physics to avoid double application
+                // Just sync position from WASM using the array index (not ID!)
+                const wasmIndex = this.wasmIndex >= 0 ? this.wasmIndex : this.id - 1; // Fallback: ID-1 = index
+                const wasmEnemyX = typeof this.wasmModule.get_enemy_x === 'function' ? 
+                    this.wasmModule.get_enemy_x(wasmIndex) : this.position.x;
+                const wasmEnemyY = typeof this.wasmModule.get_enemy_y === 'function' ? 
+                    this.wasmModule.get_enemy_y(wasmIndex) : this.position.y;
+                
+                this.position.x = wasmEnemyX;
+                this.position.y = wasmEnemyY;
+                
+                // Reset acceleration for next frame
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+                
+                // Early return - WASM handles all physics
+                return;
             } catch (error) {
                 console.warn('WASM function call failed in wolf update:', error);
                 // Continue with fallback behavior
             }
         }
         
-        // Handle lunge attack
+        // Handle lunge attack (fallback JS behavior only)
         this.updateLungeAttack(deltaTime, player)
         
-        // Update physics
+        // Update physics (fallback JS behavior only)
         this.velocity.x += this.acceleration.x * deltaTime
         this.velocity.y += this.acceleration.y * deltaTime
         

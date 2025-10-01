@@ -24,7 +24,7 @@ const getInstantiate = async (source, importObject) => {
   }
 
   if (isUrl(source)) {
-    const res = await fetch(source)
+    const res = await fetch(source, { cache: 'no-store' })
     return await getInstantiate(res, importObject)
   }
 

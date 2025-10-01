@@ -267,9 +267,8 @@
   <script type="module" src="src/demo/renderer.js"></script>
   <script type="module" src="src/demo/main.js"></script>
   <script type="module">
-    // Import device detector and desktop UI manager
+    // Import device detector
     import { deviceDetector } from './src/utils/device-detector.js';
-    import { DesktopUIManager } from './src/ui/desktop-ui-manager.js';
 
     // Initialize device detection and UI
     let desktopUI = null;
@@ -302,11 +301,8 @@
             mobileControls.style.display = 'none';
           }
           
-          // Initialize desktop UI
-          if (!desktopUI) {
-            desktopUI = new DesktopUIManager();
-            desktopUI.init();
-          }
+          // Desktop UI is now handled by unified-input-manager.js
+          // No separate desktop UI manager needed
         }
       };
 

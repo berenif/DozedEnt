@@ -22,16 +22,21 @@
 | `get_health()` | Get current health | None | `float` (0..1) |
 | `get_room_count()` | Room progression counter | None | `int` |
 
-### Combat System Functions
+### Combat System Functions (3-Button Layout)
 
 | Function | Description | Parameters | Returns |
 |----------|-------------|------------|---------|
-| `set_player_input(...)` | Set 5-button combat input | `inputX, inputY, isRolling, isJumping, lightAttack, heavyAttack, isBlocking, special` | `void` |
-| `on_attack()` | Execute attack action | None | `1` if successful, `0` if failed |
-| `on_roll_start()` | Start dodge roll | None | `1` if successful, `0` if failed |
-| `set_blocking(on, faceX, faceY, nowSeconds)` | Toggle/update block state | `on`: 0 or 1<br>`faceX, faceY`: direction<br>`nowSeconds`: timestamp | `1` if active, `0` if not |
-| `get_block_state()` | Query blocking status | None | `1` if blocking, `0` otherwise |
+| `set_player_input(moveX, moveY, leftHand, rightHand, special)` | Set 3-button combat input. Block and parry are inferred from button combos/timing; roll is inferred from Special+direction. | `moveX`: -1..1<br>`moveY`: -1..1<br>`leftHand`: 0/1<br>`rightHand`: 0/1<br>`special`: 0/1 | `void` |
+| `get_block_state()` | Query blocking status (derived) | None | `1` if blocking, `0` otherwise |
 | `handle_incoming_attack(...)` | Process incoming attack | Attack parameters | `-1`: ignore<br>`0`: hit<br>`1`: block<br>`2`: perfect parry |
+
+#### Legacy (Deprecated)
+
+The following functions existed in the 5-button layout and are deprecated in favor of `set_player_input(moveX, moveY, leftHand, rightHand, special)`:
+
+- `on_attack()`
+- `on_roll_start()`
+- `set_blocking(on, faceX, faceY, nowSeconds)`
 
 ### Game Phase Management
 
@@ -181,26 +186,21 @@ function onChoiceSelected(choiceId) {
 
 ### Combat System Integration
 ```javascript
-// 5-button combat input handling
+// 3-button combat input handling
 function handleCombatInput(inputState) {
     wasmModule.set_player_input(
-        inputState.moveX,        // -1 to 1
-        inputState.moveY,        // -1 to 1
-        inputState.isRolling,    // 0 or 1
-        inputState.isJumping,    // 0 or 1
-        inputState.lightAttack,  // 0 or 1 (J/1 key)
-        inputState.heavyAttack,  // 0 or 1 (K/2 key)
-        inputState.isBlocking,   // 0 or 1 (Shift/3 key)
-        inputState.special       // 0 or 1 (L/5 key)
+        inputState.moveX,     // -1 to 1
+        inputState.moveY,     // -1 to 1
+        inputState.leftHand,  // 0 or 1 (J)
+        inputState.rightHand, // 0 or 1 (L)
+        inputState.special    // 0 or 1 (K)
     );
 }
 
-// Check combat results
+// Check combat results (derived states)
 function checkCombatState() {
     const blockState = wasmModule.get_block_state();
     const stamina = wasmModule.get_stamina();
-    
-    // Update UI based on combat state
     updateBlockIndicator(blockState);
     updateStaminaBar(stamina);
 }
