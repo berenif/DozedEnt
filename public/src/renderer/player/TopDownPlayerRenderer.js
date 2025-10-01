@@ -1,6 +1,6 @@
 import { PlayerProceduralAnimator } from '../../animation/player/procedural/index.js'
 import { PlayerPhysicsAnimator } from '../../animation/player/physics/index.js'
-import { smoothRotate } from './topdown/utils.js'
+import { smoothRotate, setDefaultLineStyles } from './topdown/utils.js'
 import { scaleSkeletonCoordinates } from './topdown/scale.js'
 import { drawTopDownShadow } from './topdown/shadow.js'
 import { drawTopDownSkeleton } from './topdown/skeleton.js'
@@ -111,22 +111,28 @@ export default class TopDownPlayerRenderer {
 		const velocity = { x: playerState.vx ?? 0, y: playerState.vy ?? 0 }
 		const speed = Math.hypot(velocity.x, velocity.y)
 
+		// Global line style hygiene
+		setDefaultLineStyles(ctx)
+
 		// Draw shadow below everything
-		drawTopDownShadow(ctx, pos, baseRadius)
+		drawTopDownShadow(ctx, pos, baseRadius, velocity)
 
 		// Scale the skeleton to base radius
 		const scale = baseRadius / 15
 		const scaledSkeleton = scaleSkeletonCoordinates(transform.skeleton, scale)
 
 		// For true top-down view: NO skeleton rotation - character always faces same direction
-		// Movement direction is shown through limb animation, not body rotation
+		// Movement direction is shown through limb animation; yaw used only for z-sorting
 		const renderVelocity = this._renderVelocity || { x: 0, y: 0 }
+		const renderSpeed = Math.hypot(renderVelocity.x, renderVelocity.y)
+		const yawTarget = renderSpeed > 0.0001 ? Math.atan2(-(renderVelocity.y || 0), (renderVelocity.x || 0)) : (this.currentRotation || 0)
+		const yaw = this.currentRotation = smoothRotate(this.currentRotation || 0, yawTarget, dt, 10)
 
 		ctx.save()
 		// No rotation applied - skeleton stays in fixed top-down orientation
 
-        // Draw the human-like top-down skeleton and body
-        drawTopDownSkeleton(ctx, playerState, pos, baseRadius, scaledSkeleton)
+		// Draw the human-like top-down skeleton and body
+		drawTopDownSkeleton(ctx, playerState, pos, baseRadius, scaledSkeleton, yaw)
 
 		// Optional physics debug overlay
 		if (this.debugPhysics && transform && transform.debug) {
@@ -142,7 +148,7 @@ export default class TopDownPlayerRenderer {
 		ctx.restore()
 
 		// Direction + action indicators (outside rotated context)
-		drawDirectionIndicator(ctx, pos, baseRadius, renderVelocity, speed)
+		drawDirectionIndicator(ctx, pos, baseRadius, renderVelocity)
 		if (playerState.anim === 'attacking') {
 			// Indicators follow rotation; keep facing positive X baseline
 			drawAttackIndicator(ctx, pos, baseRadius, 1)

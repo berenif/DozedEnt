@@ -1,5 +1,6 @@
 // Drawing the player from an ISOMETRIC perspective (3/4 view with depth)
 // Isometric projection: true 2:1 diamond, 45° rotate + 0.5 vertical scale
+import { setScreenSpaceStroke, setDefaultLineStyles, singleBendIK } from './utils.js'
 
 // Isometric coordinate transformation helper
 function toIso(x, y, z = 0) {
@@ -11,36 +12,59 @@ function toIso(x, y, z = 0) {
 	}
 }
 
-export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton) {
+export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton, yaw = 0) {
 	// Isometric character with 3D depth and perspective
 	const hurt = state.anim === 'hurt'
 	const isAttacking = state.anim === 'attacking'
 	const isBlocking = state.anim === 'blocking'
-	
-	// Draw in isometric layers (back to front for proper occlusion)
-	// LAYER 1: Back leg (furthest from camera)
-	drawIsometricLeg(ctx, position, baseRadius, skeleton.rightLeg, 'right', state)
-	
-	// LAYER 2: Lower body (pelvis/hips)
-	drawIsometricLowerBody(ctx, position, baseRadius)
-	
-	// LAYER 3: Back arm
-	drawIsometricArm(ctx, position, baseRadius, skeleton.rightArm, 'right', state)
-	
-	// LAYER 4: Upper body (torso/chest)
-	drawIsometricUpperBody(ctx, position, baseRadius, hurt)
-	
-	// LAYER 5: Front leg (closest to camera)
-	drawIsometricLeg(ctx, position, baseRadius, skeleton.leftLeg, 'left', state)
-	
-	// LAYER 6: Neck
-	drawIsometricNeck(ctx, position, baseRadius)
-	
-	// LAYER 7: Front arm
-	drawIsometricArm(ctx, position, baseRadius, skeleton.leftArm, 'left', state)
-	
-	// LAYER 8: Head on top (always in front)
-	drawIsometricHead(ctx, position, baseRadius, hurt)
+
+	// Consistent line styles
+	setDefaultLineStyles(ctx)
+
+	// Determine draw order based on facing yaw (-PI..PI, 0 = facing right)
+	function limbOrder(angle) {
+		if (angle > -Math.PI * 0.25 && angle < Math.PI * 0.25) {
+			return ['backLeg','backArm','torsoLower','torsoUpper','frontLeg','frontArm','neck','head']
+		}
+		if (angle >= Math.PI * 0.25 && angle <= Math.PI * 0.75) {
+			return ['backArm','backLeg','torsoLower','torsoUpper','frontArm','frontLeg','neck','head']
+		}
+		if (angle <= -Math.PI * 0.25 && angle >= -Math.PI * 0.75) {
+			return ['backArm','backLeg','torsoLower','torsoUpper','frontArm','frontLeg','neck','head']
+		}
+		return ['frontLeg','frontArm','torsoLower','torsoUpper','backLeg','backArm','neck','head']
+	}
+
+	function sidesFor(angle) {
+		// Simple mapping: facing right/up -> left is front; facing left/down -> right is front
+		if (angle > -Math.PI * 0.25 && angle < Math.PI * 0.75) {
+			return { front: 'left', back: 'right' }
+		}
+		return { front: 'right', back: 'left' }
+	}
+
+	const order = limbOrder(yaw || 0)
+	const sides = sidesFor(yaw || 0)
+
+	for (const part of order) {
+		if (part === 'torsoLower') {
+			drawIsometricLowerBody(ctx, position, baseRadius)
+		} else if (part === 'torsoUpper') {
+			drawIsometricUpperBody(ctx, position, baseRadius, hurt)
+		} else if (part === 'neck') {
+			drawIsometricNeck(ctx, position, baseRadius)
+		} else if (part === 'head') {
+			drawIsometricHead(ctx, position, baseRadius, hurt)
+		} else if (part === 'frontArm') {
+			drawIsometricArm(ctx, position, baseRadius, skeleton[sides.front + 'Arm'], sides.front, state)
+		} else if (part === 'backArm') {
+			drawIsometricArm(ctx, position, baseRadius, skeleton[sides.back + 'Arm'], sides.back, state)
+		} else if (part === 'frontLeg') {
+			drawIsometricLeg(ctx, position, baseRadius, skeleton[sides.front + 'Leg'], sides.front, state)
+		} else if (part === 'backLeg') {
+			drawIsometricLeg(ctx, position, baseRadius, skeleton[sides.back + 'Leg'], sides.back, state)
+		}
+	}
 }
 
 // Draw isometric head with hair and facial features
@@ -70,7 +94,7 @@ function drawIsometricHead(ctx, position, baseRadius, hurt) {
 	
 	// Face outline
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.stroke()
 	
 	// Eyes (visible from isometric angle)
@@ -93,7 +117,7 @@ function drawIsometricHead(ctx, position, baseRadius, hurt) {
 	
 	// Mouth (curved smile)
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.lineCap = 'round'
 	ctx.beginPath()
 	ctx.arc(headX, headY + headRadius * 0.1, headRadius * 0.3, 0.2, Math.PI - 0.2)
@@ -115,7 +139,7 @@ function drawIsometricNeck(ctx, position, baseRadius) {
 	// Neck cylinder in isometric view (trapezoid)
 	ctx.fillStyle = '#ffd4a3' // Skin tone
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	
 	ctx.beginPath()
 	ctx.moveTo(position.x + neckTop.x - neckWidth, position.y + neckTop.y)
@@ -163,7 +187,7 @@ function drawIsometricUpperBody(ctx, position, baseRadius, hurt) {
 	ctx.closePath()
 	ctx.fill()
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.stroke()
 	
 	// Front face (main color)
@@ -224,7 +248,7 @@ function drawIsometricLowerBody(ctx, position, baseRadius) {
 	ctx.closePath()
 	ctx.fill()
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.stroke()
 	
 	// Front face
@@ -240,7 +264,7 @@ function drawIsometricLowerBody(ctx, position, baseRadius) {
 	
 	// Belt line on front face
 	ctx.strokeStyle = '#854d0e'
-	ctx.lineWidth = 2
+	setScreenSpaceStroke(ctx, 2)
 	const beltY = position.y + topFrontLeft.y - 2
 	ctx.beginPath()
 	ctx.moveTo(position.x + topFrontLeft.x, beltY)
@@ -295,36 +319,51 @@ function drawIsometricArm(ctx, position, baseRadius, arm, side, state) {
 	const handX = position.x + handBase.x
 	const handY = position.y + handBase.y
 	
+	// Optional: refine elbow with single-bend IK for cleaner bend
+	// Compute approximate segment lengths in isometric space
+	const approxUpperLen = Math.hypot((elbowBase.x - shoulderBase.x), (elbowBase.y - shoulderBase.y))
+	const approxLowerLen = Math.hypot((handBase.x - elbowBase.x), (handBase.y - elbowBase.y))
+	const bendDir = side === 'left' ? 1 : -1
+	const elbowIso = singleBendIK(
+		{ x: shoulderX, y: shoulderY },
+		{ x: handX, y: handY },
+		approxUpperLen,
+		approxLowerLen,
+		bendDir
+	)
+	const elbowDrawX = (elbowIso?.x ?? elbowX)
+	const elbowDrawY = (elbowIso?.y ?? elbowY)
+
 	// Upper arm (shirt sleeve) - thicker for 3D effect
 	const sleeveColor = isAttacking ? '#f87171' : (isBlocking ? '#60a5fa' : '#3b82f6')
 	ctx.strokeStyle = sleeveColor
-	ctx.lineWidth = 4
+	setScreenSpaceStroke(ctx, 4)
 	ctx.beginPath()
 	ctx.moveTo(shoulderX, shoulderY)
-	ctx.lineTo(elbowX, elbowY)
+	ctx.lineTo(elbowDrawX, elbowDrawY)
 	ctx.stroke()
 	
 	// Lower arm (skin) - forearm
 	ctx.strokeStyle = '#ffd4a3'
-	ctx.lineWidth = 3.5
+	setScreenSpaceStroke(ctx, 3.5)
 	ctx.beginPath()
-	ctx.moveTo(elbowX, elbowY)
+	ctx.moveTo(elbowDrawX, elbowDrawY)
 	ctx.lineTo(handX, handY)
 	ctx.stroke()
 	
 	// Elbow joint
 	ctx.fillStyle = sleeveColor
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
-	ctx.lineWidth = 1
+	setScreenSpaceStroke(ctx, 1)
 	ctx.beginPath()
-	ctx.arc(elbowX, elbowY, 3, 0, Math.PI * 2)
+	ctx.arc(elbowDrawX, elbowDrawY, 3, 0, Math.PI * 2)
 	ctx.fill()
 	ctx.stroke()
 	
 	// Hand (3D-ish oval)
 	ctx.fillStyle = isAttacking ? '#ff6b6b' : '#ffd4a3'
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.beginPath()
 	ctx.ellipse(handX, handY, 4, 3.5, 0, 0, Math.PI * 2)
 	ctx.fill()
@@ -370,34 +409,47 @@ function drawIsometricLeg(ctx, position, baseRadius, leg, side, state) {
 	const footX = position.x + footBase.x
 	const footY = position.y + footBase.y
 	
+	// Optional IK for knee for cleaner bend
+	const upperLen = Math.hypot((kneeBase.x - hipBase.x), (kneeBase.y - hipBase.y))
+	const lowerLen = Math.hypot((ankleBase.x - kneeBase.x), (ankleBase.y - kneeBase.y))
+	const kneeIso = singleBendIK(
+		{ x: hipX, y: hipY },
+		{ x: ankleX, y: ankleY },
+		upperLen,
+		lowerLen,
+		side === 'left' ? 1 : -1
+	)
+	const kneeDrawX = (kneeIso?.x ?? kneeX)
+	const kneeDrawY = (kneeIso?.y ?? kneeY)
+
 	// Thigh (pants) - thicker for 3D effect
 	ctx.strokeStyle = '#1f2937'
-	ctx.lineWidth = 5
+	setScreenSpaceStroke(ctx, 5)
 	ctx.beginPath()
 	ctx.moveTo(hipX, hipY)
-	ctx.lineTo(kneeX, kneeY)
+	ctx.lineTo(kneeDrawX, kneeDrawY)
 	ctx.stroke()
 	
 	// Lower leg (pants)
-	ctx.lineWidth = 4.5
+	setScreenSpaceStroke(ctx, 4.5)
 	ctx.beginPath()
-	ctx.moveTo(kneeX, kneeY)
+	ctx.moveTo(kneeDrawX, kneeDrawY)
 	ctx.lineTo(ankleX, ankleY)
 	ctx.stroke()
 	
 	// Knee joint
 	ctx.fillStyle = '#374151'
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
-	ctx.lineWidth = 1
+	setScreenSpaceStroke(ctx, 1)
 	ctx.beginPath()
-	ctx.arc(kneeX, kneeY, 3, 0, Math.PI * 2)
+	ctx.arc(kneeDrawX, kneeDrawY, 3, 0, Math.PI * 2)
 	ctx.fill()
 	ctx.stroke()
 	
 	// Foot/shoe (isometric shoe shape)
 	ctx.fillStyle = '#0f172a'
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)'
-	ctx.lineWidth = 1.5
+	setScreenSpaceStroke(ctx, 1.5)
 	ctx.beginPath()
 	// Draw shoe as parallelogram for isometric look
 	ctx.moveTo(footX - 3, footY)
@@ -410,7 +462,7 @@ function drawIsometricLeg(ctx, position, baseRadius, leg, side, state) {
 	
 	// Shoe lace detail
 	ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-	ctx.lineWidth = 1
+	setScreenSpaceStroke(ctx, 1)
 	ctx.beginPath()
 	ctx.moveTo(footX - 1, footY + 1)
 	ctx.lineTo(footX + 2, footY + 2)
