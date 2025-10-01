@@ -43,7 +43,26 @@ DozedEnt/
 │   ├── 📄 WASM_EXPORTS.json        # WASM exports reference
 │   ├── 📂 src/                     # JavaScript source modules
 │   │   ├── 📂 ai/                  # Enemy AI systems
-│   │   ├── 📂 animation/           # Animation systems
+│   │   ├── 📂 animation/           # Animation systems ⭐ **ENHANCED**
+│   │   │   ├── 📂 player/          # Player animation systems
+│   │   │   │   ├── 📂 physics/     # Top-down physics animation (NEW)
+│   │   │   │   │   └── index.js    # PlayerPhysicsAnimator
+│   │   │   │   └── 📂 procedural/  # Biomechanical procedural animation
+│   │   │   │       ├── index.js    # Main export
+│   │   │   │       ├── player-procedural-animator.js
+│   │   │   │       ├── player-procedural-rig.js
+│   │   │   │       └── 📂 modules/ # 9 animation modules (IK, spine, locomotion)
+│   │   │   └── ... (wolf animations, etc.)
+│   │   ├── 📂 renderer/            # Rendering systems ⭐ **NEW**
+│   │   │   └── 📂 player/          # Player rendering
+│   │   │       ├── TopDownPlayerRenderer.js  # Dual animation system renderer
+│   │   │       └── 📂 topdown/     # Top-down rendering utilities
+│   │   │           ├── skeleton.js   # Skeleton drawing
+│   │   │           ├── indicators.js # Visual indicators
+│   │   │           ├── transform.js  # Transform utilities
+│   │   │           ├── shadow.js     # Shadow rendering
+│   │   │           ├── scale.js      # Scaling utilities
+│   │   │           └── utils.js      # Helper functions
 │   │   ├── 📂 audio/               # Audio management
 │   │   ├── 📂 css/                 # Stylesheets
 │   │   ├── 📂 effects/             # Visual effects

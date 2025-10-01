@@ -7,14 +7,17 @@ export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton) 
 	drawLegs(ctx, position, baseRadius, skeleton)
 
 	// 2) Torso/body core (oriented by outer rotation transform)
-	const torsoRadius = baseRadius * 0.6
+    const torsoRadius = baseRadius * 0.6
+    // The renderer's origin is the character center; keep torso centered on position
+    const centerX = position.x
+    const centerY = position.y
 	const bodyColor = getBodyColorForState(state)
-	const torsoGradient = ctx.createRadialGradient(position.x, position.y, 0, position.x, position.y, torsoRadius)
+    const torsoGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, torsoRadius)
 	torsoGradient.addColorStop(0, lightenColor(bodyColor, 0.3))
 	torsoGradient.addColorStop(1, bodyColor)
 	ctx.fillStyle = torsoGradient
 	ctx.beginPath()
-	ctx.arc(position.x, position.y, torsoRadius, 0, Math.PI * 2)
+    ctx.arc(centerX, centerY, torsoRadius, 0, Math.PI * 2)
 	ctx.fill()
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
 	ctx.lineWidth = 2
@@ -22,13 +25,13 @@ export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton) 
 
 	// Forward-facing arc wedge when moving (front = +X in rotated space)
 	const speed = Math.hypot(state.vx ?? 0, state.vy ?? 0)
-	if (speed > 0.03) {
+    if (speed > 0.03) {
 		ctx.save()
 		ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'
 		ctx.lineWidth = 2
 		ctx.beginPath()
 		const wedge = Math.PI / 6 // ~30 degrees
-		ctx.arc(position.x, position.y, torsoRadius * 1.02, -wedge, wedge)
+        ctx.arc(centerX, centerY, torsoRadius * 1.02, -wedge, wedge)
 		ctx.stroke()
 		ctx.restore()
 	}
@@ -58,11 +61,10 @@ export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton) 
 	// 5) Arms on top of torso
 	drawArms(ctx, position, baseRadius, skeleton, state)
 
-	// 6) Head placed forward in facing direction (outer rotation already applied)
+    // 6) Head placed at skeleton head joint (already in rotated space)
 	const headRadius = baseRadius * 0.25
-	const headOffset = baseRadius * 0.3
-	const headX = position.x + headOffset
-	const headY = position.y
+    const headX = position.x + (skeleton.head?.x || 0)
+    const headY = position.y + (skeleton.head?.y || 0)
 	const hurt = state.anim === 'hurt'
 	ctx.fillStyle = hurt ? '#fecaca' : '#dbeafe'
 	ctx.beginPath()

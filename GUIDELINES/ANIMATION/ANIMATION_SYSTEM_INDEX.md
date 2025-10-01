@@ -2,11 +2,38 @@
 
 ## Complete Animation System Overview
 
-The game's animation system provides comprehensive character animations with smooth transitions, procedural effects, state management, and WASM integration. This documentation covers all aspects of the enhanced animation implementation including player animations, wolf body systems, and environmental effects.
+The game implements **dual animation systems** that can be selected based on gameplay view and performance requirements. Both systems provide comprehensive character animations with smooth transitions, procedural effects, state management, and WASM integration.
+
+### 🎯 Animation Systems
+
+1. **Top-Down Physics Animation** (`public/src/animation/player/physics/`) ⭐ **NEW**
+   - Lightweight physics-based simulation optimized for top-down/overhead views
+   - Fixed timestep physics with 60-120 FPS effective update rate
+   - Simplified skeleton structure for performance
+   - **Use for**: Top-down gameplay, fast-paced action, performance-critical scenarios
+   - See: [TOPDOWN_PHYSICS_ANIMATION.md](./TOPDOWN_PHYSICS_ANIMATION.md)
+
+2. **Procedural Animation** (`public/src/animation/player/procedural/`)
+   - Biomechanically accurate human motion with IK solvers
+   - Multi-segment spine, counter-rotation, advanced locomotion
+   - Complex joint constraints and natural movement
+   - **Use for**: Side-view, isometric, detailed character views
+   - See: [HUMAN_MOTION_IMPROVEMENTS.md](./HUMAN_MOTION_IMPROVEMENTS.md)
+
+This documentation covers all aspects of the enhanced animation implementation including player animations, wolf body systems, and environmental effects.
 
 ## Core Documentation
 
-### 1. [Player Animations](./PLAYER_ANIMATIONS.md)
+### 1. [Top-Down Physics Animation](./TOPDOWN_PHYSICS_ANIMATION.md) ⭐ **NEW**
+Complete documentation for the physics-based animation system:
+- **System Overview**: When to use physics vs procedural animation
+- **Architecture**: PlayerPhysicsAnimator, MinimalPhysicsSolver
+- **Top-Down Renderer**: TopDownPlayerRenderer with dual system support
+- **Rendering Utilities**: Skeleton, indicators, shadows, transforms
+- **Performance**: ~0.2ms update time, 120 FPS effective physics
+- **Integration**: WASM integration and usage examples
+
+### 2. [Player Animations](./PLAYER_ANIMATIONS.md)
 Complete documentation for all player character animations including:
 - **Roll Animation**: Evasive dodge with invulnerability frames
 - **Attack Animation**: Melee combat with hitbox generation
@@ -15,48 +42,131 @@ Complete documentation for all player character animations including:
 - **Movement Animations**: Idle and running states
 - **Death Animation**: Game over state
 
-### 2. Enhanced Animation System Architecture
+### 3. Enhanced Animation System Architecture
 
-#### Core Components
+#### Player Animation Systems
 
-1. **Animation Frame System** (`src/animation/animation-system.js`)
+1. **Physics Animation System** (`public/src/animation/player/physics/`) ⭐ **NEW**
+   - **PlayerPhysicsAnimator**: Fixed timestep physics with accumulator
+   - **MinimalPhysicsSolver**: Lightweight skeleton physics solver
+   - **29-joint skeleton**: Simplified but anatomically reasonable structure
+   - **Performance**: ~0.2ms update time, 5KB memory footprint
+   - **Use case**: Top-down gameplay, performance-critical scenarios
+
+2. **Procedural Animation System** (`public/src/animation/player/procedural/`)
+   - **PlayerProceduralAnimator**: Advanced motion orchestrator
+   - **9 specialized modules**: IK solvers, spine, locomotion, head gaze, etc.
+   - **PlayerProceduralRig**: Detailed 29-joint anatomical structure
+   - **Performance**: ~0.5-1ms update time, 15KB memory footprint
+   - **Use case**: Side-view, isometric, detailed character animation
+
+#### Rendering Systems
+
+3. **Top-Down Player Renderer** (`public/src/renderer/player/TopDownPlayerRenderer.js`) ⭐ **NEW**
+   - Unified renderer supporting both animation systems
+   - Mode selection: 'physics' or 'procedural'
+   - Complete rendering pipeline with indicators and effects
+   - Smooth rotation and scaling for top-down view
+
+4. **Top-Down Utilities** (`public/src/renderer/player/topdown/`)
+   - **skeleton.js**: Layer-based skeleton rendering
+   - **transform.js**: Rotation and transformation utilities
+   - **indicators.js**: Visual feedback (attack, block, status)
+   - **shadow.js**: Soft gradient shadow rendering
+   - **scale.js**: Skeleton scaling utilities
+   - **utils.js**: Smooth interpolation helpers
+
+#### Legacy Systems (Sprite-Based)
+
+5. **Animation Frame System** (`src/animation/animation-system.js`)
    - Frame-based sprite animation with WASM integration
    - Timing and duration control with deterministic updates
    - Looping and one-shot animations with smooth transitions
 
-2. **Animation Controller** (`src/animation/animation-system.js`)
+6. **Animation Controller** (`src/animation/animation-system.js`)
    - Advanced state machine for animation transitions
    - Smooth blending between animations with interpolation
    - Animation queueing and priorities with conflict resolution
 
-3. **Character Animator** (`src/animation/animation-system.js`)
-   - High-level character animation management
-   - Procedural animation overlays and effects
-   - State-based animation selection with WASM state sync
+#### Enemy Animation Systems
 
-4. **Player Animator** (`src/animation/player-animator.js`)
-   - Complete player implementation with combat integration
-   - Input handling and state management
-   - WASM synchronization for multiplayer consistency
-
-5. **Enhanced Wolf Body System** (`src/animation/enhanced-wolf-body.js`)
+7. **Enhanced Wolf Body System** (`src/animation/enhanced-wolf-body.js`)
    - Anatomically accurate wolf rendering
    - Advanced fur simulation with physics
    - Procedural variations and environmental adaptations
 
-6. **Wolf Animation System** (`src/animation/wolf-animation.js`)
+8. **Wolf Animation System** (`src/animation/wolf-animation.js`)
    - Complete wolf animation implementation
    - Pack coordination and emotional state visualization
    - Integration with enhanced AI system
 
 ## Quick Start Guide
 
-### Basic Setup
+### Using Top-Down Physics Animation (Recommended for Top-Down Gameplay)
+
+```javascript
+import TopDownPlayerRenderer from './renderer/player/TopDownPlayerRenderer.js'
+
+// Create renderer with physics animation
+const renderer = new TopDownPlayerRenderer(ctx, canvas, {
+    mode: 'physics',      // Use lightweight physics system
+    physics: {
+        fixedDt: 1/60,    // 60 FPS physics
+        substeps: 2       // 2 substeps = 120 FPS effective
+    }
+})
+
+// In your game loop
+function gameLoop() {
+    // Get player state from WASM or game state
+    const playerState = {
+        x: 0.5,           // World position (0-1)
+        y: 0.5,
+        vx: 0.1,          // Velocity
+        vy: 0.05,
+        anim: 'running',  // Animation state
+        hp: 0.8,
+        stamina: 0.6,
+        grounded: true
+    }
+    
+    // Convert world to canvas coordinates
+    const toCanvas = (wx, wy) => ({
+        x: wx * canvas.width,
+        y: wy * canvas.height
+    })
+    
+    // Render player with skeleton animation
+    renderer.render(playerState, toCanvas, 20) // 20 = base radius
+    
+    requestAnimationFrame(gameLoop)
+}
+```
+
+### Using Procedural Animation (For Side-View/Isometric)
+
+```javascript
+import TopDownPlayerRenderer from './renderer/player/TopDownPlayerRenderer.js'
+
+// Create renderer with procedural animation
+const renderer = new TopDownPlayerRenderer(ctx, canvas, {
+    mode: 'procedural',    // Use advanced procedural system
+    procedural: {
+        footIK: { stepHeight: 7 },
+        spine: { maxBend: 0.18 },
+        armIK: { upperArmLength: 9 }
+    }
+})
+
+// Same game loop as physics example
+```
+
+### Legacy Sprite-Based Animation
 
 ```javascript
 import AnimatedPlayer from './src/animation/player-animator.js'
 
-// Create an animated player
+// Create an animated player (sprite-based)
 const player = new AnimatedPlayer(x, y, {
     health: 100,
     stamina: 100,

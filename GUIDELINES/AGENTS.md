@@ -41,7 +41,10 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 - [Wolf AI](./AI/WOLF_AI.md) — Concrete predator/pack AI: coordinated plans, adaptive tuning, emotions, memory, terrain exploitation, and future roadmap.
 
 ### Animation
-- [Animation System Index](./ANIMATION/ANIMATION_SYSTEM_INDEX.md) — Architecture, components, quick start, API, and integration examples.
+- [Animation System Index](./ANIMATION/ANIMATION_SYSTEM_INDEX.md) — Dual animation system overview, architecture, components, quick start guide, API, and integration examples.
+- [Top-Down Physics Animation](./ANIMATION/TOPDOWN_PHYSICS_ANIMATION.md) — **NEW!** Lightweight physics-based animation for top-down gameplay with 120 FPS effective physics.
+- [Procedural Animation](./ANIMATION/HUMAN_MOTION_IMPROVEMENTS.md) — Biomechanically accurate human motion with IK solvers and multi-segment spine.
+- [Animation Implementation](./ANIMATION/IMPLEMENTATION_SUMMARY.md) — Complete procedural system implementation details and technical achievements.
 - [Player Animations](./ANIMATION/PLAYER_ANIMATIONS.md) — States, transitions, effects, input mapping, API, performance considerations, and troubleshooting.
 
 ### Game Core Loop
