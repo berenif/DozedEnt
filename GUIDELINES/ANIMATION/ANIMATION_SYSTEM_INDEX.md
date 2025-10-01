@@ -76,17 +76,21 @@ Complete documentation for all player character animations including:
    - **scale.js**: Skeleton scaling utilities
    - **utils.js**: Smooth interpolation helpers
 
-#### Legacy Systems (Sprite-Based)
+#### Core Animation Controllers
 
-5. **Animation Frame System** (`src/animation/animation-system.js`)
+5. **CharacterAnimator** (`public/src/animation/system/animation-system.js`)
    - Frame-based sprite animation with WASM integration
    - Timing and duration control with deterministic updates
    - Looping and one-shot animations with smooth transitions
+   - State machine for animation transitions
+   - Part of AnimatedPlayer wrapper
 
-6. **Animation Controller** (`src/animation/animation-system.js`)
-   - Advanced state machine for animation transitions
-   - Smooth blending between animations with interpolation
-   - Animation queueing and priorities with conflict resolution
+6. **EnhancedAnimationController** (`public/src/animation/controller/enhanced-animation-controller.js`)
+   - Advanced state machine with sub-states and blending layers
+   - IK system integration (FABRIK solver)
+   - Effect coordination (particles, sound, camera)
+   - Event system for animation callbacks
+   - Optional advanced features
 
 #### Enemy Animation Systems
 
@@ -161,12 +165,12 @@ const renderer = new TopDownPlayerRenderer(ctx, canvas, {
 // Same game loop as physics example
 ```
 
-### Legacy Sprite-Based Animation
+### Using AnimatedPlayer (Complete System)
 
 ```javascript
-import AnimatedPlayer from './src/animation/player-animator.js'
+import { AnimatedPlayer } from './animation/player/procedural/player-animator.js'
 
-// Create an animated player (sprite-based)
+// Create animated player (includes sprite + skeleton)
 const player = new AnimatedPlayer(x, y, {
     health: 100,
     stamina: 100,
@@ -175,12 +179,20 @@ const player = new AnimatedPlayer(x, y, {
 
 // In your game loop
 function update(deltaTime) {
-    const input = AnimatedPlayer.createInputFromKeys(keys)
+    const input = {
+        left: keys['a'],
+        right: keys['d'],
+        up: keys['w'],
+        down: keys['s'],
+        attack: keys['j'],
+        block: keys['k'],
+        roll: keys['l']
+    }
     player.update(deltaTime, input)
 }
 
 function render(ctx) {
-    player.render(ctx)
+    player.render(ctx, camera)
 }
 ```
 
@@ -376,7 +388,49 @@ console.log(`Render time: ${renderTime}ms`)
 ## File Structure
 
 ```
+public/src/animation/
+├── player/
+│   ├── physics/                      # Physics animation system
+│   │   └── index.js
+│   └── procedural/                   # Procedural animation system
+│       ├── player-animator.js        # AnimatedPlayer (main wrapper)
+│       ├── player-procedural-animator.js
+│       ├── player-procedural-rig.js
+│       └── modules/                  # 9 animation modules
+├── controller/
+│   ├── animation-controller.js
+│   └── enhanced-animation-controller.js
+├── system/
+│   ├── animation-system.js           # CharacterAnimator
+│   ├── animation-events.js           # Event system
+│   ├── animation-sync.js
+│   ├── animation-performance.js
+│   └── combo-system.js
+├── enemy/
+│   └── wolf-animation.js
+├── abilities/
+│   ├── ability-animation-base.js
+│   └── warden-bash-animation.js
+├── environmental/
+│   ├── environmental-animations.js
+│   └── particle-integration.js
+└── procedural/
+    ├── procedural-wolf-integration.js
+    └── realistic-procedural-animator.js
 
+public/src/renderer/
+├── PlayerRenderer.js                 # Alias for TopDownPlayerRenderer
+├── WolfRenderer.js
+└── player/
+    ├── TopDownPlayerRenderer.js
+    └── topdown/                      # Rendering utilities
+        ├── skeleton.js
+        ├── indicators.js
+        ├── shadow.js
+        ├── transform.js
+        ├── scale.js
+        ├── utils.js
+        └── debug-overlay.js
 ```
 
 ## Future Enhancements
@@ -407,18 +461,46 @@ console.log(`Render time: ${renderTime}ms`)
    - Speed adjustments
    - Effect variations
 
+## Complete Documentation Index
+
+### Core System Docs
+- **[ANIMATION_ARCHITECTURE.md](./ANIMATION_ARCHITECTURE.md)** ⭐ **START HERE** - Complete system architecture
+- **[ANIMATION_SYSTEM_INDEX.md](./ANIMATION_SYSTEM_INDEX.md)** - This file - Overview and quick start
+
+### Player Animation
+- **[PLAYER_ANIMATIONS.md](./PLAYER_ANIMATIONS.md)** - Player animation states and usage
+- **[TOPDOWN_PHYSICS_ANIMATION.md](./TOPDOWN_PHYSICS_ANIMATION.md)** - Physics animation system
+- **[HUMAN_MOTION_IMPROVEMENTS.md](./HUMAN_MOTION_IMPROVEMENTS.md)** - Procedural system design
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Procedural implementation details
+
+### Advanced Systems
+- **[ANIMATION_EVENTS.md](./ANIMATION_EVENTS.md)** ⭐ **NEW** - Event system guide
+- **[COMBO_SYSTEM.md](./COMBO_SYSTEM.md)** ⭐ **NEW** - Combo system guide
+- **[ABILITY_ANIMATIONS.md](./ABILITY_ANIMATIONS.md)** ⭐ **NEW** - Ability system guide
+
+### Wolf/Enemy Animation
+- **[PROCEDURAL_WOLF_ANIMATION_README.md](./PROCEDURAL_WOLF_ANIMATION_README.md)** - Complete wolf system
+- **[WOLF_BODY_SYSTEM_README.md](./WOLF_BODY_SYSTEM_README.md)** - Wolf body rendering
+
+### Updates and Summaries
+- **[ANIMATION_UPDATE_SUMMARY.md](./ANIMATION_UPDATE_SUMMARY.md)** - Recent system updates
+- **[ANIMATION_IMPLEMENTATION_SUMMARY.md](./ANIMATION_IMPLEMENTATION_SUMMARY.md)** - Demo implementation
+
 ## Contributing
 
 To add new animations:
 
-1. Define animation frames in `AnimationPresets`
-2. Add state to `AnimatedPlayer` class
+1. Define animation frames in `AnimationPresets` or create new animator
+2. Add state to appropriate class (`AnimatedPlayer`, wolf, etc.)
 3. Implement state transition logic
-4. Add input handling
-5. Create visual effects
+4. Add input handling (if needed)
+5. Create visual effects using event system
 6. Update documentation
 
 ## Support
 
 For questions or issues:
-- Check the [Player Animations Documentation](./PLAYER_ANIMATIONS.md)
+- **Start with**: [ANIMATION_ARCHITECTURE.md](./ANIMATION_ARCHITECTURE.md)
+- **Player Animation**: [PLAYER_ANIMATIONS.md](./PLAYER_ANIMATIONS.md)
+- **Events**: [ANIMATION_EVENTS.md](./ANIMATION_EVENTS.md)
+- **Combos**: [COMBO_SYSTEM.md](./COMBO_SYSTEM.md)

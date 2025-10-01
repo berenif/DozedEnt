@@ -25,15 +25,31 @@ export default class TopDownPlayerRenderer {
         this.animator = this.animMode === 'physics' ? new PlayerPhysicsAnimator(physicsOptions) : new PlayerProceduralAnimator(options.procedural || {})
         this.lastTime = (typeof performance !== 'undefined') ? performance.now() : 0
         this.currentRotation = 0
-        this._loggedSuccess = false
+		this._loggedSuccess = false
         this._lastVelLog = 0
+        // Debug flags - gate logging to avoid perf impact in production
         this.debugPhysics = physicsOverrides.debug === true
+        this.debugLogging = options.debugLogging || false
+		// Track previous world position to derive reliable direction
+		this._prevWorldX = undefined
+		this._prevWorldY = undefined
     }
 
 	updateAndGetTransform(deltaTime, playerState) {
-		const facing = (playerState.vx ?? 0) < 0 ? -1 : 1
+		// Keep rig authored facing along +X; canvas rotation handles world direction
+		const facing = 1
 		const velocity = { x: playerState.vx ?? 0, y: playerState.vy ?? 0 }
-		const speed = Math.hypot(velocity.x, velocity.y)
+		// Derive direction from world position deltas to avoid sign mismatches
+		const worldX = playerState.x ?? 0
+		const worldY = playerState.y ?? 0
+		const dx = (typeof this._prevWorldX === 'number') ? (worldX - this._prevWorldX) : 0
+		const dy = (typeof this._prevWorldY === 'number') ? (worldY - this._prevWorldY) : 0
+		this._prevWorldX = worldX
+		this._prevWorldY = worldY
+		const dirMag = Math.hypot(dx, dy)
+		// Store renderVelocity on instance for use in render()
+		this._renderVelocity = dirMag > 0.00005 ? { x: dx, y: dy } : velocity
+		const speed = Math.hypot(this._renderVelocity.x, this._renderVelocity.y)
 		const context = {
 			playerState: typeof playerState.anim === 'string' ? playerState.anim : 'idle',
 			facing,
@@ -50,7 +66,8 @@ export default class TopDownPlayerRenderer {
 			normalizedTime: (typeof performance !== 'undefined' ? (performance.now() / 1000) : 0) % 1000
 		}
 
-		if (!this._lastVelLog || (typeof performance !== 'undefined' && performance.now() - this._lastVelLog > 1000)) {
+		// Debug logging - gated behind debugLogging flag
+		if (this.debugLogging && (!this._lastVelLog || (typeof performance !== 'undefined' && performance.now() - this._lastVelLog > 1000))) {
 			if (speed > 0.01) {
 				console.log('[PlayerRenderer] Movement:', { vx: velocity.x.toFixed(3), vy: velocity.y.toFixed(3), speed: speed.toFixed(3) })
 				console.log('[PlayerRenderer] Player state:', {
@@ -75,7 +92,9 @@ export default class TopDownPlayerRenderer {
 		const pos = toCanvas(playerState.x, playerState.y)
 
 		if (!transform || !transform.skeleton) {
-			console.warn('[PlayerRenderer] No skeleton data in transform:', transform)
+			if (this.debugLogging) {
+				console.warn('[PlayerRenderer] No skeleton data in transform:', transform)
+			}
 			this.ctx.fillStyle = '#ff0000'
 			this.ctx.beginPath()
 			this.ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2)
@@ -83,7 +102,7 @@ export default class TopDownPlayerRenderer {
 			return
 		}
 
-		if (!this._loggedSuccess) {
+		if (!this._loggedSuccess && this.debugLogging) {
 			console.log('[PlayerRenderer] ✅ Rendering with top-down view')
 			this._loggedSuccess = true
 		}
@@ -99,46 +118,34 @@ export default class TopDownPlayerRenderer {
 		const scale = baseRadius / 15
 		const scaledSkeleton = scaleSkeletonCoordinates(transform.skeleton, scale)
 
-        // Calculate and apply smooth rotation based on movement direction
-		let targetRotation = 0
-		if (speed > 0.01) {
-			targetRotation = Math.atan2(velocity.y, velocity.x)
-		} else {
-			targetRotation = (playerState.vx ?? 0) < 0 ? Math.PI : 0
-		}
-		this.currentRotation = smoothRotate(this.currentRotation, targetRotation, 0.1)
+		// For true top-down view: NO skeleton rotation - character always faces same direction
+		// Movement direction is shown through limb animation, not body rotation
+		const renderVelocity = this._renderVelocity || { x: 0, y: 0 }
 
 		ctx.save()
-		ctx.translate(pos.x, pos.y)
-		ctx.rotate(this.currentRotation)
-		ctx.translate(-pos.x, -pos.y)
-
-		// Rotate the scaled skeleton around the player's center so limbs/head align in rotated space
-        const rotatedSkeleton = rotateSkeletonAround(
-            scaledSkeleton,
-            { x: 0, y: 0 },
-            0 // scaled skeleton is local; outer canvas rotation already applied
-        )
+		// No rotation applied - skeleton stays in fixed top-down orientation
 
         // Draw the human-like top-down skeleton and body
-        drawTopDownSkeleton(ctx, playerState, pos, baseRadius, rotatedSkeleton)
+        drawTopDownSkeleton(ctx, playerState, pos, baseRadius, scaledSkeleton)
 
-		// Optional physics debug overlay (drawn in the same rotated context)
+		// Optional physics debug overlay
 		if (this.debugPhysics && transform && transform.debug) {
 			try {
-				drawPhysicsDebugOverlay(ctx, pos, baseRadius, rotatedSkeleton, transform.debug)
+				drawPhysicsDebugOverlay(ctx, pos, baseRadius, scaledSkeleton, transform.debug)
 			} catch (e) {
-				console.warn('[PlayerRenderer] Debug overlay failed:', e && e.message)
+				if (this.debugLogging) {
+					console.warn('[PlayerRenderer] Debug overlay failed:', e && e.message)
+				}
 			}
 		}
 
 		ctx.restore()
 
 		// Direction + action indicators (outside rotated context)
-		drawDirectionIndicator(ctx, pos, baseRadius, velocity, speed)
+		drawDirectionIndicator(ctx, pos, baseRadius, renderVelocity, speed)
 		if (playerState.anim === 'attacking') {
-			const facing = (playerState.vx ?? 0) < 0 ? -1 : 1
-			drawAttackIndicator(ctx, pos, baseRadius, facing)
+			// Indicators follow rotation; keep facing positive X baseline
+			drawAttackIndicator(ctx, pos, baseRadius, 1)
 		}
 		if (playerState.anim === 'blocking') {
 			drawBlockIndicator(ctx, pos, baseRadius)

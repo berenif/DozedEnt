@@ -8,7 +8,8 @@ export function drawDirectionIndicator(ctx, position, baseRadius, velocity, spee
 	ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
 	const arrowLength = baseRadius * 0.4
 	const arrowWidth = baseRadius * 0.15
-	const angle = Math.atan2(velocity.y, velocity.x)
+	// Negate Y because canvas Y increases downward, but our world Y up is positive
+	const angle = Math.atan2(-(velocity.y), velocity.x)
 	ctx.translate(position.x, position.y)
 	ctx.rotate(angle)
 	ctx.beginPath()
@@ -58,7 +59,8 @@ export function drawRollIndicator(ctx, position, baseRadius, velocity) {
 	ctx.save()
 	const speed = Math.hypot(velocity.x ?? 0, velocity.y ?? 0)
 	if (speed > 0.01) {
-		const angle = Math.atan2(velocity.y, velocity.x)
+		// Negate Y for canvas coordinate system
+		const angle = Math.atan2(-(velocity.y ?? 0), velocity.x ?? 0)
 		const lineLength = baseRadius * 0.8
 		ctx.strokeStyle = '#a78bfa'
 		ctx.lineWidth = 3

@@ -8,106 +8,125 @@
  */
 
 export class AbilityAnimationBase {
-    constructor(characterAnimator, vfxManager) {
-        this.animator = characterAnimator;
-        this.vfx = vfxManager;
-        
-        this.isPlaying = false;
-        this.currentTime = 0;
-        this.duration = 0;
-        this.loops = false;
-    }
-    
-    /**
-     * Play animation
-     * @param {string} animationName - Animation to play
-     * @param {number} duration - Animation duration (seconds)
-     * @param {boolean} loop - Should animation loop
-     */
-    play(animationName, duration = 0.6, loop = false) {
-        this.isPlaying = true;
-        this.currentTime = 0;
-        this.duration = duration;
-        this.loops = loop;
-        
-        // Trigger animation state change
-        this.onAnimationStart(animationName);
-    }
-    
-    /**
-     * Stop animation
-     */
-    stop() {
-        this.isPlaying = false;
-        this.currentTime = 0;
-        this.onAnimationEnd();
-    }
-    
-    /**
-     * Update animation timing
-     * @param {number} deltaTime - Time since last update (seconds)
-     * @returns {number} Normalized time (0-1)
-     */
-    updateTiming(deltaTime) {
-        if (!this.isPlaying) {
-            return 0;
+    constructor(config = {}) {
+        this.states = {
+            READY: 'ready',
+            CHARGING: 'charging',
+            ACTIVE: 'active',
+            RECOVERY: 'recovery',
+            COOLDOWN: 'cooldown'
         }
-        
-        this.currentTime += deltaTime;
-        
-        if (this.currentTime >= this.duration) {
-            if (this.loops) {
-                this.currentTime = 0;
-            } else {
-                this.stop();
-                return 1.0;
+        this.state = this.states.READY
+        this._timeInState = 0
+        this._cooldownRemaining = 0
+        this.player = null
+        this.target = null
+        this.animator = config.animator || null
+        this.vfx = config.vfx || null
+        this.duration = Number.isFinite(config.duration) ? config.duration : 0.6
+        this.cooldown = Number.isFinite(config.cooldown) ? config.cooldown : 2.0
+        this.staminaCost = Number.isFinite(config.staminaCost) ? config.staminaCost : 15
+        this.canMoveWhileCasting = !!config.canMoveWhileCasting
+        this.canCancelEarly = !!config.canCancelEarly
+        this.interruptible = config.interruptible !== false
+    }
+
+    // Lifecycle
+    start(player, target) {
+        if (!this.isReady()) {return false}
+        this.player = player
+        this.target = target || null
+        this._switchState(this.states.CHARGING)
+        this.onStart(player, target)
+        return true
+    }
+
+    update(deltaTime) {
+        const dt = Number.isFinite(deltaTime) ? deltaTime : 0
+        // Cooldown timer always counts down
+        if (this._cooldownRemaining > 0) {
+            this._cooldownRemaining = Math.max(0, this._cooldownRemaining - dt)
+        }
+
+        this._timeInState += dt
+
+        switch (this.state) {
+            case this.states.CHARGING: {
+                const proceed = this.onCharging(dt)
+                if (proceed === true || this._timeInState >= Math.max(0.01, this.duration * 0.25)) {
+                    this._switchState(this.states.ACTIVE)
+                    this.onActivate()
+                }
+                break
             }
+            case this.states.ACTIVE: {
+                this.onUpdate(dt)
+                if (this._timeInState >= this.duration) {
+                    this._switchState(this.states.RECOVERY)
+                    this.onEnd()
+                }
+                break
+            }
+            case this.states.RECOVERY: {
+                const recoverTime = Math.min(0.4, this.duration * 0.5)
+                if (this._timeInState >= recoverTime) {
+                    this._switchState(this.states.COOLDOWN)
+                    this._cooldownRemaining = this.cooldown
+                }
+                break
+            }
+            case this.states.COOLDOWN: {
+                if (this._cooldownRemaining <= 0) {
+                    this._switchState(this.states.READY)
+                }
+                break
+            }
+            default: break
         }
-        
-        return this.currentTime / this.duration;
     }
-    
-    /**
-     * Lerp between values
-     * @param {number} a - Start value
-     * @param {number} b - End value
-     * @param {number} t - Interpolation factor (0-1)
-     * @returns {number} Interpolated value
-     */
-    lerp(a, b, t) {
-        return a + (b - a) * t;
+
+    end() {
+        if (this.state === this.states.ACTIVE) {
+            this.onEnd()
+            this._switchState(this.states.RECOVERY)
+        }
     }
-    
-    /**
-     * Ease out cubic
-     * @param {number} t - Input value (0-1)
-     * @returns {number} Eased value
-     */
-    easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
+
+    interrupt() {
+        if (!this.interruptible) {return false}
+        if (this.state === this.states.ACTIVE || this.state === this.states.CHARGING) {
+            this.onInterrupted()
+            this._switchState(this.states.COOLDOWN)
+            this._cooldownRemaining = this.cooldown
+            return true
+        }
+        return false
     }
-    
-    /**
-     * Ease in cubic
-     * @param {number} t - Input value (0-1)
-     * @returns {number} Eased value
-     */
-    easeInCubic(t) {
-        return t * t * t;
-    }
-    
-    /**
-     * Override: Called when animation starts
-     */
-    onAnimationStart(animationName) {
-        // Override in subclass
-    }
-    
-    /**
-     * Override: Called when animation ends
-     */
-    onAnimationEnd() {
-        // Override in subclass
+
+    // Queries
+    isActive() { return this.state === this.states.ACTIVE }
+    isCharging() { return this.state === this.states.CHARGING }
+    isOnCooldown() { return this.state === this.states.COOLDOWN && this._cooldownRemaining > 0 }
+    isReady() { return this.state === this.states.READY }
+    getCooldownRemaining() { return this._cooldownRemaining }
+    getProgress() { return this.duration > 0 ? Math.min(1, Math.max(0, this._timeInState / this.duration)) : 0 }
+
+    // Hooks for subclasses
+    onStart(_player, _target) {}
+    onCharging(_dt) { return false }
+    onActivate() {}
+    onUpdate(_dt) {}
+    onEnd() {}
+    onInterrupted() {}
+
+    // Utilities
+    lerp(a, b, t) { return a + (b - a) * t }
+    easeOutCubic(t) { return 1 - Math.pow(1 - t, 3) }
+    easeInCubic(t) { return t * t * t }
+
+    _switchState(next) {
+        this.state = next
+        this._timeInState = 0
     }
 }
 

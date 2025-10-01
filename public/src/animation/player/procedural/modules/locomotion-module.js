@@ -92,20 +92,19 @@ export default class LocomotionModule {
         // Apply realistic human locomotion
         this.applyRealisticLocomotion(pose, speedRatio, movementDirection, isGrounded, groundOffset)
 
-        // Debug logging
-        if (!this._debugCounter) this._debugCounter = 0
-        this._debugCounter++
-        if (this._debugCounter % 60 === 0 && speed > 0.001) {
-            console.log('[LocomotionModule] Human gait - speed:', speed.toFixed(4), 'ratio:', speedRatio.toFixed(3), 'moving:', moving)
-            console.log('[LocomotionModule] Phases - overall:', this.phase.toFixed(3), 'left:', this.leftPhase.toFixed(3), 'right:', this.rightPhase.toFixed(3))
-            console.log('[LocomotionModule] Weight shift:', this.weightShift.toFixed(3))
-            console.log('[LocomotionModule] Movement direction:', { x: movementDirection.x.toFixed(3), y: movementDirection.y.toFixed(3) })
-            
-            // Determine movement type
-            const isHorizontalMovement = Math.abs(movementDirection.x) > Math.abs(movementDirection.y)
-            const isVerticalMovement = Math.abs(movementDirection.y) > Math.abs(movementDirection.x)
-            console.log('[LocomotionModule] Movement type:', isHorizontalMovement ? 'horizontal' : (isVerticalMovement ? 'vertical' : 'diagonal'))
-        }
+        // Debug logging (disabled by default - uncomment to enable)
+        // if (!this._debugCounter) this._debugCounter = 0
+        // this._debugCounter++
+        // if (this._debugCounter % 60 === 0 && speed > 0.001) {
+        //     console.log('[LocomotionModule] Human gait - speed:', speed.toFixed(4), 'ratio:', speedRatio.toFixed(3), 'moving:', moving)
+        //     console.log('[LocomotionModule] Phases - overall:', this.phase.toFixed(3), 'left:', this.leftPhase.toFixed(3), 'right:', this.rightPhase.toFixed(3))
+        //     console.log('[LocomotionModule] Weight shift:', this.weightShift.toFixed(3))
+        //     console.log('[LocomotionModule] Movement direction:', { x: movementDirection.x.toFixed(3), y: movementDirection.y.toFixed(3) })
+        //     
+        //     const isHorizontalMovement = Math.abs(movementDirection.x) > Math.abs(movementDirection.y)
+        //     const isVerticalMovement = Math.abs(movementDirection.y) > Math.abs(movementDirection.x)
+        //     console.log('[LocomotionModule] Movement type:', isHorizontalMovement ? 'horizontal' : (isVerticalMovement ? 'vertical' : 'diagonal'))
+        // }
 
         this.lastStepPower = damp(this.lastStepPower, moving ? speedRatio : 0, deltaTime, 8)
 

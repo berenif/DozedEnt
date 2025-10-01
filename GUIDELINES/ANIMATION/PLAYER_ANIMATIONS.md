@@ -100,7 +100,7 @@ The enhanced player animation system provides a complete set of character animat
 
 #### AnimatedPlayer Class
 ```javascript
-import AnimatedPlayer from './src/animation/player-animator.js'
+import { AnimatedPlayer } from './animation/player/procedural/player-animator.js'
 
 const player = new AnimatedPlayer(x, y, {
     health: 100,
@@ -108,20 +108,24 @@ const player = new AnimatedPlayer(x, y, {
     stamina: 100,
     maxStamina: 100,
     speed: 250,
-    rollSpeed: 500,
-    attackDamage: 20,
-    attackRange: 60,
-    particleSystem: particleSystem,
-    soundSystem: soundSystem
+    rollSpeed: 500
 })
 ```
 
-#### Animation Controller Integration
-The player uses the `CharacterAnimator` class which manages:
-- Animation state transitions
-- Frame blending between animations
-- Procedural animation overlays
-- Animation speed adjustments
+**Note:** AnimatedPlayer contains both `CharacterAnimator` (sprite frames) and `PlayerProceduralAnimator` (skeleton) working together.
+
+#### Animation System Integration
+The player uses **two animation systems** working together:
+
+1. **CharacterAnimator** - Sprite frame animation
+   - Animation state transitions
+   - Frame timing and looping
+   - State machine
+
+2. **PlayerProceduralAnimator** - Skeletal animation
+   - 9 specialized modules (IK, spine, locomotion, etc.)
+   - Biomechanically accurate motion
+   - Procedural overlays
 
 ### Animation Data Structure
 
@@ -320,7 +324,7 @@ player.invulnerable         // Invulnerability status
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     
     <script type="module">
-        import AnimatedPlayer from './src/animation/player-animator.js'
+        import { AnimatedPlayer } from './animation/player/procedural/player-animator.js'
         
         const canvas = document.getElementById('gameCanvas')
         const ctx = canvas.getContext('2d')
@@ -340,7 +344,15 @@ player.invulnerable         // Invulnerability status
             lastTime = timestamp
             
             // Update
-            const input = AnimatedPlayer.createInputFromKeys(keys)
+            const input = {
+                left: keys['a'],
+                right: keys['d'],
+                up: keys['w'],
+                down: keys['s'],
+                attack: keys['j'],
+                block: keys['k'],
+                roll: keys['l']
+            }
             player.update(deltaTime, input)
             
             // Render

@@ -167,12 +167,12 @@ export default class FootIKModule {
         const leftIK = solveLegIK(hipL, leftTarget, this.config.thighLength, this.config.shinLength, true)
         const rightIK = solveLegIK(hipR, rightTarget, this.config.thighLength, this.config.shinLength, true)
         
-        // Debug: log IK results occasionally
-        if (!this._debugCounter) this._debugCounter = 0
-        this._debugCounter++
-        if (this._debugCounter % 60 === 0 && moving) {
-            console.log('[FootIK] Moving:', moving, 'Left knee:', leftIK.knee, 'Right knee:', rightIK.knee)
-        }
+        // Debug: log IK results occasionally (disabled by default - uncomment to enable)
+        // if (!this._debugCounter) this._debugCounter = 0
+        // this._debugCounter++
+        // if (this._debugCounter % 60 === 0 && moving) {
+        //     console.log('[FootIK] Moving:', moving, 'Left knee:', leftIK.knee, 'Right knee:', rightIK.knee)
+        // }
         
         // Apply IK results
         pose.leftLeg.knee = leftIK.knee
