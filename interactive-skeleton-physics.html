@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Skeleton Physics Rig</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        
+        #canvas-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 40px);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        #ui-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #ui-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        #ui-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            border-bottom: 2px solid #4fc3f7;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.1em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #81c784;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #bbb;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(79, 195, 247, 0.5);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            border: none;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .value-display {
+            display: inline-block;
+            float: right;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .stats {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+        
+        .stats div {
+            margin: 3px 0;
+        }
+        
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .preset-buttons button {
+            padding: 8px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-panel">
+        <h1>Skeleton Physics Rig</h1>
+        
+        <div class="control-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="showBones" checked>
+                <label for="showBones" style="display: inline; margin: 0;">Show Bones</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showJoints" checked>
+                <label for="showJoints" style="display: inline; margin: 0;">Show Joints</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showCoM">
+                <label for="showCoM" style="display: inline; margin: 0;">Show Center of Mass</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showCollision">
+                <label for="showCollision" style="display: inline; margin: 0;">Show Collision</label>
+            </div>
+        </div>
+        
+        <h2>Test Poses</h2>
+        <div class="preset-buttons">
+            <button onclick="setPose('apose')">A-Pose</button>
+            <button onclick="setPose('tpose')">T-Pose</button>
+            <button onclick="setPose('reach')">Reach Up</button>
+            <button onclick="setPose('squat')">Deep Squat</button>
+            <button onclick="setPose('look')">Look Over Shoulder</button>
+            <button onclick="setPose('balance')">Single Leg</button>
+        </div>
+        
+        <h2>Physics Settings</h2>
+        <div class="control-group">
+            <label>Gravity: <span class="value-display" id="gravityValue">-9.81</span></label>
+            <input type="range" id="gravity" min="-20" max="0" step="0.1" value="-9.81">
+        </div>
+        
+        <div class="control-group">
+            <label>Joint Stiffness: <span class="value-display" id="stiffnessValue">1.0</span></label>
+            <input type="range" id="stiffness" min="0.1" max="3" step="0.1" value="1.0">
+        </div>
+        
+        <div class="control-group">
+            <label>Joint Damping: <span class="value-display" id="dampingValue">1.0</span></label>
+            <input type="range" id="damping" min="0.1" max="3" step="0.1" value="1.0">
+        </div>
+        
+        <h2>Actions</h2>
+        <button onclick="resetPose()">Reset to A-Pose</button>
+        <button onclick="applyRandomForce()">Apply Random Force</button>
+        <button onclick="togglePhysics()">Toggle Physics</button>
+        
+        <div class="stats" id="stats">
+            <div>FPS: <span id="fps">60</span></div>
+            <div>Bodies: <span id="bodies">0</span></div>
+            <div>Joints: <span id="joints">0</span></div>
+            <div>CoM Height: <span id="comHeight">0.00</span> m</div>
+        </div>
+    </div>
+    
+    <div id="info-panel">
+        <strong>Controls:</strong><br>
+        • Left Mouse: Rotate camera<br>
+        • Right Mouse: Pan camera<br>
+        • Scroll: Zoom<br>
+        • Click bones to select and manipulate
+    </div>
+
+    <!-- Three.js and Cannon.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
+    
+    <script>
+        // ===============================================
+        // GLOBAL CONSTANTS AND CONFIGURATION
+        // ===============================================
+        
+        const CONFIG = {
+            units: 'mks', // meters, kilograms, seconds
+            worldUp: new THREE.Vector3(0, 1, 0),
+            worldForward: new THREE.Vector3(0, 0, 1),
+            worldRight: new THREE.Vector3(1, 0, 0),
+            totalBodyMass: 70, // kg, average adult
+            gravity: -9.81,
+            timeStep: 1/60,
+            maxSubSteps: 3
+        };
+        
+        // Mass distribution (percent of total body mass)
+        const MASS_DISTRIBUTION = {
+            head: 0.08,
+            neck: 0.02,
+            chest: 0.20,
+            spine_03: 0.05,
+            spine_02: 0.04,
+            spine_01: 0.03,
+            pelvis: 0.13,
+            clav: 0.006, // each
+            scap: 0.004, // each
+            upperArm: 0.03, // each
+            forearm: 0.02, // each
+            hand: 0.01, // each
+            thigh: 0.10, // each
+            shin: 0.05, // each
+            foot: 0.01 // each
+        };
+        
+        // ===============================================
+        // SKELETON DEFINITION
+        // ===============================================
+        
+        const SKELETON_DEFINITION = {
+            // Proportions for 1.75m tall person (adjust as needed)
+            bones: [
+                // Spine and core
+                { name: 'pelvis', parent: null, offset: [0, 1.0, 0], shape: 'box', size: [0.22, 0.12, 0.18], mass: MASS_DISTRIBUTION.pelvis },
+                { name: 'spine_01', parent: 'pelvis', offset: [0, 0.12, 0], shape: 'capsule', radius: 0.07, length: 0.10, mass: MASS_DISTRIBUTION.spine_01 },
+                { name: 'spine_02', parent: 'spine_01', offset: [0, 0.10, 0], shape: 'capsule', radius: 0.075, length: 0.10, mass: MASS_DISTRIBUTION.spine_02 },
+                { name: 'spine_03', parent: 'spine_02', offset: [0, 0.10, 0], shape: 'capsule', radius: 0.08, length: 0.12, mass: MASS_DISTRIBUTION.spine_03 },
+                { name: 'chest', parent: 'spine_03', offset: [0, 0.12, 0], shape: 'box', size: [0.32, 0.18, 0.20], mass: MASS_DISTRIBUTION.chest },
+                { name: 'neck', parent: 'chest', offset: [0, 0.15, 0], shape: 'capsule', radius: 0.04, length: 0.10, mass: MASS_DISTRIBUTION.neck },
+                { name: 'head', parent: 'neck', offset: [0, 0.10, 0], shape: 'sphere', radius: 0.11, mass: MASS_DISTRIBUTION.head },
+                
+                // Right arm
+                { name: 'clav_R', parent: 'chest', offset: [0.04, 0.12, 0], shape: 'capsule', radius: 0.02, length: 0.12, mass: MASS_DISTRIBUTION.clav },
+                { name: 'scap_R', parent: 'clav_R', offset: [0.12, 0, 0], shape: 'box', size: [0.08, 0.12, 0.06], mass: MASS_DISTRIBUTION.scap, pseudo: true },
+                { name: 'upperArm_R', parent: 'scap_R', offset: [0.08, -0.02, 0], shape: 'capsule', radius: 0.05, length: 0.30, mass: MASS_DISTRIBUTION.upperArm },
+                { name: 'forearm_R', parent: 'upperArm_R', offset: [0.30, 0, 0], shape: 'capsule', radius: 0.04, length: 0.26, mass: MASS_DISTRIBUTION.forearm },
+                { name: 'hand_R', parent: 'forearm_R', offset: [0.26, 0, 0], shape: 'box', size: [0.18, 0.02, 0.08], mass: MASS_DISTRIBUTION.hand },
+                
+                // Left arm
+                { name: 'clav_L', parent: 'chest', offset: [-0.04, 0.12, 0], shape: 'capsule', radius: 0.02, length: 0.12, mass: MASS_DISTRIBUTION.clav },
+                { name: 'scap_L', parent: 'clav_L', offset: [-0.12, 0, 0], shape: 'box', size: [0.08, 0.12, 0.06], mass: MASS_DISTRIBUTION.scap, pseudo: true },
+                { name: 'upperArm_L', parent: 'scap_L', offset: [-0.08, -0.02, 0], shape: 'capsule', radius: 0.05, length: 0.30, mass: MASS_DISTRIBUTION.upperArm },
+                { name: 'forearm_L', parent: 'upperArm_L', offset: [-0.30, 0, 0], shape: 'capsule', radius: 0.04, length: 0.26, mass: MASS_DISTRIBUTION.forearm },
+                { name: 'hand_L', parent: 'forearm_L', offset: [-0.26, 0, 0], shape: 'box', size: [0.18, 0.02, 0.08], mass: MASS_DISTRIBUTION.hand },
+                
+                // Right leg
+                { name: 'thigh_R', parent: 'pelvis', offset: [0.10, -0.06, 0], shape: 'capsule', radius: 0.06, length: 0.42, mass: MASS_DISTRIBUTION.thigh },
+                { name: 'shin_R', parent: 'thigh_R', offset: [0, -0.42, 0], shape: 'capsule', radius: 0.045, length: 0.40, mass: MASS_DISTRIBUTION.shin },
+                { name: 'foot_R', parent: 'shin_R', offset: [0, -0.40, 0.04], shape: 'box', size: [0.08, 0.04, 0.22], mass: MASS_DISTRIBUTION.foot },
+                
+                // Left leg
+                { name: 'thigh_L', parent: 'pelvis', offset: [-0.10, -0.06, 0], shape: 'capsule', radius: 0.06, length: 0.42, mass: MASS_DISTRIBUTION.thigh },
+                { name: 'shin_L', parent: 'thigh_L', offset: [0, -0.42, 0], shape: 'capsule', radius: 0.045, length: 0.40, mass: MASS_DISTRIBUTION.shin },
+                { name: 'foot_L', parent: 'shin_L', offset: [0, -0.40, 0.04], shape: 'box', size: [0.08, 0.04, 0.22], mass: MASS_DISTRIBUTION.foot }
+            ],
+            
+            // Joint definitions with limits and drives
+            joints: [
+                // Spine joints - 3DOF each, distributed motion
+                { name: 'spine01_joint', type: 'ball', parent: 'pelvis', child: 'spine_01', 
+                  limits: { swingY: 30, swingZ: 30, twist: 15 }, drive: { stiff: 200, damp: 30 } },
+                { name: 'spine02_joint', type: 'ball', parent: 'spine_01', child: 'spine_02',
+                  limits: { swingY: 30, swingZ: 30, twist: 15 }, drive: { stiff: 200, damp: 30 } },
+                { name: 'spine03_joint', type: 'ball', parent: 'spine_02', child: 'spine_03',
+                  limits: { swingY: 30, swingZ: 30, twist: 15 }, drive: { stiff: 200, damp: 30 } },
+                { name: 'chest_joint', type: 'ball', parent: 'spine_03', child: 'chest',
+                  limits: { swingY: 30, swingZ: 30, twist: 15 }, drive: { stiff: 250, damp: 35 } },
+                
+                // Neck and head
+                { name: 'neck_joint', type: 'ball', parent: 'chest', child: 'neck',
+                  limits: { swingY: 45, swingZ: 45, twist: 80 }, drive: { stiff: 150, damp: 20 } },
+                { name: 'head_joint', type: 'ball', parent: 'neck', child: 'head',
+                  limits: { swingY: 20, swingZ: 10, twist: 30 }, drive: { stiff: 120, damp: 18 } },
+                
+                // Right arm
+                { name: 'clav_R_joint', type: 'ball', parent: 'chest', child: 'clav_R',
+                  limits: { swingY: 45, swingZ: 20, twist: 20 }, drive: { stiff: 100, damp: 15 } },
+                { name: 'scap_R_joint', type: 'ball', parent: 'clav_R', child: 'scap_R',
+                  limits: { swingY: 60, swingZ: 30, twist: 20 }, drive: { stiff: 80, damp: 12 } },
+                { name: 'shoulder_R_joint', type: 'ball', parent: 'scap_R', child: 'upperArm_R',
+                  limits: { swingY: 180, swingZ: 120, twist: 90 }, drive: { stiff: 150, damp: 20 } },
+                { name: 'elbow_R_joint', type: 'hinge', parent: 'upperArm_R', child: 'forearm_R',
+                  axis: [1, 0, 0], limits: { min: -5, max: 150 }, drive: { stiff: 180, damp: 25 } },
+                { name: 'wrist_R_joint', type: 'ball', parent: 'forearm_R', child: 'hand_R',
+                  limits: { swingY: 80, swingZ: 50, twist: 80 }, drive: { stiff: 80, damp: 12 } },
+                
+                // Left arm (mirrored)
+                { name: 'clav_L_joint', type: 'ball', parent: 'chest', child: 'clav_L',
+                  limits: { swingY: 45, swingZ: 20, twist: 20 }, drive: { stiff: 100, damp: 15 } },
+                { name: 'scap_L_joint', type: 'ball', parent: 'clav_L', child: 'scap_L',
+                  limits: { swingY: 60, swingZ: 30, twist: 20 }, drive: { stiff: 80, damp: 12 } },
+                { name: 'shoulder_L_joint', type: 'ball', parent: 'scap_L', child: 'upperArm_L',
+                  limits: { swingY: 180, swingZ: 120, twist: 90 }, drive: { stiff: 150, damp: 20 } },
+                { name: 'elbow_L_joint', type: 'hinge', parent: 'upperArm_L', child: 'forearm_L',
+                  axis: [-1, 0, 0], limits: { min: -5, max: 150 }, drive: { stiff: 180, damp: 25 } },
+                { name: 'wrist_L_joint', type: 'ball', parent: 'forearm_L', child: 'hand_L',
+                  limits: { swingY: 80, swingZ: 50, twist: 80 }, drive: { stiff: 80, damp: 12 } },
+                
+                // Right leg
+                { name: 'hip_R_joint', type: 'ball', parent: 'pelvis', child: 'thigh_R',
+                  limits: { swingY: 120, swingZ: 75, twist: 45 }, drive: { stiff: 300, damp: 40 } },
+                { name: 'knee_R_joint', type: 'hinge', parent: 'thigh_R', child: 'shin_R',
+                  axis: [1, 0, 0], limits: { min: 0, max: 150 }, drive: { stiff: 280, damp: 38 }, screwHome: true },
+                { name: 'ankle_R_joint', type: 'hinge', parent: 'shin_R', child: 'foot_R',
+                  axis: [1, 0, 0], limits: { min: -50, max: 20 }, drive: { stiff: 200, damp: 28 } },
+                
+                // Left leg (mirrored)
+                { name: 'hip_L_joint', type: 'ball', parent: 'pelvis', child: 'thigh_L',
+                  limits: { swingY: 120, swingZ: 75, twist: 45 }, drive: { stiff: 300, damp: 40 } },
+                { name: 'knee_L_joint', type: 'hinge', parent: 'thigh_L', child: 'shin_L',
+                  axis: [-1, 0, 0], limits: { min: 0, max: 150 }, drive: { stiff: 280, damp: 38 }, screwHome: true },
+                { name: 'ankle_L_joint', type: 'hinge', parent: 'shin_L', child: 'foot_L',
+                  axis: [-1, 0, 0], limits: { min: -50, max: 20 }, drive: { stiff: 200, damp: 28 } }
+            ]
+        };
+        
+        // ===============================================
+        // SCENE SETUP
+        // ===============================================
+        
+        let scene, camera, renderer, controls;
+        let world;
+        let skeleton = {};
+        let physicsObjects = [];
+        let visualObjects = [];
+        let jointVisuals = [];
+        let comVisual;
+        let clock = new THREE.Clock();
+        let physicsEnabled = true;
+        let stiffnessMultiplier = 1.0;
+        let dampingMultiplier = 1.0;
+        
+        function initScene() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(3, 1.5, 3);
+            camera.lookAt(0, 1, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.near = 0.1;
+            dirLight.shadow.camera.far = 50;
+            dirLight.shadow.camera.left = -10;
+            dirLight.shadow.camera.right = 10;
+            dirLight.shadow.camera.top = 10;
+            dirLight.shadow.camera.bottom = -10;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+            
+            const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.6);
+            scene.add(hemiLight);
+            
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2c3e50,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x222222);
+            scene.add(gridHelper);
+            
+            // Simple orbit controls
+            initControls();
+            
+            // CoM visualization
+            const comGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const comMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            comVisual = new THREE.Mesh(comGeometry, comMaterial);
+            comVisual.visible = false;
+            scene.add(comVisual);
+            
+            // Window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+        
+        function initControls() {
+            // Simple mouse controls for camera
+            let isDragging = false;
+            let isPanning = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let cameraTarget = new THREE.Vector3(0, 1, 0);
+            let cameraDistance = 5;
+            let cameraTheta = 0; // horizontal angle
+            let cameraPhi = Math.PI / 4; // vertical angle
+            
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                if (e.button === 0) isDragging = true;
+                if (e.button === 2) isPanning = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                isDragging = false;
+                isPanning = false;
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    cameraTheta -= deltaX * 0.005;
+                    cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraPhi + deltaY * 0.005));
+                    
+                    updateCamera();
+                }
+                
+                if (isPanning) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    const right = new THREE.Vector3();
+                    const up = new THREE.Vector3(0, 1, 0);
+                    camera.getWorldDirection(right);
+                    right.cross(up).normalize();
+                    
+                    cameraTarget.add(right.multiplyScalar(-deltaX * 0.002 * cameraDistance));
+                    cameraTarget.y += deltaY * 0.002 * cameraDistance;
+                    
+                    updateCamera();
+                }
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            renderer.domElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance *= 1 + e.deltaY * 0.001;
+                cameraDistance = Math.max(1, Math.min(20, cameraDistance));
+                updateCamera();
+            });
+            
+            renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            function updateCamera() {
+                camera.position.x = cameraTarget.x + cameraDistance * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+                camera.position.y = cameraTarget.y + cameraDistance * Math.cos(cameraPhi);
+                camera.position.z = cameraTarget.z + cameraDistance * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+                camera.lookAt(cameraTarget);
+            }
+            
+            updateCamera();
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // ===============================================
+        // PHYSICS SETUP
+        // ===============================================
+        
+        function initPhysics() {
+            world = new CANNON.World();
+            world.gravity.set(0, CONFIG.gravity, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+            world.defaultContactMaterial.contactEquationStiffness = 1e7;
+            world.defaultContactMaterial.contactEquationRelaxation = 3;
+            
+            // Ground plane
+            const groundShape = new CANNON.Plane();
+            const groundBody = new CANNON.Body({ mass: 0 });
+            groundBody.addShape(groundShape);
+            groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            world.addBody(groundBody);
+        }
+        
+        // ===============================================
+        // SKELETON CREATION
+        // ===============================================
+        
+        function createSkeleton() {
+            const boneData = SKELETON_DEFINITION.bones;
+            const jointData = SKELETON_DEFINITION.joints;
+            
+            // Create all bones
+            boneData.forEach(bone => {
+                skeleton[bone.name] = createBone(bone);
+            });
+            
+            // Create joints
+            jointData.forEach(joint => {
+                createJoint(joint);
+            });
+            
+            // Update stats
+            document.getElementById('bodies').textContent = physicsObjects.length;
+            document.getElementById('joints').textContent = jointData.length;
+            
+            // Set initial A-pose
+            setPose('apose');
+        }
+        
+        function createBone(boneSpec) {
+            const mass = boneSpec.mass * CONFIG.totalBodyMass;
+            
+            // Calculate world position
+            let worldPos = new THREE.Vector3(...boneSpec.offset);
+            if (boneSpec.parent) {
+                const parentBone = skeleton[boneSpec.parent];
+                worldPos.add(parentBone.worldPosition);
+            }
+            
+            // Create physics body
+            let shape;
+            let visualGeometry;
+            
+            switch (boneSpec.shape) {
+                case 'box':
+                    const [sx, sy, sz] = boneSpec.size;
+                    shape = new CANNON.Box(new CANNON.Vec3(sx/2, sy/2, sz/2));
+                    visualGeometry = new THREE.BoxGeometry(sx, sy, sz);
+                    break;
+                    
+                case 'sphere':
+                    shape = new CANNON.Sphere(boneSpec.radius);
+                    visualGeometry = new THREE.SphereGeometry(boneSpec.radius, 16, 16);
+                    break;
+                    
+                case 'capsule':
+                    // Approximate capsule with sphere
+                    shape = new CANNON.Sphere(boneSpec.radius + boneSpec.length / 2);
+                    visualGeometry = new THREE.CapsuleGeometry(boneSpec.radius, boneSpec.length, 8, 16);
+                    break;
+            }
+            
+            const body = new CANNON.Body({ mass: mass });
+            body.addShape(shape);
+            body.position.set(worldPos.x, worldPos.y, worldPos.z);
+            body.linearDamping = 0.1;
+            body.angularDamping = 0.3;
+            world.addBody(body);
+            
+            // Create visual
+            const material = new THREE.MeshStandardMaterial({ 
+                color: boneSpec.pseudo ? 0x888888 : 0x3498db,
+                roughness: 0.6,
+                metalness: 0.3,
+                transparent: boneSpec.pseudo,
+                opacity: boneSpec.pseudo ? 0.3 : 1.0
+            });
+            const mesh = new THREE.Mesh(visualGeometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            
+            physicsObjects.push(body);
+            visualObjects.push(mesh);
+            
+            return {
+                name: boneSpec.name,
+                body: body,
+                mesh: mesh,
+                parent: boneSpec.parent,
+                offset: new THREE.Vector3(...boneSpec.offset),
+                worldPosition: worldPos,
+                pseudo: boneSpec.pseudo || false
+            };
+        }
+        
+        function createJoint(jointSpec) {
+            const parentBone = skeleton[jointSpec.parent];
+            const childBone = skeleton[jointSpec.child];
+            
+            if (!parentBone || !childBone) {
+                console.warn('Missing bone for joint:', jointSpec);
+                return;
+            }
+            
+            const parentBody = parentBone.body;
+            const childBody = childBone.body;
+            
+            // Joint anchor at child position
+            const anchorPoint = new CANNON.Vec3(
+                childBody.position.x,
+                childBody.position.y,
+                childBody.position.z
+            );
+            
+            let constraint;
+            
+            if (jointSpec.type === 'ball') {
+                // Create point-to-point constraint (ball joint)
+                constraint = new CANNON.PointToPointConstraint(
+                    parentBody,
+                    new CANNON.Vec3(
+                        anchorPoint.x - parentBody.position.x,
+                        anchorPoint.y - parentBody.position.y,
+                        anchorPoint.z - parentBody.position.z
+                    ),
+                    childBody,
+                    new CANNON.Vec3(0, 0, 0)
+                );
+                
+                world.addConstraint(constraint);
+                
+                // Add cone twist constraint for limits (simplified)
+                const coneTwist = new CANNON.ConeTwistConstraint(
+                    parentBody,
+                    childBody,
+                    {
+                        pivotA: new CANNON.Vec3(
+                            anchorPoint.x - parentBody.position.x,
+                            anchorPoint.y - parentBody.position.y,
+                            anchorPoint.z - parentBody.position.z
+                        ),
+                        pivotB: new CANNON.Vec3(0, 0, 0),
+                        axisA: new CANNON.Vec3(0, 1, 0),
+                        axisB: new CANNON.Vec3(0, 1, 0),
+                        angle: THREE.MathUtils.degToRad(jointSpec.limits.swingY),
+                        twistAngle: THREE.MathUtils.degToRad(jointSpec.limits.twist)
+                    }
+                );
+                world.addConstraint(coneTwist);
+                
+            } else if (jointSpec.type === 'hinge') {
+                const axis = new CANNON.Vec3(...jointSpec.axis);
+                
+                constraint = new CANNON.HingeConstraint(
+                    parentBody,
+                    childBody,
+                    {
+                        pivotA: new CANNON.Vec3(
+                            anchorPoint.x - parentBody.position.x,
+                            anchorPoint.y - parentBody.position.y,
+                            anchorPoint.z - parentBody.position.z
+                        ),
+                        pivotB: new CANNON.Vec3(0, 0, 0),
+                        axisA: axis,
+                        axisB: axis
+                    }
+                );
+                
+                constraint.enableMotor();
+                constraint.setMotorSpeed(0);
+                constraint.setMotorMaxForce(jointSpec.drive.stiff * 10);
+                
+                world.addConstraint(constraint);
+            }
+            
+            // Store joint metadata
+            if (constraint) {
+                constraint.jointSpec = jointSpec;
+            }
+            
+            // Visual representation of joint
+            const jointGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+            const jointMaterial = new THREE.MeshBasicMaterial({ color: 0xff6b6b });
+            const jointMesh = new THREE.Mesh(jointGeometry, jointMaterial);
+            jointMesh.position.copy(anchorPoint);
+            jointMesh.visible = true;
+            scene.add(jointMesh);
+            jointVisuals.push(jointMesh);
+        }
+        
+        // ===============================================
+        // INVERSE KINEMATICS
+        // ===============================================
+        
+        function solveTwoBoneIK(rootBone, midBone, endBone, target, poleVector) {
+            // Two-bone IK solver (e.g., for arm or leg)
+            const root = rootBone.body.position;
+            const L1 = midBone.offset.length();
+            const L2 = endBone.offset.length();
+            
+            const toTarget = new CANNON.Vec3(
+                target.x - root.x,
+                target.y - root.y,
+                target.z - root.z
+            );
+            
+            let d = toTarget.length();
+            d = Math.max(Math.abs(L1 - L2) + 0.01, Math.min(d, L1 + L2 - 0.01));
+            
+            // Law of cosines for elbow/knee angle
+            const cosAngle = (L1*L1 + L2*L2 - d*d) / (2*L1*L2);
+            const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+            
+            // Apply rotation to mid joint
+            // This is simplified - in practice you'd compute proper rotations
+            return angle;
+        }
+        
+        // ===============================================
+        // COUPLING RULES
+        // ===============================================
+        
+        function applyScapulohumeralRhythm() {
+            // Scapulohumeral rhythm: scapula rotates ~1:2 with shoulder elevation
+            const startDeg = 30;
+            const ratio = 0.5;
+            
+            ['R', 'L'].forEach(side => {
+                const shoulderBone = skeleton[`upperArm_${side}`];
+                const scapBone = skeleton[`scap_${side}`];
+                
+                if (!shoulderBone || !scapBone) return;
+                
+                // Get shoulder elevation (simplified - just Y rotation)
+                const euler = new THREE.Euler().setFromQuaternion(
+                    new THREE.Quaternion(
+                        shoulderBone.body.quaternion.x,
+                        shoulderBone.body.quaternion.y,
+                        shoulderBone.body.quaternion.z,
+                        shoulderBone.body.quaternion.w
+                    )
+                );
+                
+                const elevationDeg = THREE.MathUtils.radToDeg(Math.abs(euler.y));
+                
+                if (elevationDeg > startDeg) {
+                    const scapRotation = (elevationDeg - startDeg) * ratio;
+                    const scapRad = THREE.MathUtils.degToRad(scapRotation);
+                    
+                    // Apply upward rotation to scapula
+                    const scapQuat = new THREE.Quaternion().setFromAxisAngle(
+                        new THREE.Vector3(0, 0, side === 'R' ? 1 : -1),
+                        scapRad
+                    );
+                    
+                    // Blend with current rotation
+                    const currentQuat = new THREE.Quaternion(
+                        scapBone.body.quaternion.x,
+                        scapBone.body.quaternion.y,
+                        scapBone.body.quaternion.z,
+                        scapBone.body.quaternion.w
+                    );
+                    currentQuat.slerp(scapQuat, 0.1);
+                    
+                    scapBone.body.quaternion.set(
+                        currentQuat.x,
+                        currentQuat.y,
+                        currentQuat.z,
+                        currentQuat.w
+                    );
+                }
+            });
+        }
+        
+        function applyKneeScrewHome() {
+            // Knee screw-home mechanism: tibial external rotation in final 15° of extension
+            const startDeg = 15;
+            const erBiasDeg = 10;
+            
+            ['R', 'L'].forEach(side => {
+                const shinBone = skeleton[`shin_${side}`];
+                const thighBone = skeleton[`thigh_${side}`];
+                
+                if (!shinBone || !thighBone) return;
+                
+                // Get knee flexion angle (simplified)
+                const thighEuler = new THREE.Euler().setFromQuaternion(
+                    new THREE.Quaternion(
+                        thighBone.body.quaternion.x,
+                        thighBone.body.quaternion.y,
+                        thighBone.body.quaternion.z,
+                        thighBone.body.quaternion.w
+                    )
+                );
+                
+                const shinEuler = new THREE.Euler().setFromQuaternion(
+                    new THREE.Quaternion(
+                        shinBone.body.quaternion.x,
+                        shinBone.body.quaternion.y,
+                        shinBone.body.quaternion.z,
+                        shinBone.body.quaternion.w
+                    )
+                );
+                
+                const flexionDeg = Math.abs(THREE.MathUtils.radToDeg(shinEuler.x - thighEuler.x));
+                
+                if (flexionDeg < startDeg) {
+                    const t = (startDeg - flexionDeg) / startDeg;
+                    const twistTarget = t * erBiasDeg * (side === 'R' ? 1 : -1);
+                    const twistRad = THREE.MathUtils.degToRad(twistTarget);
+                    
+                    // Apply twist
+                    const twistQuat = new THREE.Quaternion().setFromAxisAngle(
+                        new THREE.Vector3(0, 1, 0),
+                        twistRad
+                    );
+                    
+                    const currentQuat = new THREE.Quaternion(
+                        shinBone.body.quaternion.x,
+                        shinBone.body.quaternion.y,
+                        shinBone.body.quaternion.z,
+                        shinBone.body.quaternion.w
+                    );
+                    currentQuat.multiply(twistQuat);
+                    
+                    shinBone.body.quaternion.set(
+                        currentQuat.x,
+                        currentQuat.y,
+                        currentQuat.z,
+                        currentQuat.w
+                    );
+                }
+            });
+        }
+        
+        function applySpineDistribution() {
+            // Distribute spine rotation across segments
+            // When chest rotates, distribute: chest 40%, spine_03 30%, spine_02 20%, spine_01 10%
+            const chestBone = skeleton['chest'];
+            if (!chestBone) return;
+            
+            const chestEuler = new THREE.Euler().setFromQuaternion(
+                new THREE.Quaternion(
+                    chestBone.body.quaternion.x,
+                    chestBone.body.quaternion.y,
+                    chestBone.body.quaternion.z,
+                    chestBone.body.quaternion.w
+                )
+            );
+            
+            const chestRotation = chestEuler.y;
+            
+            // Apply distributed rotation to spine segments
+            const distribution = {
+                'spine_03': 0.3,
+                'spine_02': 0.2,
+                'spine_01': 0.1
+            };
+            
+            Object.keys(distribution).forEach(boneName => {
+                const bone = skeleton[boneName];
+                if (!bone) return;
+                
+                const targetRotation = chestRotation * distribution[boneName] / 0.4;
+                const targetQuat = new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(0, 1, 0),
+                    targetRotation
+                );
+                
+                const currentQuat = new THREE.Quaternion(
+                    bone.body.quaternion.x,
+                    bone.body.quaternion.y,
+                    bone.body.quaternion.z,
+                    bone.body.quaternion.w
+                );
+                currentQuat.slerp(targetQuat, 0.05);
+                
+                bone.body.quaternion.set(
+                    currentQuat.x,
+                    currentQuat.y,
+                    currentQuat.z,
+                    currentQuat.w
+                );
+            });
+        }
+        
+        // ===============================================
+        // POSE PRESETS
+        // ===============================================
+        
+        function setPose(poseName) {
+            switch (poseName) {
+                case 'apose':
+                    // A-pose: arms ~30° down from T-pose
+                    applyBoneRotation('upperArm_R', 0, 0, -30);
+                    applyBoneRotation('upperArm_L', 0, 0, 30);
+                    applyBoneRotation('forearm_R', 0, 0, 10);
+                    applyBoneRotation('forearm_L', 0, 0, -10);
+                    break;
+                    
+                case 'tpose':
+                    // T-pose: arms horizontal
+                    applyBoneRotation('upperArm_R', 0, 0, -90);
+                    applyBoneRotation('upperArm_L', 0, 0, 90);
+                    applyBoneRotation('forearm_R', 0, 0, 0);
+                    applyBoneRotation('forearm_L', 0, 0, 0);
+                    break;
+                    
+                case 'reach':
+                    // Reach up
+                    applyBoneRotation('upperArm_R', 180, 0, 0);
+                    applyBoneRotation('upperArm_L', 180, 0, 0);
+                    applyBoneRotation('forearm_R', 0, 0, 0);
+                    applyBoneRotation('forearm_L', 0, 0, 0);
+                    break;
+                    
+                case 'squat':
+                    // Deep squat
+                    applyBoneRotation('thigh_R', -110, 0, 0);
+                    applyBoneRotation('thigh_L', -110, 0, 0);
+                    applyBoneRotation('shin_R', 130, 0, 0);
+                    applyBoneRotation('shin_L', 130, 0, 0);
+                    applyBoneRotation('foot_R', 15, 0, 0);
+                    applyBoneRotation('foot_L', 15, 0, 0);
+                    // Compensate pelvis
+                    skeleton.pelvis.body.position.y = 0.6;
+                    break;
+                    
+                case 'look':
+                    // Look over shoulder
+                    applyBoneRotation('neck', 0, 80, 0);
+                    applyBoneRotation('head', 0, 30, 0);
+                    applyBoneRotation('chest', 0, 20, 0);
+                    break;
+                    
+                case 'balance':
+                    // Single leg balance
+                    applyBoneRotation('thigh_L', 90, 0, 0);
+                    applyBoneRotation('shin_L', 90, 0, 0);
+                    break;
+            }
+        }
+        
+        function applyBoneRotation(boneName, x, y, z) {
+            const bone = skeleton[boneName];
+            if (!bone) return;
+            
+            const euler = new THREE.Euler(
+                THREE.MathUtils.degToRad(x),
+                THREE.MathUtils.degToRad(y),
+                THREE.MathUtils.degToRad(z),
+                'XYZ'
+            );
+            const quat = new THREE.Quaternion().setFromEuler(euler);
+            
+            bone.body.quaternion.set(quat.x, quat.y, quat.z, quat.w);
+            bone.body.angularVelocity.set(0, 0, 0);
+        }
+        
+        function resetPose() {
+            // Reset all bones to initial positions
+            SKELETON_DEFINITION.bones.forEach(boneSpec => {
+                const bone = skeleton[boneSpec.name];
+                if (!bone) return;
+                
+                let worldPos = new THREE.Vector3(...boneSpec.offset);
+                if (boneSpec.parent) {
+                    const parentBone = skeleton[boneSpec.parent];
+                    worldPos.add(new THREE.Vector3(
+                        parentBone.body.position.x,
+                        parentBone.body.position.y,
+                        parentBone.body.position.z
+                    ));
+                }
+                
+                bone.body.position.set(worldPos.x, worldPos.y, worldPos.z);
+                bone.body.quaternion.set(0, 0, 0, 1);
+                bone.body.velocity.set(0, 0, 0);
+                bone.body.angularVelocity.set(0, 0, 0);
+            });
+            
+            setPose('apose');
+        }
+        
+        function applyRandomForce() {
+            const boneName = Object.keys(skeleton)[Math.floor(Math.random() * Object.keys(skeleton).length)];
+            const bone = skeleton[boneName];
+            
+            const force = new CANNON.Vec3(
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200
+            );
+            
+            bone.body.applyImpulse(force, bone.body.position);
+        }
+        
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            if (!physicsEnabled) {
+                // Freeze all bodies
+                physicsObjects.forEach(body => {
+                    body.velocity.set(0, 0, 0);
+                    body.angularVelocity.set(0, 0, 0);
+                });
+            }
+        }
+        
+        // ===============================================
+        // UPDATE LOOP
+        // ===============================================
+        
+        function computeCenterOfMass() {
+            let totalMass = 0;
+            let comX = 0, comY = 0, comZ = 0;
+            
+            physicsObjects.forEach(body => {
+                const mass = body.mass;
+                totalMass += mass;
+                comX += body.position.x * mass;
+                comY += body.position.y * mass;
+                comZ += body.position.z * mass;
+            });
+            
+            if (totalMass > 0) {
+                return {
+                    x: comX / totalMass,
+                    y: comY / totalMass,
+                    z: comZ / totalMass
+                };
+            }
+            return { x: 0, y: 0, z: 0 };
+        }
+        
+        function updatePhysics(deltaTime) {
+            if (!physicsEnabled) return;
+            
+            // Update world
+            world.step(CONFIG.timeStep, deltaTime, CONFIG.maxSubSteps);
+            
+            // Apply coupling rules
+            applyScapulohumeralRhythm();
+            applyKneeScrewHome();
+            applySpineDistribution();
+            
+            // Sync visual objects with physics
+            for (let i = 0; i < physicsObjects.length; i++) {
+                const body = physicsObjects[i];
+                const mesh = visualObjects[i];
+                
+                mesh.position.copy(body.position);
+                mesh.quaternion.copy(body.quaternion);
+            }
+            
+            // Update CoM visualization
+            const com = computeCenterOfMass();
+            comVisual.position.set(com.x, com.y, com.z);
+            document.getElementById('comHeight').textContent = com.y.toFixed(2);
+        }
+        
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
+            
+            // Update physics
+            updatePhysics(deltaTime);
+            
+            // Render
+            renderer.render(scene, camera);
+            
+            // Update FPS
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime - lastTime >= 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+        }
+        
+        // ===============================================
+        // UI CONTROLS
+        // ===============================================
+        
+        function initUI() {
+            // Show/hide controls
+            document.getElementById('showBones').addEventListener('change', (e) => {
+                visualObjects.forEach(mesh => mesh.visible = e.target.checked);
+            });
+            
+            document.getElementById('showJoints').addEventListener('change', (e) => {
+                jointVisuals.forEach(mesh => mesh.visible = e.target.checked);
+            });
+            
+            document.getElementById('showCoM').addEventListener('change', (e) => {
+                comVisual.visible = e.target.checked;
+            });
+            
+            document.getElementById('showCollision').addEventListener('change', (e) => {
+                // Would show collision shapes - not implemented in this version
+            });
+            
+            // Physics controls
+            document.getElementById('gravity').addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                world.gravity.y = value;
+                document.getElementById('gravityValue').textContent = value.toFixed(2);
+            });
+            
+            document.getElementById('stiffness').addEventListener('input', (e) => {
+                stiffnessMultiplier = parseFloat(e.target.value);
+                document.getElementById('stiffnessValue').textContent = stiffnessMultiplier.toFixed(1);
+            });
+            
+            document.getElementById('damping').addEventListener('input', (e) => {
+                dampingMultiplier = parseFloat(e.target.value);
+                document.getElementById('dampingValue').textContent = dampingMultiplier.toFixed(1);
+            });
+        }
+        
+        // ===============================================
+        // INITIALIZATION
+        // ===============================================
+        
+        function init() {
+            initScene();
+            initPhysics();
+            createSkeleton();
+            initUI();
+            animate();
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
