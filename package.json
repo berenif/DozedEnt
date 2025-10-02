@@ -98,7 +98,7 @@
     "wasm:setup": "bash -c 'source ./emsdk/emsdk_env.sh && em++ --version'",
     "get-bundle-sizes": "node tools/scripts/get-bundle-sizes.js",
     "optimize:performance": "node tools/scripts/performance-optimizer.js",
-    "optimize:bundle": "node -e \"import('./public/src/utils/dead-code-eliminator.js').then(m => console.log('Bundle optimization available'))\"",
+    "optimize:bundle": "node -e \"console.log('Bundle optimization disabled: dead-code-eliminator removed')\"",
     "optimize:memory": "node -e \"import('./public/src/utils/memory-optimizer.js').then(m => console.log('Memory optimization available'))\"",
     "lint": "npx eslint public/src/ test/ --config tools/config/eslint.config.js",
     "test": "playwright test --config tools/config/playwright.config.js",

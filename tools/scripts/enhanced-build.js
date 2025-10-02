@@ -10,7 +10,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { DeadCodeEliminator } from '../../public/src/utils/dead-code-eliminator.js';
 import { MemoryOptimizer } from '../../public/src/utils/memory-optimizer.js';
 import { DistOrganizer } from './dist-organizer.js';
 
@@ -28,7 +27,6 @@ class EnhancedBuildSystem {
       warnings: []
     };
     
-    this.deadCodeEliminator = new DeadCodeEliminator();
     this.memoryOptimizer = new MemoryOptimizer();
     
     console.log('Enhanced build system initialized');
@@ -241,33 +239,9 @@ class EnhancedBuildSystem {
     console.log(chalk.blue('⚡ Running post-build optimization...'));
     
     try {
-      // Analyze built files for dead code
-      const distPath = path.join(projectRoot, 'dist');
-      const files = await fs.readdir(distPath);
-      const jsFiles = files.filter(file => file.endsWith('.js') && !file.endsWith('.min.js'));
-      
-      let totalSavings = 0;
-      
-      for (const file of jsFiles) {
-        const filePath = path.join(distPath, file);
-        const content = await fs.readFile(filePath, 'utf8');
-        
-        const result = this.deadCodeEliminator.eliminateDeadCode(content);
-        
-        if (result.bytesRemoved > 0) {
-          await fs.writeFile(filePath, result.content);
-          totalSavings += result.bytesRemoved;
-          console.log(chalk.green(`  ✓ Optimized ${file}: ${result.bytesRemoved} bytes saved`));
-        }
-      }
-      
-      this.buildStats.optimizationSavings = totalSavings;
-      
-      if (totalSavings > 0) {
-        console.log(chalk.green(`✓ Post-build optimization saved ${totalSavings} bytes`));
-      } else {
-        console.log(chalk.yellow('ℹ No optimization opportunities found'));
-      }
+      // Dead code eliminator module has been removed; skip optimization step
+      this.buildStats.optimizationSavings = 0;
+      console.log(chalk.yellow('ℹ Dead code elimination is disabled (module removed)'));
       
     } catch (error) {
       this.buildStats.warnings.push(`Post-build optimization failed: ${error.message}`);
@@ -417,7 +391,15 @@ class EnhancedBuildSystem {
       stats: this.buildStats,
       memoryStats: this.memoryOptimizer.getMemoryStats(),
       poolEfficiency: this.memoryOptimizer.getPoolEfficiency(),
-      optimizationReport: this.deadCodeEliminator.generateReport()
+      optimizationReport: {
+        summary: {
+          filesProcessed: 0,
+          totalBytesRemoved: 0,
+          consoleStatementsRemoved: 0,
+          unusedImportsRemoved: 0
+        },
+        recommendations: []
+      }
     };
 
     // Write JSON report
