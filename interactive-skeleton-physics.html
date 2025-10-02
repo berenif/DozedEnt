@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Skeleton Physics - Anatomically Correct Rigging</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            max-width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        #controls h2 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #4da6ff;
+            border-bottom: 2px solid #4da6ff;
+            padding-bottom: 8px;
+        }
+        
+        #controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #80c0ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #b0d0ff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #4da6ff 0%, #3d85cc 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(77, 166, 255, 0.3);
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #5bb6ff 0%, #4d95dc 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(77, 166, 255, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .value-display {
+            display: inline-block;
+            float: right;
+            font-weight: 600;
+            color: #4da6ff;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+        }
+        
+        #info div {
+            margin: 5px 0;
+        }
+        
+        .info-label {
+            color: #80c0ff;
+            font-weight: 600;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .checkbox-label input {
+            cursor: pointer;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(77, 166, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(77, 166, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="controls">
+        <h2>🦴 Skeleton Physics</h2>
+        
+        <h3>Poses</h3>
+        <button id="btn-apose">A-Pose (Rest)</button>
+        <button id="btn-tpose">T-Pose</button>
+        <button id="btn-sit">Sitting</button>
+        <button id="btn-squat">Deep Squat</button>
+        <button id="btn-reach">Reach Forward</button>
+        <button id="btn-wave">Wave</button>
+        
+        <h3>Physics Settings</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-physics" checked>
+                Enable Physics Simulation
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-gravity" checked>
+                Enable Gravity
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Stiffness <span class="value-display" id="val-stiffness">100</span>
+            </label>
+            <input type="range" id="slider-stiffness" min="10" max="500" value="100" step="10">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Damping <span class="value-display" id="val-damping">20</span>
+            </label>
+            <input type="range" id="slider-damping" min="5" max="100" value="20" step="5">
+        </div>
+        
+        <h3>Visualization</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-bones" checked>
+                Show Bones
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-joints" checked>
+                Show Joints
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-limits">
+                Show Joint Limits
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-com">
+                Show Center of Mass
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-ik-targets">
+                Show IK Targets
+            </label>
+        </div>
+        
+        <h3>IK Controls</h3>
+        <button id="btn-ik-left-hand">Toggle Left Hand IK</button>
+        <button id="btn-ik-right-hand">Toggle Right Hand IK</button>
+        <button id="btn-ik-left-foot">Toggle Left Foot IK</button>
+        <button id="btn-ik-right-foot">Toggle Right Foot IK</button>
+        
+        <h3>Tests</h3>
+        <button id="btn-test-shoulder">Test Shoulder Range</button>
+        <button id="btn-test-elbow">Test Elbow</button>
+        <button id="btn-test-knee">Test Knee</button>
+        <button id="btn-reset">Reset Pose</button>
+    </div>
+    
+    <div id="info">
+        <div><span class="info-label">FPS:</span> <span id="fps">60</span></div>
+        <div><span class="info-label">Bones:</span> <span id="bone-count">0</span></div>
+        <div><span class="info-label">Joints:</span> <span id="joint-count">0</span></div>
+        <div><span class="info-label">Controls:</span></div>
+        <div>• Left click + drag: Rotate view</div>
+        <div>• Right click + drag: Pan view</div>
+        <div>• Scroll: Zoom</div>
+        <div>• Shift + drag IK target: Move target</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ============================================================================
+        // MATH UTILITIES
+        // ============================================================================
+        
+        const DEG2RAD = Math.PI / 180;
+        const RAD2DEG = 180 / Math.PI;
+        
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+        
+        function shortestAngle(angle) {
+            while (angle > Math.PI) angle -= 2 * Math.PI;
+            while (angle < -Math.PI) angle += 2 * Math.PI;
+            return angle;
+        }
+        
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        
+        // ============================================================================
+        // SKELETON DATA STRUCTURE
+        // ============================================================================
+        
+        class Bone {
+            constructor(name, parent, position, length, radius, mass) {
+                this.name = name;
+                this.parent = parent;
+                this.children = [];
+                
+                // Rest pose (local to parent)
+                this.restPosition = new THREE.Vector3().copy(position);
+                this.length = length;
+                this.radius = radius;
+                this.mass = mass;
+                
+                // Current state (world space)
+                this.position = new THREE.Vector3();
+                this.rotation = new THREE.Quaternion();
+                this.velocity = new THREE.Vector3();
+                this.angularVelocity = new THREE.Vector3();
+                
+                // Local to parent
+                this.localRotation = new THREE.Quaternion();
+                
+                // Computed inertia
+                this.inertia = this.computeInertia();
+                
+                if (parent) {
+                    parent.children.push(this);
+                }
+            }
+            
+            computeInertia() {
+                // Capsule inertia approximation
+                const m = this.mass;
+                const r = this.radius;
+                const h = this.length;
+                
+                const Ixx = (1/12) * m * (3*r*r + h*h);
+                const Iyy = Ixx;
+                const Izz = (1/2) * m * r * r;
+                
+                return new THREE.Vector3(Ixx, Iyy, Izz);
+            }
+            
+            updateWorldTransform() {
+                if (this.parent) {
+                    this.position.copy(this.restPosition);
+                    this.position.applyQuaternion(this.parent.rotation);
+                    this.position.add(this.parent.position);
+                    
+                    this.rotation.copy(this.parent.rotation);
+                    this.rotation.multiply(this.localRotation);
+                } else {
+                    this.position.copy(this.restPosition);
+                    this.rotation.copy(this.localRotation);
+                }
+                
+                // Update children
+                this.children.forEach(child => child.updateWorldTransform());
+            }
+        }
+        
+        class Joint {
+            constructor(name, parent, child, type, limits, drive) {
+                this.name = name;
+                this.parent = parent;
+                this.child = child;
+                this.type = type; // 'free6', 'ball', 'hinge', 'twist', 'swingTwist'
+                this.limits = limits;
+                this.drive = drive;
+                
+                // Current angles
+                this.currentAngles = new THREE.Vector3();
+                this.targetAngles = new THREE.Vector3();
+            }
+            
+            applyConstraints(dt) {
+                // Soft constraint with spring-damper
+                const k = this.drive.stiff;
+                const d = this.drive.damp;
+                
+                const error = new THREE.Vector3().subVectors(this.targetAngles, this.currentAngles);
+                error.x = shortestAngle(error.x);
+                error.y = shortestAngle(error.y);
+                error.z = shortestAngle(error.z);
+                
+                // Apply limits
+                this.currentAngles.x = clamp(this.currentAngles.x, this.limits.min?.x || -Math.PI, this.limits.max?.x || Math.PI);
+                this.currentAngles.y = clamp(this.currentAngles.y, this.limits.min?.y || -Math.PI, this.limits.max?.y || Math.PI);
+                this.currentAngles.z = clamp(this.currentAngles.z, this.limits.min?.z || -Math.PI, this.limits.max?.z || Math.PI);
+                
+                // PD control
+                const torque = new THREE.Vector3(
+                    k * error.x - d * this.child.angularVelocity.x,
+                    k * error.y - d * this.child.angularVelocity.y,
+                    k * error.z - d * this.child.angularVelocity.z
+                );
+                
+                return torque;
+            }
+        }
+        
+        // ============================================================================
+        // SKELETON BUILDER
+        // ============================================================================
+        
+        class SkeletonBuilder {
+            constructor() {
+                this.bones = new Map();
+                this.joints = [];
+                this.rootBone = null;
+            }
+            
+            createSkeleton() {
+                // Create bones in A-pose (arms ~30° down from T-pose)
+                
+                // Torso
+                const pelvis = new Bone('pelvis', null, new THREE.Vector3(0, 1.0, 0), 0.12, 0.11, 9.5);
+                this.bones.set('pelvis', pelvis);
+                this.rootBone = pelvis;
+                
+                const spine01 = new Bone('spine_01', pelvis, new THREE.Vector3(0, 0.08, 0), 0.10, 0.07, 3.0);
+                this.bones.set('spine_01', spine01);
+                
+                const spine02 = new Bone('spine_02', spine01, new THREE.Vector3(0, 0.10, 0), 0.10, 0.07, 3.0);
+                this.bones.set('spine_02', spine02);
+                
+                const spine03 = new Bone('spine_03', spine02, new THREE.Vector3(0, 0.10, 0), 0.10, 0.07, 3.0);
+                this.bones.set('spine_03', spine03);
+                
+                const chest = new Bone('chest', spine03, new THREE.Vector3(0, 0.12, 0), 0.14, 0.10, 15.0);
+                this.bones.set('chest', chest);
+                
+                const neck = new Bone('neck', chest, new THREE.Vector3(0, 0.12, 0), 0.08, 0.04, 1.5);
+                this.bones.set('neck', neck);
+                
+                const head = new Bone('head', neck, new THREE.Vector3(0, 0.10, 0), 0.12, 0.08, 6.0);
+                this.bones.set('head', head);
+                
+                // Right arm
+                const clavR = new Bone('clav_R', chest, new THREE.Vector3(0.08, 0.10, 0), 0.14, 0.02, 0.4);
+                this.bones.set('clav_R', clavR);
+                
+                const scapR = new Bone('scap_R', clavR, new THREE.Vector3(0.14, 0, 0), 0.05, 0.06, 0.3);
+                this.bones.set('scap_R', scapR);
+                
+                const upperArmR = new Bone('upperArm_R', scapR, new THREE.Vector3(0.05, -0.02, 0), 0.28, 0.05, 2.1);
+                this.bones.set('upperArm_R', upperArmR);
+                
+                const forearmR = new Bone('forearm_R', upperArmR, new THREE.Vector3(0, -0.28, 0), 0.24, 0.04, 1.6);
+                this.bones.set('forearm_R', forearmR);
+                
+                const handR = new Bone('hand_R', forearmR, new THREE.Vector3(0, -0.24, 0), 0.08, 0.035, 0.8);
+                this.bones.set('hand_R', handR);
+                
+                // Left arm (mirror)
+                const clavL = new Bone('clav_L', chest, new THREE.Vector3(-0.08, 0.10, 0), 0.14, 0.02, 0.4);
+                this.bones.set('clav_L', clavL);
+                
+                const scapL = new Bone('scap_L', clavL, new THREE.Vector3(-0.14, 0, 0), 0.05, 0.06, 0.3);
+                this.bones.set('scap_L', scapL);
+                
+                const upperArmL = new Bone('upperArm_L', scapL, new THREE.Vector3(-0.05, -0.02, 0), 0.28, 0.05, 2.1);
+                this.bones.set('upperArm_L', upperArmL);
+                
+                const forearmL = new Bone('forearm_L', upperArmL, new THREE.Vector3(0, -0.28, 0), 0.24, 0.04, 1.6);
+                this.bones.set('forearm_L', forearmL);
+                
+                const handL = new Bone('hand_L', forearmL, new THREE.Vector3(0, -0.24, 0), 0.08, 0.035, 0.8);
+                this.bones.set('hand_L', handL);
+                
+                // Right leg
+                const thighR = new Bone('thigh_R', pelvis, new THREE.Vector3(0.10, -0.08, 0), 0.40, 0.06, 7.5);
+                this.bones.set('thigh_R', thighR);
+                
+                const shinR = new Bone('shin_R', thighR, new THREE.Vector3(0, -0.40, 0), 0.38, 0.045, 3.8);
+                this.bones.set('shin_R', shinR);
+                
+                const footR = new Bone('foot_R', shinR, new THREE.Vector3(0, -0.38, 0.05), 0.10, 0.035, 0.8);
+                this.bones.set('foot_R', footR);
+                
+                const toeR = new Bone('toe_R', footR, new THREE.Vector3(0, -0.02, 0.08), 0.05, 0.02, 0.2);
+                this.bones.set('toe_R', toeR);
+                
+                // Left leg (mirror)
+                const thighL = new Bone('thigh_L', pelvis, new THREE.Vector3(-0.10, -0.08, 0), 0.40, 0.06, 7.5);
+                this.bones.set('thigh_L', thighL);
+                
+                const shinL = new Bone('shin_L', thighL, new THREE.Vector3(0, -0.40, 0), 0.38, 0.045, 3.8);
+                this.bones.set('shin_L', shinL);
+                
+                const footL = new Bone('foot_L', shinL, new THREE.Vector3(0, -0.38, 0.05), 0.10, 0.035, 0.8);
+                this.bones.set('foot_L', footL);
+                
+                const toeL = new Bone('toe_L', footL, new THREE.Vector3(0, -0.02, 0.08), 0.05, 0.02, 0.2);
+                this.bones.set('toe_L', toeL);
+                
+                // Create joints
+                this.createJoints();
+                
+                return this;
+            }
+            
+            createJoints() {
+                // Spine joints (3DOF swing-twist each)
+                this.joints.push(new Joint('spine01', this.bones.get('pelvis'), this.bones.get('spine_01'), 'swingTwist', {
+                    min: new THREE.Vector3(-30 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD),
+                    max: new THREE.Vector3(30 * DEG2RAD, 30 * DEG2RAD, 15 * DEG2RAD)
+                }, { stiff: 200, damp: 30 }));
+                
+                this.joints.push(new Joint('spine02', this.bones.get('spine_01'), this.bones.get('spine_02'), 'swingTwist', {
+                    min: new THREE.Vector3(-30 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD),
+                    max: new THREE.Vector3(30 * DEG2RAD, 30 * DEG2RAD, 15 * DEG2RAD)
+                }, { stiff: 200, damp: 30 }));
+                
+                this.joints.push(new Joint('spine03', this.bones.get('spine_02'), this.bones.get('spine_03'), 'swingTwist', {
+                    min: new THREE.Vector3(-30 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD),
+                    max: new THREE.Vector3(30 * DEG2RAD, 30 * DEG2RAD, 15 * DEG2RAD)
+                }, { stiff: 200, damp: 30 }));
+                
+                this.joints.push(new Joint('chest', this.bones.get('spine_03'), this.bones.get('chest'), 'swingTwist', {
+                    min: new THREE.Vector3(-30 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD),
+                    max: new THREE.Vector3(30 * DEG2RAD, 30 * DEG2RAD, 15 * DEG2RAD)
+                }, { stiff: 220, damp: 35 }));
+                
+                // Neck joint
+                this.joints.push(new Joint('neck', this.bones.get('chest'), this.bones.get('neck'), 'ball', {
+                    min: new THREE.Vector3(-45 * DEG2RAD, -60 * DEG2RAD, -80 * DEG2RAD),
+                    max: new THREE.Vector3(60 * DEG2RAD, 45 * DEG2RAD, 80 * DEG2RAD)
+                }, { stiff: 150, damp: 25 }));
+                
+                // Head joint
+                this.joints.push(new Joint('head', this.bones.get('neck'), this.bones.get('head'), 'ball', {
+                    min: new THREE.Vector3(-20 * DEG2RAD, -10 * DEG2RAD, -30 * DEG2RAD),
+                    max: new THREE.Vector3(20 * DEG2RAD, 10 * DEG2RAD, 30 * DEG2RAD)
+                }, { stiff: 120, damp: 20 }));
+                
+                // Right arm joints
+                this.createArmJoints('R');
+                this.createArmJoints('L');
+                
+                // Leg joints
+                this.createLegJoints('R');
+                this.createLegJoints('L');
+            }
+            
+            createArmJoints(side) {
+                // Clavicle (sternoclavicular)
+                this.joints.push(new Joint(`clav_${side}`, this.bones.get('chest'), this.bones.get(`clav_${side}`), 'ball', {
+                    min: new THREE.Vector3(-10 * DEG2RAD, -45 * DEG2RAD, -20 * DEG2RAD),
+                    max: new THREE.Vector3(15 * DEG2RAD, 45 * DEG2RAD, 20 * DEG2RAD)
+                }, { stiff: 100, damp: 15 }));
+                
+                // Scapula (scapulothoracic)
+                this.joints.push(new Joint(`scap_${side}`, this.bones.get(`clav_${side}`), this.bones.get(`scap_${side}`), 'ball', {
+                    min: new THREE.Vector3(-20 * DEG2RAD, -30 * DEG2RAD, -60 * DEG2RAD),
+                    max: new THREE.Vector3(20 * DEG2RAD, 30 * DEG2RAD, 0 * DEG2RAD)
+                }, { stiff: 80, damp: 12 }));
+                
+                // Shoulder (GH)
+                this.joints.push(new Joint(`shoulder_${side}`, this.bones.get(`scap_${side}`), this.bones.get(`upperArm_${side}`), 'ball', {
+                    min: new THREE.Vector3(-45 * DEG2RAD, -180 * DEG2RAD, -90 * DEG2RAD),
+                    max: new THREE.Vector3(30 * DEG2RAD, 180 * DEG2RAD, 70 * DEG2RAD)
+                }, { stiff: 150, damp: 20 }));
+                
+                // Elbow (hinge)
+                this.joints.push(new Joint(`elbow_${side}`, this.bones.get(`upperArm_${side}`), this.bones.get(`forearm_${side}`), 'hinge', {
+                    min: new THREE.Vector3(-5 * DEG2RAD, 0, 0),
+                    max: new THREE.Vector3(150 * DEG2RAD, 0, 0)
+                }, { stiff: 180, damp: 25 }));
+                
+                // Wrist (2DOF)
+                this.joints.push(new Joint(`wrist_${side}`, this.bones.get(`forearm_${side}`), this.bones.get(`hand_${side}`), 'ball', {
+                    min: new THREE.Vector3(-80 * DEG2RAD, -20 * DEG2RAD, -80 * DEG2RAD),
+                    max: new THREE.Vector3(70 * DEG2RAD, 30 * DEG2RAD, 80 * DEG2RAD)
+                }, { stiff: 100, damp: 15 }));
+            }
+            
+            createLegJoints(side) {
+                // Hip (ball)
+                this.joints.push(new Joint(`hip_${side}`, this.bones.get('pelvis'), this.bones.get(`thigh_${side}`), 'ball', {
+                    min: new THREE.Vector3(-120 * DEG2RAD, -30 * DEG2RAD, -45 * DEG2RAD),
+                    max: new THREE.Vector3(20 * DEG2RAD, 45 * DEG2RAD, 35 * DEG2RAD)
+                }, { stiff: 200, damp: 30 }));
+                
+                // Knee (hinge with screw-home)
+                this.joints.push(new Joint(`knee_${side}`, this.bones.get(`thigh_${side}`), this.bones.get(`shin_${side}`), 'hinge', {
+                    min: new THREE.Vector3(0, 0, 0),
+                    max: new THREE.Vector3(150 * DEG2RAD, 0, 0)
+                }, { stiff: 220, damp: 35 }));
+                
+                // Ankle (hinge)
+                this.joints.push(new Joint(`ankle_${side}`, this.bones.get(`shin_${side}`), this.bones.get(`foot_${side}`), 'hinge', {
+                    min: new THREE.Vector3(-50 * DEG2RAD, 0, 0),
+                    max: new THREE.Vector3(20 * DEG2RAD, 0, 0)
+                }, { stiff: 150, damp: 20 }));
+                
+                // Toe (hinge)
+                this.joints.push(new Joint(`toe_${side}`, this.bones.get(`foot_${side}`), this.bones.get(`toe_${side}`), 'hinge', {
+                    min: new THREE.Vector3(-40 * DEG2RAD, 0, 0),
+                    max: new THREE.Vector3(65 * DEG2RAD, 0, 0)
+                }, { stiff: 80, damp: 10 }));
+            }
+        }
+        
+        // ============================================================================
+        // IK SOLVER
+        // ============================================================================
+        
+        class IKSolver {
+            static solveTwoBone(rootBone, midBone, endBone, target, poleVector) {
+                const L1 = midBone.restPosition.length();
+                const L2 = endBone.restPosition.length();
+                
+                const toTarget = new THREE.Vector3().subVectors(target, rootBone.position);
+                let distance = toTarget.length();
+                
+                // Clamp distance to reachable range
+                distance = clamp(distance, Math.abs(L1 - L2) + 0.01, L1 + L2 - 0.01);
+                
+                // Law of cosines for angles
+                const cosAngle = (L1*L1 + L2*L2 - distance*distance) / (2*L1*L2);
+                const elbowAngle = Math.PI - Math.acos(clamp(cosAngle, -1, 1));
+                
+                // Compute rotation to align with target
+                const toTargetNorm = toTarget.normalize();
+                
+                // Compute pole plane
+                const toPole = new THREE.Vector3().subVectors(poleVector, rootBone.position);
+                const planeNormal = new THREE.Vector3().crossVectors(toTargetNorm, toPole).normalize();
+                
+                // Set root rotation
+                const rootUp = new THREE.Vector3().crossVectors(planeNormal, toTargetNorm).normalize();
+                const rootMatrix = new THREE.Matrix4();
+                rootMatrix.makeBasis(toTargetNorm, rootUp, planeNormal);
+                const rootQuat = new THREE.Quaternion().setFromRotationMatrix(rootMatrix);
+                
+                // Apply to bones
+                midBone.parent.localRotation.copy(rootQuat);
+                
+                // Set elbow angle
+                const elbowQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), elbowAngle);
+                midBone.localRotation.copy(elbowQuat);
+                
+                return { rootQuat, elbowAngle };
+            }
+        }
+        
+        // ============================================================================
+        // PHYSICS SIMULATOR
+        // ============================================================================
+        
+        class PhysicsSimulator {
+            constructor(skeleton) {
+                this.skeleton = skeleton;
+                this.gravity = new THREE.Vector3(0, -9.81, 0);
+                this.enabled = true;
+                this.gravityEnabled = true;
+                this.globalStiffness = 1.0;
+                this.globalDamping = 1.0;
+            }
+            
+            update(dt) {
+                if (!this.enabled) return;
+                
+                // Apply physics to each bone
+                this.skeleton.bones.forEach((bone, name) => {
+                    if (name === 'pelvis') return; // Root is kinematic
+                    
+                    // Apply gravity
+                    if (this.gravityEnabled) {
+                        const force = new THREE.Vector3().copy(this.gravity).multiplyScalar(bone.mass);
+                        const accel = force.divideScalar(bone.mass);
+                        bone.velocity.add(accel.multiplyScalar(dt));
+                    }
+                    
+                    // Apply damping
+                    bone.velocity.multiplyScalar(0.98);
+                    bone.angularVelocity.multiplyScalar(0.95);
+                });
+                
+                // Apply joint constraints
+                this.skeleton.joints.forEach(joint => {
+                    const torque = joint.applyConstraints(dt);
+                    
+                    // Apply torque with global multipliers
+                    const scaledTorque = torque.multiplyScalar(this.globalStiffness);
+                    
+                    const inertia = joint.child.inertia;
+                    const angAccel = new THREE.Vector3(
+                        scaledTorque.x / inertia.x,
+                        scaledTorque.y / inertia.y,
+                        scaledTorque.z / inertia.z
+                    );
+                    
+                    joint.child.angularVelocity.add(angAccel.multiplyScalar(dt * this.globalDamping));
+                    
+                    // Integrate angular velocity
+                    const deltaRot = new THREE.Euler(
+                        joint.child.angularVelocity.x * dt,
+                        joint.child.angularVelocity.y * dt,
+                        joint.child.angularVelocity.z * dt
+                    );
+                    const deltaQuat = new THREE.Quaternion().setFromEuler(deltaRot);
+                    joint.child.localRotation.multiply(deltaQuat);
+                });
+                
+                // Update transforms
+                this.skeleton.rootBone.updateWorldTransform();
+            }
+            
+            computeCenterOfMass() {
+                let totalMass = 0;
+                const com = new THREE.Vector3();
+                
+                this.skeleton.bones.forEach(bone => {
+                    com.add(bone.position.clone().multiplyScalar(bone.mass));
+                    totalMass += bone.mass;
+                });
+                
+                com.divideScalar(totalMass);
+                return com;
+            }
+        }
+        
+        // ============================================================================
+        // POSE CONTROLLER
+        // ============================================================================
+        
+        class PoseController {
+            constructor(skeleton) {
+                this.skeleton = skeleton;
+                this.ikTargets = {
+                    leftHand: { position: new THREE.Vector3(-0.3, 0.8, 0.3), enabled: false },
+                    rightHand: { position: new THREE.Vector3(0.3, 0.8, 0.3), enabled: false },
+                    leftFoot: { position: new THREE.Vector3(-0.1, 0, 0), enabled: false },
+                    rightFoot: { position: new THREE.Vector3(0.1, 0, 0), enabled: false }
+                };
+            }
+            
+            setPose(poseName) {
+                const poses = {
+                    'apose': this.getAPose.bind(this),
+                    'tpose': this.getTPose.bind(this),
+                    'sit': this.getSitPose.bind(this),
+                    'squat': this.getSquatPose.bind(this),
+                    'reach': this.getReachPose.bind(this),
+                    'wave': this.getWavePose.bind(this)
+                };
+                
+                if (poses[poseName]) {
+                    const poseData = poses[poseName]();
+                    this.applyPose(poseData);
+                }
+            }
+            
+            applyPose(poseData) {
+                this.skeleton.joints.forEach(joint => {
+                    if (poseData[joint.name]) {
+                        joint.targetAngles.copy(poseData[joint.name]);
+                    }
+                });
+            }
+            
+            getAPose() {
+                return {
+                    'shoulder_R': new THREE.Vector3(0, 30 * DEG2RAD, 0),
+                    'shoulder_L': new THREE.Vector3(0, -30 * DEG2RAD, 0),
+                    'elbow_R': new THREE.Vector3(0, 0, 0),
+                    'elbow_L': new THREE.Vector3(0, 0, 0)
+                };
+            }
+            
+            getTPose() {
+                return {
+                    'shoulder_R': new THREE.Vector3(0, 90 * DEG2RAD, 0),
+                    'shoulder_L': new THREE.Vector3(0, -90 * DEG2RAD, 0),
+                    'elbow_R': new THREE.Vector3(0, 0, 0),
+                    'elbow_L': new THREE.Vector3(0, 0, 0)
+                };
+            }
+            
+            getSitPose() {
+                return {
+                    'hip_R': new THREE.Vector3(-90 * DEG2RAD, 0, 0),
+                    'hip_L': new THREE.Vector3(-90 * DEG2RAD, 0, 0),
+                    'knee_R': new THREE.Vector3(90 * DEG2RAD, 0, 0),
+                    'knee_L': new THREE.Vector3(90 * DEG2RAD, 0, 0),
+                    'shoulder_R': new THREE.Vector3(0, 30 * DEG2RAD, 0),
+                    'shoulder_L': new THREE.Vector3(0, -30 * DEG2RAD, 0)
+                };
+            }
+            
+            getSquatPose() {
+                return {
+                    'hip_R': new THREE.Vector3(-110 * DEG2RAD, 0, 0),
+                    'hip_L': new THREE.Vector3(-110 * DEG2RAD, 0, 0),
+                    'knee_R': new THREE.Vector3(130 * DEG2RAD, 0, 0),
+                    'knee_L': new THREE.Vector3(130 * DEG2RAD, 0, 0),
+                    'ankle_R': new THREE.Vector3(20 * DEG2RAD, 0, 0),
+                    'ankle_L': new THREE.Vector3(20 * DEG2RAD, 0, 0),
+                    'spine01': new THREE.Vector3(-10 * DEG2RAD, 0, 0),
+                    'shoulder_R': new THREE.Vector3(0, 45 * DEG2RAD, 0),
+                    'shoulder_L': new THREE.Vector3(0, -45 * DEG2RAD, 0)
+                };
+            }
+            
+            getReachPose() {
+                return {
+                    'shoulder_R': new THREE.Vector3(0, 120 * DEG2RAD, 0),
+                    'shoulder_L': new THREE.Vector3(0, 120 * DEG2RAD, 0),
+                    'elbow_R': new THREE.Vector3(10 * DEG2RAD, 0, 0),
+                    'elbow_L': new THREE.Vector3(10 * DEG2RAD, 0, 0),
+                    'spine01': new THREE.Vector3(10 * DEG2RAD, 0, 0),
+                    'spine02': new THREE.Vector3(10 * DEG2RAD, 0, 0)
+                };
+            }
+            
+            getWavePose() {
+                return {
+                    'shoulder_R': new THREE.Vector3(0, 150 * DEG2RAD, 0),
+                    'elbow_R': new THREE.Vector3(90 * DEG2RAD, 0, 0),
+                    'shoulder_L': new THREE.Vector3(0, -30 * DEG2RAD, 0)
+                };
+            }
+        }
+        
+        // ============================================================================
+        // RENDERER
+        // ============================================================================
+        
+        class SkeletonRenderer {
+            constructor(container) {
+                this.container = container;
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setClearColor(0x000000, 0);
+                container.appendChild(this.renderer.domElement);
+                
+                this.camera.position.set(2, 1.5, 3);
+                this.camera.lookAt(0, 1, 0);
+                
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                
+                const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight1.position.set(5, 10, 5);
+                this.scene.add(dirLight1);
+                
+                const dirLight2 = new THREE.DirectionalLight(0x4da6ff, 0.4);
+                dirLight2.position.set(-5, 5, -5);
+                this.scene.add(dirLight2);
+                
+                // Ground plane
+                const groundGeometry = new THREE.PlaneGeometry(20, 20);
+                const groundMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x1a1a2e,
+                    roughness: 0.8,
+                    metalness: 0.2
+                });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+                
+                // Grid
+                const gridHelper = new THREE.GridHelper(20, 20, 0x4da6ff, 0x2a2a3e);
+                this.scene.add(gridHelper);
+                
+                // Bone meshes
+                this.boneMeshes = new Map();
+                this.jointMeshes = new Map();
+                this.ikTargetMeshes = new Map();
+                this.comMesh = null;
+                
+                // Visibility flags
+                this.showBones = true;
+                this.showJoints = true;
+                this.showLimits = false;
+                this.showCOM = false;
+                this.showIKTargets = false;
+                
+                // Mouse controls
+                this.setupControls();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => this.onResize());
+            }
+            
+            setupControls() {
+                let isDragging = false;
+                let previousMousePosition = { x: 0, y: 0 };
+                let isRightDrag = false;
+                
+                this.renderer.domElement.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    isRightDrag = e.button === 2;
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                });
+                
+                this.renderer.domElement.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    if (isRightDrag) {
+                        // Pan
+                        const panSpeed = 0.002;
+                        this.camera.position.x -= deltaX * panSpeed;
+                        this.camera.position.y += deltaY * panSpeed;
+                    } else {
+                        // Rotate
+                        const rotateSpeed = 0.005;
+                        const radius = Math.sqrt(this.camera.position.x ** 2 + this.camera.position.z ** 2);
+                        const angle = Math.atan2(this.camera.position.z, this.camera.position.x);
+                        
+                        this.camera.position.x = radius * Math.cos(angle - deltaX * rotateSpeed);
+                        this.camera.position.z = radius * Math.sin(angle - deltaX * rotateSpeed);
+                        this.camera.position.y += deltaY * rotateSpeed;
+                        
+                        this.camera.lookAt(0, 1, 0);
+                    }
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                });
+                
+                this.renderer.domElement.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+                
+                this.renderer.domElement.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const zoomSpeed = 0.001;
+                    const direction = new THREE.Vector3();
+                    this.camera.getWorldDirection(direction);
+                    
+                    this.camera.position.add(direction.multiplyScalar(e.deltaY * zoomSpeed));
+                });
+                
+                this.renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+            
+            createBoneMesh(bone) {
+                const geometry = new THREE.CapsuleGeometry(bone.radius, bone.length, 8, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x4da6ff,
+                    roughness: 0.5,
+                    metalness: 0.3,
+                    emissive: 0x1a3a5f,
+                    emissiveIntensity: 0.2
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                this.scene.add(mesh);
+                this.boneMeshes.set(bone.name, mesh);
+                
+                return mesh;
+            }
+            
+            createJointMesh(joint) {
+                const geometry = new THREE.SphereGeometry(0.03, 16, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xff6b6b,
+                    emissive: 0xff6b6b,
+                    emissiveIntensity: 0.5
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                this.scene.add(mesh);
+                this.jointMeshes.set(joint.name, mesh);
+                
+                return mesh;
+            }
+            
+            createIKTargetMesh(name) {
+                const geometry = new THREE.OctahedronGeometry(0.05, 0);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x00ff88,
+                    emissive: 0x00ff88,
+                    emissiveIntensity: 0.8,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                this.scene.add(mesh);
+                this.ikTargetMeshes.set(name, mesh);
+                
+                return mesh;
+            }
+            
+            createCOMMesh() {
+                const geometry = new THREE.SphereGeometry(0.06, 16, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xffff00,
+                    emissive: 0xffff00,
+                    emissiveIntensity: 0.8
+                });
+                
+                this.comMesh = new THREE.Mesh(geometry, material);
+                this.scene.add(this.comMesh);
+            }
+            
+            updateBone(bone) {
+                let mesh = this.boneMeshes.get(bone.name);
+                if (!mesh) {
+                    mesh = this.createBoneMesh(bone);
+                }
+                
+                mesh.position.copy(bone.position);
+                mesh.quaternion.copy(bone.rotation);
+                mesh.visible = this.showBones;
+            }
+            
+            updateJoint(joint) {
+                let mesh = this.jointMeshes.get(joint.name);
+                if (!mesh) {
+                    mesh = this.createJointMesh(joint);
+                }
+                
+                mesh.position.copy(joint.child.position);
+                mesh.visible = this.showJoints;
+            }
+            
+            updateIKTarget(name, position, enabled) {
+                let mesh = this.ikTargetMeshes.get(name);
+                if (!mesh) {
+                    mesh = this.createIKTargetMesh(name);
+                }
+                
+                mesh.position.copy(position);
+                mesh.visible = this.showIKTargets && enabled;
+            }
+            
+            updateCOM(position) {
+                if (!this.comMesh) {
+                    this.createCOMMesh();
+                }
+                
+                this.comMesh.position.copy(position);
+                this.comMesh.visible = this.showCOM;
+            }
+            
+            render() {
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+        
+        // ============================================================================
+        // MAIN APPLICATION
+        // ============================================================================
+        
+        class SkeletonApp {
+            constructor() {
+                // Build skeleton
+                const builder = new SkeletonBuilder();
+                builder.createSkeleton();
+                this.skeleton = builder;
+                
+                // Create physics simulator
+                this.physics = new PhysicsSimulator(builder);
+                
+                // Create pose controller
+                this.poseController = new PoseController(builder);
+                
+                // Create renderer
+                this.renderer = new SkeletonRenderer(document.getElementById('canvas-container'));
+                
+                // Create bone and joint meshes
+                builder.bones.forEach(bone => {
+                    this.renderer.createBoneMesh(bone);
+                });
+                
+                builder.joints.forEach(joint => {
+                    this.renderer.createJointMesh(joint);
+                });
+                
+                // Initialize IK targets
+                Object.keys(this.poseController.ikTargets).forEach(name => {
+                    this.renderer.createIKTargetMesh(name);
+                });
+                
+                // Setup UI
+                this.setupUI();
+                
+                // Stats
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.fps = 60;
+                
+                // Update info
+                document.getElementById('bone-count').textContent = builder.bones.size;
+                document.getElementById('joint-count').textContent = builder.joints.length;
+                
+                // Start with A-pose
+                this.poseController.setPose('apose');
+                
+                // Start animation loop
+                this.animate();
+            }
+            
+            setupUI() {
+                // Pose buttons
+                document.getElementById('btn-apose').addEventListener('click', () => {
+                    this.poseController.setPose('apose');
+                });
+                
+                document.getElementById('btn-tpose').addEventListener('click', () => {
+                    this.poseController.setPose('tpose');
+                });
+                
+                document.getElementById('btn-sit').addEventListener('click', () => {
+                    this.poseController.setPose('sit');
+                });
+                
+                document.getElementById('btn-squat').addEventListener('click', () => {
+                    this.poseController.setPose('squat');
+                });
+                
+                document.getElementById('btn-reach').addEventListener('click', () => {
+                    this.poseController.setPose('reach');
+                });
+                
+                document.getElementById('btn-wave').addEventListener('click', () => {
+                    this.poseController.setPose('wave');
+                });
+                
+                // Physics controls
+                document.getElementById('chk-physics').addEventListener('change', (e) => {
+                    this.physics.enabled = e.target.checked;
+                });
+                
+                document.getElementById('chk-gravity').addEventListener('change', (e) => {
+                    this.physics.gravityEnabled = e.target.checked;
+                });
+                
+                // Joint stiffness
+                const stiffnessSlider = document.getElementById('slider-stiffness');
+                stiffnessSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('val-stiffness').textContent = value;
+                    this.physics.globalStiffness = value / 100;
+                });
+                
+                // Joint damping
+                const dampingSlider = document.getElementById('slider-damping');
+                dampingSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('val-damping').textContent = value;
+                    this.physics.globalDamping = value / 20;
+                });
+                
+                // Visualization
+                document.getElementById('chk-bones').addEventListener('change', (e) => {
+                    this.renderer.showBones = e.target.checked;
+                });
+                
+                document.getElementById('chk-joints').addEventListener('change', (e) => {
+                    this.renderer.showJoints = e.target.checked;
+                });
+                
+                document.getElementById('chk-limits').addEventListener('change', (e) => {
+                    this.renderer.showLimits = e.target.checked;
+                });
+                
+                document.getElementById('chk-com').addEventListener('change', (e) => {
+                    this.renderer.showCOM = e.target.checked;
+                });
+                
+                document.getElementById('chk-ik-targets').addEventListener('change', (e) => {
+                    this.renderer.showIKTargets = e.target.checked;
+                });
+                
+                // IK controls
+                document.getElementById('btn-ik-left-hand').addEventListener('click', () => {
+                    this.poseController.ikTargets.leftHand.enabled = !this.poseController.ikTargets.leftHand.enabled;
+                });
+                
+                document.getElementById('btn-ik-right-hand').addEventListener('click', () => {
+                    this.poseController.ikTargets.rightHand.enabled = !this.poseController.ikTargets.rightHand.enabled;
+                });
+                
+                document.getElementById('btn-ik-left-foot').addEventListener('click', () => {
+                    this.poseController.ikTargets.leftFoot.enabled = !this.poseController.ikTargets.leftFoot.enabled;
+                });
+                
+                document.getElementById('btn-ik-right-foot').addEventListener('click', () => {
+                    this.poseController.ikTargets.rightFoot.enabled = !this.poseController.ikTargets.rightFoot.enabled;
+                });
+                
+                // Test buttons
+                document.getElementById('btn-test-shoulder').addEventListener('click', () => {
+                    this.testShoulderRange();
+                });
+                
+                document.getElementById('btn-test-elbow').addEventListener('click', () => {
+                    this.testElbow();
+                });
+                
+                document.getElementById('btn-test-knee').addEventListener('click', () => {
+                    this.testKnee();
+                });
+                
+                document.getElementById('btn-reset').addEventListener('click', () => {
+                    this.resetPose();
+                });
+            }
+            
+            testShoulderRange() {
+                // Animate shoulder from 0 to 180 degrees abduction
+                let angle = 0;
+                const maxAngle = 180;
+                const step = 2;
+                
+                const interval = setInterval(() => {
+                    angle += step;
+                    
+                    const joint = this.skeleton.joints.find(j => j.name === 'shoulder_R');
+                    if (joint) {
+                        joint.targetAngles.y = angle * DEG2RAD;
+                    }
+                    
+                    if (angle >= maxAngle) {
+                        clearInterval(interval);
+                        setTimeout(() => this.resetPose(), 1000);
+                    }
+                }, 50);
+            }
+            
+            testElbow() {
+                let angle = 0;
+                const maxAngle = 150;
+                const step = 3;
+                
+                const interval = setInterval(() => {
+                    angle += step;
+                    
+                    const joint = this.skeleton.joints.find(j => j.name === 'elbow_R');
+                    if (joint) {
+                        joint.targetAngles.x = angle * DEG2RAD;
+                    }
+                    
+                    if (angle >= maxAngle) {
+                        clearInterval(interval);
+                        setTimeout(() => this.resetPose(), 1000);
+                    }
+                }, 50);
+            }
+            
+            testKnee() {
+                let angle = 0;
+                const maxAngle = 150;
+                const step = 3;
+                
+                const interval = setInterval(() => {
+                    angle += step;
+                    
+                    const jointR = this.skeleton.joints.find(j => j.name === 'knee_R');
+                    const jointL = this.skeleton.joints.find(j => j.name === 'knee_L');
+                    if (jointR && jointL) {
+                        jointR.targetAngles.x = angle * DEG2RAD;
+                        jointL.targetAngles.x = angle * DEG2RAD;
+                    }
+                    
+                    if (angle >= maxAngle) {
+                        clearInterval(interval);
+                        setTimeout(() => this.resetPose(), 1000);
+                    }
+                }, 50);
+            }
+            
+            resetPose() {
+                this.skeleton.joints.forEach(joint => {
+                    joint.targetAngles.set(0, 0, 0);
+                    joint.currentAngles.set(0, 0, 0);
+                    joint.child.localRotation.identity();
+                    joint.child.angularVelocity.set(0, 0, 0);
+                });
+                
+                this.poseController.setPose('apose');
+            }
+            
+            update(dt) {
+                // Update physics
+                this.physics.update(dt);
+                
+                // Update bone meshes
+                this.skeleton.bones.forEach(bone => {
+                    this.renderer.updateBone(bone);
+                });
+                
+                // Update joint meshes
+                this.skeleton.joints.forEach(joint => {
+                    this.renderer.updateJoint(joint);
+                });
+                
+                // Update IK targets
+                Object.entries(this.poseController.ikTargets).forEach(([name, target]) => {
+                    this.renderer.updateIKTarget(name, target.position, target.enabled);
+                });
+                
+                // Update COM
+                const com = this.physics.computeCenterOfMass();
+                this.renderer.updateCOM(com);
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                const currentTime = performance.now();
+                const dt = Math.min((currentTime - this.lastTime) / 1000, 0.033); // Cap at 30 FPS
+                this.lastTime = currentTime;
+                
+                // Update simulation
+                this.update(dt);
+                
+                // Render
+                this.renderer.render();
+                
+                // Update FPS counter
+                this.frameCount++;
+                if (this.frameCount % 30 === 0) {
+                    this.fps = Math.round(1000 / (currentTime - this.lastFpsUpdate || 16));
+                    document.getElementById('fps').textContent = this.fps;
+                    this.lastFpsUpdate = currentTime;
+                }
+            }
+        }
+        
+        // Start the application
+        window.addEventListener('DOMContentLoaded', () => {
+            new SkeletonApp();
+        });
+    </script>
+</body>
+</html>
