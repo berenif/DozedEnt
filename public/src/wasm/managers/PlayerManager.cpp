@@ -5,11 +5,22 @@
 
 PlayerManager::PlayerManager() {
     reset_to_spawn();
+    // Initialize skeleton at player spawn position
+    skeleton_.initialize(
+        Fixed::from_float(state_.pos_x), 
+        Fixed::from_float(state_.pos_y),
+        Fixed::from_int(1)
+    );
 }
 
 void PlayerManager::update(float delta_time) {
     // Update physics
     update_physics(delta_time);
+    
+    // Update skeleton physics if enabled
+    if (state_.use_skeleton_physics) {
+        update_skeleton(delta_time);
+    }
     
     // Update bash state
     if (bash_state_.is_charging) {
@@ -384,5 +395,32 @@ bool PlayerManager::check_bash_collision(float target_x, float target_y, float t
     float combined_radius_sq = combined_radius * combined_radius;
     
     return dist_sq <= combined_radius_sq;
+}
+
+void PlayerManager::update_skeleton(float delta_time) {
+    // Sync skeleton pelvis to player position
+    skeleton_.sync_to_player_position(
+        Fixed::from_float(state_.pos_x),
+        Fixed::from_float(state_.pos_y)
+    );
+    
+    // Update skeleton physics
+    Fixed dt = Fixed::from_float(delta_time);
+    skeleton_.update(dt);
+    
+    // Extract balance state for gameplay
+    state_.left_foot_grounded = skeleton_.foot_contact_l;
+    state_.right_foot_grounded = skeleton_.foot_contact_r;
+    
+    // Calculate balance quality (0-1, where 1 is perfectly balanced)
+    // Based on center of mass offset from support base
+    Fixed com_offset_abs = skeleton_.com_offset.abs();
+    Fixed max_offset = Fixed::from_float(0.1f); // Max acceptable offset
+    Fixed quality = Fixed::from_int(1) - (com_offset_abs / max_offset);
+    quality = Fixed::max(Fixed::from_int(0), Fixed::min(Fixed::from_int(1), quality));
+    state_.balance_quality = quality.to_float();
+    
+    // Update grounded state based on foot contact
+    state_.is_grounded = state_.left_foot_grounded || state_.right_foot_grounded;
 }
 

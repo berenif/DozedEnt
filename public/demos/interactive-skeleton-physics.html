@@ -216,8 +216,8 @@
             <div id="info">
                 <h3>🎮 Controls</h3>
                 <p>• <strong>Drag joints</strong> to move them</p>
-                <p>• <strong>Drag body</strong> to move character</p>
-                <p>• <strong>Click reset</strong> to restore pose</p>
+                <p>• <strong>Drag body</strong> to test balance</p>
+                <p>• <strong>Lift feet</strong> to see recovery</p>
                 <div class="stats">
                     <div class="stat-item">
                         <span class="stat-label">FPS:</span>
@@ -230,6 +230,14 @@
                     <div class="stat-item">
                         <span class="stat-label">Balance:</span>
                         <span class="stat-value" id="balance">100%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Strategy:</span>
+                        <span class="stat-value" id="strategy">Stable</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Feet:</span>
+                        <span class="stat-value" id="foot-contact">L+R</span>
                     </div>
                 </div>
             </div>
@@ -256,12 +264,12 @@
             <div class="section">
                 <h2>Balance Control</h2>
                 <div class="control-group">
-                    <label>Balance Strength: <span class="value-display" id="balance-strength-val">0.3</span></label>
-                    <input type="range" id="balance-strength" min="0" max="1" value="0.3" step="0.05">
+                    <label>Hip Strategy: <span class="value-display" id="balance-strength-val">0.5</span></label>
+                    <input type="range" id="balance-strength" min="0" max="1" value="0.5" step="0.05">
                 </div>
                 <div class="control-group">
-                    <label>Hip Flexibility: <span class="value-display" id="hip-flex-val">0.2</span></label>
-                    <input type="range" id="hip-flex" min="0" max="1" value="0.2" step="0.05">
+                    <label>Ankle Strategy: <span class="value-display" id="hip-flex-val">0.4</span></label>
+                    <input type="range" id="hip-flex" min="0" max="1" value="0.4" step="0.05">
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="auto-balance" checked>
@@ -311,6 +319,22 @@
     </div>
 
     <script type="module">
+        /**
+         * Interactive Skeleton Physics with Human-Like Balance
+         * 
+         * This demo implements three key human balance strategies:
+         * 1. ANKLE STRATEGY: For small disturbances, adjusts ankle torque to shift weight
+         * 2. HIP STRATEGY: For larger disturbances, moves the whole body to maintain balance
+         * 3. STEPPING STRATEGY: For very large disturbances, adjusts foot position
+         * 
+         * The skeleton has:
+         * - Realistic foot structure (heel, midfoot, toe) for better ground contact
+         * - Active balance control that responds to center of mass displacement
+         * - Weight distribution between feet with visual feedback (green = grounded)
+         * - Ground friction and normal forces for realistic foot contact
+         * - Knee locking for stability when standing
+         */
+        
         // Physics-based skeletal system with realistic body mechanics
         class Joint {
             constructor(x, y, mass = 1, fixed = false) {
@@ -410,8 +434,8 @@
                     gravity: 980,
                     damping: 0.95,
                     stiffness: 0.5,
-                    balanceStrength: 0.3,
-                    hipFlexibility: 0.2,
+                    balanceStrength: 0.5,
+                    hipFlexibility: 0.4,
                     autoBalance: true,
                     groundContact: true,
                     scale: 1.0,
@@ -420,6 +444,8 @@
                     showCOM: false,
                     showVelocity: false
                 };
+                this.footContactL = false;
+                this.footContactR = false;
                 this.groundY = 0;
                 this.ragdollMode = false;
                 this.draggedJoint = null;
@@ -484,8 +510,12 @@
                     kneeR: new Joint(cx + 25 * scale, cy + 80 * scale, 1.2),
                     ankleL: new Joint(cx - 25 * scale, cy + 160 * scale, 0.8),
                     ankleR: new Joint(cx + 25 * scale, cy + 160 * scale, 0.8),
-                    footL: new Joint(cx - 25 * scale, cy + 180 * scale, 0.6),
-                    footR: new Joint(cx + 25 * scale, cy + 180 * scale, 0.6)
+                    heelL: new Joint(cx - 25 * scale, cy + 180 * scale, 0.6),
+                    heelR: new Joint(cx + 25 * scale, cy + 180 * scale, 0.6),
+                    footL: new Joint(cx - 15 * scale, cy + 180 * scale, 0.5),
+                    footR: new Joint(cx + 15 * scale, cy + 180 * scale, 0.5),
+                    toeL: new Joint(cx - 5 * scale, cy + 180 * scale, 0.4),
+                    toeR: new Joint(cx + 5 * scale, cy + 180 * scale, 0.4)
                 };
 
                 // Create constraints (bones)
@@ -520,12 +550,16 @@
                     // Left leg
                     new Constraint(this.joints.hipL, this.joints.kneeL, null, 0.9),
                     new Constraint(this.joints.kneeL, this.joints.ankleL, null, 0.9),
-                    new Constraint(this.joints.ankleL, this.joints.footL, null, 0.95),
+                    new Constraint(this.joints.ankleL, this.joints.heelL, null, 0.95),
+                    new Constraint(this.joints.heelL, this.joints.footL, null, 0.95),
+                    new Constraint(this.joints.footL, this.joints.toeL, null, 0.95),
                     
                     // Right leg
                     new Constraint(this.joints.hipR, this.joints.kneeR, null, 0.9),
                     new Constraint(this.joints.kneeR, this.joints.ankleR, null, 0.9),
-                    new Constraint(this.joints.ankleR, this.joints.footR, null, 0.95)
+                    new Constraint(this.joints.ankleR, this.joints.heelR, null, 0.95),
+                    new Constraint(this.joints.heelR, this.joints.footR, null, 0.95),
+                    new Constraint(this.joints.footR, this.joints.toeR, null, 0.95)
                 ];
 
                 this.updateJointCount();
@@ -547,13 +581,23 @@
             applyGroundConstraints() {
                 if (!this.settings.groundContact) return;
                 
-                const groundJoints = [this.joints.footL, this.joints.footR];
+                const groundJoints = [this.joints.heelL, this.joints.heelR, this.joints.footL, this.joints.footR, this.joints.toeL, this.joints.toeR];
+                const friction = 0.85; // Higher friction for realistic foot contact
+                
                 for (const joint of groundJoints) {
                     if (joint.y > this.groundY) {
                         joint.y = this.groundY;
-                        joint.prevY = this.groundY + (joint.prevY - joint.y) * 0.3; // friction
+                        // Apply friction to horizontal movement
+                        const velX = joint.x - joint.prevX;
+                        joint.prevX = joint.x - velX * friction;
+                        // Strong vertical damping for ground contact
+                        joint.prevY = this.groundY + (joint.prevY - joint.y) * 0.2;
                     }
                 }
+                
+                // Track which feet are on ground for balance calculations
+                this.footContactL = this.joints.heelL.y >= this.groundY - 1 || this.joints.footL.y >= this.groundY - 1 || this.joints.toeL.y >= this.groundY - 1;
+                this.footContactR = this.joints.heelR.y >= this.groundY - 1 || this.joints.footR.y >= this.groundY - 1 || this.joints.toeR.y >= this.groundY - 1;
             }
 
             applyBalanceForces() {
@@ -572,27 +616,114 @@
                 comX /= totalMass;
                 comY /= totalMass;
                 
-                // Calculate support polygon (between feet)
-                const footCenterX = (this.joints.footL.x + this.joints.footR.x) / 2;
+                // Calculate support polygon (between feet) - use all foot contact points
+                let supportLeft = 0, supportRight = 0, contactPoints = 0;
+                if (this.footContactL) {
+                    supportLeft = (this.joints.heelL.x + this.joints.footL.x + this.joints.toeL.x) / 3;
+                    contactPoints++;
+                }
+                if (this.footContactR) {
+                    supportRight = (this.joints.heelR.x + this.joints.footR.x + this.joints.toeR.x) / 3;
+                    contactPoints++;
+                }
+                
+                if (contactPoints === 0) return; // Not grounded, skip balance
+                
+                const footCenterX = contactPoints === 2 ? (supportLeft + supportRight) / 2 : 
+                                    (this.footContactL ? supportLeft : supportRight);
                 const comOffset = comX - footCenterX;
                 
-                // Apply corrective forces to maintain balance
+                // ANKLE STRATEGY: For small disturbances, adjust ankle torque
+                const ankleThreshold = 15;
+                if (Math.abs(comOffset) < ankleThreshold) {
+                    const ankleForce = -comOffset * flexibility * 0.8;
+                    if (this.footContactL) {
+                        this.joints.ankleL.x += ankleForce;
+                        this.joints.heelL.x -= ankleForce * 0.3;
+                        this.joints.toeL.x += ankleForce * 0.3;
+                    }
+                    if (this.footContactR) {
+                        this.joints.ankleR.x += ankleForce;
+                        this.joints.heelR.x -= ankleForce * 0.3;
+                        this.joints.toeR.x += ankleForce * 0.3;
+                    }
+                }
+                
+                // HIP STRATEGY: For larger disturbances, move the whole body
                 const hipCorrection = -comOffset * strength;
                 this.joints.pelvis.x += hipCorrection;
-                this.joints.lowerSpine.x += hipCorrection * 0.7;
-                this.joints.midSpine.x += hipCorrection * 0.5;
-                this.joints.chest.x += hipCorrection * 0.3;
+                this.joints.lowerSpine.x += hipCorrection * 0.8;
+                this.joints.midSpine.x += hipCorrection * 0.6;
+                this.joints.chest.x += hipCorrection * 0.4;
+                this.joints.neck.x += hipCorrection * 0.2;
+                this.joints.head.x += hipCorrection * 0.1;
                 
-                // Hip flexibility for ankle strategy
-                const ankleCorrection = comOffset * flexibility;
-                this.joints.ankleL.x -= ankleCorrection;
-                this.joints.ankleR.x -= ankleCorrection;
+                // Weight distribution: shift weight to supporting foot
+                if (contactPoints === 2) {
+                    const weightShift = comOffset * 0.05;
+                    if (this.footContactL) {
+                        this.joints.heelL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
+                        this.joints.footL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
+                        this.joints.toeL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
+                    }
+                    if (this.footContactR) {
+                        this.joints.heelR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
+                        this.joints.footR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
+                        this.joints.toeR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
+                    }
+                }
+                
+                // STEPPING STRATEGY: For very large disturbances, adjust foot position
+                const stepThreshold = 50;
+                if (Math.abs(comOffset) > stepThreshold && contactPoints === 2) {
+                    const stepAdjust = comOffset * 0.1;
+                    if (comOffset > 0 && this.footContactR) {
+                        this.joints.heelR.x += stepAdjust;
+                        this.joints.footR.x += stepAdjust;
+                        this.joints.toeR.x += stepAdjust;
+                    } else if (comOffset < 0 && this.footContactL) {
+                        this.joints.heelL.x += stepAdjust;
+                        this.joints.footL.x += stepAdjust;
+                        this.joints.toeL.x += stepAdjust;
+                    }
+                }
+                
+                // Active knee locking for stability when standing
+                const kneeStrength = 0.15;
+                if (this.footContactL) {
+                    const targetKneeL = this.joints.ankleL.x;
+                    this.joints.kneeL.x += (targetKneeL - this.joints.kneeL.x) * kneeStrength;
+                }
+                if (this.footContactR) {
+                    const targetKneeR = this.joints.ankleR.x;
+                    this.joints.kneeR.x += (targetKneeR - this.joints.kneeR.x) * kneeStrength;
+                }
                 
                 // Store balance info
-                const balanceQuality = Math.max(0, 100 - Math.abs(comOffset) * 2);
+                const balanceQuality = Math.max(0, 100 - Math.abs(comOffset) * 1.5);
                 document.getElementById('balance').textContent = balanceQuality.toFixed(0) + '%';
                 
+                // Display active strategy
+                let strategy = 'Stable';
+                if (Math.abs(comOffset) > stepThreshold) {
+                    strategy = '🚶 Stepping';
+                } else if (Math.abs(comOffset) > ankleThreshold) {
+                    strategy = '🦵 Hip';
+                } else if (Math.abs(comOffset) > 5) {
+                    strategy = '🦶 Ankle';
+                }
+                document.getElementById('strategy').textContent = strategy;
+                
+                // Display foot contact
+                let footStatus = '';
+                if (this.footContactL && this.footContactR) footStatus = 'L+R';
+                else if (this.footContactL) footStatus = 'L';
+                else if (this.footContactR) footStatus = 'R';
+                else footStatus = 'None';
+                document.getElementById('foot-contact').textContent = footStatus;
+                
                 this.centerOfMass = { x: comX, y: comY };
+                this.comOffset = comOffset;
             }
 
             solveConstraints(iterations = 3) {
@@ -669,14 +800,14 @@
                     ctx.stroke();
                     
                     // Draw joint labels for major joints
-                    if (['head', 'chest', 'pelvis', 'handL', 'handR', 'footL', 'footR'].includes(name)) {
+                    if (['head', 'chest', 'pelvis', 'handL', 'handR', 'heelL', 'heelR', 'toeL', 'toeR'].includes(name)) {
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                         ctx.font = '10px monospace';
                         ctx.fillText(name, joint.x + 12, joint.y - 8);
                     }
                 }
                 
-                // Draw center of mass
+                // Draw center of mass and balance visualization
                 if (this.settings.showCOM && this.centerOfMass) {
                     ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
                     ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
@@ -694,6 +825,38 @@
                     ctx.lineTo(this.centerOfMass.x, this.groundY);
                     ctx.stroke();
                     ctx.setLineDash([]);
+                    
+                    // Draw support polygon (base of support)
+                    if (this.footContactL || this.footContactR) {
+                        ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+                        ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        
+                        if (this.footContactL && this.footContactR) {
+                            // Both feet on ground - draw polygon
+                            ctx.moveTo(this.joints.heelL.x, this.joints.heelL.y);
+                            ctx.lineTo(this.joints.toeL.x, this.joints.toeL.y);
+                            ctx.lineTo(this.joints.toeR.x, this.joints.toeR.y);
+                            ctx.lineTo(this.joints.heelR.x, this.joints.heelR.y);
+                            ctx.closePath();
+                        } else if (this.footContactL) {
+                            // Only left foot - draw triangle
+                            ctx.moveTo(this.joints.heelL.x, this.joints.heelL.y);
+                            ctx.lineTo(this.joints.toeL.x - 15, this.joints.toeL.y);
+                            ctx.lineTo(this.joints.toeL.x + 15, this.joints.toeL.y);
+                            ctx.closePath();
+                        } else if (this.footContactR) {
+                            // Only right foot - draw triangle
+                            ctx.moveTo(this.joints.heelR.x, this.joints.heelR.y);
+                            ctx.lineTo(this.joints.toeR.x - 15, this.joints.toeR.y);
+                            ctx.lineTo(this.joints.toeR.x + 15, this.joints.toeR.y);
+                            ctx.closePath();
+                        }
+                        
+                        ctx.fill();
+                        ctx.stroke();
+                    }
                 }
                 
                 // Draw velocity vectors
@@ -774,10 +937,11 @@
                 ctx.fill();
                 ctx.stroke();
                 
-                // Draw feet
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                this.drawFoot(this.joints.footL, this.joints.ankleL);
-                this.drawFoot(this.joints.footR, this.joints.ankleR);
+                // Draw feet with improved visualization
+                ctx.fillStyle = this.footContactL ? 'rgba(34, 197, 94, 0.9)' : 'rgba(15, 23, 42, 0.9)';
+                this.drawFoot(this.joints.heelL, this.joints.footL, this.joints.toeL);
+                ctx.fillStyle = this.footContactR ? 'rgba(34, 197, 94, 0.9)' : 'rgba(15, 23, 42, 0.9)';
+                this.drawFoot(this.joints.heelR, this.joints.footR, this.joints.toeR);
             }
 
             drawLimb(joint1, joint2, thickness, color) {
@@ -813,20 +977,38 @@
                 ctx.stroke();
             }
 
-            drawFoot(footJoint, ankleJoint) {
+            drawFoot(heelJoint, midJoint, toeJoint) {
                 const ctx = this.ctx;
-                const dx = footJoint.x - ankleJoint.x;
-                const dy = footJoint.y - ankleJoint.y;
-                const angle = Math.atan2(dy, dx);
                 
-                ctx.save();
-                ctx.translate(footJoint.x, footJoint.y);
-                ctx.rotate(angle);
+                // Draw foot as a realistic shape from heel to toe
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.ellipse(5, 0, 15, 8, 0, 0, Math.PI * 2);
+                
+                // Create foot outline
+                const footWidth = 10;
+                const dx = toeJoint.x - heelJoint.x;
+                const dy = toeJoint.y - heelJoint.y;
+                const angle = Math.atan2(dy, dx);
+                const perpX = Math.cos(angle + Math.PI / 2) * footWidth;
+                const perpY = Math.sin(angle + Math.PI / 2) * footWidth;
+                
+                // Heel (rounded back)
+                ctx.arc(heelJoint.x, heelJoint.y, footWidth * 0.8, angle + Math.PI * 0.6, angle + Math.PI * 1.4);
+                
+                // Sides of foot
+                ctx.lineTo(midJoint.x - perpX * 0.6, midJoint.y - perpY * 0.6);
+                ctx.lineTo(toeJoint.x - perpX * 0.4, toeJoint.y - perpY * 0.4);
+                
+                // Toe (rounded front)
+                ctx.arc(toeJoint.x, toeJoint.y, footWidth * 0.5, angle - Math.PI * 0.3, angle + Math.PI * 0.3);
+                
+                // Other side
+                ctx.lineTo(midJoint.x + perpX * 0.6, midJoint.y + perpY * 0.6);
+                ctx.closePath();
+                
                 ctx.fill();
                 ctx.stroke();
-                ctx.restore();
             }
 
             setupEventListeners() {
@@ -914,11 +1096,20 @@
                 const groundY = this.groundY;
                 const scale = this.settings.scale;
                 
-                // Smoothly move to standing position
+                // Smoothly move to standing position - all foot points on ground
+                this.joints.heelL.y = groundY;
+                this.joints.heelR.y = groundY;
                 this.joints.footL.y = groundY;
                 this.joints.footR.y = groundY;
-                this.joints.footL.x = cx - 25 * scale;
-                this.joints.footR.x = cx + 25 * scale;
+                this.joints.toeL.y = groundY;
+                this.joints.toeR.y = groundY;
+                
+                this.joints.heelL.x = cx - 25 * scale;
+                this.joints.heelR.x = cx + 25 * scale;
+                this.joints.footL.x = cx - 15 * scale;
+                this.joints.footR.x = cx + 15 * scale;
+                this.joints.toeL.x = cx - 5 * scale;
+                this.joints.toeR.x = cx + 5 * scale;
                 
                 // Reset velocities
                 for (const joint of Object.values(this.joints)) {
@@ -997,9 +1188,11 @@
         document.getElementById('ragdoll').addEventListener('click', () => skeleton.toggleRagdoll());
         document.getElementById('stand').addEventListener('click', () => skeleton.standUpright());
 
-        console.log('🎮 Interactive Physics Demo Loaded');
-        console.log('📊 Joints:', Object.keys(skeleton.joints).length);
+        console.log('🎮 Interactive Physics Demo with Human Balance Loaded');
+        console.log('📊 Joints:', Object.keys(skeleton.joints).length, '(including heel, midfoot, toe)');
         console.log('🔗 Constraints:', skeleton.constraints.length);
+        console.log('⚖️  Balance Strategies: Ankle → Hip → Stepping');
+        console.log('🦶 Foot Contact: Real-time tracking with friction');
     </script>
 </body>
 </html>

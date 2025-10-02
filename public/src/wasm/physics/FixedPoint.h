@@ -93,6 +93,15 @@ struct Fixed {
     Fixed abs() const {
         return Fixed(raw < 0 ? -raw : raw);
     }
+    
+    // Helper: min/max
+    static Fixed min(Fixed a, Fixed b) {
+        return (a.raw < b.raw) ? a : b;
+    }
+    
+    static Fixed max(Fixed a, Fixed b) {
+        return (a.raw > b.raw) ? a : b;
+    }
 };
 
 /**
