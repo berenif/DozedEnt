@@ -3,1196 +3,1204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Player Physics Demo</title>
+    <title>Interactive Skeleton Physics - WebAssembly Edition</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
-            color: #e0e0e0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             overflow: hidden;
+        }
+        
+        #canvas-container {
+            width: 100vw;
             height: 100vh;
-            display: flex;
-        }
-
-        #container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-
-        #canvas-wrapper {
-            flex: 1;
             position: relative;
-            background: radial-gradient(circle at 50% 40%, #1e2a3a 0%, #0a0e1a 100%);
         }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-        }
-
-        canvas:active {
-            cursor: grabbing;
-        }
-
-        #controls {
-            width: 320px;
-            background: rgba(20, 20, 35, 0.95);
-            padding: 20px;
-            overflow-y: auto;
-            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        h1 {
-            font-size: 22px;
-            margin-bottom: 15px;
-            color: #60a5fa;
-            text-align: center;
-            text-shadow: 0 2px 10px rgba(96, 165, 250, 0.3);
-        }
-
-        .section {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: rgba(30, 30, 50, 0.6);
-            border-radius: 8px;
-            border: 1px solid rgba(96, 165, 250, 0.2);
-        }
-
-        .section h2 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: #93c5fd;
-            border-bottom: 1px solid rgba(96, 165, 250, 0.3);
-            padding-bottom: 8px;
-        }
-
-        .control-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 13px;
-            color: #b0b0c0;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            background: rgba(96, 165, 250, 0.2);
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #60a5fa;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #60a5fa;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
-            border: none;
-        }
-
-        .value-display {
-            display: inline-block;
-            float: right;
-            color: #60a5fa;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 12px;
             color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            text-align: center;
+            z-index: 1000;
         }
-
-        button:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        
+        #loading.hidden {
+            display: none;
         }
-
-        button:active {
-            transform: translateY(0);
+        
+        .spinner {
+            border: 4px solid rgba(77, 166, 255, 0.3);
+            border-top: 4px solid #4da6ff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
-        .checkbox-group input[type="checkbox"] {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            margin-bottom: 0;
-            cursor: pointer;
-        }
-
-        #info {
+        
+        #controls {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(20, 20, 35, 0.9);
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            line-height: 1.6;
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            max-width: 300px;
-            pointer-events: none;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            max-width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-
-        #info h3 {
-            color: #60a5fa;
-            margin-bottom: 8px;
+        
+        #controls h2 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #4da6ff;
+            border-bottom: 2px solid #4da6ff;
+            padding-bottom: 8px;
+        }
+        
+        #controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
             font-size: 14px;
+            color: #80c0ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-
-        .stats {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(96, 165, 250, 0.2);
+        
+        .control-group {
+            margin-bottom: 15px;
         }
-
-        .stat-item {
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #b0d0ff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #4da6ff 0%, #3d85cc 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(77, 166, 255, 0.3);
+        }
+        
+        button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5bb6ff 0%, #4d95dc 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(77, 166, 255, 0.4);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+            background: rgba(77, 166, 255, 0.3);
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: #4da6ff;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .value-display {
+            display: inline-block;
+            float: right;
+            font-weight: 600;
+            color: #4da6ff;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+        }
+        
+        #info div {
+            margin: 5px 0;
+        }
+        
+        .info-label {
+            color: #80c0ff;
+            font-weight: 600;
+        }
+        
+        .checkbox-label {
             display: flex;
-            justify-content: space-between;
-            margin: 4px 0;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .checkbox-label input {
+            cursor: pointer;
         }
 
-        .stat-label {
-            color: #b0b0c0;
-        }
-
-        .stat-value {
-            color: #60a5fa;
+        .wasm-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #654ea3 0%, #eaafc8 100%);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
             font-weight: bold;
+            letter-spacing: 1px;
+            margin-left: 8px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(77, 166, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(77, 166, 255, 0.7);
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="canvas-wrapper">
-            <canvas id="physics-canvas"></canvas>
-            <div id="info">
-                <h3>🎮 Controls</h3>
-                <p>• <strong>Drag joints</strong> to move them</p>
-                <p>• <strong>Drag body</strong> to test balance</p>
-                <p>• <strong>Lift feet</strong> to see recovery</p>
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-label">FPS:</span>
-                        <span class="stat-value" id="fps">60</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Joints:</span>
-                        <span class="stat-value" id="joint-count">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Balance:</span>
-                        <span class="stat-value" id="balance">100%</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Strategy:</span>
-                        <span class="stat-value" id="strategy">Stable</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Feet:</span>
-                        <span class="stat-value" id="foot-contact">L+R</span>
-                    </div>
-                </div>
-            </div>
+    <div id="loading">
+        <h2>Loading Skeleton Physics</h2>
+        <div class="spinner"></div>
+        <p id="load-status">Initializing WebAssembly module...</p>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="controls">
+        <h2>🦴 Skeleton Physics <span class="wasm-badge">WASM</span></h2>
+        
+        <h3>Poses</h3>
+        <button id="btn-apose">A-Pose (Rest)</button>
+        <button id="btn-tpose">T-Pose</button>
+        <button id="btn-sit">Sitting</button>
+        <button id="btn-squat">Deep Squat</button>
+        <button id="btn-reach">Reach Forward</button>
+        <button id="btn-wave">Wave</button>
+        
+        <h3>Physics Settings</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-physics" checked>
+                Enable Physics Simulation
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-gravity" checked>
+                Enable Gravity
+            </label>
         </div>
-        <div id="controls">
-            <h1>⚙️ Physics Settings</h1>
-            
-            <div class="section">
-                <h2>Gravity & Forces</h2>
-                <div class="control-group">
-                    <label>Gravity: <span class="value-display" id="gravity-val">980</span></label>
-                    <input type="range" id="gravity" min="0" max="2000" value="980" step="10">
-                </div>
-                <div class="control-group">
-                    <label>Damping: <span class="value-display" id="damping-val">0.95</span></label>
-                    <input type="range" id="damping" min="0.5" max="0.99" value="0.95" step="0.01">
-                </div>
-                <div class="control-group">
-                    <label>Stiffness: <span class="value-display" id="stiffness-val">0.5</span></label>
-                    <input type="range" id="stiffness" min="0.1" max="1.0" value="0.5" step="0.05">
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Balance Control</h2>
-                <div class="control-group">
-                    <label>Hip Strategy: <span class="value-display" id="balance-strength-val">0.5</span></label>
-                    <input type="range" id="balance-strength" min="0" max="1" value="0.5" step="0.05">
-                </div>
-                <div class="control-group">
-                    <label>Ankle Strategy: <span class="value-display" id="hip-flex-val">0.4</span></label>
-                    <input type="range" id="hip-flex" min="0" max="1" value="0.4" step="0.05">
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="auto-balance" checked>
-                    <label for="auto-balance">Enable Auto-Balance</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="ground-contact" checked>
-                    <label for="ground-contact">Foot Ground Contact</label>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Body Properties</h2>
-                <div class="control-group">
-                    <label>Body Scale: <span class="value-display" id="scale-val">1.0</span></label>
-                    <input type="range" id="scale" min="0.5" max="2.0" value="1.0" step="0.1">
-                </div>
-                <div class="control-group">
-                    <label>Joint Size: <span class="value-display" id="joint-size-val">8</span></label>
-                    <input type="range" id="joint-size" min="4" max="16" value="8" step="1">
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Visual Settings</h2>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="show-constraints" checked>
-                    <label for="show-constraints">Show Constraints</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="show-com">
-                    <label for="show-com">Show Center of Mass</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="show-velocity">
-                    <label for="show-velocity">Show Velocity Vectors</label>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Actions</h2>
-                <button id="reset">Reset Pose</button>
-                <button id="ragdoll">Toggle Ragdoll</button>
-                <button id="stand">Stand Upright</button>
-            </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Stiffness <span class="value-display" id="val-stiffness">100</span>
+            </label>
+            <input type="range" id="slider-stiffness" min="10" max="500" value="100" step="10">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Damping <span class="value-display" id="val-damping">20</span>
+            </label>
+            <input type="range" id="slider-damping" min="5" max="100" value="20" step="5">
+        </div>
+        
+        <h3>Visualization</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-bones" checked>
+                Show Bones
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-joints" checked>
+                Show Joints
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-limits">
+                Show Joint Limits
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-com">
+                Show Center of Mass
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-ik-targets">
+                Show IK Targets
+            </label>
+        </div>
+        
+        <h3>Tests</h3>
+        <button id="btn-test-shoulder">Test Shoulder Range</button>
+        <button id="btn-test-elbow">Test Elbow</button>
+        <button id="btn-test-knee">Test Knee</button>
+        <button id="btn-reset">Reset Pose</button>
+        
+        <h3>Performance</h3>
+        <div id="perf-info" style="font-size: 11px; color: #80c0ff;">
+            <div>Physics: <span id="perf-physics">0.0ms</span></div>
+            <div>Render: <span id="perf-render">0.0ms</span></div>
+            <div>Total: <span id="perf-total">0.0ms</span></div>
         </div>
     </div>
+    
+    <div id="info">
+        <div><span class="info-label">FPS:</span> <span id="fps">60</span></div>
+        <div><span class="info-label">Bones:</span> <span id="bone-count">0</span></div>
+        <div><span class="info-label">Joints:</span> <span id="joint-count">0</span></div>
+        <div><span class="info-label">Engine:</span> <span style="color: #eaafc8;">WebAssembly</span></div>
+        <div style="margin-top: 10px;"><span class="info-label">Controls:</span></div>
+        <div>• Left click + drag: Rotate view</div>
+        <div>• Right click + drag: Pan view</div>
+        <div>• Scroll: Zoom</div>
+    </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script type="module">
-        /**
-         * Interactive Skeleton Physics with Human-Like Balance
-         * 
-         * This demo implements three key human balance strategies:
-         * 1. ANKLE STRATEGY: For small disturbances, adjusts ankle torque to shift weight
-         * 2. HIP STRATEGY: For larger disturbances, moves the whole body to maintain balance
-         * 3. STEPPING STRATEGY: For very large disturbances, adjusts foot position
-         * 
-         * The skeleton has:
-         * - Realistic foot structure (heel, midfoot, toe) for better ground contact
-         * - Active balance control that responds to center of mass displacement
-         * - Weight distribution between feet with visual feedback (green = grounded)
-         * - Ground friction and normal forces for realistic foot contact
-         * - Knee locking for stability when standing
-         */
+        // ============================================================================
+        // WASM MODULE LOADER (with fallback to pure JS)
+        // ============================================================================
         
-        // Physics-based skeletal system with realistic body mechanics
-        class Joint {
-            constructor(x, y, mass = 1, fixed = false) {
-                this.x = x;
-                this.y = y;
-                this.prevX = x;
-                this.prevY = y;
-                this.mass = mass;
-                this.fixed = fixed;
-                this.vx = 0;
-                this.vy = 0;
-                this.radius = 8;
-            }
-
-            applyForce(fx, fy, dt) {
-                if (this.fixed) return;
-                const ax = fx / this.mass;
-                const ay = fy / this.mass;
-                this.vx += ax * dt;
-                this.vy += ay * dt;
-            }
-
-            update(dt, damping) {
-                if (this.fixed) return;
-                
-                // Verlet integration for stable physics
-                const tempX = this.x;
-                const tempY = this.y;
-                
-                this.x += (this.x - this.prevX) * damping;
-                this.y += (this.y - this.prevY) * damping;
-                
-                this.prevX = tempX;
-                this.prevY = tempY;
-            }
-
-            constrainToPoint(px, py, distance, stiffness = 1.0) {
-                const dx = this.x - px;
-                const dy = this.y - py;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist === 0) return;
-                
-                const diff = (distance - dist) / dist;
-                const offsetX = dx * diff * stiffness;
-                const offsetY = dy * diff * stiffness;
-                
-                if (!this.fixed) {
-                    this.x += offsetX * 0.5;
-                    this.y += offsetY * 0.5;
-                }
-            }
+        const DEG2RAD = Math.PI / 180;
+        const RAD2DEG = 180 / Math.PI;
+        
+        let WasmModule = null;
+        let useWasm = false;
+        
+        // Update loading status
+        function updateLoadStatus(message) {
+            document.getElementById('load-status').textContent = message;
         }
-
-        class Constraint {
-            constructor(joint1, joint2, length = null, stiffness = 1.0) {
-                this.joint1 = joint1;
-                this.joint2 = joint2;
-                this.length = length || this.getDistance();
-                this.stiffness = stiffness;
+        
+        // Pure JavaScript implementation (fallback)
+        class JSSkeletonPhysics {
+            constructor() {
+                this.bones = [];
+                this.joints = [];
+                this.boneMap = new Map();
+                this.jointMap = new Map();
+                this.gravity = { x: 0, y: -9.81, z: 0 };
+                this.physicsEnabled = true;
+                this.gravityEnabled = true;
+                this.globalStiffness = 1.0;
+                this.globalDamping = 1.0;
             }
-
-            getDistance() {
-                const dx = this.joint2.x - this.joint1.x;
-                const dy = this.joint2.y - this.joint1.y;
-                return Math.sqrt(dx * dx + dy * dy);
-            }
-
-            solve() {
-                const dx = this.joint2.x - this.joint1.x;
-                const dy = this.joint2.y - this.joint1.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                
-                if (dist === 0) return;
-                
-                const diff = (this.length - dist) / dist;
-                const offsetX = dx * diff * this.stiffness * 0.5;
-                const offsetY = dy * diff * this.stiffness * 0.5;
-                
-                if (!this.joint1.fixed) {
-                    this.joint1.x -= offsetX;
-                    this.joint1.y -= offsetY;
-                }
-                if (!this.joint2.fixed) {
-                    this.joint2.x += offsetX;
-                    this.joint2.y += offsetY;
-                }
-            }
-        }
-
-        class SkeletonPhysics {
-            constructor(canvas) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.joints = {};
-                this.constraints = [];
-                this.settings = {
-                    gravity: 980,
-                    damping: 0.95,
-                    stiffness: 0.5,
-                    balanceStrength: 0.5,
-                    hipFlexibility: 0.4,
-                    autoBalance: true,
-                    groundContact: true,
-                    scale: 1.0,
-                    jointSize: 8,
-                    showConstraints: true,
-                    showCOM: false,
-                    showVelocity: false
-                };
-                this.footContactL = false;
-                this.footContactR = false;
-                this.groundY = 0;
-                this.ragdollMode = false;
-                this.draggedJoint = null;
-                this.mouseX = 0;
-                this.mouseY = 0;
-                
-                this.setupCanvas();
-                this.createSkeleton();
-                this.setupEventListeners();
-                this.lastTime = performance.now();
-                this.fps = 60;
-                this.fpsFrames = [];
-                
-                requestAnimationFrame(this.loop.bind(this));
-            }
-
-            setupCanvas() {
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-            }
-
-            resize() {
-                const rect = this.canvas.getBoundingClientRect();
-                this.canvas.width = rect.width;
-                this.canvas.height = rect.height;
-                this.groundY = this.canvas.height - 100;
-            }
-
-            createSkeleton() {
-                const cx = this.canvas.width / 2;
-                const cy = this.canvas.height / 2;
-                const scale = this.settings.scale;
-
-                // Create joints with anatomically accurate positioning
-                this.joints = {
-                    // Head and neck
-                    head: new Joint(cx, cy - 200 * scale, 0.8),
-                    neck: new Joint(cx, cy - 170 * scale, 0.5),
-                    
-                    // Upper torso
-                    shoulderL: new Joint(cx - 35 * scale, cy - 150 * scale, 1.0),
-                    shoulderR: new Joint(cx + 35 * scale, cy - 150 * scale, 1.0),
-                    chest: new Joint(cx, cy - 140 * scale, 2.0),
-                    
-                    // Arms
-                    elbowL: new Joint(cx - 60 * scale, cy - 100 * scale, 0.7),
-                    elbowR: new Joint(cx + 60 * scale, cy - 100 * scale, 0.7),
-                    wristL: new Joint(cx - 70 * scale, cy - 50 * scale, 0.5),
-                    wristR: new Joint(cx + 70 * scale, cy - 50 * scale, 0.5),
-                    handL: new Joint(cx - 75 * scale, cy - 30 * scale, 0.4),
-                    handR: new Joint(cx + 75 * scale, cy - 30 * scale, 0.4),
-                    
-                    // Spine and core
-                    midSpine: new Joint(cx, cy - 100 * scale, 2.5),
-                    lowerSpine: new Joint(cx, cy - 60 * scale, 2.5),
-                    pelvis: new Joint(cx, cy - 20 * scale, 3.0),
-                    
-                    // Legs
-                    hipL: new Joint(cx - 20 * scale, cy - 10 * scale, 1.5),
-                    hipR: new Joint(cx + 20 * scale, cy - 10 * scale, 1.5),
-                    kneeL: new Joint(cx - 25 * scale, cy + 80 * scale, 1.2),
-                    kneeR: new Joint(cx + 25 * scale, cy + 80 * scale, 1.2),
-                    ankleL: new Joint(cx - 25 * scale, cy + 160 * scale, 0.8),
-                    ankleR: new Joint(cx + 25 * scale, cy + 160 * scale, 0.8),
-                    heelL: new Joint(cx - 25 * scale, cy + 180 * scale, 0.6),
-                    heelR: new Joint(cx + 25 * scale, cy + 180 * scale, 0.6),
-                    footL: new Joint(cx - 15 * scale, cy + 180 * scale, 0.5),
-                    footR: new Joint(cx + 15 * scale, cy + 180 * scale, 0.5),
-                    toeL: new Joint(cx - 5 * scale, cy + 180 * scale, 0.4),
-                    toeR: new Joint(cx + 5 * scale, cy + 180 * scale, 0.4)
-                };
-
-                // Create constraints (bones)
-                this.constraints = [
-                    // Spine chain
-                    new Constraint(this.joints.head, this.joints.neck, null, 0.95),
-                    new Constraint(this.joints.neck, this.joints.chest, null, 0.9),
-                    new Constraint(this.joints.chest, this.joints.midSpine, null, 0.85),
-                    new Constraint(this.joints.midSpine, this.joints.lowerSpine, null, 0.85),
-                    new Constraint(this.joints.lowerSpine, this.joints.pelvis, null, 0.9),
-                    
-                    // Shoulders
-                    new Constraint(this.joints.chest, this.joints.shoulderL, null, 0.95),
-                    new Constraint(this.joints.chest, this.joints.shoulderR, null, 0.95),
-                    new Constraint(this.joints.shoulderL, this.joints.shoulderR, null, 0.8),
-                    
-                    // Left arm
-                    new Constraint(this.joints.shoulderL, this.joints.elbowL, null, 0.9),
-                    new Constraint(this.joints.elbowL, this.joints.wristL, null, 0.9),
-                    new Constraint(this.joints.wristL, this.joints.handL, null, 0.95),
-                    
-                    // Right arm
-                    new Constraint(this.joints.shoulderR, this.joints.elbowR, null, 0.9),
-                    new Constraint(this.joints.elbowR, this.joints.wristR, null, 0.9),
-                    new Constraint(this.joints.wristR, this.joints.handR, null, 0.95),
-                    
-                    // Pelvis
-                    new Constraint(this.joints.pelvis, this.joints.hipL, null, 0.95),
-                    new Constraint(this.joints.pelvis, this.joints.hipR, null, 0.95),
-                    new Constraint(this.joints.hipL, this.joints.hipR, null, 0.8),
-                    
-                    // Left leg
-                    new Constraint(this.joints.hipL, this.joints.kneeL, null, 0.9),
-                    new Constraint(this.joints.kneeL, this.joints.ankleL, null, 0.9),
-                    new Constraint(this.joints.ankleL, this.joints.heelL, null, 0.95),
-                    new Constraint(this.joints.heelL, this.joints.footL, null, 0.95),
-                    new Constraint(this.joints.footL, this.joints.toeL, null, 0.95),
-                    
-                    // Right leg
-                    new Constraint(this.joints.hipR, this.joints.kneeR, null, 0.9),
-                    new Constraint(this.joints.kneeR, this.joints.ankleR, null, 0.9),
-                    new Constraint(this.joints.ankleR, this.joints.heelR, null, 0.95),
-                    new Constraint(this.joints.heelR, this.joints.footR, null, 0.95),
-                    new Constraint(this.joints.footR, this.joints.toeR, null, 0.95)
-                ];
-
-                this.updateJointCount();
-            }
-
-            updateJointCount() {
-                document.getElementById('joint-count').textContent = Object.keys(this.joints).length;
-            }
-
-            applyGravity(dt) {
-                const gravity = this.settings.gravity;
-                for (const joint of Object.values(this.joints)) {
-                    if (!joint.fixed) {
-                        joint.y += gravity * dt * dt;
-                    }
-                }
-            }
-
-            applyGroundConstraints() {
-                if (!this.settings.groundContact) return;
-                
-                const groundJoints = [this.joints.heelL, this.joints.heelR, this.joints.footL, this.joints.footR, this.joints.toeL, this.joints.toeR];
-                const friction = 0.85; // Higher friction for realistic foot contact
-                
-                for (const joint of groundJoints) {
-                    if (joint.y > this.groundY) {
-                        joint.y = this.groundY;
-                        // Apply friction to horizontal movement
-                        const velX = joint.x - joint.prevX;
-                        joint.prevX = joint.x - velX * friction;
-                        // Strong vertical damping for ground contact
-                        joint.prevY = this.groundY + (joint.prevY - joint.y) * 0.2;
-                    }
-                }
-                
-                // Track which feet are on ground for balance calculations
-                this.footContactL = this.joints.heelL.y >= this.groundY - 1 || this.joints.footL.y >= this.groundY - 1 || this.joints.toeL.y >= this.groundY - 1;
-                this.footContactR = this.joints.heelR.y >= this.groundY - 1 || this.joints.footR.y >= this.groundY - 1 || this.joints.toeR.y >= this.groundY - 1;
-            }
-
-            applyBalanceForces() {
-                if (!this.settings.autoBalance || this.ragdollMode) return;
-                
-                const strength = this.settings.balanceStrength;
-                const flexibility = this.settings.hipFlexibility;
-                
-                // Calculate center of mass
-                let comX = 0, comY = 0, totalMass = 0;
-                for (const joint of Object.values(this.joints)) {
-                    comX += joint.x * joint.mass;
-                    comY += joint.y * joint.mass;
-                    totalMass += joint.mass;
-                }
-                comX /= totalMass;
-                comY /= totalMass;
-                
-                // Calculate support polygon (between feet) - use all foot contact points
-                let supportLeft = 0, supportRight = 0, contactPoints = 0;
-                if (this.footContactL) {
-                    supportLeft = (this.joints.heelL.x + this.joints.footL.x + this.joints.toeL.x) / 3;
-                    contactPoints++;
-                }
-                if (this.footContactR) {
-                    supportRight = (this.joints.heelR.x + this.joints.footR.x + this.joints.toeR.x) / 3;
-                    contactPoints++;
-                }
-                
-                if (contactPoints === 0) return; // Not grounded, skip balance
-                
-                const footCenterX = contactPoints === 2 ? (supportLeft + supportRight) / 2 : 
-                                    (this.footContactL ? supportLeft : supportRight);
-                const comOffset = comX - footCenterX;
-                
-                // ANKLE STRATEGY: For small disturbances, adjust ankle torque
-                const ankleThreshold = 15;
-                if (Math.abs(comOffset) < ankleThreshold) {
-                    const ankleForce = -comOffset * flexibility * 0.8;
-                    if (this.footContactL) {
-                        this.joints.ankleL.x += ankleForce;
-                        this.joints.heelL.x -= ankleForce * 0.3;
-                        this.joints.toeL.x += ankleForce * 0.3;
-                    }
-                    if (this.footContactR) {
-                        this.joints.ankleR.x += ankleForce;
-                        this.joints.heelR.x -= ankleForce * 0.3;
-                        this.joints.toeR.x += ankleForce * 0.3;
-                    }
-                }
-                
-                // HIP STRATEGY: For larger disturbances, move the whole body
-                const hipCorrection = -comOffset * strength;
-                this.joints.pelvis.x += hipCorrection;
-                this.joints.lowerSpine.x += hipCorrection * 0.8;
-                this.joints.midSpine.x += hipCorrection * 0.6;
-                this.joints.chest.x += hipCorrection * 0.4;
-                this.joints.neck.x += hipCorrection * 0.2;
-                this.joints.head.x += hipCorrection * 0.1;
-                
-                // Weight distribution: shift weight to supporting foot
-                if (contactPoints === 2) {
-                    const weightShift = comOffset * 0.05;
-                    if (this.footContactL) {
-                        this.joints.heelL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
-                        this.joints.footL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
-                        this.joints.toeL.y -= Math.abs(weightShift) * (comOffset < 0 ? 1.5 : 0.5);
-                    }
-                    if (this.footContactR) {
-                        this.joints.heelR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
-                        this.joints.footR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
-                        this.joints.toeR.y -= Math.abs(weightShift) * (comOffset > 0 ? 1.5 : 0.5);
-                    }
-                }
-                
-                // STEPPING STRATEGY: For very large disturbances, adjust foot position
-                const stepThreshold = 50;
-                if (Math.abs(comOffset) > stepThreshold && contactPoints === 2) {
-                    const stepAdjust = comOffset * 0.1;
-                    if (comOffset > 0 && this.footContactR) {
-                        this.joints.heelR.x += stepAdjust;
-                        this.joints.footR.x += stepAdjust;
-                        this.joints.toeR.x += stepAdjust;
-                    } else if (comOffset < 0 && this.footContactL) {
-                        this.joints.heelL.x += stepAdjust;
-                        this.joints.footL.x += stepAdjust;
-                        this.joints.toeL.x += stepAdjust;
-                    }
-                }
-                
-                // Active knee locking for stability when standing
-                const kneeStrength = 0.15;
-                if (this.footContactL) {
-                    const targetKneeL = this.joints.ankleL.x;
-                    this.joints.kneeL.x += (targetKneeL - this.joints.kneeL.x) * kneeStrength;
-                }
-                if (this.footContactR) {
-                    const targetKneeR = this.joints.ankleR.x;
-                    this.joints.kneeR.x += (targetKneeR - this.joints.kneeR.x) * kneeStrength;
-                }
-                
-                // Store balance info
-                const balanceQuality = Math.max(0, 100 - Math.abs(comOffset) * 1.5);
-                document.getElementById('balance').textContent = balanceQuality.toFixed(0) + '%';
-                
-                // Display active strategy
-                let strategy = 'Stable';
-                if (Math.abs(comOffset) > stepThreshold) {
-                    strategy = '🚶 Stepping';
-                } else if (Math.abs(comOffset) > ankleThreshold) {
-                    strategy = '🦵 Hip';
-                } else if (Math.abs(comOffset) > 5) {
-                    strategy = '🦶 Ankle';
-                }
-                document.getElementById('strategy').textContent = strategy;
-                
-                // Display foot contact
-                let footStatus = '';
-                if (this.footContactL && this.footContactR) footStatus = 'L+R';
-                else if (this.footContactL) footStatus = 'L';
-                else if (this.footContactR) footStatus = 'R';
-                else footStatus = 'None';
-                document.getElementById('foot-contact').textContent = footStatus;
-                
-                this.centerOfMass = { x: comX, y: comY };
-                this.comOffset = comOffset;
-            }
-
-            solveConstraints(iterations = 3) {
-                for (let i = 0; i < iterations; i++) {
-                    for (const constraint of this.constraints) {
-                        constraint.solve();
-                    }
-                }
-            }
-
-            update(dt) {
-                // Apply physics
-                this.applyGravity(dt);
-                
-                // Update all joints
-                for (const joint of Object.values(this.joints)) {
-                    joint.update(dt, this.settings.damping);
-                }
-                
-                // Solve constraints multiple times for stability
-                this.solveConstraints(5);
-                
-                // Apply ground and balance
-                this.applyGroundConstraints();
-                this.applyBalanceForces();
-                
-                // Final constraint pass
-                this.solveConstraints(2);
-            }
-
-            render() {
-                const ctx = this.ctx;
-                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                // Draw ground
-                ctx.strokeStyle = 'rgba(96, 165, 250, 0.3)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([10, 5]);
-                ctx.beginPath();
-                ctx.moveTo(0, this.groundY);
-                ctx.lineTo(this.canvas.width, this.groundY);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                
-                // Draw constraints (bones)
-                if (this.settings.showConstraints) {
-                    ctx.strokeStyle = 'rgba(147, 197, 253, 0.6)';
-                    ctx.lineWidth = 3;
-                    ctx.lineCap = 'round';
-                    
-                    for (const constraint of this.constraints) {
-                        ctx.beginPath();
-                        ctx.moveTo(constraint.joint1.x, constraint.joint1.y);
-                        ctx.lineTo(constraint.joint2.x, constraint.joint2.y);
-                        ctx.stroke();
-                    }
-                }
-                
-                // Draw body shapes
-                this.drawBodyShapes();
-                
-                // Draw joints
-                for (const [name, joint] of Object.entries(this.joints)) {
-                    const isHovered = this.isPointNearJoint(this.mouseX, this.mouseY, joint);
-                    const isDragged = this.draggedJoint === joint;
-                    
-                    ctx.fillStyle = isDragged ? '#ef4444' : (isHovered ? '#fbbf24' : '#60a5fa');
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.lineWidth = 2;
-                    
-                    ctx.beginPath();
-                    ctx.arc(joint.x, joint.y, this.settings.jointSize, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    // Draw joint labels for major joints
-                    if (['head', 'chest', 'pelvis', 'handL', 'handR', 'heelL', 'heelR', 'toeL', 'toeR'].includes(name)) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                        ctx.font = '10px monospace';
-                        ctx.fillText(name, joint.x + 12, joint.y - 8);
-                    }
-                }
-                
-                // Draw center of mass and balance visualization
-                if (this.settings.showCOM && this.centerOfMass) {
-                    ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(this.centerOfMass.x, this.centerOfMass.y, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    // Draw COM to ground projection
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
-                    ctx.setLineDash([5, 5]);
-                    ctx.beginPath();
-                    ctx.moveTo(this.centerOfMass.x, this.centerOfMass.y);
-                    ctx.lineTo(this.centerOfMass.x, this.groundY);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    
-                    // Draw support polygon (base of support)
-                    if (this.footContactL || this.footContactR) {
-                        ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
-                        ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        
-                        if (this.footContactL && this.footContactR) {
-                            // Both feet on ground - draw polygon
-                            ctx.moveTo(this.joints.heelL.x, this.joints.heelL.y);
-                            ctx.lineTo(this.joints.toeL.x, this.joints.toeL.y);
-                            ctx.lineTo(this.joints.toeR.x, this.joints.toeR.y);
-                            ctx.lineTo(this.joints.heelR.x, this.joints.heelR.y);
-                            ctx.closePath();
-                        } else if (this.footContactL) {
-                            // Only left foot - draw triangle
-                            ctx.moveTo(this.joints.heelL.x, this.joints.heelL.y);
-                            ctx.lineTo(this.joints.toeL.x - 15, this.joints.toeL.y);
-                            ctx.lineTo(this.joints.toeL.x + 15, this.joints.toeL.y);
-                            ctx.closePath();
-                        } else if (this.footContactR) {
-                            // Only right foot - draw triangle
-                            ctx.moveTo(this.joints.heelR.x, this.joints.heelR.y);
-                            ctx.lineTo(this.joints.toeR.x - 15, this.joints.toeR.y);
-                            ctx.lineTo(this.joints.toeR.x + 15, this.joints.toeR.y);
-                            ctx.closePath();
-                        }
-                        
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                }
-                
-                // Draw velocity vectors
-                if (this.settings.showVelocity) {
-                    ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
-                    ctx.lineWidth = 2;
-                    for (const joint of Object.values(this.joints)) {
-                        const vx = (joint.x - joint.prevX) * 10;
-                        const vy = (joint.y - joint.prevY) * 10;
-                        if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
-                            ctx.beginPath();
-                            ctx.moveTo(joint.x, joint.y);
-                            ctx.lineTo(joint.x + vx, joint.y + vy);
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            drawBodyShapes() {
-                const ctx = this.ctx;
-                
-                // Draw head
-                ctx.fillStyle = 'rgba(255, 212, 163, 0.9)';
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.lineWidth = 2;
-                const headRadius = 25 * this.settings.scale;
-                ctx.beginPath();
-                ctx.arc(this.joints.head.x, this.joints.head.y, headRadius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                
-                // Draw eyes
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                ctx.beginPath();
-                ctx.arc(this.joints.head.x - 8, this.joints.head.y - 5, 3, 0, Math.PI * 2);
-                ctx.arc(this.joints.head.x + 8, this.joints.head.y - 5, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw torso
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.7)';
-                ctx.strokeStyle = 'rgba(37, 99, 235, 0.9)';
-                ctx.lineWidth = 2;
-                this.drawPolygon([
-                    this.joints.shoulderL,
-                    this.joints.shoulderR,
-                    this.joints.pelvis
-                ]);
-                
-                // Draw pelvis
-                ctx.fillStyle = 'rgba(31, 41, 55, 0.7)';
-                ctx.strokeStyle = 'rgba(17, 24, 39, 0.9)';
-                this.drawPolygon([
-                    this.joints.lowerSpine,
-                    this.joints.hipL,
-                    this.joints.hipR
-                ]);
-                
-                // Draw limbs with thickness
-                this.drawLimb(this.joints.shoulderL, this.joints.elbowL, 8, 'rgba(59, 130, 246, 0.6)');
-                this.drawLimb(this.joints.elbowL, this.joints.wristL, 6, 'rgba(255, 212, 163, 0.8)');
-                this.drawLimb(this.joints.shoulderR, this.joints.elbowR, 8, 'rgba(59, 130, 246, 0.6)');
-                this.drawLimb(this.joints.elbowR, this.joints.wristR, 6, 'rgba(255, 212, 163, 0.8)');
-                
-                this.drawLimb(this.joints.hipL, this.joints.kneeL, 10, 'rgba(31, 41, 55, 0.7)');
-                this.drawLimb(this.joints.kneeL, this.joints.ankleL, 8, 'rgba(31, 41, 55, 0.7)');
-                this.drawLimb(this.joints.hipR, this.joints.kneeR, 10, 'rgba(31, 41, 55, 0.7)');
-                this.drawLimb(this.joints.kneeR, this.joints.ankleR, 8, 'rgba(31, 41, 55, 0.7)');
-                
-                // Draw hands
-                ctx.fillStyle = 'rgba(255, 212, 163, 0.9)';
-                ctx.beginPath();
-                ctx.arc(this.joints.handL.x, this.joints.handL.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(this.joints.handR.x, this.joints.handR.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                
-                // Draw feet with improved visualization
-                ctx.fillStyle = this.footContactL ? 'rgba(34, 197, 94, 0.9)' : 'rgba(15, 23, 42, 0.9)';
-                this.drawFoot(this.joints.heelL, this.joints.footL, this.joints.toeL);
-                ctx.fillStyle = this.footContactR ? 'rgba(34, 197, 94, 0.9)' : 'rgba(15, 23, 42, 0.9)';
-                this.drawFoot(this.joints.heelR, this.joints.footR, this.joints.toeR);
-            }
-
-            drawLimb(joint1, joint2, thickness, color) {
-                const ctx = this.ctx;
-                const dx = joint2.x - joint1.x;
-                const dy = joint2.y - joint1.y;
-                const angle = Math.atan2(dy, dx);
-                const perpX = Math.cos(angle + Math.PI / 2) * thickness / 2;
-                const perpY = Math.sin(angle + Math.PI / 2) * thickness / 2;
-                
-                ctx.fillStyle = color;
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(joint1.x + perpX, joint1.y + perpY);
-                ctx.lineTo(joint1.x - perpX, joint1.y - perpY);
-                ctx.lineTo(joint2.x - perpX, joint2.y - perpY);
-                ctx.lineTo(joint2.x + perpX, joint2.y + perpY);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            drawPolygon(joints) {
-                const ctx = this.ctx;
-                ctx.beginPath();
-                ctx.moveTo(joints[0].x, joints[0].y);
-                for (let i = 1; i < joints.length; i++) {
-                    ctx.lineTo(joints[i].x, joints[i].y);
-                }
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            drawFoot(heelJoint, midJoint, toeJoint) {
-                const ctx = this.ctx;
-                
-                // Draw foot as a realistic shape from heel to toe
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                
-                // Create foot outline
-                const footWidth = 10;
-                const dx = toeJoint.x - heelJoint.x;
-                const dy = toeJoint.y - heelJoint.y;
-                const angle = Math.atan2(dy, dx);
-                const perpX = Math.cos(angle + Math.PI / 2) * footWidth;
-                const perpY = Math.sin(angle + Math.PI / 2) * footWidth;
-                
-                // Heel (rounded back)
-                ctx.arc(heelJoint.x, heelJoint.y, footWidth * 0.8, angle + Math.PI * 0.6, angle + Math.PI * 1.4);
-                
-                // Sides of foot
-                ctx.lineTo(midJoint.x - perpX * 0.6, midJoint.y - perpY * 0.6);
-                ctx.lineTo(toeJoint.x - perpX * 0.4, toeJoint.y - perpY * 0.4);
-                
-                // Toe (rounded front)
-                ctx.arc(toeJoint.x, toeJoint.y, footWidth * 0.5, angle - Math.PI * 0.3, angle + Math.PI * 0.3);
-                
-                // Other side
-                ctx.lineTo(midJoint.x + perpX * 0.6, midJoint.y + perpY * 0.6);
-                ctx.closePath();
-                
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            setupEventListeners() {
-                this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-                this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-                this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-                this.canvas.addEventListener('mouseleave', this.onMouseUp.bind(this));
-                
-                // Touch support
-                this.canvas.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    const rect = this.canvas.getBoundingClientRect();
-                    this.onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
-                });
-                this.canvas.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
-                });
-                this.canvas.addEventListener('touchend', this.onMouseUp.bind(this));
-            }
-
-            getMousePos(e) {
-                const rect = this.canvas.getBoundingClientRect();
-                return {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                };
-            }
-
-            isPointNearJoint(x, y, joint, threshold = 20) {
-                const dx = x - joint.x;
-                const dy = y - joint.y;
-                return Math.sqrt(dx * dx + dy * dy) < threshold;
-            }
-
-            onMouseDown(e) {
-                const pos = this.getMousePos(e);
-                this.mouseX = pos.x;
-                this.mouseY = pos.y;
-                
-                for (const joint of Object.values(this.joints)) {
-                    if (this.isPointNearJoint(pos.x, pos.y, joint)) {
-                        this.draggedJoint = joint;
-                        this.draggedJoint.fixed = true;
-                        return;
-                    }
-                }
-            }
-
-            onMouseMove(e) {
-                const pos = this.getMousePos(e);
-                this.mouseX = pos.x;
-                this.mouseY = pos.y;
-                
-                if (this.draggedJoint) {
-                    this.draggedJoint.x = pos.x;
-                    this.draggedJoint.y = pos.y;
-                    this.draggedJoint.prevX = pos.x;
-                    this.draggedJoint.prevY = pos.y;
-                }
-            }
-
-            onMouseUp(e) {
-                if (this.draggedJoint) {
-                    this.draggedJoint.fixed = false;
-                    this.draggedJoint = null;
-                }
-            }
-
-            reset() {
-                this.createSkeleton();
-                this.ragdollMode = false;
-            }
-
-            toggleRagdoll() {
-                this.ragdollMode = !this.ragdollMode;
-                this.settings.autoBalance = !this.ragdollMode;
-                document.getElementById('auto-balance').checked = this.settings.autoBalance;
-            }
-
-            standUpright() {
-                const cx = this.canvas.width / 2;
-                const groundY = this.groundY;
-                const scale = this.settings.scale;
-                
-                // Smoothly move to standing position - all foot points on ground
-                this.joints.heelL.y = groundY;
-                this.joints.heelR.y = groundY;
-                this.joints.footL.y = groundY;
-                this.joints.footR.y = groundY;
-                this.joints.toeL.y = groundY;
-                this.joints.toeR.y = groundY;
-                
-                this.joints.heelL.x = cx - 25 * scale;
-                this.joints.heelR.x = cx + 25 * scale;
-                this.joints.footL.x = cx - 15 * scale;
-                this.joints.footR.x = cx + 15 * scale;
-                this.joints.toeL.x = cx - 5 * scale;
-                this.joints.toeR.x = cx + 5 * scale;
-                
-                // Reset velocities
-                for (const joint of Object.values(this.joints)) {
-                    joint.prevX = joint.x;
-                    joint.prevY = joint.y;
-                }
-                
-                this.ragdollMode = false;
-                this.settings.autoBalance = true;
-                document.getElementById('auto-balance').checked = true;
-            }
-
-            loop(currentTime) {
-                const dt = Math.min((currentTime - this.lastTime) / 1000, 0.016); // Cap at 60 FPS
-                this.lastTime = currentTime;
-                
-                // Calculate FPS
-                this.fpsFrames.push(currentTime);
-                this.fpsFrames = this.fpsFrames.filter(t => currentTime - t < 1000);
-                this.fps = this.fpsFrames.length;
-                document.getElementById('fps').textContent = this.fps;
-                
-                this.update(dt);
-                this.render();
-                
-                requestAnimationFrame(this.loop.bind(this));
-            }
-        }
-
-        // Initialize the demo
-        const canvas = document.getElementById('physics-canvas');
-        const skeleton = new SkeletonPhysics(canvas);
-
-        // Setup controls
-        function setupControl(id, property, callback = null) {
-            const input = document.getElementById(id);
-            const display = document.getElementById(id + '-val');
             
-            input.addEventListener('input', (e) => {
+            addBone(name, parentIndex, px, py, pz, length, radius, mass) {
+                const bone = {
+                    name,
+                    parentIndex,
+                    childIndices: [],
+                    restPosition: { x: px, y: py, z: pz },
+                    length,
+                    radius,
+                    mass,
+                    position: { x: px, y: py, z: pz },
+                    rotation: { x: 0, y: 0, z: 0, w: 1 },
+                    localRotation: { x: 0, y: 0, z: 0, w: 1 },
+                    velocity: { x: 0, y: 0, z: 0 },
+                    angularVelocity: { x: 0, y: 0, z: 0 },
+                    inertia: this.computeInertia(length, radius, mass)
+                };
+                
+                const index = this.bones.length;
+                this.bones.push(bone);
+                this.boneMap.set(name, index);
+                
+                if (parentIndex >= 0 && parentIndex < this.bones.length) {
+                    this.bones[parentIndex].childIndices.push(index);
+                }
+                
+                return index;
+            }
+            
+            computeInertia(length, radius, mass) {
+                const r = radius;
+                const h = length;
+                const m = mass;
+                const Ixx = (1/12) * m * (3*r*r + h*h);
+                const Izz = (1/2) * m * r * r;
+                return { x: Ixx, y: Ixx, z: Izz };
+            }
+            
+            addJoint(name, parentIdx, childIdx, typeInt, 
+                    minX, minY, minZ, maxX, maxY, maxZ, stiffness, damping) {
+                const joint = {
+                    name,
+                    parentBoneIndex: parentIdx,
+                    childBoneIndex: childIdx,
+                    type: typeInt,
+                    limits: {
+                        min: { x: minX, y: minY, z: minZ },
+                        max: { x: maxX, y: maxY, z: maxZ }
+                    },
+                    drive: { stiffness, damping },
+                    currentAngles: { x: 0, y: 0, z: 0 },
+                    targetAngles: { x: 0, y: 0, z: 0 }
+                };
+                
+                const index = this.joints.length;
+                this.joints.push(joint);
+                this.jointMap.set(name, index);
+                
+                return index;
+            }
+            
+            update(dt) {
+                if (!this.physicsEnabled) return;
+                
+                // Apply physics
+                for (let i = 1; i < this.bones.length; i++) {
+                    const bone = this.bones[i];
+                    
+                    if (this.gravityEnabled) {
+                        bone.velocity.y += this.gravity.y * dt;
+                    }
+                    
+                    bone.velocity.x *= 0.98;
+                    bone.velocity.y *= 0.98;
+                    bone.velocity.z *= 0.98;
+                    bone.angularVelocity.x *= 0.95;
+                    bone.angularVelocity.y *= 0.95;
+                    bone.angularVelocity.z *= 0.95;
+                }
+                
+                // Apply joint constraints
+                for (const joint of this.joints) {
+                    if (joint.childBoneIndex < 0 || joint.childBoneIndex >= this.bones.length) {
+                        continue;
+                    }
+                    
+                    const bone = this.bones[joint.childBoneIndex];
+                    const k = joint.drive.stiffness * this.globalStiffness;
+                    const d = joint.drive.damping * this.globalDamping;
+                    
+                    const errorX = this.shortestAngle(joint.targetAngles.x - joint.currentAngles.x);
+                    const errorY = this.shortestAngle(joint.targetAngles.y - joint.currentAngles.y);
+                    const errorZ = this.shortestAngle(joint.targetAngles.z - joint.currentAngles.z);
+                    
+                    joint.currentAngles.x = this.clamp(joint.currentAngles.x, joint.limits.min.x, joint.limits.max.x);
+                    joint.currentAngles.y = this.clamp(joint.currentAngles.y, joint.limits.min.y, joint.limits.max.y);
+                    joint.currentAngles.z = this.clamp(joint.currentAngles.z, joint.limits.min.z, joint.limits.max.z);
+                    
+                    const torqueX = k * errorX - d * bone.angularVelocity.x;
+                    const torqueY = k * errorY - d * bone.angularVelocity.y;
+                    const torqueZ = k * errorZ - d * bone.angularVelocity.z;
+                    
+                    bone.angularVelocity.x += (torqueX / bone.inertia.x) * dt;
+                    bone.angularVelocity.y += (torqueY / bone.inertia.y) * dt;
+                    bone.angularVelocity.z += (torqueZ / bone.inertia.z) * dt;
+                    
+                    this.integrateRotation(bone, dt);
+                }
+                
+                // Update transforms
+                if (this.bones.length > 0) {
+                    this.updateTransform(0);
+                }
+            }
+            
+            integrateRotation(bone, dt) {
+                const angle = Math.sqrt(
+                    bone.angularVelocity.x * bone.angularVelocity.x +
+                    bone.angularVelocity.y * bone.angularVelocity.y +
+                    bone.angularVelocity.z * bone.angularVelocity.z
+                ) * dt;
+                
+                if (angle > 0.0001) {
+                    const axis = {
+                        x: bone.angularVelocity.x / angle * dt,
+                        y: bone.angularVelocity.y / angle * dt,
+                        z: bone.angularVelocity.z / angle * dt
+                    };
+                    
+                    const halfAngle = angle * 0.5;
+                    const s = Math.sin(halfAngle);
+                    const deltaQuat = {
+                        x: axis.x * s,
+                        y: axis.y * s,
+                        z: axis.z * s,
+                        w: Math.cos(halfAngle)
+                    };
+                    
+                    bone.localRotation = this.multiplyQuaternions(bone.localRotation, deltaQuat);
+                    bone.localRotation = this.normalizeQuaternion(bone.localRotation);
+                }
+            }
+            
+            updateTransform(index) {
+                const bone = this.bones[index];
+                
+                if (bone.parentIndex >= 0) {
+                    const parent = this.bones[bone.parentIndex];
+                    bone.position = this.rotateVector(bone.restPosition, parent.rotation);
+                    bone.position.x += parent.position.x;
+                    bone.position.y += parent.position.y;
+                    bone.position.z += parent.position.z;
+                    bone.rotation = this.multiplyQuaternions(parent.rotation, bone.localRotation);
+                } else {
+                    bone.position = { ...bone.restPosition };
+                    bone.rotation = { ...bone.localRotation };
+                }
+                
+                bone.rotation = this.normalizeQuaternion(bone.rotation);
+                
+                for (const childIdx of bone.childIndices) {
+                    this.updateTransform(childIdx);
+                }
+            }
+            
+            rotateVector(v, q) {
+                const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+                const vx = v.x, vy = v.y, vz = v.z;
+                
+                const ix = qw * vx + qy * vz - qz * vy;
+                const iy = qw * vy + qz * vx - qx * vz;
+                const iz = qw * vz + qx * vy - qy * vx;
+                const iw = -qx * vx - qy * vy - qz * vz;
+                
+                return {
+                    x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+                    y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+                    z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+                };
+            }
+            
+            multiplyQuaternions(a, b) {
+                return {
+                    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+                    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+                    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+                    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+                };
+            }
+            
+            normalizeQuaternion(q) {
+                const len = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+                if (len > 0.0001) {
+                    return { x: q.x/len, y: q.y/len, z: q.z/len, w: q.w/len };
+                }
+                return { x: 0, y: 0, z: 0, w: 1 };
+            }
+            
+            clamp(value, min, max) {
+                return Math.max(min, Math.min(value, max));
+            }
+            
+            shortestAngle(angle) {
+                while (angle > Math.PI) angle -= 2 * Math.PI;
+                while (angle < -Math.PI) angle += 2 * Math.PI;
+                return angle;
+            }
+            
+            computeCenterOfMass() {
+                let totalMass = 0;
+                const com = { x: 0, y: 0, z: 0 };
+                
+                for (const bone of this.bones) {
+                    com.x += bone.position.x * bone.mass;
+                    com.y += bone.position.y * bone.mass;
+                    com.z += bone.position.z * bone.mass;
+                    totalMass += bone.mass;
+                }
+                
+                if (totalMass > 0.0001) {
+                    com.x /= totalMass;
+                    com.y /= totalMass;
+                    com.z /= totalMass;
+                }
+                
+                return com;
+            }
+            
+            getBoneCount() { return this.bones.length; }
+            getJointCount() { return this.joints.length; }
+            getBonePosition(index) { return this.bones[index]?.position || { x: 0, y: 0, z: 0 }; }
+            getBoneRotation(index) { return this.bones[index]?.rotation || { x: 0, y: 0, z: 0, w: 1 }; }
+            getBoneName(index) { return this.bones[index]?.name || ''; }
+            getBoneLength(index) { return this.bones[index]?.length || 0; }
+            getBoneRadius(index) { return this.bones[index]?.radius || 0; }
+            getJointName(index) { return this.joints[index]?.name || ''; }
+            getJointChildBoneIndex(index) { return this.joints[index]?.childBoneIndex || -1; }
+            
+            setJointTargetAngles(index, x, y, z) {
+                if (this.joints[index]) {
+                    this.joints[index].targetAngles = { x, y, z };
+                }
+            }
+            
+            setPhysicsEnabled(enabled) { this.physicsEnabled = enabled; }
+            setGravityEnabled(enabled) { this.gravityEnabled = enabled; }
+            setGlobalStiffness(value) { this.globalStiffness = value; }
+            setGlobalDamping(value) { this.globalDamping = value; }
+            
+            getPhysicsEnabled() { return this.physicsEnabled; }
+            getGravityEnabled() { return this.gravityEnabled; }
+            getGlobalStiffness() { return this.globalStiffness; }
+            getGlobalDamping() { return this.globalDamping; }
+        }
+        
+        // ============================================================================
+        // Initialize skeleton physics (WASM or JS fallback)
+        // ============================================================================
+        
+        async function initPhysics() {
+            updateLoadStatus('Checking for WebAssembly support...');
+            
+            // Try to load WASM module
+            try {
+                updateLoadStatus('Loading WebAssembly module...');
+                
+                // Check if module file exists
+                const response = await fetch('../wasm/skeleton-physics.js');
+                if (response.ok) {
+                    const createModule = await import('../wasm/skeleton-physics.js');
+                    WasmModule = await createModule.default();
+                    useWasm = true;
+                    updateLoadStatus('WebAssembly loaded successfully!');
+                    console.log('✓ Using WebAssembly physics engine');
+                } else {
+                    throw new Error('WASM module not found');
+                }
+            } catch (error) {
+                console.warn('WASM not available, using JavaScript fallback:', error.message);
+                updateLoadStatus('Using JavaScript physics engine...');
+                useWasm = false;
+            }
+            
+            return useWasm;
+        }
+        
+        // ============================================================================
+        // Skeleton builder
+        // ============================================================================
+        
+        function createSkeleton() {
+            const skeleton = useWasm ? new WasmModule.Skeleton() : new JSSkeletonPhysics();
+            
+            // Joint type enum
+            const JointType = {
+                FREE6DOF: 0,
+                BALL: 1,
+                HINGE: 2,
+                TWIST: 3,
+                SWING_TWIST: 4
+            };
+            
+            // Add bones
+            const pelvis = skeleton.addBone('pelvis', -1, 0, 1.0, 0, 0.12, 0.11, 9.5);
+            const spine01 = skeleton.addBone('spine_01', pelvis, 0, 0.08, 0, 0.10, 0.07, 3.0);
+            const spine02 = skeleton.addBone('spine_02', spine01, 0, 0.10, 0, 0.10, 0.07, 3.0);
+            const spine03 = skeleton.addBone('spine_03', spine02, 0, 0.10, 0, 0.10, 0.07, 3.0);
+            const chest = skeleton.addBone('chest', spine03, 0, 0.12, 0, 0.14, 0.10, 15.0);
+            const neck = skeleton.addBone('neck', chest, 0, 0.12, 0, 0.08, 0.04, 1.5);
+            const head = skeleton.addBone('head', neck, 0, 0.10, 0, 0.12, 0.08, 6.0);
+            
+            // Right arm
+            const clavR = skeleton.addBone('clav_R', chest, 0.08, 0.10, 0, 0.14, 0.02, 0.4);
+            const scapR = skeleton.addBone('scap_R', clavR, 0.14, 0, 0, 0.05, 0.06, 0.3);
+            const upperArmR = skeleton.addBone('upperArm_R', scapR, 0.05, -0.02, 0, 0.28, 0.05, 2.1);
+            const forearmR = skeleton.addBone('forearm_R', upperArmR, 0, -0.28, 0, 0.24, 0.04, 1.6);
+            const handR = skeleton.addBone('hand_R', forearmR, 0, -0.24, 0, 0.08, 0.035, 0.8);
+            
+            // Left arm
+            const clavL = skeleton.addBone('clav_L', chest, -0.08, 0.10, 0, 0.14, 0.02, 0.4);
+            const scapL = skeleton.addBone('scap_L', clavL, -0.14, 0, 0, 0.05, 0.06, 0.3);
+            const upperArmL = skeleton.addBone('upperArm_L', scapL, -0.05, -0.02, 0, 0.28, 0.05, 2.1);
+            const forearmL = skeleton.addBone('forearm_L', upperArmL, 0, -0.28, 0, 0.24, 0.04, 1.6);
+            const handL = skeleton.addBone('hand_L', forearmL, 0, -0.24, 0, 0.08, 0.035, 0.8);
+            
+            // Right leg
+            const thighR = skeleton.addBone('thigh_R', pelvis, 0.10, -0.08, 0, 0.40, 0.06, 7.5);
+            const shinR = skeleton.addBone('shin_R', thighR, 0, -0.40, 0, 0.38, 0.045, 3.8);
+            const footR = skeleton.addBone('foot_R', shinR, 0, -0.38, 0.05, 0.10, 0.035, 0.8);
+            const toeR = skeleton.addBone('toe_R', footR, 0, -0.02, 0.08, 0.05, 0.02, 0.2);
+            
+            // Left leg
+            const thighL = skeleton.addBone('thigh_L', pelvis, -0.10, -0.08, 0, 0.40, 0.06, 7.5);
+            const shinL = skeleton.addBone('shin_L', thighL, 0, -0.40, 0, 0.38, 0.045, 3.8);
+            const footL = skeleton.addBone('foot_L', shinL, 0, -0.38, 0.05, 0.10, 0.035, 0.8);
+            const toeL = skeleton.addBone('toe_L', footL, 0, -0.02, 0.08, 0.05, 0.02, 0.2);
+            
+            // Add joints
+            // Spine
+            skeleton.addJoint('spine01', pelvis, spine01, JointType.SWING_TWIST,
+                -30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD, 200, 30);
+            skeleton.addJoint('spine02', spine01, spine02, JointType.SWING_TWIST,
+                -30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD, 200, 30);
+            skeleton.addJoint('spine03', spine02, spine03, JointType.SWING_TWIST,
+                -30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD, 200, 30);
+            skeleton.addJoint('chest', spine03, chest, JointType.SWING_TWIST,
+                -30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD, 220, 35);
+            
+            // Neck & head
+            skeleton.addJoint('neck', chest, neck, JointType.BALL,
+                -45*DEG2RAD, -60*DEG2RAD, -80*DEG2RAD, 60*DEG2RAD, 45*DEG2RAD, 80*DEG2RAD, 150, 25);
+            skeleton.addJoint('head', neck, head, JointType.BALL,
+                -20*DEG2RAD, -10*DEG2RAD, -30*DEG2RAD, 20*DEG2RAD, 10*DEG2RAD, 30*DEG2RAD, 120, 20);
+            
+            // Right arm
+            skeleton.addJoint('clav_R', chest, clavR, JointType.BALL,
+                -10*DEG2RAD, -45*DEG2RAD, -20*DEG2RAD, 15*DEG2RAD, 45*DEG2RAD, 20*DEG2RAD, 100, 15);
+            skeleton.addJoint('scap_R', clavR, scapR, JointType.BALL,
+                -20*DEG2RAD, -30*DEG2RAD, -60*DEG2RAD, 20*DEG2RAD, 30*DEG2RAD, 0*DEG2RAD, 80, 12);
+            skeleton.addJoint('shoulder_R', scapR, upperArmR, JointType.BALL,
+                -45*DEG2RAD, -180*DEG2RAD, -90*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 70*DEG2RAD, 150, 20);
+            skeleton.addJoint('elbow_R', upperArmR, forearmR, JointType.HINGE,
+                -5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0, 180, 25);
+            skeleton.addJoint('wrist_R', forearmR, handR, JointType.BALL,
+                -80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD, 100, 15);
+            
+            // Left arm
+            skeleton.addJoint('clav_L', chest, clavL, JointType.BALL,
+                -10*DEG2RAD, -45*DEG2RAD, -20*DEG2RAD, 15*DEG2RAD, 45*DEG2RAD, 20*DEG2RAD, 100, 15);
+            skeleton.addJoint('scap_L', clavL, scapL, JointType.BALL,
+                -20*DEG2RAD, -30*DEG2RAD, -60*DEG2RAD, 20*DEG2RAD, 30*DEG2RAD, 0*DEG2RAD, 80, 12);
+            skeleton.addJoint('shoulder_L', scapL, upperArmL, JointType.BALL,
+                -45*DEG2RAD, -180*DEG2RAD, -70*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 90*DEG2RAD, 150, 20);
+            skeleton.addJoint('elbow_L', upperArmL, forearmL, JointType.HINGE,
+                -5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0, 180, 25);
+            skeleton.addJoint('wrist_L', forearmL, handL, JointType.BALL,
+                -80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD, 100, 15);
+            
+            // Right leg
+            skeleton.addJoint('hip_R', pelvis, thighR, JointType.BALL,
+                -120*DEG2RAD, -30*DEG2RAD, -45*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 35*DEG2RAD, 200, 30);
+            skeleton.addJoint('knee_R', thighR, shinR, JointType.HINGE,
+                0, 0, 0, 150*DEG2RAD, 0, 0, 220, 35);
+            skeleton.addJoint('ankle_R', shinR, footR, JointType.HINGE,
+                -50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0, 150, 20);
+            skeleton.addJoint('toe_R', footR, toeR, JointType.HINGE,
+                -40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0, 80, 10);
+            
+            // Left leg
+            skeleton.addJoint('hip_L', pelvis, thighL, JointType.BALL,
+                -120*DEG2RAD, -30*DEG2RAD, -35*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 45*DEG2RAD, 200, 30);
+            skeleton.addJoint('knee_L', thighL, shinL, JointType.HINGE,
+                0, 0, 0, 150*DEG2RAD, 0, 0, 220, 35);
+            skeleton.addJoint('ankle_L', shinL, footL, JointType.HINGE,
+                -50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0, 150, 20);
+            skeleton.addJoint('toe_L', footL, toeL, JointType.HINGE,
+                -40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0, 80, 10);
+            
+            return skeleton;
+        }
+        
+        // ============================================================================
+        // THREE.js Renderer
+        // ============================================================================
+        
+        class SkeletonRenderer {
+            constructor(container, skeleton) {
+                this.skeleton = skeleton;
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setClearColor(0x000000, 0);
+                container.appendChild(this.renderer.domElement);
+                
+                this.camera.position.set(2, 1.5, 3);
+                this.camera.lookAt(0, 1, 0);
+                
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                
+                const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight1.position.set(5, 10, 5);
+                this.scene.add(dirLight1);
+                
+                const dirLight2 = new THREE.DirectionalLight(0x4da6ff, 0.4);
+                dirLight2.position.set(-5, 5, -5);
+                this.scene.add(dirLight2);
+                
+                // Ground
+                const groundGeometry = new THREE.PlaneGeometry(20, 20);
+                const groundMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x1a1a2e,
+                    roughness: 0.8,
+                    metalness: 0.2
+                });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                this.scene.add(ground);
+                
+                const gridHelper = new THREE.GridHelper(20, 20, 0x4da6ff, 0x2a2a3e);
+                this.scene.add(gridHelper);
+                
+                this.boneMeshes = [];
+                this.jointMeshes = [];
+                this.comMesh = null;
+                
+                this.showBones = true;
+                this.showJoints = true;
+                this.showCOM = false;
+                
+                this.createMeshes();
+                this.setupControls();
+                
+                window.addEventListener('resize', () => this.onResize());
+            }
+            
+            createMeshes() {
+                const boneCount = this.skeleton.getBoneCount();
+                
+                for (let i = 0; i < boneCount; i++) {
+                    const length = this.skeleton.getBoneLength(i);
+                    const radius = this.skeleton.getBoneRadius(i);
+                    
+                    const geometry = new THREE.CapsuleGeometry(radius, length, 8, 16);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x4da6ff,
+                        roughness: 0.5,
+                        metalness: 0.3,
+                        emissive: 0x1a3a5f,
+                        emissiveIntensity: 0.2
+                    });
+                    
+                    const mesh = new THREE.Mesh(geometry, material);
+                    this.scene.add(mesh);
+                    this.boneMeshes.push(mesh);
+                }
+                
+                const jointCount = this.skeleton.getJointCount();
+                
+                for (let i = 0; i < jointCount; i++) {
+                    const geometry = new THREE.SphereGeometry(0.03, 16, 16);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xff6b6b,
+                        emissive: 0xff6b6b,
+                        emissiveIntensity: 0.5
+                    });
+                    
+                    const mesh = new THREE.Mesh(geometry, material);
+                    this.scene.add(mesh);
+                    this.jointMeshes.push(mesh);
+                }
+                
+                // COM mesh
+                const comGeom = new THREE.SphereGeometry(0.06, 16, 16);
+                const comMat = new THREE.MeshStandardMaterial({
+                    color: 0xffff00,
+                    emissive: 0xffff00,
+                    emissiveIntensity: 0.8
+                });
+                this.comMesh = new THREE.Mesh(comGeom, comMat);
+                this.scene.add(this.comMesh);
+            }
+            
+            setupControls() {
+                let isDragging = false;
+                let previousMousePosition = { x: 0, y: 0 };
+                let isRightDrag = false;
+                
+                this.renderer.domElement.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    isRightDrag = e.button === 2;
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                });
+                
+                this.renderer.domElement.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    if (isRightDrag) {
+                        const panSpeed = 0.002;
+                        this.camera.position.x -= deltaX * panSpeed;
+                        this.camera.position.y += deltaY * panSpeed;
+                    } else {
+                        const rotateSpeed = 0.005;
+                        const radius = Math.sqrt(this.camera.position.x ** 2 + this.camera.position.z ** 2);
+                        const angle = Math.atan2(this.camera.position.z, this.camera.position.x);
+                        
+                        this.camera.position.x = radius * Math.cos(angle - deltaX * rotateSpeed);
+                        this.camera.position.z = radius * Math.sin(angle - deltaX * rotateSpeed);
+                        this.camera.position.y += deltaY * rotateSpeed;
+                        
+                        this.camera.lookAt(0, 1, 0);
+                    }
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                });
+                
+                this.renderer.domElement.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+                
+                this.renderer.domElement.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const zoomSpeed = 0.001;
+                    const direction = new THREE.Vector3();
+                    this.camera.getWorldDirection(direction);
+                    
+                    this.camera.position.add(direction.multiplyScalar(e.deltaY * zoomSpeed));
+                });
+                
+                this.renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+            
+            update() {
+                const boneCount = this.skeleton.getBoneCount();
+                
+                for (let i = 0; i < boneCount; i++) {
+                    const pos = this.skeleton.getBonePosition(i);
+                    const rot = this.skeleton.getBoneRotation(i);
+                    
+                    this.boneMeshes[i].position.set(pos.x, pos.y, pos.z);
+                    this.boneMeshes[i].quaternion.set(rot.x, rot.y, rot.z, rot.w);
+                    this.boneMeshes[i].visible = this.showBones;
+                }
+                
+                const jointCount = this.skeleton.getJointCount();
+                
+                for (let i = 0; i < jointCount; i++) {
+                    const boneIdx = this.skeleton.getJointChildBoneIndex(i);
+                    if (boneIdx >= 0) {
+                        const pos = this.skeleton.getBonePosition(boneIdx);
+                        this.jointMeshes[i].position.set(pos.x, pos.y, pos.z);
+                        this.jointMeshes[i].visible = this.showJoints;
+                    }
+                }
+                
+                const com = this.skeleton.computeCenterOfMass();
+                this.comMesh.position.set(com.x, com.y, com.z);
+                this.comMesh.visible = this.showCOM;
+            }
+            
+            render() {
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+        
+        // ============================================================================
+        // Pose Controller
+        // ============================================================================
+        
+        class PoseController {
+            constructor(skeleton) {
+                this.skeleton = skeleton;
+                this.jointMap = new Map();
+                
+                const jointCount = skeleton.getJointCount();
+                for (let i = 0; i < jointCount; i++) {
+                    const name = skeleton.getJointName(i);
+                    this.jointMap.set(name, i);
+                }
+            }
+            
+            setPose(poseName) {
+                const poses = {
+                    'apose': {
+                        'shoulder_R': [0, 30*DEG2RAD, 0],
+                        'shoulder_L': [0, -30*DEG2RAD, 0]
+                    },
+                    'tpose': {
+                        'shoulder_R': [0, 90*DEG2RAD, 0],
+                        'shoulder_L': [0, -90*DEG2RAD, 0]
+                    },
+                    'sit': {
+                        'hip_R': [-90*DEG2RAD, 0, 0],
+                        'hip_L': [-90*DEG2RAD, 0, 0],
+                        'knee_R': [90*DEG2RAD, 0, 0],
+                        'knee_L': [90*DEG2RAD, 0, 0]
+                    },
+                    'squat': {
+                        'hip_R': [-110*DEG2RAD, 0, 0],
+                        'hip_L': [-110*DEG2RAD, 0, 0],
+                        'knee_R': [130*DEG2RAD, 0, 0],
+                        'knee_L': [130*DEG2RAD, 0, 0],
+                        'ankle_R': [20*DEG2RAD, 0, 0],
+                        'ankle_L': [20*DEG2RAD, 0, 0]
+                    },
+                    'reach': {
+                        'shoulder_R': [0, 120*DEG2RAD, 0],
+                        'shoulder_L': [0, 120*DEG2RAD, 0],
+                        'elbow_R': [10*DEG2RAD, 0, 0],
+                        'elbow_L': [10*DEG2RAD, 0, 0]
+                    },
+                    'wave': {
+                        'shoulder_R': [0, 150*DEG2RAD, 0],
+                        'elbow_R': [90*DEG2RAD, 0, 0]
+                    }
+                };
+                
+                const pose = poses[poseName];
+                if (pose) {
+                    for (const [jointName, angles] of Object.entries(pose)) {
+                        const jointIdx = this.jointMap.get(jointName);
+                        if (jointIdx !== undefined) {
+                            this.skeleton.setJointTargetAngles(jointIdx, angles[0], angles[1], angles[2]);
+                        }
+                    }
+                }
+            }
+            
+            reset() {
+                this.jointMap.forEach((idx) => {
+                    this.skeleton.setJointTargetAngles(idx, 0, 0, 0);
+                });
+            }
+        }
+        
+        // ============================================================================
+        // Main Application
+        // ============================================================================
+        
+        async function main() {
+            // Initialize physics
+            await initPhysics();
+            
+            updateLoadStatus('Creating skeleton...');
+            const skeleton = createSkeleton();
+            
+            updateLoadStatus('Initializing renderer...');
+            const renderer = new SkeletonRenderer(document.getElementById('canvas-container'), skeleton);
+            const poseController = new PoseController(skeleton);
+            
+            // Update info
+            document.getElementById('bone-count').textContent = skeleton.getBoneCount();
+            document.getElementById('joint-count').textContent = skeleton.getJointCount();
+            
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 500);
+            
+            // Setup UI
+            setupUI(skeleton, renderer, poseController);
+            
+            // Animation loop
+            let lastTime = performance.now();
+            let frameCount = 0;
+            let lastFpsUpdate = lastTime;
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                const currentTime = performance.now();
+                const dt = Math.min((currentTime - lastTime) / 1000, 0.033);
+                lastTime = currentTime;
+                
+                // Update physics
+                const physicsStart = performance.now();
+                skeleton.update(dt);
+                const physicsTime = performance.now() - physicsStart;
+                
+                // Update renderer
+                const renderStart = performance.now();
+                renderer.update();
+                renderer.render();
+                const renderTime = performance.now() - renderStart;
+                
+                // Update performance stats
+                document.getElementById('perf-physics').textContent = physicsTime.toFixed(2) + 'ms';
+                document.getElementById('perf-render').textContent = renderTime.toFixed(2) + 'ms';
+                document.getElementById('perf-total').textContent = (physicsTime + renderTime).toFixed(2) + 'ms';
+                
+                // Update FPS
+                frameCount++;
+                if (frameCount % 30 === 0) {
+                    const fps = Math.round(30000 / (currentTime - lastFpsUpdate));
+                    document.getElementById('fps').textContent = fps;
+                    lastFpsUpdate = currentTime;
+                }
+            }
+            
+            animate();
+        }
+        
+        function setupUI(skeleton, renderer, poseController) {
+            // Pose buttons
+            document.getElementById('btn-apose').addEventListener('click', () => {
+                poseController.setPose('apose');
+            });
+            
+            document.getElementById('btn-tpose').addEventListener('click', () => {
+                poseController.setPose('tpose');
+            });
+            
+            document.getElementById('btn-sit').addEventListener('click', () => {
+                poseController.setPose('sit');
+            });
+            
+            document.getElementById('btn-squat').addEventListener('click', () => {
+                poseController.setPose('squat');
+            });
+            
+            document.getElementById('btn-reach').addEventListener('click', () => {
+                poseController.setPose('reach');
+            });
+            
+            document.getElementById('btn-wave').addEventListener('click', () => {
+                poseController.setPose('wave');
+            });
+            
+            // Physics controls
+            document.getElementById('chk-physics').addEventListener('change', (e) => {
+                skeleton.setPhysicsEnabled(e.target.checked);
+            });
+            
+            document.getElementById('chk-gravity').addEventListener('change', (e) => {
+                skeleton.setGravityEnabled(e.target.checked);
+            });
+            
+            document.getElementById('slider-stiffness').addEventListener('input', (e) => {
                 const value = parseFloat(e.target.value);
-                skeleton.settings[property] = value;
-                if (display) display.textContent = value.toFixed(2);
-                if (callback) callback(value);
+                document.getElementById('val-stiffness').textContent = value;
+                skeleton.setGlobalStiffness(value / 100);
+            });
+            
+            document.getElementById('slider-damping').addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                document.getElementById('val-damping').textContent = value;
+                skeleton.setGlobalDamping(value / 20);
+            });
+            
+            // Visualization
+            document.getElementById('chk-bones').addEventListener('change', (e) => {
+                renderer.showBones = e.target.checked;
+            });
+            
+            document.getElementById('chk-joints').addEventListener('change', (e) => {
+                renderer.showJoints = e.target.checked;
+            });
+            
+            document.getElementById('chk-com').addEventListener('change', (e) => {
+                renderer.showCOM = e.target.checked;
+            });
+            
+            // Test buttons
+            document.getElementById('btn-test-shoulder').addEventListener('click', () => {
+                testJointRange(skeleton, poseController, 'shoulder_R', [0, 0, 0], [0, 180*DEG2RAD, 0], 2);
+            });
+            
+            document.getElementById('btn-test-elbow').addEventListener('click', () => {
+                testJointRange(skeleton, poseController, 'elbow_R', [0, 0, 0], [150*DEG2RAD, 0, 0], 3);
+            });
+            
+            document.getElementById('btn-test-knee').addEventListener('click', () => {
+                testJointRange(skeleton, poseController, 'knee_R', [0, 0, 0], [150*DEG2RAD, 0, 0], 3);
+            });
+            
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                poseController.reset();
             });
         }
-
-        setupControl('gravity', 'gravity');
-        setupControl('damping', 'damping');
-        setupControl('stiffness', 'stiffness', (val) => {
-            skeleton.constraints.forEach(c => c.stiffness = val);
+        
+        function testJointRange(skeleton, poseController, jointName, startAngles, endAngles, speed) {
+            let t = 0;
+            const step = 0.02 * speed;
+            
+            const interval = setInterval(() => {
+                t += step;
+                
+                if (t >= 1.0) {
+                    clearInterval(interval);
+                    setTimeout(() => poseController.reset(), 1000);
+                    return;
+                }
+                
+                const angles = [
+                    startAngles[0] + (endAngles[0] - startAngles[0]) * t,
+                    startAngles[1] + (endAngles[1] - startAngles[1]) * t,
+                    startAngles[2] + (endAngles[2] - startAngles[2]) * t
+                ];
+                
+                const jointMap = new Map();
+                const jointCount = skeleton.getJointCount();
+                for (let i = 0; i < jointCount; i++) {
+                    const name = skeleton.getJointName(i);
+                    jointMap.set(name, i);
+                }
+                
+                const jointIdx = jointMap.get(jointName);
+                if (jointIdx !== undefined) {
+                    skeleton.setJointTargetAngles(jointIdx, angles[0], angles[1], angles[2]);
+                }
+            }, 50);
+        }
+        
+        // Start the application
+        main().catch(error => {
+            console.error('Failed to initialize application:', error);
+            document.getElementById('load-status').textContent = 'Error: ' + error.message;
         });
-        setupControl('balance-strength', 'balanceStrength');
-        setupControl('hip-flex', 'hipFlexibility');
-        setupControl('scale', 'scale', () => skeleton.reset());
-        setupControl('joint-size', 'jointSize');
-
-        // Checkbox controls
-        document.getElementById('auto-balance').addEventListener('change', (e) => {
-            skeleton.settings.autoBalance = e.target.checked;
-        });
-        document.getElementById('ground-contact').addEventListener('change', (e) => {
-            skeleton.settings.groundContact = e.target.checked;
-        });
-        document.getElementById('show-constraints').addEventListener('change', (e) => {
-            skeleton.settings.showConstraints = e.target.checked;
-        });
-        document.getElementById('show-com').addEventListener('change', (e) => {
-            skeleton.settings.showCOM = e.target.checked;
-        });
-        document.getElementById('show-velocity').addEventListener('change', (e) => {
-            skeleton.settings.showVelocity = e.target.checked;
-        });
-
-        // Button controls
-        document.getElementById('reset').addEventListener('click', () => skeleton.reset());
-        document.getElementById('ragdoll').addEventListener('click', () => skeleton.toggleRagdoll());
-        document.getElementById('stand').addEventListener('click', () => skeleton.standUpright());
-
-        console.log('🎮 Interactive Physics Demo with Human Balance Loaded');
-        console.log('📊 Joints:', Object.keys(skeleton.joints).length, '(including heel, midfoot, toe)');
-        console.log('🔗 Constraints:', skeleton.constraints.length);
-        console.log('⚖️  Balance Strategies: Ankle → Hip → Stepping');
-        console.log('🦶 Foot Contact: Real-time tracking with friction');
     </script>
 </body>
 </html>
