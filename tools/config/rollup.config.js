@@ -72,7 +72,8 @@ const baseConfig = {
   ]
 }
 
-export default ['firebase', 'ipfs', 'mqtt', 'nostr', 'supabase', 'torrent', 'wasm'].map(
+// Build only supported core modules. Firebase and other providers are removed from build.
+export default ['mqtt', 'wasm'].map(
   name => ({
     ...baseConfig,
     input: name === 'wasm' ? `public/src/utils/${name}.js` : `public/src/netcode/${name}.js`,

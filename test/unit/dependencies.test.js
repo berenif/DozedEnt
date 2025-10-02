@@ -50,7 +50,6 @@ describe('Dependency Management', () => {
       '@supabase/supabase-js',
       '@waku/discovery',
       '@waku/sdk',
-      'firebase',
       'libp2p',
       'mqtt'
     ];

@@ -30,12 +30,7 @@ class BuildValidator {
     
     this.config = {
       bundleSizeThresholds: {
-        'core/trystero-firebase.min.js': 200,
-        'core/trystero-ipfs.min.js': 150,
         'core/trystero-mqtt.min.js': 100,
-        'core/trystero-nostr.min.js': 50,
-        'core/trystero-supabase.min.js': 120,
-        'core/trystero-torrent.min.js': 180,
         'core/trystero-wasm.min.js': 50,
         'animations/player-animator.min.js': 300,
         'animations/wolf-animation.min.js': 250
@@ -116,11 +111,7 @@ class BuildValidator {
     console.log(chalk.blue('📄 Validating file existence...'));
     
     const expectedFiles = [
-      'trystero-firebase.min.js',
-      'trystero-ipfs.min.js',
       'trystero-mqtt.min.js',
-      'trystero-supabase.min.js',
-      'trystero-torrent.min.js',
       'trystero-wasm.min.js',
       'player-animator.js',
       'player-animator.min.js',

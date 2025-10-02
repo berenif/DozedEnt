@@ -1,17 +1,29 @@
 {
-  "timestamp": "2025-10-02T18:01:25.059Z",
-  "duration": 1184,
+  "timestamp": "2025-10-02T18:26:41.141Z",
+  "duration": 16503,
   "stats": {
-    "modulesBuilt": 0,
-    "totalSize": 0,
+    "modulesBuilt": 3,
+    "totalSize": 992017,
     "optimizationSavings": 0,
     "errors": [
-      "Build failed for Core Modules: \npublic/src/netcode/firebase.js → dist/core/trystero-firebase.min.js...\n[!] RollupError: Could not resolve entry module \"public/src/netcode/firebase.js\".\n    at getRollupError (/workspace/node_modules/rollup/dist/shared/parseAst.js:285:41)\n    at Object.error (/workspace/node_modules/rollup/dist/shared/parseAst.js:281:42)\n    at ModuleLoader.loadEntryModule (/workspace/node_modules/rollup/dist/shared/rollup.js:22783:32)\n    at async Promise.all (index 0)\n\n\n",
-      "Build failed for Core Modules: \npublic/src/netcode/firebase.js → dist/core/trystero-firebase.min.js...\n[!] RollupError: Could not resolve entry module \"public/src/netcode/firebase.js\".\n    at getRollupError (/workspace/node_modules/rollup/dist/shared/parseAst.js:285:41)\n    at Object.error (/workspace/node_modules/rollup/dist/shared/parseAst.js:281:42)\n    at ModuleLoader.loadEntryModule (/workspace/node_modules/rollup/dist/shared/rollup.js:22783:32)\n    at async Promise.all (index 0)\n\n\n"
+      "Missing expected file: core/index.js",
+      "Missing expected file: animations/index.js",
+      "Missing expected file: index.js"
     ],
     "warnings": [
-      "WASM build failed: Command failed: npm run wasm:build"
-    ]
+      "WASM build failed: Command failed: npm run wasm:build",
+      "Bundle size warning: core/trystero-mqtt.min.js is 351KB (threshold: 100KB)"
+    ],
+    "fileSizes": {
+      "core/trystero-mqtt.min.js": 351,
+      "core/trystero-wasm.min.js": 4,
+      "animations/player-animator.js": 169,
+      "animations/player-animator.min.js": 61,
+      "animations/player-animator.umd.js": 185,
+      "animations/wolf-animation.js": 79,
+      "animations/wolf-animation.min.js": 32,
+      "animations/wolf-animation.umd.js": 88
+    }
   },
   "memoryStats": {
     "allocated": 0,

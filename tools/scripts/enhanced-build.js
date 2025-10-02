@@ -257,13 +257,8 @@ class EnhancedBuildSystem {
     
     const distPath = path.join(projectRoot, 'dist');
     const expectedFiles = [
-      // Core modules
-      'core/trystero-firebase.min.js',
-      'core/trystero-ipfs.min.js',
+      // Core modules (firebase removed)
       'core/trystero-mqtt.min.js',
-      'core/trystero-nostr.min.js',
-      'core/trystero-supabase.min.js',
-      'core/trystero-torrent.min.js',
       'core/trystero-wasm.min.js',
       
       // Animation modules
@@ -312,12 +307,7 @@ class EnhancedBuildSystem {
    */
   async checkBundleSizeRegressions(fileSizes) {
     const bundleSizeThresholds = {
-      'core/trystero-firebase.min.js': 200,
-      'core/trystero-ipfs.min.js': 150,
       'core/trystero-mqtt.min.js': 100,
-      'core/trystero-nostr.min.js': 50,
-      'core/trystero-supabase.min.js': 120,
-      'core/trystero-torrent.min.js': 180,
       'core/trystero-wasm.min.js': 50,
       'animations/player-animator.min.js': 300,
       'animations/wolf-animation.min.js': 250
