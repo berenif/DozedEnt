@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Player Physics Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        #container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at 50% 40%, #1e2a3a 0%, #0a0e1a 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        #controls {
+            width: 320px;
+            background: rgba(20, 20, 35, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #60a5fa;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(96, 165, 250, 0.3);
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(30, 30, 50, 0.6);
+            border-radius: 8px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+
+        .section h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #93c5fd;
+            border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #b0b0c0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(96, 165, 250, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #60a5fa;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #60a5fa;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            color: #60a5fa;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(20, 20, 35, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            max-width: 300px;
+            pointer-events: none;
+        }
+
+        #info h3 {
+            color: #60a5fa;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .stats {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(96, 165, 250, 0.2);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .stat-label {
+            color: #b0b0c0;
+        }
+
+        .stat-value {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-wrapper">
+            <canvas id="physics-canvas"></canvas>
+            <div id="info">
+                <h3>🎮 Controls</h3>
+                <p>• <strong>Drag joints</strong> to move them</p>
+                <p>• <strong>Drag body</strong> to move character</p>
+                <p>• <strong>Click reset</strong> to restore pose</p>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">FPS:</span>
+                        <span class="stat-value" id="fps">60</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Joints:</span>
+                        <span class="stat-value" id="joint-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Balance:</span>
+                        <span class="stat-value" id="balance">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="controls">
+            <h1>⚙️ Physics Settings</h1>
+            
+            <div class="section">
+                <h2>Gravity & Forces</h2>
+                <div class="control-group">
+                    <label>Gravity: <span class="value-display" id="gravity-val">980</span></label>
+                    <input type="range" id="gravity" min="0" max="2000" value="980" step="10">
+                </div>
+                <div class="control-group">
+                    <label>Damping: <span class="value-display" id="damping-val">0.95</span></label>
+                    <input type="range" id="damping" min="0.5" max="0.99" value="0.95" step="0.01">
+                </div>
+                <div class="control-group">
+                    <label>Stiffness: <span class="value-display" id="stiffness-val">0.5</span></label>
+                    <input type="range" id="stiffness" min="0.1" max="1.0" value="0.5" step="0.05">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Balance Control</h2>
+                <div class="control-group">
+                    <label>Balance Strength: <span class="value-display" id="balance-strength-val">0.3</span></label>
+                    <input type="range" id="balance-strength" min="0" max="1" value="0.3" step="0.05">
+                </div>
+                <div class="control-group">
+                    <label>Hip Flexibility: <span class="value-display" id="hip-flex-val">0.2</span></label>
+                    <input type="range" id="hip-flex" min="0" max="1" value="0.2" step="0.05">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="auto-balance" checked>
+                    <label for="auto-balance">Enable Auto-Balance</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="ground-contact" checked>
+                    <label for="ground-contact">Foot Ground Contact</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Body Properties</h2>
+                <div class="control-group">
+                    <label>Body Scale: <span class="value-display" id="scale-val">1.0</span></label>
+                    <input type="range" id="scale" min="0.5" max="2.0" value="1.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Joint Size: <span class="value-display" id="joint-size-val">8</span></label>
+                    <input type="range" id="joint-size" min="4" max="16" value="8" step="1">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Visual Settings</h2>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="show-constraints" checked>
+                    <label for="show-constraints">Show Constraints</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="show-com">
+                    <label for="show-com">Show Center of Mass</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="show-velocity">
+                    <label for="show-velocity">Show Velocity Vectors</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Actions</h2>
+                <button id="reset">Reset Pose</button>
+                <button id="ragdoll">Toggle Ragdoll</button>
+                <button id="stand">Stand Upright</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Physics-based skeletal system with realistic body mechanics
+        class Joint {
+            constructor(x, y, mass = 1, fixed = false) {
+                this.x = x;
+                this.y = y;
+                this.prevX = x;
+                this.prevY = y;
+                this.mass = mass;
+                this.fixed = fixed;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 8;
+            }
+
+            applyForce(fx, fy, dt) {
+                if (this.fixed) return;
+                const ax = fx / this.mass;
+                const ay = fy / this.mass;
+                this.vx += ax * dt;
+                this.vy += ay * dt;
+            }
+
+            update(dt, damping) {
+                if (this.fixed) return;
+                
+                // Verlet integration for stable physics
+                const tempX = this.x;
+                const tempY = this.y;
+                
+                this.x += (this.x - this.prevX) * damping;
+                this.y += (this.y - this.prevY) * damping;
+                
+                this.prevX = tempX;
+                this.prevY = tempY;
+            }
+
+            constrainToPoint(px, py, distance, stiffness = 1.0) {
+                const dx = this.x - px;
+                const dy = this.y - py;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist === 0) return;
+                
+                const diff = (distance - dist) / dist;
+                const offsetX = dx * diff * stiffness;
+                const offsetY = dy * diff * stiffness;
+                
+                if (!this.fixed) {
+                    this.x += offsetX * 0.5;
+                    this.y += offsetY * 0.5;
+                }
+            }
+        }
+
+        class Constraint {
+            constructor(joint1, joint2, length = null, stiffness = 1.0) {
+                this.joint1 = joint1;
+                this.joint2 = joint2;
+                this.length = length || this.getDistance();
+                this.stiffness = stiffness;
+            }
+
+            getDistance() {
+                const dx = this.joint2.x - this.joint1.x;
+                const dy = this.joint2.y - this.joint1.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            solve() {
+                const dx = this.joint2.x - this.joint1.x;
+                const dy = this.joint2.y - this.joint1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist === 0) return;
+                
+                const diff = (this.length - dist) / dist;
+                const offsetX = dx * diff * this.stiffness * 0.5;
+                const offsetY = dy * diff * this.stiffness * 0.5;
+                
+                if (!this.joint1.fixed) {
+                    this.joint1.x -= offsetX;
+                    this.joint1.y -= offsetY;
+                }
+                if (!this.joint2.fixed) {
+                    this.joint2.x += offsetX;
+                    this.joint2.y += offsetY;
+                }
+            }
+        }
+
+        class SkeletonPhysics {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.joints = {};
+                this.constraints = [];
+                this.settings = {
+                    gravity: 980,
+                    damping: 0.95,
+                    stiffness: 0.5,
+                    balanceStrength: 0.3,
+                    hipFlexibility: 0.2,
+                    autoBalance: true,
+                    groundContact: true,
+                    scale: 1.0,
+                    jointSize: 8,
+                    showConstraints: true,
+                    showCOM: false,
+                    showVelocity: false
+                };
+                this.groundY = 0;
+                this.ragdollMode = false;
+                this.draggedJoint = null;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                
+                this.setupCanvas();
+                this.createSkeleton();
+                this.setupEventListeners();
+                this.lastTime = performance.now();
+                this.fps = 60;
+                this.fpsFrames = [];
+                
+                requestAnimationFrame(this.loop.bind(this));
+            }
+
+            setupCanvas() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+                this.groundY = this.canvas.height - 100;
+            }
+
+            createSkeleton() {
+                const cx = this.canvas.width / 2;
+                const cy = this.canvas.height / 2;
+                const scale = this.settings.scale;
+
+                // Create joints with anatomically accurate positioning
+                this.joints = {
+                    // Head and neck
+                    head: new Joint(cx, cy - 200 * scale, 0.8),
+                    neck: new Joint(cx, cy - 170 * scale, 0.5),
+                    
+                    // Upper torso
+                    shoulderL: new Joint(cx - 35 * scale, cy - 150 * scale, 1.0),
+                    shoulderR: new Joint(cx + 35 * scale, cy - 150 * scale, 1.0),
+                    chest: new Joint(cx, cy - 140 * scale, 2.0),
+                    
+                    // Arms
+                    elbowL: new Joint(cx - 60 * scale, cy - 100 * scale, 0.7),
+                    elbowR: new Joint(cx + 60 * scale, cy - 100 * scale, 0.7),
+                    wristL: new Joint(cx - 70 * scale, cy - 50 * scale, 0.5),
+                    wristR: new Joint(cx + 70 * scale, cy - 50 * scale, 0.5),
+                    handL: new Joint(cx - 75 * scale, cy - 30 * scale, 0.4),
+                    handR: new Joint(cx + 75 * scale, cy - 30 * scale, 0.4),
+                    
+                    // Spine and core
+                    midSpine: new Joint(cx, cy - 100 * scale, 2.5),
+                    lowerSpine: new Joint(cx, cy - 60 * scale, 2.5),
+                    pelvis: new Joint(cx, cy - 20 * scale, 3.0),
+                    
+                    // Legs
+                    hipL: new Joint(cx - 20 * scale, cy - 10 * scale, 1.5),
+                    hipR: new Joint(cx + 20 * scale, cy - 10 * scale, 1.5),
+                    kneeL: new Joint(cx - 25 * scale, cy + 80 * scale, 1.2),
+                    kneeR: new Joint(cx + 25 * scale, cy + 80 * scale, 1.2),
+                    ankleL: new Joint(cx - 25 * scale, cy + 160 * scale, 0.8),
+                    ankleR: new Joint(cx + 25 * scale, cy + 160 * scale, 0.8),
+                    footL: new Joint(cx - 25 * scale, cy + 180 * scale, 0.6),
+                    footR: new Joint(cx + 25 * scale, cy + 180 * scale, 0.6)
+                };
+
+                // Create constraints (bones)
+                this.constraints = [
+                    // Spine chain
+                    new Constraint(this.joints.head, this.joints.neck, null, 0.95),
+                    new Constraint(this.joints.neck, this.joints.chest, null, 0.9),
+                    new Constraint(this.joints.chest, this.joints.midSpine, null, 0.85),
+                    new Constraint(this.joints.midSpine, this.joints.lowerSpine, null, 0.85),
+                    new Constraint(this.joints.lowerSpine, this.joints.pelvis, null, 0.9),
+                    
+                    // Shoulders
+                    new Constraint(this.joints.chest, this.joints.shoulderL, null, 0.95),
+                    new Constraint(this.joints.chest, this.joints.shoulderR, null, 0.95),
+                    new Constraint(this.joints.shoulderL, this.joints.shoulderR, null, 0.8),
+                    
+                    // Left arm
+                    new Constraint(this.joints.shoulderL, this.joints.elbowL, null, 0.9),
+                    new Constraint(this.joints.elbowL, this.joints.wristL, null, 0.9),
+                    new Constraint(this.joints.wristL, this.joints.handL, null, 0.95),
+                    
+                    // Right arm
+                    new Constraint(this.joints.shoulderR, this.joints.elbowR, null, 0.9),
+                    new Constraint(this.joints.elbowR, this.joints.wristR, null, 0.9),
+                    new Constraint(this.joints.wristR, this.joints.handR, null, 0.95),
+                    
+                    // Pelvis
+                    new Constraint(this.joints.pelvis, this.joints.hipL, null, 0.95),
+                    new Constraint(this.joints.pelvis, this.joints.hipR, null, 0.95),
+                    new Constraint(this.joints.hipL, this.joints.hipR, null, 0.8),
+                    
+                    // Left leg
+                    new Constraint(this.joints.hipL, this.joints.kneeL, null, 0.9),
+                    new Constraint(this.joints.kneeL, this.joints.ankleL, null, 0.9),
+                    new Constraint(this.joints.ankleL, this.joints.footL, null, 0.95),
+                    
+                    // Right leg
+                    new Constraint(this.joints.hipR, this.joints.kneeR, null, 0.9),
+                    new Constraint(this.joints.kneeR, this.joints.ankleR, null, 0.9),
+                    new Constraint(this.joints.ankleR, this.joints.footR, null, 0.95)
+                ];
+
+                this.updateJointCount();
+            }
+
+            updateJointCount() {
+                document.getElementById('joint-count').textContent = Object.keys(this.joints).length;
+            }
+
+            applyGravity(dt) {
+                const gravity = this.settings.gravity;
+                for (const joint of Object.values(this.joints)) {
+                    if (!joint.fixed) {
+                        joint.y += gravity * dt * dt;
+                    }
+                }
+            }
+
+            applyGroundConstraints() {
+                if (!this.settings.groundContact) return;
+                
+                const groundJoints = [this.joints.footL, this.joints.footR];
+                for (const joint of groundJoints) {
+                    if (joint.y > this.groundY) {
+                        joint.y = this.groundY;
+                        joint.prevY = this.groundY + (joint.prevY - joint.y) * 0.3; // friction
+                    }
+                }
+            }
+
+            applyBalanceForces() {
+                if (!this.settings.autoBalance || this.ragdollMode) return;
+                
+                const strength = this.settings.balanceStrength;
+                const flexibility = this.settings.hipFlexibility;
+                
+                // Calculate center of mass
+                let comX = 0, comY = 0, totalMass = 0;
+                for (const joint of Object.values(this.joints)) {
+                    comX += joint.x * joint.mass;
+                    comY += joint.y * joint.mass;
+                    totalMass += joint.mass;
+                }
+                comX /= totalMass;
+                comY /= totalMass;
+                
+                // Calculate support polygon (between feet)
+                const footCenterX = (this.joints.footL.x + this.joints.footR.x) / 2;
+                const comOffset = comX - footCenterX;
+                
+                // Apply corrective forces to maintain balance
+                const hipCorrection = -comOffset * strength;
+                this.joints.pelvis.x += hipCorrection;
+                this.joints.lowerSpine.x += hipCorrection * 0.7;
+                this.joints.midSpine.x += hipCorrection * 0.5;
+                this.joints.chest.x += hipCorrection * 0.3;
+                
+                // Hip flexibility for ankle strategy
+                const ankleCorrection = comOffset * flexibility;
+                this.joints.ankleL.x -= ankleCorrection;
+                this.joints.ankleR.x -= ankleCorrection;
+                
+                // Store balance info
+                const balanceQuality = Math.max(0, 100 - Math.abs(comOffset) * 2);
+                document.getElementById('balance').textContent = balanceQuality.toFixed(0) + '%';
+                
+                this.centerOfMass = { x: comX, y: comY };
+            }
+
+            solveConstraints(iterations = 3) {
+                for (let i = 0; i < iterations; i++) {
+                    for (const constraint of this.constraints) {
+                        constraint.solve();
+                    }
+                }
+            }
+
+            update(dt) {
+                // Apply physics
+                this.applyGravity(dt);
+                
+                // Update all joints
+                for (const joint of Object.values(this.joints)) {
+                    joint.update(dt, this.settings.damping);
+                }
+                
+                // Solve constraints multiple times for stability
+                this.solveConstraints(5);
+                
+                // Apply ground and balance
+                this.applyGroundConstraints();
+                this.applyBalanceForces();
+                
+                // Final constraint pass
+                this.solveConstraints(2);
+            }
+
+            render() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw ground
+                ctx.strokeStyle = 'rgba(96, 165, 250, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 5]);
+                ctx.beginPath();
+                ctx.moveTo(0, this.groundY);
+                ctx.lineTo(this.canvas.width, this.groundY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw constraints (bones)
+                if (this.settings.showConstraints) {
+                    ctx.strokeStyle = 'rgba(147, 197, 253, 0.6)';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    
+                    for (const constraint of this.constraints) {
+                        ctx.beginPath();
+                        ctx.moveTo(constraint.joint1.x, constraint.joint1.y);
+                        ctx.lineTo(constraint.joint2.x, constraint.joint2.y);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Draw body shapes
+                this.drawBodyShapes();
+                
+                // Draw joints
+                for (const [name, joint] of Object.entries(this.joints)) {
+                    const isHovered = this.isPointNearJoint(this.mouseX, this.mouseY, joint);
+                    const isDragged = this.draggedJoint === joint;
+                    
+                    ctx.fillStyle = isDragged ? '#ef4444' : (isHovered ? '#fbbf24' : '#60a5fa');
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(joint.x, joint.y, this.settings.jointSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw joint labels for major joints
+                    if (['head', 'chest', 'pelvis', 'handL', 'handR', 'footL', 'footR'].includes(name)) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.font = '10px monospace';
+                        ctx.fillText(name, joint.x + 12, joint.y - 8);
+                    }
+                }
+                
+                // Draw center of mass
+                if (this.settings.showCOM && this.centerOfMass) {
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.centerOfMass.x, this.centerOfMass.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw COM to ground projection
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(this.centerOfMass.x, this.centerOfMass.y);
+                    ctx.lineTo(this.centerOfMass.x, this.groundY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw velocity vectors
+                if (this.settings.showVelocity) {
+                    ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+                    ctx.lineWidth = 2;
+                    for (const joint of Object.values(this.joints)) {
+                        const vx = (joint.x - joint.prevX) * 10;
+                        const vy = (joint.y - joint.prevY) * 10;
+                        if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
+                            ctx.beginPath();
+                            ctx.moveTo(joint.x, joint.y);
+                            ctx.lineTo(joint.x + vx, joint.y + vy);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            drawBodyShapes() {
+                const ctx = this.ctx;
+                
+                // Draw head
+                ctx.fillStyle = 'rgba(255, 212, 163, 0.9)';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 2;
+                const headRadius = 25 * this.settings.scale;
+                ctx.beginPath();
+                ctx.arc(this.joints.head.x, this.joints.head.y, headRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw eyes
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.beginPath();
+                ctx.arc(this.joints.head.x - 8, this.joints.head.y - 5, 3, 0, Math.PI * 2);
+                ctx.arc(this.joints.head.x + 8, this.joints.head.y - 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw torso
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.7)';
+                ctx.strokeStyle = 'rgba(37, 99, 235, 0.9)';
+                ctx.lineWidth = 2;
+                this.drawPolygon([
+                    this.joints.shoulderL,
+                    this.joints.shoulderR,
+                    this.joints.pelvis
+                ]);
+                
+                // Draw pelvis
+                ctx.fillStyle = 'rgba(31, 41, 55, 0.7)';
+                ctx.strokeStyle = 'rgba(17, 24, 39, 0.9)';
+                this.drawPolygon([
+                    this.joints.lowerSpine,
+                    this.joints.hipL,
+                    this.joints.hipR
+                ]);
+                
+                // Draw limbs with thickness
+                this.drawLimb(this.joints.shoulderL, this.joints.elbowL, 8, 'rgba(59, 130, 246, 0.6)');
+                this.drawLimb(this.joints.elbowL, this.joints.wristL, 6, 'rgba(255, 212, 163, 0.8)');
+                this.drawLimb(this.joints.shoulderR, this.joints.elbowR, 8, 'rgba(59, 130, 246, 0.6)');
+                this.drawLimb(this.joints.elbowR, this.joints.wristR, 6, 'rgba(255, 212, 163, 0.8)');
+                
+                this.drawLimb(this.joints.hipL, this.joints.kneeL, 10, 'rgba(31, 41, 55, 0.7)');
+                this.drawLimb(this.joints.kneeL, this.joints.ankleL, 8, 'rgba(31, 41, 55, 0.7)');
+                this.drawLimb(this.joints.hipR, this.joints.kneeR, 10, 'rgba(31, 41, 55, 0.7)');
+                this.drawLimb(this.joints.kneeR, this.joints.ankleR, 8, 'rgba(31, 41, 55, 0.7)');
+                
+                // Draw hands
+                ctx.fillStyle = 'rgba(255, 212, 163, 0.9)';
+                ctx.beginPath();
+                ctx.arc(this.joints.handL.x, this.joints.handL.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(this.joints.handR.x, this.joints.handR.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw feet
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                this.drawFoot(this.joints.footL, this.joints.ankleL);
+                this.drawFoot(this.joints.footR, this.joints.ankleR);
+            }
+
+            drawLimb(joint1, joint2, thickness, color) {
+                const ctx = this.ctx;
+                const dx = joint2.x - joint1.x;
+                const dy = joint2.y - joint1.y;
+                const angle = Math.atan2(dy, dx);
+                const perpX = Math.cos(angle + Math.PI / 2) * thickness / 2;
+                const perpY = Math.sin(angle + Math.PI / 2) * thickness / 2;
+                
+                ctx.fillStyle = color;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(joint1.x + perpX, joint1.y + perpY);
+                ctx.lineTo(joint1.x - perpX, joint1.y - perpY);
+                ctx.lineTo(joint2.x - perpX, joint2.y - perpY);
+                ctx.lineTo(joint2.x + perpX, joint2.y + perpY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            drawPolygon(joints) {
+                const ctx = this.ctx;
+                ctx.beginPath();
+                ctx.moveTo(joints[0].x, joints[0].y);
+                for (let i = 1; i < joints.length; i++) {
+                    ctx.lineTo(joints[i].x, joints[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            drawFoot(footJoint, ankleJoint) {
+                const ctx = this.ctx;
+                const dx = footJoint.x - ankleJoint.x;
+                const dy = footJoint.y - ankleJoint.y;
+                const angle = Math.atan2(dy, dx);
+                
+                ctx.save();
+                ctx.translate(footJoint.x, footJoint.y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.ellipse(5, 0, 15, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+                this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+                this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+                this.canvas.addEventListener('mouseleave', this.onMouseUp.bind(this));
+                
+                // Touch support
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
+                });
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+                });
+                this.canvas.addEventListener('touchend', this.onMouseUp.bind(this));
+            }
+
+            getMousePos(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+
+            isPointNearJoint(x, y, joint, threshold = 20) {
+                const dx = x - joint.x;
+                const dy = y - joint.y;
+                return Math.sqrt(dx * dx + dy * dy) < threshold;
+            }
+
+            onMouseDown(e) {
+                const pos = this.getMousePos(e);
+                this.mouseX = pos.x;
+                this.mouseY = pos.y;
+                
+                for (const joint of Object.values(this.joints)) {
+                    if (this.isPointNearJoint(pos.x, pos.y, joint)) {
+                        this.draggedJoint = joint;
+                        this.draggedJoint.fixed = true;
+                        return;
+                    }
+                }
+            }
+
+            onMouseMove(e) {
+                const pos = this.getMousePos(e);
+                this.mouseX = pos.x;
+                this.mouseY = pos.y;
+                
+                if (this.draggedJoint) {
+                    this.draggedJoint.x = pos.x;
+                    this.draggedJoint.y = pos.y;
+                    this.draggedJoint.prevX = pos.x;
+                    this.draggedJoint.prevY = pos.y;
+                }
+            }
+
+            onMouseUp(e) {
+                if (this.draggedJoint) {
+                    this.draggedJoint.fixed = false;
+                    this.draggedJoint = null;
+                }
+            }
+
+            reset() {
+                this.createSkeleton();
+                this.ragdollMode = false;
+            }
+
+            toggleRagdoll() {
+                this.ragdollMode = !this.ragdollMode;
+                this.settings.autoBalance = !this.ragdollMode;
+                document.getElementById('auto-balance').checked = this.settings.autoBalance;
+            }
+
+            standUpright() {
+                const cx = this.canvas.width / 2;
+                const groundY = this.groundY;
+                const scale = this.settings.scale;
+                
+                // Smoothly move to standing position
+                this.joints.footL.y = groundY;
+                this.joints.footR.y = groundY;
+                this.joints.footL.x = cx - 25 * scale;
+                this.joints.footR.x = cx + 25 * scale;
+                
+                // Reset velocities
+                for (const joint of Object.values(this.joints)) {
+                    joint.prevX = joint.x;
+                    joint.prevY = joint.y;
+                }
+                
+                this.ragdollMode = false;
+                this.settings.autoBalance = true;
+                document.getElementById('auto-balance').checked = true;
+            }
+
+            loop(currentTime) {
+                const dt = Math.min((currentTime - this.lastTime) / 1000, 0.016); // Cap at 60 FPS
+                this.lastTime = currentTime;
+                
+                // Calculate FPS
+                this.fpsFrames.push(currentTime);
+                this.fpsFrames = this.fpsFrames.filter(t => currentTime - t < 1000);
+                this.fps = this.fpsFrames.length;
+                document.getElementById('fps').textContent = this.fps;
+                
+                this.update(dt);
+                this.render();
+                
+                requestAnimationFrame(this.loop.bind(this));
+            }
+        }
+
+        // Initialize the demo
+        const canvas = document.getElementById('physics-canvas');
+        const skeleton = new SkeletonPhysics(canvas);
+
+        // Setup controls
+        function setupControl(id, property, callback = null) {
+            const input = document.getElementById(id);
+            const display = document.getElementById(id + '-val');
+            
+            input.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                skeleton.settings[property] = value;
+                if (display) display.textContent = value.toFixed(2);
+                if (callback) callback(value);
+            });
+        }
+
+        setupControl('gravity', 'gravity');
+        setupControl('damping', 'damping');
+        setupControl('stiffness', 'stiffness', (val) => {
+            skeleton.constraints.forEach(c => c.stiffness = val);
+        });
+        setupControl('balance-strength', 'balanceStrength');
+        setupControl('hip-flex', 'hipFlexibility');
+        setupControl('scale', 'scale', () => skeleton.reset());
+        setupControl('joint-size', 'jointSize');
+
+        // Checkbox controls
+        document.getElementById('auto-balance').addEventListener('change', (e) => {
+            skeleton.settings.autoBalance = e.target.checked;
+        });
+        document.getElementById('ground-contact').addEventListener('change', (e) => {
+            skeleton.settings.groundContact = e.target.checked;
+        });
+        document.getElementById('show-constraints').addEventListener('change', (e) => {
+            skeleton.settings.showConstraints = e.target.checked;
+        });
+        document.getElementById('show-com').addEventListener('change', (e) => {
+            skeleton.settings.showCOM = e.target.checked;
+        });
+        document.getElementById('show-velocity').addEventListener('change', (e) => {
+            skeleton.settings.showVelocity = e.target.checked;
+        });
+
+        // Button controls
+        document.getElementById('reset').addEventListener('click', () => skeleton.reset());
+        document.getElementById('ragdoll').addEventListener('click', () => skeleton.toggleRagdoll());
+        document.getElementById('stand').addEventListener('click', () => skeleton.standUpright());
+
+        console.log('🎮 Interactive Physics Demo Loaded');
+        console.log('📊 Joints:', Object.keys(skeleton.joints).length);
+        console.log('🔗 Constraints:', skeleton.constraints.length);
+    </script>
+</body>
+</html>
