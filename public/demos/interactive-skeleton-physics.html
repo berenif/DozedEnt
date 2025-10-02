@@ -216,8 +216,8 @@
             <div id="info">
                 <h3>🎮 Controls</h3>
                 <p>• <strong>Drag joints</strong> to move them</p>
-                <p>• <strong>Drag body</strong> to move character</p>
-                <p>• <strong>Click reset</strong> to restore pose</p>
+                <p>• <strong>Drag body</strong> to test balance</p>
+                <p>• <strong>Lift feet</strong> to see recovery</p>
                 <div class="stats">
                     <div class="stat-item">
                         <span class="stat-label">FPS:</span>
@@ -319,6 +319,22 @@
     </div>
 
     <script type="module">
+        /**
+         * Interactive Skeleton Physics with Human-Like Balance
+         * 
+         * This demo implements three key human balance strategies:
+         * 1. ANKLE STRATEGY: For small disturbances, adjusts ankle torque to shift weight
+         * 2. HIP STRATEGY: For larger disturbances, moves the whole body to maintain balance
+         * 3. STEPPING STRATEGY: For very large disturbances, adjusts foot position
+         * 
+         * The skeleton has:
+         * - Realistic foot structure (heel, midfoot, toe) for better ground contact
+         * - Active balance control that responds to center of mass displacement
+         * - Weight distribution between feet with visual feedback (green = grounded)
+         * - Ground friction and normal forces for realistic foot contact
+         * - Knee locking for stability when standing
+         */
+        
         // Physics-based skeletal system with realistic body mechanics
         class Joint {
             constructor(x, y, mass = 1, fixed = false) {
@@ -1172,9 +1188,11 @@
         document.getElementById('ragdoll').addEventListener('click', () => skeleton.toggleRagdoll());
         document.getElementById('stand').addEventListener('click', () => skeleton.standUpright());
 
-        console.log('🎮 Interactive Physics Demo Loaded');
-        console.log('📊 Joints:', Object.keys(skeleton.joints).length);
+        console.log('🎮 Interactive Physics Demo with Human Balance Loaded');
+        console.log('📊 Joints:', Object.keys(skeleton.joints).length, '(including heel, midfoot, toe)');
         console.log('🔗 Constraints:', skeleton.constraints.length);
+        console.log('⚖️  Balance Strategies: Ankle → Hip → Stepping');
+        console.log('🦶 Foot Contact: Real-time tracking with friction');
     </script>
 </body>
 </html>
