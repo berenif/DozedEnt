@@ -1,46 +1,37 @@
 # Build Report
 
-Generated: 2025-10-02T18:01:25.059Z
-Duration: 1184ms
+Generated: 2025-10-02T18:26:41.141Z
+Duration: 16503ms
 
 ## Summary
 
-- **Modules Built**: 0
-- **Total Size**: 0KB
+- **Modules Built**: 3
+- **Total Size**: 969KB
 - **Optimization Savings**: 0 bytes
-- **Errors**: 2
-- **Warnings**: 1
+- **Errors**: 3
+- **Warnings**: 2
 
 ## File Sizes
 
-
+- **core/trystero-mqtt.min.js**: 351KB
+- **core/trystero-wasm.min.js**: 4KB
+- **animations/player-animator.js**: 169KB
+- **animations/player-animator.min.js**: 61KB
+- **animations/player-animator.umd.js**: 185KB
+- **animations/wolf-animation.js**: 79KB
+- **animations/wolf-animation.min.js**: 32KB
+- **animations/wolf-animation.umd.js**: 88KB
 
 ## Errors
 
-- Build failed for Core Modules: 
-public/src/netcode/firebase.js → dist/core/trystero-firebase.min.js...
-[!] RollupError: Could not resolve entry module "public/src/netcode/firebase.js".
-    at getRollupError (/workspace/node_modules/rollup/dist/shared/parseAst.js:285:41)
-    at Object.error (/workspace/node_modules/rollup/dist/shared/parseAst.js:281:42)
-    at ModuleLoader.loadEntryModule (/workspace/node_modules/rollup/dist/shared/rollup.js:22783:32)
-    at async Promise.all (index 0)
-
-
-
-- Build failed for Core Modules: 
-public/src/netcode/firebase.js → dist/core/trystero-firebase.min.js...
-[!] RollupError: Could not resolve entry module "public/src/netcode/firebase.js".
-    at getRollupError (/workspace/node_modules/rollup/dist/shared/parseAst.js:285:41)
-    at Object.error (/workspace/node_modules/rollup/dist/shared/parseAst.js:281:42)
-    at ModuleLoader.loadEntryModule (/workspace/node_modules/rollup/dist/shared/rollup.js:22783:32)
-    at async Promise.all (index 0)
-
-
-
+- Missing expected file: core/index.js
+- Missing expected file: animations/index.js
+- Missing expected file: index.js
 
 ## Warnings
 
 - WASM build failed: Command failed: npm run wasm:build
+- Bundle size warning: core/trystero-mqtt.min.js is 351KB (threshold: 100KB)
 
 ## Memory Optimization
 

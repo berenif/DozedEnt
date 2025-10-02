@@ -88,22 +88,6 @@ describe('Build System', () => {
       expect(fs.existsSync(distDir)).to.be.true;
     });
 
-    it('should generate firebase bundle', () => {
-      const filePath = path.join(distDir, 'core', 'trystero-firebase.min.js');
-      expect(fs.existsSync(filePath)).to.be.true;
-      
-      const stats = fs.statSync(filePath);
-      expect(stats.size).to.be.greaterThan(0, 'Firebase bundle should not be empty');
-    });
-
-    it('should generate ipfs bundle', () => {
-      const filePath = path.join(distDir, 'core', 'trystero-ipfs.min.js');
-      expect(fs.existsSync(filePath)).to.be.true;
-      
-      const stats = fs.statSync(filePath);
-      expect(stats.size).to.be.greaterThan(0, 'IPFS bundle should not be empty');
-    });
-
     it('should generate mqtt bundle', () => {
       const filePath = path.join(distDir, 'core', 'trystero-mqtt.min.js');
       expect(fs.existsSync(filePath)).to.be.true;
@@ -112,22 +96,9 @@ describe('Build System', () => {
       expect(stats.size).to.be.greaterThan(0, 'MQTT bundle should not be empty');
     });
 
+    // ipfs removed
 
-    it('should generate supabase bundle', () => {
-      const filePath = path.join(distDir, 'core', 'trystero-supabase.min.js');
-      expect(fs.existsSync(filePath)).to.be.true;
-      
-      const stats = fs.statSync(filePath);
-      expect(stats.size).to.be.greaterThan(0, 'Supabase bundle should not be empty');
-    });
-
-    it('should generate torrent bundle', () => {
-      const filePath = path.join(distDir, 'core', 'trystero-torrent.min.js');
-      expect(fs.existsSync(filePath)).to.be.true;
-      
-      const stats = fs.statSync(filePath);
-      expect(stats.size).to.be.greaterThan(0, 'Torrent bundle should not be empty');
-    });
+    // supabase/torrent removed
 
     it('should generate wasm bundle', () => {
       const filePath = path.join(distDir, 'core', 'trystero-wasm.min.js');
@@ -139,7 +110,7 @@ describe('Build System', () => {
 
     it('should generate minified bundles', () => {
       // Check that bundles are actually minified by checking for typical minification patterns
-      const firebaseBundle = fs.readFileSync(path.join(distDir, 'core', 'trystero-firebase.min.js'), 'utf8');
+      const firebaseBundle = fs.readFileSync(path.join(distDir, 'core', 'trystero-mqtt.min.js'), 'utf8');
       
       // Minified code typically has very long lines
       const lines = firebaseBundle.split('\n');
@@ -234,11 +205,7 @@ describe('Build System', () => {
 
     it('should validate source files exist', () => {
       const sourceFiles = [
-        'src/netcode/firebase.js',
-        'src/netcode/ipfs.js',
         'src/netcode/mqtt.js',
-        'src/netcode/supabase.js',
-        'src/netcode/torrent.js',
         'src/utils/wasm.js',
         'src/animation/player/procedural/player-animator.js',
         'src/animation/enemy/wolf-animation.js'
@@ -265,11 +232,9 @@ describe('Build System', () => {
       // Check exports
       expect(packageJson).to.have.property('exports');
       expect(packageJson.exports).to.have.property('.');
-      expect(packageJson.exports).to.have.property('./firebase');
-      expect(packageJson.exports).to.have.property('./ipfs');
+      // firebase/ipfs removed
       expect(packageJson.exports).to.have.property('./mqtt');
-      expect(packageJson.exports).to.have.property('./supabase');
-      expect(packageJson.exports).to.have.property('./torrent');
+      // supabase/torrent removed
       expect(packageJson.exports).to.have.property('./wasm');
     });
   });

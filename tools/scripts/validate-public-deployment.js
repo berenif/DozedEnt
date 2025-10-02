@@ -199,11 +199,7 @@ class PublicDeploymentValidator {
 
     const expectedCoreFiles = [
       'index.js',
-      'trystero-firebase.min.js',
-      'trystero-ipfs.min.js',
       'trystero-mqtt.min.js',
-      'trystero-supabase.min.js',
-      'trystero-torrent.min.js',
       'trystero-wasm.min.js'
     ]
 

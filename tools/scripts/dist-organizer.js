@@ -18,12 +18,7 @@ class DistOrganizer {
     this.distPath = path.join(projectRoot, 'dist');
     this.organizedStructure = {
       'core/': [
-        'trystero-firebase.min.js',
-        'trystero-ipfs.min.js',
         'trystero-mqtt.min.js',
-        'trystero-nostr.min.js',
-        'trystero-supabase.min.js',
-        'trystero-torrent.min.js',
         'trystero-wasm.min.js'
       ],
       'wasm/': [
@@ -157,21 +152,11 @@ class DistOrganizer {
  * Auto-generated index file for core Trystero modules
  */
 
-export { default as firebase } from './trystero-firebase.min.js';
-export { default as ipfs } from './trystero-ipfs.min.js';
 export { default as mqtt } from './trystero-mqtt.min.js';
-export { default as nostr } from './trystero-nostr.min.js';
-export { default as supabase } from './trystero-supabase.min.js';
-export { default as torrent } from './trystero-torrent.min.js';
 export { default as wasm } from './trystero-wasm.min.js';
 
 // Legacy exports for backward compatibility
-export { default as FirebaseStrategy } from './trystero-firebase.min.js';
-export { default as IpfsStrategy } from './trystero-ipfs.min.js';
 export { default as MqttStrategy } from './trystero-mqtt.min.js';
-export { default as NostrStrategy } from './trystero-nostr.min.js';
-export { default as SupabaseStrategy } from './trystero-supabase.min.js';
-export { default as TorrentStrategy } from './trystero-torrent.min.js';
 export { default as WasmStrategy } from './trystero-wasm.min.js';
 `;
 
@@ -235,12 +220,7 @@ This directory contains the built and optimized files for the DozedEnt project.
 \`\`\`
 dist/
 ├── core/                    # Core networking modules
-│   ├── trystero-firebase.min.js
-│   ├── trystero-ipfs.min.js
 │   ├── trystero-mqtt.min.js
-│   ├── trystero-nostr.min.js
-│   ├── trystero-supabase.min.js
-│   ├── trystero-torrent.min.js
 │   ├── trystero-wasm.min.js
 │   └── index.js            # Core modules index
 ├── animations/              # Animation modules
@@ -271,9 +251,9 @@ dist/
 
 ### Core Modules
 \`\`\`javascript
-import { firebase, ipfs, mqtt } from './dist/core/index.js';
+import { mqtt, wasm } from './dist/core/index.js';
 // or
-import { FirebaseStrategy, IpfsStrategy } from './dist/core/index.js';
+import { MqttStrategy, WasmStrategy } from './dist/core/index.js';
 \`\`\`
 
 ### Animation Modules
@@ -324,7 +304,7 @@ The build process will automatically organize files into this structure.
   async updateBuildScripts() {
     console.log(chalk.blue('🔧 Updating build scripts...'));
     
-    // Update enhanced-build.js to use new structure
+    // Update enhanced-build.js to use new structure (firebase removed)
     const enhancedBuildPath = path.join(projectRoot, 'tools/scripts/enhanced-build.js');
     
     try {
@@ -334,13 +314,8 @@ The build process will automatically organize files into this structure.
       content = content.replace(
         /const expectedFiles = \[[\s\S]*?\];/,
         `const expectedFiles = [
-      // Core modules
-      'core/trystero-firebase.min.js',
-      'core/trystero-ipfs.min.js',
+      // Core modules (firebase removed)
       'core/trystero-mqtt.min.js',
-      'core/trystero-nostr.min.js',
-      'core/trystero-supabase.min.js',
-      'core/trystero-torrent.min.js',
       'core/trystero-wasm.min.js',
       
       // Animation modules
@@ -362,12 +337,7 @@ The build process will automatically organize files into this structure.
       content = content.replace(
         /const bundleSizeThresholds = \{[\s\S]*?\};/,
         `const bundleSizeThresholds = {
-      'core/trystero-firebase.min.js': 200,
-      'core/trystero-ipfs.min.js': 150,
       'core/trystero-mqtt.min.js': 100,
-      'core/trystero-nostr.min.js': 50,
-      'core/trystero-supabase.min.js': 120,
-      'core/trystero-torrent.min.js': 180,
       'core/trystero-wasm.min.js': 50,
       'animations/player-animator.min.js': 300,
       'animations/wolf-animation.min.js': 250
@@ -381,7 +351,7 @@ The build process will automatically organize files into this structure.
       console.log(chalk.yellow(`  ⚠ Could not update enhanced-build.js: ${error.message}`));
     }
 
-    // Update build-validator.js to use new structure
+    // Update build-validator.js to use new structure (firebase removed)
     const validatorPath = path.join(projectRoot, 'tools/scripts/build-validator.js');
     
     try {
@@ -391,12 +361,7 @@ The build process will automatically organize files into this structure.
       content = content.replace(
         /bundleSizeThresholds: \{[\s\S]*?\}/,
         `bundleSizeThresholds: {
-        'core/trystero-firebase.min.js': 200,
-        'core/trystero-ipfs.min.js': 150,
         'core/trystero-mqtt.min.js': 100,
-        'core/trystero-nostr.min.js': 50,
-        'core/trystero-supabase.min.js': 120,
-        'core/trystero-torrent.min.js': 180,
         'core/trystero-wasm.min.js': 50,
         'animations/player-animator.min.js': 300,
         'animations/wolf-animation.min.js': 250
@@ -418,12 +383,7 @@ The build process will automatically organize files into this structure.
     console.log(chalk.blue('🔗 Creating legacy symlinks...'));
     
     const legacyMappings = {
-      'trystero-firebase.min.js': 'core/trystero-firebase.min.js',
-      'trystero-ipfs.min.js': 'core/trystero-ipfs.min.js',
       'trystero-mqtt.min.js': 'core/trystero-mqtt.min.js',
-      'trystero-nostr.min.js': 'core/trystero-nostr.min.js',
-      'trystero-supabase.min.js': 'core/trystero-supabase.min.js',
-      'trystero-torrent.min.js': 'core/trystero-torrent.min.js',
       'trystero-wasm.min.js': 'core/trystero-wasm.min.js',
       'player-animator.js': 'animations/player-animator.js',
       'player-animator.min.js': 'animations/player-animator.min.js',

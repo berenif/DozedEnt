@@ -8,12 +8,7 @@
   "types": "public/src/utils/index.d.ts",
   "exports": {
     ".": "./public/src/utils/index.js",
-    "./firebase": "./public/src/netcode/firebase.js",
-    "./ipfs": "./public/src/netcode/ipfs.js",
     "./mqtt": "./public/src/netcode/mqtt.js",
-    "./nostr": "./public/src/netcode/nostr.js",
-    "./supabase": "./public/src/netcode/supabase.js",
-    "./torrent": "./public/src/netcode/torrent.js",
     "./wasm": "./public/src/utils/wasm.js"
   },
   "private": true,

@@ -23,14 +23,7 @@ export class NetworkProviderManager {
           password: null
         }
       },
-      firebase: {
-        name: 'Firebase',
-        module: null,
-        config: {
-          appId: 'working-multiplayer-demo',
-          password: null
-        }
-      },
+      // firebase provider removed from supported list
       ipfs: {
         name: 'IPFS',
         module: null,
@@ -115,9 +108,7 @@ export class NetworkProviderManager {
         case 'torrent':
           trysteroModule = await import('../../demos/dist/trystero-torrent.min.js')
           break
-        case 'firebase':
-          trysteroModule = await import('../../demos/dist/trystero-firebase.min.js')
-          break
+        // firebase branch removed
         case 'ipfs':
           trysteroModule = await import('../../demos/dist/trystero-ipfs.min.js')
           break
