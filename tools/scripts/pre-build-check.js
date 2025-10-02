@@ -132,16 +132,13 @@ configFiles.forEach(file => {
 
 // Check 6: Source files
 console.log(chalk.bold('\nChecking source files...'));
+// Only require the modules we actually ship now
 const sourceFiles = [
   // Core exports
   'public/src/utils/index.js',
 
-  // Strategy implementations
-  'public/src/netcode/firebase.js',
-  'public/src/netcode/ipfs.js',
+  // Currently supported networking implementation
   'public/src/netcode/mqtt.js',
-  'public/src/netcode/supabase.js',
-  'public/src/netcode/torrent.js',
   'public/src/utils/wasm.js',
 
   // Animation modules
