@@ -1,0 +1,4 @@
+/workspace/public/build/CMakeFiles/game_refactored_test.dir
+/workspace/public/build/CMakeFiles/game_refactored_lib.dir
+/workspace/public/build/CMakeFiles/edit_cache.dir
+/workspace/public/build/CMakeFiles/rebuild_cache.dir

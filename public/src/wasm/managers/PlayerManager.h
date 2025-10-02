@@ -1,5 +1,6 @@
 #pragma once
 #include "../physics/FixedPoint.h"
+#include "../physics/SkeletonPhysics.h"
 
 /**
  * PlayerManager - Manages player state, movement, and basic properties
@@ -36,6 +37,12 @@ public:
         // Last input (for input-aware friction)
         float last_input_x = 0.0f;
         float last_input_y = 0.0f;
+        
+        // Balance state (from skeleton physics)
+        bool use_skeleton_physics = true;
+        float balance_quality = 1.0f;  // 0-1, how well balanced
+        bool left_foot_grounded = false;
+        bool right_foot_grounded = false;
     };
     
     struct ShoulderBashState {
@@ -68,6 +75,7 @@ public:
     void update(float delta_time);
     void update_movement(float input_x, float input_y, float delta_time);
     void update_physics(float delta_time);
+    void update_skeleton(float delta_time);
     
     // State management
     void reset_to_spawn();
@@ -122,10 +130,17 @@ public:
     float get_speed() const;
     float get_facing_x() const { return state_.facing_x; }
     float get_facing_y() const { return state_.facing_y; }
+    
+    // Skeleton/balance getters
+    float get_balance_quality() const { return state_.balance_quality; }
+    bool is_left_foot_grounded() const { return state_.left_foot_grounded; }
+    bool is_right_foot_grounded() const { return state_.right_foot_grounded; }
+    const SkeletonPhysics::PlayerSkeleton* get_skeleton() const { return &skeleton_; }
 
 private:
     PlayerState state_;
     ShoulderBashState bash_state_;
+    SkeletonPhysics::PlayerSkeleton skeleton_;
     
     // Movement constants
     static constexpr float MOVE_SPEED = 0.3f;  // Reduced from 0.8f for better control
