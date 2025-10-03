@@ -49,6 +49,10 @@ test-*.html
 *-final.html
 *-fallback.html
 
+# Exception: Keep specific demo files
+!test-skeleton-demo.html
+!public/demos/test-skeleton-demo.html
+
 # Legacy and duplicate directories
 /demos/
 /assets/
