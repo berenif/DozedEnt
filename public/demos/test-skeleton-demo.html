@@ -123,8 +123,8 @@ npm run demo:skeleton</pre>
             
             // Test 2: Check for WASM module
             try {
-                const jsResponse = await fetch('../wasm/skeleton-physics.js');
-                const wasmResponse = await fetch('../wasm/skeleton-physics.wasm');
+                const jsResponse = await fetch('/wasm/skeleton-physics.js');
+                const wasmResponse = await fetch('/wasm/skeleton-physics.wasm');
                 
                 if (jsResponse.ok && wasmResponse.ok) {
                     addResult('WASM Module', true, 
@@ -143,7 +143,7 @@ npm run demo:skeleton</pre>
             
             // Test 4: Check C++ source
             try {
-                const response = await fetch('../wasm/skeleton-physics.cpp');
+                const response = await fetch('/wasm/skeleton-physics.cpp');
                 addResult(
                     'C++ Source',
                     response.ok,
@@ -157,7 +157,7 @@ npm run demo:skeleton</pre>
             
             // Test 5: Check build script
             try {
-                const response = await fetch('../wasm/build-skeleton-physics.sh');
+                const response = await fetch('/wasm/build-skeleton-physics.sh');
                 addResult(
                     'Build Script',
                     response.ok,
