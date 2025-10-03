@@ -324,317 +324,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r140/three.min.js"></script>
     <script type="module">
         // ============================================================================
-        // WASM MODULE LOADER (with fallback to pure JS)
+        // WASM MODULE LOADER
         // ============================================================================
         
         const DEG2RAD = Math.PI / 180;
         const RAD2DEG = 180 / Math.PI;
         
         let WasmModule = null;
-        let useWasm = false;
         
         // Update loading status
         function updateLoadStatus(message) {
             document.getElementById('load-status').textContent = message;
         }
         
-        // Pure JavaScript implementation (fallback)
-        class JSSkeletonPhysics {
-            constructor() {
-                this.bones = [];
-                this.joints = [];
-                this.boneMap = new Map();
-                this.jointMap = new Map();
-                this.gravity = { x: 0, y: -9.81, z: 0 };
-                this.physicsEnabled = true;
-                this.gravityEnabled = true;
-                this.globalStiffness = 1.0;
-                this.globalDamping = 1.0;
-            }
-            
-            addBone(name, parentIndex, px, py, pz, length, radius, mass) {
-                const bone = {
-                    name,
-                    parentIndex,
-                    childIndices: [],
-                    restPosition: { x: px, y: py, z: pz },
-                    length,
-                    radius,
-                    mass,
-                    position: { x: px, y: py, z: pz },
-                    rotation: { x: 0, y: 0, z: 0, w: 1 },
-                    localRotation: { x: 0, y: 0, z: 0, w: 1 },
-                    velocity: { x: 0, y: 0, z: 0 },
-                    angularVelocity: { x: 0, y: 0, z: 0 },
-                    inertia: this.computeInertia(length, radius, mass)
-                };
-                
-                const index = this.bones.length;
-                this.bones.push(bone);
-                this.boneMap.set(name, index);
-                
-                if (parentIndex >= 0 && parentIndex < this.bones.length) {
-                    this.bones[parentIndex].childIndices.push(index);
-                }
-                
-                return index;
-            }
-            
-            computeInertia(length, radius, mass) {
-                const r = radius;
-                const h = length;
-                const m = mass;
-                const Ixx = (1/12) * m * (3*r*r + h*h);
-                const Izz = (1/2) * m * r * r;
-                return { x: Ixx, y: Ixx, z: Izz };
-            }
-            
-            addJoint(name, parentIdx, childIdx, typeInt, 
-                    minX, minY, minZ, maxX, maxY, maxZ, stiffness, damping) {
-                const joint = {
-                    name,
-                    parentBoneIndex: parentIdx,
-                    childBoneIndex: childIdx,
-                    type: typeInt,
-                    limits: {
-                        min: { x: minX, y: minY, z: minZ },
-                        max: { x: maxX, y: maxY, z: maxZ }
-                    },
-                    drive: { stiffness, damping },
-                    currentAngles: { x: 0, y: 0, z: 0 },
-                    targetAngles: { x: 0, y: 0, z: 0 }
-                };
-                
-                const index = this.joints.length;
-                this.joints.push(joint);
-                this.jointMap.set(name, index);
-                
-                return index;
-            }
-            
-            update(dt) {
-                if (!this.physicsEnabled) return;
-                
-                // Apply physics
-                for (let i = 1; i < this.bones.length; i++) {
-                    const bone = this.bones[i];
-                    
-                    if (this.gravityEnabled) {
-                        bone.velocity.y += this.gravity.y * dt;
-                    }
-                    
-                    bone.velocity.x *= 0.98;
-                    bone.velocity.y *= 0.98;
-                    bone.velocity.z *= 0.98;
-                    bone.angularVelocity.x *= 0.95;
-                    bone.angularVelocity.y *= 0.95;
-                    bone.angularVelocity.z *= 0.95;
-                }
-                
-                // Apply joint constraints
-                for (const joint of this.joints) {
-                    if (joint.childBoneIndex < 0 || joint.childBoneIndex >= this.bones.length) {
-                        continue;
-                    }
-                    
-                    const bone = this.bones[joint.childBoneIndex];
-                    const k = joint.drive.stiffness * this.globalStiffness;
-                    const d = joint.drive.damping * this.globalDamping;
-                    
-                    const errorX = this.shortestAngle(joint.targetAngles.x - joint.currentAngles.x);
-                    const errorY = this.shortestAngle(joint.targetAngles.y - joint.currentAngles.y);
-                    const errorZ = this.shortestAngle(joint.targetAngles.z - joint.currentAngles.z);
-                    
-                    joint.currentAngles.x = this.clamp(joint.currentAngles.x, joint.limits.min.x, joint.limits.max.x);
-                    joint.currentAngles.y = this.clamp(joint.currentAngles.y, joint.limits.min.y, joint.limits.max.y);
-                    joint.currentAngles.z = this.clamp(joint.currentAngles.z, joint.limits.min.z, joint.limits.max.z);
-                    
-                    const torqueX = k * errorX - d * bone.angularVelocity.x;
-                    const torqueY = k * errorY - d * bone.angularVelocity.y;
-                    const torqueZ = k * errorZ - d * bone.angularVelocity.z;
-                    
-                    bone.angularVelocity.x += (torqueX / bone.inertia.x) * dt;
-                    bone.angularVelocity.y += (torqueY / bone.inertia.y) * dt;
-                    bone.angularVelocity.z += (torqueZ / bone.inertia.z) * dt;
-                    
-                    this.integrateRotation(bone, dt);
-                }
-                
-                // Update transforms
-                if (this.bones.length > 0) {
-                    this.updateTransform(0);
-                }
-            }
-            
-            integrateRotation(bone, dt) {
-                const angle = Math.sqrt(
-                    bone.angularVelocity.x * bone.angularVelocity.x +
-                    bone.angularVelocity.y * bone.angularVelocity.y +
-                    bone.angularVelocity.z * bone.angularVelocity.z
-                ) * dt;
-                
-                if (angle > 0.0001) {
-                    const axis = {
-                        x: bone.angularVelocity.x / angle * dt,
-                        y: bone.angularVelocity.y / angle * dt,
-                        z: bone.angularVelocity.z / angle * dt
-                    };
-                    
-                    const halfAngle = angle * 0.5;
-                    const s = Math.sin(halfAngle);
-                    const deltaQuat = {
-                        x: axis.x * s,
-                        y: axis.y * s,
-                        z: axis.z * s,
-                        w: Math.cos(halfAngle)
-                    };
-                    
-                    bone.localRotation = this.multiplyQuaternions(bone.localRotation, deltaQuat);
-                    bone.localRotation = this.normalizeQuaternion(bone.localRotation);
-                }
-            }
-            
-            updateTransform(index) {
-                const bone = this.bones[index];
-                
-                if (bone.parentIndex >= 0) {
-                    const parent = this.bones[bone.parentIndex];
-                    bone.position = this.rotateVector(bone.restPosition, parent.rotation);
-                    bone.position.x += parent.position.x;
-                    bone.position.y += parent.position.y;
-                    bone.position.z += parent.position.z;
-                    bone.rotation = this.multiplyQuaternions(parent.rotation, bone.localRotation);
-                } else {
-                    bone.position = { ...bone.restPosition };
-                    bone.rotation = { ...bone.localRotation };
-                }
-                
-                bone.rotation = this.normalizeQuaternion(bone.rotation);
-                
-                for (const childIdx of bone.childIndices) {
-                    this.updateTransform(childIdx);
-                }
-            }
-            
-            rotateVector(v, q) {
-                const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
-                const vx = v.x, vy = v.y, vz = v.z;
-                
-                const ix = qw * vx + qy * vz - qz * vy;
-                const iy = qw * vy + qz * vx - qx * vz;
-                const iz = qw * vz + qx * vy - qy * vx;
-                const iw = -qx * vx - qy * vy - qz * vz;
-                
-                return {
-                    x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
-                    y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
-                    z: iz * qw + iw * -qz + ix * -qy - iy * -qx
-                };
-            }
-            
-            multiplyQuaternions(a, b) {
-                return {
-                    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
-                    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
-                    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
-                    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
-                };
-            }
-            
-            normalizeQuaternion(q) {
-                const len = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
-                if (len > 0.0001) {
-                    return { x: q.x/len, y: q.y/len, z: q.z/len, w: q.w/len };
-                }
-                return { x: 0, y: 0, z: 0, w: 1 };
-            }
-            
-            clamp(value, min, max) {
-                return Math.max(min, Math.min(value, max));
-            }
-            
-            shortestAngle(angle) {
-                while (angle > Math.PI) angle -= 2 * Math.PI;
-                while (angle < -Math.PI) angle += 2 * Math.PI;
-                return angle;
-            }
-            
-            computeCenterOfMass() {
-                let totalMass = 0;
-                const com = { x: 0, y: 0, z: 0 };
-                
-                for (const bone of this.bones) {
-                    com.x += bone.position.x * bone.mass;
-                    com.y += bone.position.y * bone.mass;
-                    com.z += bone.position.z * bone.mass;
-                    totalMass += bone.mass;
-                }
-                
-                if (totalMass > 0.0001) {
-                    com.x /= totalMass;
-                    com.y /= totalMass;
-                    com.z /= totalMass;
-                }
-                
-                return com;
-            }
-            
-            getBoneCount() { return this.bones.length; }
-            getJointCount() { return this.joints.length; }
-            getBonePosition(index) { return this.bones[index]?.position || { x: 0, y: 0, z: 0 }; }
-            getBoneRotation(index) { return this.bones[index]?.rotation || { x: 0, y: 0, z: 0, w: 1 }; }
-            getBoneName(index) { return this.bones[index]?.name || ''; }
-            getBoneLength(index) { return this.bones[index]?.length || 0; }
-            getBoneRadius(index) { return this.bones[index]?.radius || 0; }
-            getJointName(index) { return this.joints[index]?.name || ''; }
-            getJointChildBoneIndex(index) { return this.joints[index]?.childBoneIndex || -1; }
-            
-            setJointTargetAngles(index, x, y, z) {
-                if (this.joints[index]) {
-                    this.joints[index].targetAngles = { x, y, z };
-                }
-            }
-            
-            setPhysicsEnabled(enabled) { this.physicsEnabled = enabled; }
-            setGravityEnabled(enabled) { this.gravityEnabled = enabled; }
-            setGlobalStiffness(value) { this.globalStiffness = value; }
-            setGlobalDamping(value) { this.globalDamping = value; }
-            
-            getPhysicsEnabled() { return this.physicsEnabled; }
-            getGravityEnabled() { return this.gravityEnabled; }
-            getGlobalStiffness() { return this.globalStiffness; }
-            getGlobalDamping() { return this.globalDamping; }
-        }
-        
         // ============================================================================
-        // Initialize skeleton physics (WASM or JS fallback)
+        // Initialize skeleton physics (WASM only)
         // ============================================================================
         
         async function initPhysics() {
-            updateLoadStatus('Checking for WebAssembly support...');
+            updateLoadStatus('Loading WebAssembly module...');
             
-            // Try to load WASM module
             try {
-                updateLoadStatus('Loading WebAssembly module...');
-                
-                // Check if module file exists
-                const response = await fetch('../wasm/skeleton-physics.js');
-                if (response.ok) {
-                    const createModule = await import('../wasm/skeleton-physics.js');
-                    WasmModule = await createModule.default();
-                    useWasm = true;
-                    updateLoadStatus('WebAssembly loaded successfully!');
-                    console.log('✓ Using WebAssembly physics engine');
-                } else {
-                    throw new Error('WASM module not found');
-                }
+                const createModule = await import('../wasm/skeleton-physics.js');
+                WasmModule = await createModule.default();
+                updateLoadStatus('WebAssembly loaded successfully!');
+                console.log('✓ Using WebAssembly physics engine');
+                return true;
             } catch (error) {
-                console.warn('WASM not available, using JavaScript fallback:', error.message);
-                updateLoadStatus('Using JavaScript physics engine...');
-                useWasm = false;
+                console.error('Failed to load WASM module:', error);
+                updateLoadStatus('Error: Failed to load WebAssembly module');
+                throw new Error('WebAssembly module is required but could not be loaded: ' + error.message);
             }
-            
-            return useWasm;
         }
         
         // ============================================================================
@@ -642,7 +362,7 @@
         // ============================================================================
         
         function createSkeleton() {
-            const skeleton = useWasm ? new WasmModule.Skeleton() : new JSSkeletonPhysics();
+            const skeleton = new WasmModule.Skeleton();
             
             // Joint type enum
             const JointType = {
