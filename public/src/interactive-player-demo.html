@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Player Skeleton Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            cursor: default;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            cursor: grab;
+        }
+        
+        canvas.dragging {
+            cursor: grabbing;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        #controls h2 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #a78bfa;
+            border-bottom: 2px solid #a78bfa;
+            padding-bottom: 8px;
+        }
+        
+        #controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #c4b5fd;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 13px;
+            color: #ddd6fe;
+            cursor: pointer;
+        }
+        
+        .control-group input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(167, 139, 250, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .slider-container {
+            margin: 10px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ddd6fe;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(167, 139, 250, 0.3);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #a78bfa;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #a78bfa;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+        }
+        
+        #info div {
+            margin: 5px 0;
+        }
+        
+        .info-label {
+            color: #c4b5fd;
+            font-weight: 600;
+        }
+        
+        .joint-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 11px;
+            pointer-events: none;
+            white-space: nowrap;
+            display: none;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(167, 139, 250, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="canvas" width="1200" height="800"></canvas>
+    </div>
+    
+    <div id="controls">
+        <h2>🎮 Interactive Player</h2>
+        
+        <h3>Visualization</h3>
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="chk-bones" checked>
+                Show Bones
+            </label>
+            <label>
+                <input type="checkbox" id="chk-joints" checked>
+                Show Joints
+            </label>
+            <label>
+                <input type="checkbox" id="chk-labels">
+                Show Labels
+            </label>
+            <label>
+                <input type="checkbox" id="chk-constraints" checked>
+                Show Constraints
+            </label>
+            <label>
+                <input type="checkbox" id="chk-ik" checked>
+                Enable IK
+            </label>
+        </div>
+        
+        <h3>Preset Poses</h3>
+        <button id="btn-rest">Rest Pose</button>
+        <button id="btn-tpose">T-Pose</button>
+        <button id="btn-walk">Walk Pose</button>
+        <button id="btn-run">Run Pose</button>
+        <button id="btn-jump">Jump Pose</button>
+        <button id="btn-crouch">Crouch</button>
+        <button id="btn-wave">Wave</button>
+        
+        <h3>Settings</h3>
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Scale</span>
+                <span id="scale-value">3.0x</span>
+            </div>
+            <input type="range" id="slider-scale" min="1" max="5" value="3" step="0.5">
+        </div>
+        
+        <button id="btn-reset">Reset View</button>
+    </div>
+    
+    <div id="info">
+        <div><span class="info-label">Controls:</span></div>
+        <div>• Click + drag joints to move</div>
+        <div>• Drag canvas to pan</div>
+        <div>• Scroll to zoom</div>
+        <div style="margin-top: 10px;"><span class="info-label">Selected:</span> <span id="selected-joint">None</span></div>
+        <div><span class="info-label">FPS:</span> <span id="fps">60</span></div>
+    </div>
+    
+    <script type="module">
+        // ============================================================================
+        // PLAYER SKELETON STRUCTURE
+        // ============================================================================
+        
+        class PlayerSkeleton {
+            constructor() {
+                this.scale = 3.0;
+                this.offset = { x: 0, y: 0 };
+                this.joints = this.createDefaultSkeleton();
+                this.constraints = this.createConstraints();
+                this.selectedJoint = null;
+                this.dragOffset = { x: 0, y: 0 };
+                this.showBones = true;
+                this.showJoints = true;
+                this.showLabels = false;
+                this.showConstraints = true;
+                this.ikEnabled = true;
+            }
+            
+            createDefaultSkeleton() {
+                const baseY = 400;
+                const baseX = 600;
+                
+                return {
+                    // Core
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    // Left arm
+                    leftShoulder: { x: baseX - 50, y: baseY - 160, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 110, y: baseY - 90, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 130, y: baseY - 10, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 140, y: baseY, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    // Right arm
+                    rightShoulder: { x: baseX + 50, y: baseY - 160, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 110, y: baseY - 90, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 130, y: baseY - 10, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 140, y: baseY, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    // Left leg
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 50, y: baseY + 100, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 60, y: baseY + 190, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 60, y: baseY + 210, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    // Right leg
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 50, y: baseY + 100, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 60, y: baseY + 190, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 60, y: baseY + 210, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createConstraints() {
+                // Define joint angle limits and segment lengths for realistic movement
+                return {
+                    // Spine segments
+                    lowerSpine: { minAngle: -30, maxAngle: 30, length: 70 },
+                    chest: { minAngle: -30, maxAngle: 30, length: 70 },
+                    neck: { minAngle: -45, maxAngle: 45, length: 60 },
+                    head: { minAngle: -20, maxAngle: 20, length: 60 },
+                    
+                    // Left arm
+                    leftShoulder: { minAngle: -180, maxAngle: 180, length: 50 },
+                    leftElbow: { minAngle: -160, maxAngle: 0, length: 80 },
+                    leftWrist: { minAngle: -90, maxAngle: 90, length: 40 },
+                    leftHand: { minAngle: -45, maxAngle: 45, length: 20 },
+                    
+                    // Right arm
+                    rightShoulder: { minAngle: -180, maxAngle: 180, length: 50 },
+                    rightElbow: { minAngle: 0, maxAngle: 160, length: 80 },
+                    rightWrist: { minAngle: -90, maxAngle: 90, length: 40 },
+                    rightHand: { minAngle: -45, maxAngle: 45, length: 20 },
+                    
+                    // Left leg
+                    leftHip: { minAngle: -120, maxAngle: 90, length: 40 },
+                    leftKnee: { minAngle: 0, maxAngle: 150, length: 100 },
+                    leftAnkle: { minAngle: -45, maxAngle: 45, length: 90 },
+                    leftFoot: { minAngle: -30, maxAngle: 30, length: 20 },
+                    
+                    // Right leg
+                    rightHip: { minAngle: -120, maxAngle: 90, length: 40 },
+                    rightKnee: { minAngle: 0, maxAngle: 150, length: 100 },
+                    rightAnkle: { minAngle: -45, maxAngle: 45, length: 90 },
+                    rightFoot: { minAngle: -30, maxAngle: 30, length: 20 }
+                };
+            }
+            
+            getJointPosition(name) {
+                return this.joints[name];
+            }
+            
+            setJointPosition(name, x, y) {
+                if (this.joints[name]) {
+                    this.joints[name].x = x;
+                    this.joints[name].y = y;
+                    
+                    // Apply IK if enabled
+                    if (this.ikEnabled) {
+                        this.applyInverseKinematics(name);
+                    }
+                }
+            }
+            
+            applyInverseKinematics(jointName) {
+                const joint = this.joints[jointName];
+                if (!joint || !joint.parent) return;
+                
+                // Apply two-joint IK for limbs
+                if (jointName.includes('Hand')) {
+                    this.applyTwoJointIK(
+                        jointName.replace('Hand', 'Shoulder'),
+                        jointName.replace('Hand', 'Elbow'),
+                        jointName
+                    );
+                } else if (jointName.includes('Foot')) {
+                    this.applyTwoJointIK(
+                        jointName.replace('Foot', 'Hip'),
+                        jointName.replace('Foot', 'Knee'),
+                        jointName
+                    );
+                }
+            }
+            
+            applyTwoJointIK(rootName, midName, endName) {
+                const root = this.joints[rootName];
+                const mid = this.joints[midName];
+                const end = this.joints[endName];
+                
+                if (!root || !mid || !end) return;
+                
+                const constraint1 = this.constraints[midName];
+                const constraint2 = this.constraints[endName];
+                
+                if (!constraint1 || !constraint2) return;
+                
+                const length1 = constraint1.length;
+                const length2 = constraint2.length;
+                
+                // Calculate distance from root to target
+                const dx = end.x - root.x;
+                const dy = end.y - root.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Clamp distance to joint reach
+                const maxReach = length1 + length2;
+                const minReach = Math.abs(length1 - length2);
+                const clampedDist = Math.max(minReach, Math.min(distance, maxReach * 0.99));
+                
+                // Calculate angles using law of cosines
+                const angle1 = Math.atan2(dy, dx);
+                
+                const cosAngle2 = (length1 * length1 + clampedDist * clampedDist - length2 * length2) / 
+                                  (2 * length1 * clampedDist);
+                const angle2 = Math.acos(Math.max(-1, Math.min(1, cosAngle2)));
+                
+                // Determine bend direction based on joint
+                const bendDir = endName.includes('left') ? 1 : -1;
+                
+                // Calculate mid joint position
+                const midAngle = angle1 + angle2 * bendDir;
+                mid.x = root.x + Math.cos(midAngle) * length1;
+                mid.y = root.y + Math.sin(midAngle) * length1;
+            }
+            
+            isPointNearJoint(x, y, threshold = 15) {
+                for (const [name, joint] of Object.entries(this.joints)) {
+                    const dx = x - joint.x;
+                    const dy = y - joint.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < threshold) {
+                        return name;
+                    }
+                }
+                return null;
+            }
+            
+            setPose(poseName) {
+                const poses = {
+                    rest: this.createDefaultSkeleton(),
+                    tpose: this.createTPose(),
+                    walk: this.createWalkPose(),
+                    run: this.createRunPose(),
+                    jump: this.createJumpPose(),
+                    crouch: this.createCrouchPose(),
+                    wave: this.createWavePose()
+                };
+                
+                if (poses[poseName]) {
+                    this.joints = poses[poseName];
+                }
+            }
+            
+            createTPose() {
+                const baseY = 400;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 140, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 130, y: baseY - 140, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 170, y: baseY - 140, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 190, y: baseY - 140, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 140, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 130, y: baseY - 140, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 170, y: baseY - 140, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 190, y: baseY - 140, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 40, y: baseY + 100, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 40, y: baseY + 190, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 40, y: baseY + 210, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 40, y: baseY + 100, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 40, y: baseY + 190, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 40, y: baseY + 210, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createWalkPose() {
+                const baseY = 400;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 160, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 80, y: baseY - 100, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 90, y: baseY - 40, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 95, y: baseY - 20, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 160, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 80, y: baseY - 80, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 100, y: baseY - 20, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 110, y: baseY, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 50, y: baseY + 80, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 70, y: baseY + 170, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 80, y: baseY + 190, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 30, y: baseY + 100, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 20, y: baseY + 190, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 20, y: baseY + 210, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createRunPose() {
+                const baseY = 380;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX + 10, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX + 5, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX - 5, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX - 10, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 160, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 60, y: baseY - 80, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 50, y: baseY - 20, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 40, y: baseY, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 160, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 90, y: baseY - 110, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 110, y: baseY - 70, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 120, y: baseY - 40, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 60, y: baseY + 60, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 90, y: baseY + 150, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 100, y: baseY + 170, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 50, y: baseY + 100, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 40, y: baseY + 190, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 40, y: baseY + 210, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createJumpPose() {
+                const baseY = 350;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 140, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 90, y: baseY - 180, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 110, y: baseY - 210, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 120, y: baseY - 230, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 140, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 90, y: baseY - 180, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 110, y: baseY - 210, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 120, y: baseY - 230, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 50, y: baseY + 60, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 55, y: baseY + 140, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 55, y: baseY + 160, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 50, y: baseY + 60, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 55, y: baseY + 140, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 55, y: baseY + 160, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createCrouchPose() {
+                const baseY = 450;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 50, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 100, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 150, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 200, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 120, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 90, y: baseY - 60, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 100, y: baseY, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 105, y: baseY + 20, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 120, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 90, y: baseY - 60, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 100, y: baseY, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 105, y: baseY + 20, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 70, y: baseY + 50, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 80, y: baseY + 120, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 80, y: baseY + 140, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 70, y: baseY + 50, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 80, y: baseY + 120, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 80, y: baseY + 140, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+            
+            createWavePose() {
+                const baseY = 400;
+                const baseX = 600;
+                
+                return {
+                    pelvis: { x: baseX, y: baseY, name: 'Pelvis', parent: null },
+                    lowerSpine: { x: baseX, y: baseY - 70, name: 'Lower Spine', parent: 'pelvis' },
+                    chest: { x: baseX, y: baseY - 140, name: 'Chest', parent: 'lowerSpine' },
+                    neck: { x: baseX, y: baseY - 200, name: 'Neck', parent: 'chest' },
+                    head: { x: baseX, y: baseY - 260, name: 'Head', parent: 'neck' },
+                    
+                    leftShoulder: { x: baseX - 50, y: baseY - 160, name: 'L Shoulder', parent: 'chest' },
+                    leftElbow: { x: baseX - 90, y: baseY - 120, name: 'L Elbow', parent: 'leftShoulder' },
+                    leftWrist: { x: baseX - 110, y: baseY - 50, name: 'L Wrist', parent: 'leftElbow' },
+                    leftHand: { x: baseX - 120, y: baseY - 20, name: 'L Hand', parent: 'leftWrist' },
+                    
+                    rightShoulder: { x: baseX + 50, y: baseY - 140, name: 'R Shoulder', parent: 'chest' },
+                    rightElbow: { x: baseX + 90, y: baseY - 180, name: 'R Elbow', parent: 'rightShoulder' },
+                    rightWrist: { x: baseX + 70, y: baseY - 230, name: 'R Wrist', parent: 'rightElbow' },
+                    rightHand: { x: baseX + 60, y: baseY - 250, name: 'R Hand', parent: 'rightWrist' },
+                    
+                    leftHip: { x: baseX - 40, y: baseY, name: 'L Hip', parent: 'pelvis' },
+                    leftKnee: { x: baseX - 40, y: baseY + 100, name: 'L Knee', parent: 'leftHip' },
+                    leftAnkle: { x: baseX - 40, y: baseY + 190, name: 'L Ankle', parent: 'leftKnee' },
+                    leftFoot: { x: baseX - 40, y: baseY + 210, name: 'L Foot', parent: 'leftAnkle' },
+                    
+                    rightHip: { x: baseX + 40, y: baseY, name: 'R Hip', parent: 'pelvis' },
+                    rightKnee: { x: baseX + 40, y: baseY + 100, name: 'R Knee', parent: 'rightHip' },
+                    rightAnkle: { x: baseX + 40, y: baseY + 190, name: 'R Ankle', parent: 'rightKnee' },
+                    rightFoot: { x: baseX + 40, y: baseY + 210, name: 'R Foot', parent: 'rightAnkle' }
+                };
+            }
+        }
+        
+        // ============================================================================
+        // RENDERER
+        // ============================================================================
+        
+        class SkeletonRenderer {
+            constructor(canvas, skeleton) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.skeleton = skeleton;
+                this.hoveredJoint = null;
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            render() {
+                this.clear();
+                
+                // Draw in correct order: bones -> joints -> labels
+                if (this.skeleton.showBones) {
+                    this.drawBones();
+                }
+                
+                if (this.skeleton.showConstraints) {
+                    this.drawConstraints();
+                }
+                
+                if (this.skeleton.showJoints) {
+                    this.drawJoints();
+                }
+            }
+            
+            drawBones() {
+                const ctx = this.ctx;
+                const joints = this.skeleton.joints;
+                
+                // Draw bones as lines connecting joints
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Draw each bone based on parent-child relationship
+                for (const [name, joint] of Object.entries(joints)) {
+                    if (joint.parent) {
+                        const parent = joints[joint.parent];
+                        if (parent) {
+                            // Determine bone thickness based on body part
+                            let thickness = 8;
+                            if (name.includes('Spine') || name === 'chest') {
+                                thickness = 16;
+                            } else if (name.includes('Hip') || name.includes('Shoulder')) {
+                                thickness = 10;
+                            } else if (name.includes('Knee') || name.includes('Elbow')) {
+                                thickness = 8;
+                            } else if (name.includes('Hand') || name.includes('Foot')) {
+                                thickness = 6;
+                            }
+                            
+                            // Color based on body part
+                            let color = '#8b5cf6';
+                            if (name.includes('left')) {
+                                color = '#3b82f6';
+                            } else if (name.includes('right')) {
+                                color = '#10b981';
+                            } else if (name.includes('Spine') || name === 'chest' || name === 'pelvis') {
+                                color = '#ef4444';
+                            } else if (name === 'head' || name === 'neck') {
+                                color = '#f59e0b';
+                            }
+                            
+                            ctx.strokeStyle = color;
+                            ctx.lineWidth = thickness;
+                            ctx.beginPath();
+                            ctx.moveTo(parent.x, parent.y);
+                            ctx.lineTo(joint.x, joint.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            drawConstraints() {
+                const ctx = this.ctx;
+                const joints = this.skeleton.joints;
+                const constraints = this.skeleton.constraints;
+                
+                // Draw constraint circles
+                ctx.globalAlpha = 0.1;
+                
+                for (const [name, constraint] of Object.entries(constraints)) {
+                    const joint = joints[name];
+                    if (joint && joint.parent) {
+                        const parent = joints[joint.parent];
+                        if (parent) {
+                            ctx.strokeStyle = '#a78bfa';
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.arc(parent.x, parent.y, constraint.length, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                ctx.globalAlpha = 1.0;
+            }
+            
+            drawJoints() {
+                const ctx = this.ctx;
+                const joints = this.skeleton.joints;
+                
+                for (const [name, joint] of Object.entries(joints)) {
+                    const isSelected = this.skeleton.selectedJoint === name;
+                    const isHovered = this.hoveredJoint === name;
+                    
+                    // Draw joint circle
+                    const radius = isSelected ? 10 : (isHovered ? 8 : 6);
+                    
+                    // Outer glow for selected/hovered
+                    if (isSelected || isHovered) {
+                        ctx.fillStyle = isSelected ? 'rgba(239, 68, 68, 0.3)' : 'rgba(167, 139, 250, 0.3)';
+                        ctx.beginPath();
+                        ctx.arc(joint.x, joint.y, radius + 6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Main circle
+                    ctx.fillStyle = isSelected ? '#ef4444' : (isHovered ? '#a78bfa' : '#ffffff');
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(joint.x, joint.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Draw label if enabled
+                    if (this.skeleton.showLabels || isHovered || isSelected) {
+                        ctx.font = '11px sans-serif';
+                        ctx.fillStyle = '#000000';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(joint.name, joint.x, joint.y - 15);
+                    }
+                }
+            }
+        }
+        
+        // ============================================================================
+        // APPLICATION
+        // ============================================================================
+        
+        class InteractiveSkeletonApp {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.skeleton = new PlayerSkeleton();
+                this.renderer = new SkeletonRenderer(this.canvas, this.skeleton);
+                
+                this.isDragging = false;
+                this.isPanning = false;
+                this.lastMousePos = { x: 0, y: 0 };
+                this.panOffset = { x: 0, y: 0 };
+                
+                this.setupEventListeners();
+                this.animate();
+            }
+            
+            setupEventListeners() {
+                // Mouse events
+                this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+                this.canvas.addEventListener('mouseleave', (e) => this.onMouseUp(e));
+                
+                // UI controls
+                document.getElementById('chk-bones').addEventListener('change', (e) => {
+                    this.skeleton.showBones = e.target.checked;
+                });
+                
+                document.getElementById('chk-joints').addEventListener('change', (e) => {
+                    this.skeleton.showJoints = e.target.checked;
+                });
+                
+                document.getElementById('chk-labels').addEventListener('change', (e) => {
+                    this.skeleton.showLabels = e.target.checked;
+                });
+                
+                document.getElementById('chk-constraints').addEventListener('change', (e) => {
+                    this.skeleton.showConstraints = e.target.checked;
+                });
+                
+                document.getElementById('chk-ik').addEventListener('change', (e) => {
+                    this.skeleton.ikEnabled = e.target.checked;
+                });
+                
+                // Preset buttons
+                document.getElementById('btn-rest').addEventListener('click', () => {
+                    this.skeleton.setPose('rest');
+                });
+                
+                document.getElementById('btn-tpose').addEventListener('click', () => {
+                    this.skeleton.setPose('tpose');
+                });
+                
+                document.getElementById('btn-walk').addEventListener('click', () => {
+                    this.skeleton.setPose('walk');
+                });
+                
+                document.getElementById('btn-run').addEventListener('click', () => {
+                    this.skeleton.setPose('run');
+                });
+                
+                document.getElementById('btn-jump').addEventListener('click', () => {
+                    this.skeleton.setPose('jump');
+                });
+                
+                document.getElementById('btn-crouch').addEventListener('click', () => {
+                    this.skeleton.setPose('crouch');
+                });
+                
+                document.getElementById('btn-wave').addEventListener('click', () => {
+                    this.skeleton.setPose('wave');
+                });
+                
+                document.getElementById('btn-reset').addEventListener('click', () => {
+                    this.panOffset = { x: 0, y: 0 };
+                    this.skeleton.scale = 3.0;
+                    document.getElementById('slider-scale').value = 3;
+                    document.getElementById('scale-value').textContent = '3.0x';
+                });
+                
+                // Scale slider
+                document.getElementById('slider-scale').addEventListener('input', (e) => {
+                    this.skeleton.scale = parseFloat(e.target.value);
+                    document.getElementById('scale-value').textContent = this.skeleton.scale.toFixed(1) + 'x';
+                });
+            }
+            
+            getMousePos(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left - this.panOffset.x,
+                    y: e.clientY - rect.top - this.panOffset.y
+                };
+            }
+            
+            onMouseDown(e) {
+                const pos = this.getMousePos(e);
+                const jointName = this.skeleton.isPointNearJoint(pos.x, pos.y);
+                
+                if (jointName) {
+                    this.isDragging = true;
+                    this.skeleton.selectedJoint = jointName;
+                    document.getElementById('selected-joint').textContent = this.skeleton.joints[jointName].name;
+                    this.canvas.classList.add('dragging');
+                } else {
+                    this.isPanning = true;
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                }
+            }
+            
+            onMouseMove(e) {
+                const pos = this.getMousePos(e);
+                
+                if (this.isDragging && this.skeleton.selectedJoint) {
+                    this.skeleton.setJointPosition(this.skeleton.selectedJoint, pos.x, pos.y);
+                } else if (this.isPanning) {
+                    const dx = e.clientX - this.lastMousePos.x;
+                    const dy = e.clientY - this.lastMousePos.y;
+                    this.panOffset.x += dx;
+                    this.panOffset.y += dy;
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                } else {
+                    // Update hover state
+                    const jointName = this.skeleton.isPointNearJoint(pos.x, pos.y);
+                    this.renderer.hoveredJoint = jointName;
+                    this.canvas.style.cursor = jointName ? 'pointer' : 'grab';
+                }
+            }
+            
+            onMouseUp(e) {
+                this.isDragging = false;
+                this.isPanning = false;
+                this.canvas.classList.remove('dragging');
+                
+                if (!this.skeleton.selectedJoint) {
+                    document.getElementById('selected-joint').textContent = 'None';
+                }
+            }
+            
+            animate() {
+                this.renderer.render();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Start the application
+        const app = new InteractiveSkeletonApp();
+    </script>
+</body>
+</html>
