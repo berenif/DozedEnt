@@ -29,8 +29,7 @@ emcc "${SCRIPT_DIR}/skeleton-physics.cpp" \
     --bind \
     -s ENVIRONMENT=web \
     -s FILESYSTEM=0 \
-    -s ASSERTIONS=1 \
-    -s DEMANGLE_SUPPORT=1
+    -s ASSERTIONS=1
 
 if [ $? -eq 0 ]; then
     echo "✓ Build successful!"
