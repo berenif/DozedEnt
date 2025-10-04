@@ -1,3 +1,4 @@
+import './setup.js';
 import {test, expect} from '@playwright/test'
 
 const testUrl = 'https://localhost:8080/test'

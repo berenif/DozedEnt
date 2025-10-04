@@ -1,3 +1,4 @@
+import './setup.js';
 import {test, expect} from '@playwright/test'
 
 test.describe('Crypto Module Tests', () => {

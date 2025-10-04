@@ -1,3 +1,4 @@
+import '../setup.js';
 /**
  * Comprehensive Integration Tests
  * Tests complete game systems working together

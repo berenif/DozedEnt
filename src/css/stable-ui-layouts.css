@@ -1,0 +1,403 @@
+/* Stable UI Layouts - Prevents shifting during combat for muscle memory */
+
+/* Core principle: UI elements maintain fixed positions and sizes during gameplay */
+.stable-ui-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 500;
+}
+
+/* Stable positioning zones - these never move or resize */
+.ui-zone-top-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 300px;
+  height: 120px;
+  /* Locked positioning */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+.ui-zone-top-center {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 80px;
+  /* Stable center alignment */
+  transition: none !important;
+  animation: none !important;
+}
+
+.ui-zone-top-right {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 250px;
+  height: 200px;
+  /* Fixed right alignment */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+.ui-zone-bottom-center {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 80px;
+  /* Stable bottom center */
+  transition: none !important;
+  animation: none !important;
+}
+
+.ui-zone-bottom-left {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 200px;
+  height: 100px;
+  /* Fixed bottom left */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+.ui-zone-bottom-right {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  height: 100px;
+  /* Fixed bottom right */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Stable element base class - prevents unwanted animations */
+.stable-element {
+  /* Disable all transforms and animations that could cause shifting */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  
+  /* Maintain consistent sizing */
+  box-sizing: border-box;
+  
+  /* Prevent layout shifts from content changes */
+  min-width: fit-content;
+  min-height: fit-content;
+}
+
+/* Stable health bar - never changes size or position */
+.stable-health-container {
+  width: 280px;
+  height: 48px;
+  position: relative;
+  /* Locked dimensions */
+  min-width: 280px !important;
+  max-width: 280px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
+
+.stable-stamina-container {
+  width: 280px;
+  height: 36px;
+  position: relative;
+  margin-top: 12px;
+  /* Locked dimensions */
+  min-width: 280px !important;
+  max-width: 280px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+
+/* Stable ability bar - consistent button sizes and spacing */
+.stable-ability-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  /* Prevent flex shrinking/growing */
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.stable-ability-button {
+  width: 64px;
+  height: 64px;
+  /* Locked button dimensions */
+  min-width: 64px !important;
+  max-width: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+/* Stable status effects - consistent grid layout */
+.stable-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 200px;
+  /* Prevent grid from changing */
+  grid-template-rows: repeat(auto-fit, 40px);
+  min-width: 200px !important;
+  max-width: 200px !important;
+}
+
+.stable-status-item {
+  width: 96px;
+  height: 40px;
+  /* Locked status effect dimensions */
+  min-width: 96px !important;
+  max-width: 96px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+/* Stable minimap - fixed size and position */
+.stable-minimap-container {
+  width: 120px;
+  height: 120px;
+  /* Locked minimap dimensions */
+  min-width: 120px !important;
+  max-width: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
+}
+
+/* Stable resource display */
+.stable-resource-list {
+  width: 150px;
+  /* Fixed width for consistent alignment */
+  min-width: 150px !important;
+  max-width: 150px !important;
+}
+
+.stable-status-item {
+  height: 32px;
+  margin-bottom: 6px;
+  /* Consistent status item height */
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
+
+/* Combat feedback that doesn't disrupt layout */
+.stable-damage-numbers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  /* Damage numbers float above without affecting layout */
+}
+
+.stable-damage-number {
+  position: absolute;
+  /* Damage numbers use absolute positioning to avoid layout shifts */
+  pointer-events: none;
+  font-weight: 900;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Screen effects that don't cause layout shifts */
+.stable-screen-effects {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.stable-screen-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Screen flashes use fixed positioning to avoid layout impact */
+}
+
+/* Prevent text size changes that could cause layout shifts */
+.stable-text {
+  font-size: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  /* Lock text properties to prevent reflow */
+}
+
+/* Stable notification area - slides in without affecting other elements */
+.stable-notifications {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 800;
+  pointer-events: none;
+  /* Notifications appear in center without layout impact */
+}
+
+.stable-notification {
+  position: relative;
+  margin-bottom: 10px;
+  /* Each notification maintains consistent spacing */
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stable menu overlays - full screen without layout shifts */
+.stable-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  /* Menus cover entire screen without affecting underlying layout */
+}
+
+/* Responsive breakpoints with stable layouts */
+@media (max-width: 1200px) {
+  .ui-zone-top-left {
+    width: 260px;
+    height: 100px;
+  }
+  
+  .stable-health-container,
+  .stable-stamina-container {
+    width: 240px;
+    min-width: 240px !important;
+    max-width: 240px !important;
+  }
+  
+  .stable-ability-button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ui-zone-top-left {
+    width: 220px;
+    height: 80px;
+  }
+  
+  .stable-health-container {
+    height: 40px;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+  
+  .stable-stamina-container {
+    height: 30px;
+    min-height: 30px !important;
+    max-height: 30px !important;
+  }
+  
+  .stable-ability-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+  }
+  
+  .stable-status-grid {
+    width: 160px;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+  
+  .stable-status-item {
+    width: 76px;
+    min-width: 76px !important;
+    max-width: 76px !important;
+  }
+}
+
+/* Disable problematic CSS that can cause layout shifts */
+.stable-ui-container * {
+  /* Prevent transforms on stable elements */
+  transform: none !important;
+  
+  /* Disable transitions during combat */
+  transition: none !important;
+  
+  /* Prevent animations that could shift layout */
+  animation: none !important;
+}
+
+/* Allow only safe animations that don't affect layout */
+.stable-ui-container .safe-animation {
+  /* Re-enable animations for elements that are safe */
+  animation: initial !important;
+}
+
+.stable-ui-container .safe-transition {
+  /* Re-enable transitions for elements that are safe */
+  transition: initial !important;
+}
+
+/* Safe animations - these don't affect layout */
+@keyframes safe-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes safe-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.6); }
+}
+
+@keyframes safe-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes safe-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Combat mode - extra stability during fights */
+.combat-mode .stable-ui-container * {
+  /* Maximum stability during combat */
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  
+  /* Prevent any size changes */
+  width: inherit !important;
+  height: inherit !important;
+  
+  /* Lock positioning */
+  position: inherit !important;
+  top: inherit !important;
+  left: inherit !important;
+  right: inherit !important;
+  bottom: inherit !important;
+}

@@ -1,9 +1,16 @@
 // Test setup file for Mocha
+import { describe, it, before, after, beforeEach, afterEach } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { setupBrowserMocks } from './setup-browser-mocks.js';
 
 // Global test utilities
+global.describe = describe;
+global.it = it;
+global.before = before;
+global.after = after;
+global.beforeEach = beforeEach;
+global.afterEach = afterEach;
 global.expect = expect;
 global.sinon = sinon;
 
@@ -42,7 +49,7 @@ global.createMockWasmModule = () => ({
   set_blocking: sinon.stub().returns(1),
   get_block_state: sinon.stub().returns(0),
   handle_incoming_attack: sinon.stub().returns(0),
-  
+
   // Game loop & state management
   get_choice_count: sinon.stub().returns(3),
   get_choice_id: sinon.stub().returns(1),
@@ -51,7 +58,7 @@ global.createMockWasmModule = () => ({
   get_choice_tags: sinon.stub().returns(0),
   commit_choice: sinon.stub(),
   generate_choices: sinon.stub(),
-  
+
   // Risk phase functions
   get_curse_count: sinon.stub().returns(0),
   get_curse_type: sinon.stub().returns(0),
@@ -59,7 +66,7 @@ global.createMockWasmModule = () => ({
   get_risk_multiplier: sinon.stub().returns(1.0),
   get_elite_active: sinon.stub().returns(0),
   escape_risk: sinon.stub(),
-  
+
   // Escalate phase functions
   get_escalation_level: sinon.stub().returns(0),
   get_spawn_rate_modifier: sinon.stub().returns(1.0),
@@ -67,7 +74,7 @@ global.createMockWasmModule = () => ({
   get_miniboss_x: sinon.stub().returns(0.5),
   get_miniboss_y: sinon.stub().returns(0.5),
   damage_miniboss: sinon.stub(),
-  
+
   // CashOut phase functions
   get_gold: sinon.stub().returns(0),
   get_essence: sinon.stub().returns(0),
@@ -75,7 +82,7 @@ global.createMockWasmModule = () => ({
   buy_shop_item: sinon.stub(),
   buy_heal: sinon.stub(),
   reroll_shop_items: sinon.stub(),
-  
+
   // Wolf-specific functions
   get_wolf_count: sinon.stub().returns(0),
   get_wolf_x: sinon.stub().returns(0.5),
@@ -111,13 +118,13 @@ global.createMockWasmModule = () => ({
   get_wolf_communication_state: sinon.stub().returns(0),
   get_wolf_adaptive_difficulty: sinon.stub().returns(1.0),
   get_wolf_performance_metrics: sinon.stub().returns(0),
-  
+
   // Memory management
   memory: {
     buffer: new ArrayBuffer(1024),
     grow: sinon.stub().returns(1024)
   },
-  
+
   // Instance methods
   _malloc: sinon.stub().returns(0),
   _free: sinon.stub(),

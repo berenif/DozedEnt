@@ -651,7 +651,11 @@ export function setupBrowserMocks() {
   global.WebSocket = mockWebSocket;
   
   // Crypto API
-  global.crypto = mockCrypto;
+  Object.defineProperty(global, 'crypto', {
+    value: mockCrypto,
+    configurable: true,
+    writable: true
+  });
   
   // Fetch API
   global.fetch = mockFetch;

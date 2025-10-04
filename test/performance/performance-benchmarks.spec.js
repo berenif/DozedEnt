@@ -1,3 +1,4 @@
+import '../setup.js';
 /**
  * Performance Benchmarks
  * Comprehensive performance testing for all game systems

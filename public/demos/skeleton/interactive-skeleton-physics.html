@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Skeleton Physics - WebAssembly Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+            z-index: 1000;
+        }
+        
+        #loading.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(77, 166, 255, 0.3);
+            border-top: 4px solid #4da6ff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            max-width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        #controls h2 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #4da6ff;
+            border-bottom: 2px solid #4da6ff;
+            padding-bottom: 8px;
+        }
+        
+        #controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #80c0ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #b0d0ff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #4da6ff 0%, #3d85cc 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(77, 166, 255, 0.3);
+        }
+        
+        button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5bb6ff 0%, #4d95dc 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(77, 166, 255, 0.4);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+            background: rgba(77, 166, 255, 0.3);
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: #4da6ff;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .value-display {
+            float: right;
+            font-weight: 600;
+            color: #4da6ff;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+        }
+        
+        #info div {
+            margin: 5px 0;
+        }
+        
+        .info-label {
+            color: #80c0ff;
+            font-weight: 600;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .checkbox-label input {
+            cursor: pointer;
+        }
+
+        .wasm-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #654ea3 0%, #eaafc8 100%);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-left: 8px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(77, 166, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(77, 166, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <h2>Loading Skeleton Physics</h2>
+        <div class="spinner"></div>
+        <p id="load-status">Initializing WebAssembly module...</p>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="controls">
+        <h2>🦴 Skeleton Physics <span class="wasm-badge">WASM</span></h2>
+        
+        <h3>Poses</h3>
+        <button id="btn-apose">A-Pose (Rest)</button>
+        <button id="btn-tpose">T-Pose</button>
+        <button id="btn-sit">Sitting</button>
+        <button id="btn-squat">Deep Squat</button>
+        <button id="btn-reach">Reach Forward</button>
+        <button id="btn-wave">Wave</button>
+        
+        <h3>Physics Settings</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-physics" checked>
+                Enable Physics Simulation
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-gravity" checked>
+                Enable Gravity
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Stiffness <span class="value-display" id="val-stiffness">100</span>
+            </label>
+            <input type="range" id="slider-stiffness" min="10" max="500" value="100" step="10">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Joint Damping <span class="value-display" id="val-damping">20</span>
+            </label>
+            <input type="range" id="slider-damping" min="5" max="100" value="20" step="5">
+        </div>
+        
+        <h3>Visualization</h3>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-bones" checked>
+                Show Bones
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-joints" checked>
+                Show Joints
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-limits">
+                Show Joint Limits
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-com">
+                Show Center of Mass
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="chk-ik-targets">
+                Show IK Targets
+            </label>
+        </div>
+        
+        <h3>Tests</h3>
+        <button id="btn-test-shoulder">Test Shoulder Range</button>
+        <button id="btn-test-elbow">Test Elbow</button>
+        <button id="btn-test-knee">Test Knee</button>
+        <button id="btn-reset">Reset Pose</button>
+        
+        <h3>Performance</h3>
+        <div id="perf-info" style="font-size: 11px; color: #80c0ff;">
+            <div>Physics: <span id="perf-physics">0.0ms</span></div>
+            <div>Render: <span id="perf-render">0.0ms</span></div>
+            <div>Total: <span id="perf-total">0.0ms</span></div>
+        </div>
+    </div>
+    
+    <div id="info">
+        <div><span class="info-label">FPS:</span> <span id="fps">60</span></div>
+        <div><span class="info-label">Bones:</span> <span id="bone-count">0</span></div>
+        <div><span class="info-label">Joints:</span> <span id="joint-count">0</span></div>
+        <div><span class="info-label">Engine:</span> <span style="color: #eaafc8;">WebAssembly</span></div>
+        <div style="margin-top: 10px;"><span class="info-label">Controls:</span></div>
+        <div>• Left click + drag: Rotate view</div>
+        <div>• Right click + drag: Pan view</div>
+        <div>• Scroll: Zoom</div>
+    </div>
+
+    <script type="module">
+        import { initializeSkeletonUI } from '../../src/skeleton/SkeletonUIInitializer.js';
+        initializeSkeletonUI();
+    </script>
+</body>
+</html>

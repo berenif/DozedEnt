@@ -1,3 +1,4 @@
+import '../setup.js';
 /**
  * Comprehensive Performance Test Suite
  * Tests all performance optimizations and monitoring systems

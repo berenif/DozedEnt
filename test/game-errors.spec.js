@@ -1,3 +1,4 @@
+import './setup.js';
 import { test, expect } from '@playwright/test';
 
 test('check for game console errors', async ({ page }) => {

@@ -1,3 +1,4 @@
+import './setup.js';
 import { test, expect } from '@playwright/test';
 
 test('check game functionality', async ({ page }) => {

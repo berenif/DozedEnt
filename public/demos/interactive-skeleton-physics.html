@@ -132,6 +132,7 @@
             width: 100%;
             margin: 8px 0;
             -webkit-appearance: none;
+            appearance: none;
             background: transparent;
         }
         
@@ -156,7 +157,6 @@
         }
         
         .value-display {
-            display: inline-block;
             float: right;
             font-weight: 600;
             color: #4da6ff;
@@ -321,8 +321,8 @@
         <div>• Scroll: Zoom</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r140/three.min.js"></script>
     <script type="module">
+        import { createHumanSkeleton, createCanvasRenderer, applyPose } from '../src/adapters/skeleton-demo.js';
         // ============================================================================
         // WASM MODULE LOADER
         // ============================================================================
@@ -349,6 +349,8 @@
                 WasmModule = await createModule.default();
                 updateLoadStatus('WebAssembly loaded successfully!');
                 console.log('✓ Using WebAssembly physics engine');
+                console.log('WASM Module exports:', Object.keys(WasmModule));
+                console.log('Skeleton class available:', !!WasmModule.Skeleton);
                 return true;
             } catch (error) {
                 console.error('Failed to load WASM module:', error);
@@ -362,7 +364,12 @@
         // ============================================================================
         
         function createSkeleton() {
+            if (!WasmModule || !WasmModule.Skeleton) {
+                throw new Error('WASM module not properly loaded or Skeleton class not available');
+            }
+            console.log('Creating skeleton...');
             const skeleton = new WasmModule.Skeleton();
+            console.log('Skeleton created, initial bone count:', skeleton.getBoneCount());
             
             // Joint type enum
             const JointType = {
@@ -469,112 +476,77 @@
             skeleton.addJoint('toe_L', footL, toeL, JointType.HINGE,
                 -40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0, 80, 10);
             
+            console.log('Skeleton creation complete. Final bone count:', skeleton.getBoneCount());
+            console.log('Final joint count:', skeleton.getJointCount());
             return skeleton;
         }
         
+        // Fallback skeleton for testing
+        function createTestSkeleton() {
+            console.log('Creating test skeleton (fallback)...');
+            return {
+                getBoneCount: () => 3,
+                getJointCount: () => 2,
+                getBonePosition: (i) => {
+                    const positions = [
+                        { x: 0, y: 1, z: 0 },    // pelvis
+                        { x: 0, y: 1.5, z: 0 },  // spine
+                        { x: 0.2, y: 1.8, z: 0 } // head
+                    ];
+                    return positions[i] || { x: 0, y: 0, z: 0 };
+                },
+                getBoneRotation: (i) => ({ x: 0, y: 0, z: 0, w: 1 }),
+                getBoneName: (i) => ['pelvis', 'spine', 'head'][i] || 'bone_' + i,
+                getBoneLength: (i) => 0.3,
+                getBoneRadius: (i) => 0.05,
+                getJointName: (i) => ['spine_joint', 'head_joint'][i] || 'joint_' + i,
+                getJointChildBoneIndex: (i) => i + 1,
+                computeCenterOfMass: () => ({ x: 0, y: 1.2, z: 0 }),
+                update: (dt) => {},
+                setPhysicsEnabled: (enabled) => {},
+                setGravityEnabled: (enabled) => {},
+                setGlobalStiffness: (stiffness) => {},
+                setGlobalDamping: (damping) => {},
+                setJointTargetAngles: (jointIdx, x, y, z) => {}
+            };
+        }
+        
         // ============================================================================
-        // THREE.js Renderer
+        // WASM-Only Canvas 2D Renderer
         // ============================================================================
         
         class SkeletonRenderer {
             constructor(container, skeleton) {
                 this.skeleton = skeleton;
-                this.scene = new THREE.Scene();
-                this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setClearColor(0x000000, 0);
-                container.appendChild(this.renderer.domElement);
+                // Create canvas
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.canvas.style.display = 'block';
+                container.appendChild(this.canvas);
                 
-                this.camera.position.set(2, 1.5, 3);
-                this.camera.lookAt(0, 1, 0);
+                this.ctx = this.canvas.getContext('2d');
                 
-                // Lighting
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(ambientLight);
+                // Camera settings
+                this.camera = {
+                    x: 0,
+                    y: 1,
+                    z: 0,  // Closer to skeleton
+                    rotationX: -0.1,  // Less tilted
+                    rotationY: 0,
+                    zoom: 2.0  // Zoomed in more
+                };
                 
-                const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-                dirLight1.position.set(5, 10, 5);
-                this.scene.add(dirLight1);
-                
-                const dirLight2 = new THREE.DirectionalLight(0x4da6ff, 0.4);
-                dirLight2.position.set(-5, 5, -5);
-                this.scene.add(dirLight2);
-                
-                // Ground
-                const groundGeometry = new THREE.PlaneGeometry(20, 20);
-                const groundMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x1a1a2e,
-                    roughness: 0.8,
-                    metalness: 0.2
-                });
-                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                ground.rotation.x = -Math.PI / 2;
-                this.scene.add(ground);
-                
-                const gridHelper = new THREE.GridHelper(20, 20, 0x4da6ff, 0x2a2a3e);
-                this.scene.add(gridHelper);
-                
-                this.boneMeshes = [];
-                this.jointMeshes = [];
-                this.comMesh = null;
-                
+                // Rendering options
                 this.showBones = true;
                 this.showJoints = true;
                 this.showCOM = false;
+                this.showLimits = false;
+                this.showIKTargets = false;
                 
-                this.createMeshes();
                 this.setupControls();
-                
                 window.addEventListener('resize', () => this.onResize());
-            }
-            
-            createMeshes() {
-                const boneCount = this.skeleton.getBoneCount();
-                
-                for (let i = 0; i < boneCount; i++) {
-                    const length = this.skeleton.getBoneLength(i);
-                    const radius = this.skeleton.getBoneRadius(i);
-                    
-                    const geometry = new THREE.CapsuleGeometry(radius, length, 8, 16);
-                    const material = new THREE.MeshStandardMaterial({
-                        color: 0x4da6ff,
-                        roughness: 0.5,
-                        metalness: 0.3,
-                        emissive: 0x1a3a5f,
-                        emissiveIntensity: 0.2
-                    });
-                    
-                    const mesh = new THREE.Mesh(geometry, material);
-                    this.scene.add(mesh);
-                    this.boneMeshes.push(mesh);
-                }
-                
-                const jointCount = this.skeleton.getJointCount();
-                
-                for (let i = 0; i < jointCount; i++) {
-                    const geometry = new THREE.SphereGeometry(0.03, 16, 16);
-                    const material = new THREE.MeshStandardMaterial({
-                        color: 0xff6b6b,
-                        emissive: 0xff6b6b,
-                        emissiveIntensity: 0.5
-                    });
-                    
-                    const mesh = new THREE.Mesh(geometry, material);
-                    this.scene.add(mesh);
-                    this.jointMeshes.push(mesh);
-                }
-                
-                // COM mesh
-                const comGeom = new THREE.SphereGeometry(0.06, 16, 16);
-                const comMat = new THREE.MeshStandardMaterial({
-                    color: 0xffff00,
-                    emissive: 0xffff00,
-                    emissiveIntensity: 0.8
-                });
-                this.comMesh = new THREE.Mesh(comGeom, comMat);
-                this.scene.add(this.comMesh);
             }
             
             setupControls() {
@@ -582,13 +554,13 @@
                 let previousMousePosition = { x: 0, y: 0 };
                 let isRightDrag = false;
                 
-                this.renderer.domElement.addEventListener('mousedown', (e) => {
+                this.canvas.addEventListener('mousedown', (e) => {
                     isDragging = true;
                     isRightDrag = e.button === 2;
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 });
                 
-                this.renderer.domElement.addEventListener('mousemove', (e) => {
+                this.canvas.addEventListener('mousemove', (e) => {
                     if (!isDragging) return;
                     
                     const deltaX = e.clientX - previousMousePosition.x;
@@ -596,75 +568,269 @@
                     
                     if (isRightDrag) {
                         const panSpeed = 0.002;
-                        this.camera.position.x -= deltaX * panSpeed;
-                        this.camera.position.y += deltaY * panSpeed;
+                        this.camera.x -= deltaX * panSpeed;
+                        this.camera.y += deltaY * panSpeed;
                     } else {
                         const rotateSpeed = 0.005;
-                        const radius = Math.sqrt(this.camera.position.x ** 2 + this.camera.position.z ** 2);
-                        const angle = Math.atan2(this.camera.position.z, this.camera.position.x);
-                        
-                        this.camera.position.x = radius * Math.cos(angle - deltaX * rotateSpeed);
-                        this.camera.position.z = radius * Math.sin(angle - deltaX * rotateSpeed);
-                        this.camera.position.y += deltaY * rotateSpeed;
-                        
-                        this.camera.lookAt(0, 1, 0);
+                        this.camera.rotationY -= deltaX * rotateSpeed;
+                        this.camera.rotationX += deltaY * rotateSpeed;
+                        this.camera.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotationX));
                     }
                     
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 });
                 
-                this.renderer.domElement.addEventListener('mouseup', () => {
+                this.canvas.addEventListener('mouseup', () => {
                     isDragging = false;
                 });
                 
-                this.renderer.domElement.addEventListener('wheel', (e) => {
+                this.canvas.addEventListener('wheel', (e) => {
                     e.preventDefault();
                     const zoomSpeed = 0.001;
-                    const direction = new THREE.Vector3();
-                    this.camera.getWorldDirection(direction);
-                    
-                    this.camera.position.add(direction.multiplyScalar(e.deltaY * zoomSpeed));
+                    this.camera.zoom += e.deltaY * zoomSpeed;
+                    this.camera.zoom = Math.max(0.1, Math.min(5.0, this.camera.zoom));
                 });
                 
-                this.renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+                this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+            
+            // Apply quaternion rotation to a vector
+            rotateVector(v, q) {
+                // v' = q * v * q^-1
+                // For unit quaternions: q^-1 = q* (conjugate)
+                const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+                const vx = v.x, vy = v.y, vz = v.z;
+                
+                // First: q * v (treating v as quaternion with w=0)
+                const t1x = qw * vx + qy * vz - qz * vy;
+                const t1y = qw * vy + qz * vx - qx * vz;
+                const t1z = qw * vz + qx * vy - qy * vx;
+                const t1w = -qx * vx - qy * vy - qz * vz;
+                
+                // Second: result * q* (conjugate)
+                const rx = t1w * (-qx) + t1x * qw + t1y * (-qz) - t1z * (-qy);
+                const ry = t1w * (-qy) + t1y * qw + t1z * (-qx) - t1x * (-qz);
+                const rz = t1w * (-qz) + t1z * qw + t1x * (-qy) - t1y * (-qx);
+                
+                return { x: rx, y: ry, z: rz };
+            }
+            
+            // Convert 3D world coordinates to 2D screen coordinates
+            worldToScreen(worldPos) {
+                // Simple orthographic projection
+                const scale = 200 * this.camera.zoom;
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                // Apply camera rotation
+                const cosY = Math.cos(this.camera.rotationY);
+                const sinY = Math.sin(this.camera.rotationY);
+                const cosX = Math.cos(this.camera.rotationX);
+                const sinX = Math.sin(this.camera.rotationX);
+                
+                // Rotate around Y axis
+                let x = worldPos.x * cosY - worldPos.z * sinY;
+                let y = worldPos.y;
+                let z = worldPos.x * sinY + worldPos.z * cosY;
+                
+                // Rotate around X axis
+                const tempY = y * cosX - z * sinX;
+                z = y * sinX + z * cosX;
+                y = tempY;
+                
+                // Apply camera translation
+                x -= this.camera.x;
+                y -= this.camera.y;
+                z -= this.camera.z;
+                
+                // Project to screen
+                const screenX = centerX + x * scale;
+                const screenY = centerY - y * scale;
+                
+                const result = { x: screenX, y: screenY, z: z };
+                // console.log(`World (${worldPos.x}, ${worldPos.y}, ${worldPos.z}) -> Screen (${screenX}, ${screenY}, z=${z})`);
+                return result;
+            }
+            
+            // Draw a bone as a line
+            drawBone(startPos, endPos, radius) {
+                const start = this.worldToScreen(startPos);
+                const end = this.worldToScreen(endPos);
+                
+                // Don't skip behind camera for now - let's see everything
+                // if (start.z < 0 || end.z < 0) return;
+                
+                this.ctx.strokeStyle = '#00ff00';
+                // Convert world-space radius to pixels using same scale as projection
+                const scalePx = 200 * this.camera.zoom;
+                // Keep bones readable but not oversized
+                this.ctx.lineWidth = Math.max(2, radius * scalePx);
+                this.ctx.lineCap = 'round';
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(start.x, start.y);
+                this.ctx.lineTo(end.x, end.y);
+                this.ctx.stroke();
+            }
+            
+            // Draw a joint as a circle
+            drawJoint(pos, radius) {
+                const screen = this.worldToScreen(pos);
+                
+                // Don't skip behind camera for now
+                // if (screen.z < 0) return;
+                
+                const scalePx = 200 * this.camera.zoom;
+                const screenRadius = Math.max(3, radius * scalePx);
+
+                // Subtle glow without double-fill
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.shadowColor = '#ff0000';
+                this.ctx.shadowBlur = 6;
+                this.ctx.beginPath();
+                this.ctx.arc(screen.x, screen.y, screenRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+            }
+            
+            // Draw center of mass point
+            drawCOMPoint(pos) {
+                const screen = this.worldToScreen(pos);
+                
+                if (screen.z < 0) return;
+                
+                const radius = 6;
+                
+                this.ctx.fillStyle = '#ffff00';
+                this.ctx.beginPath();
+                this.ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Add glow effect
+                this.ctx.shadowColor = '#ffff00';
+                this.ctx.shadowBlur = 15;
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
             }
             
             update() {
-                const boneCount = this.skeleton.getBoneCount();
-                
-                for (let i = 0; i < boneCount; i++) {
-                    const pos = this.skeleton.getBonePosition(i);
-                    const rot = this.skeleton.getBoneRotation(i);
-                    
-                    this.boneMeshes[i].position.set(pos.x, pos.y, pos.z);
-                    this.boneMeshes[i].quaternion.set(rot.x, rot.y, rot.z, rot.w);
-                    this.boneMeshes[i].visible = this.showBones;
-                }
-                
-                const jointCount = this.skeleton.getJointCount();
-                
-                for (let i = 0; i < jointCount; i++) {
-                    const boneIdx = this.skeleton.getJointChildBoneIndex(i);
-                    if (boneIdx >= 0) {
-                        const pos = this.skeleton.getBonePosition(boneIdx);
-                        this.jointMeshes[i].position.set(pos.x, pos.y, pos.z);
-                        this.jointMeshes[i].visible = this.showJoints;
-                    }
-                }
-                
-                const com = this.skeleton.computeCenterOfMass();
-                this.comMesh.position.set(com.x, com.y, com.z);
-                this.comMesh.visible = this.showCOM;
+                // This method is called every frame to update the skeleton visualization
+                // The actual rendering happens in the render() method
             }
             
             render() {
-                this.renderer.render(this.scene, this.camera);
+                // Clear canvas
+                this.ctx.fillStyle = '#000000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw grid
+                this.drawGrid();
+                
+                if (this.showBones) {
+                    this.drawBones();
+                }
+                
+                if (this.showJoints) {
+                    this.drawJoints();
+                }
+                
+                if (this.showCOM) {
+                    this.drawCOMMarker();
+                }
+            }
+            
+            drawGrid() {
+                const scale = 200 * this.camera.zoom;
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                this.ctx.strokeStyle = '#2a2a3e';
+                this.ctx.lineWidth = 1;
+                
+                const gridSize = 20;
+                const gridSpacing = scale;
+                
+                this.ctx.beginPath();
+                for (let i = -gridSize; i <= gridSize; i++) {
+                    const x = centerX + i * gridSpacing;
+                    const y = centerY + i * gridSpacing;
+                    
+                    if (i % 5 === 0) {
+                        this.ctx.strokeStyle = '#4da6ff';
+                    } else {
+                        this.ctx.strokeStyle = '#2a2a3e';
+                    }
+                    
+                    // Vertical lines
+                    this.ctx.moveTo(x, centerY - gridSize * gridSpacing);
+                    this.ctx.lineTo(x, centerY + gridSize * gridSpacing);
+                    
+                    // Horizontal lines
+                    this.ctx.moveTo(centerX - gridSize * gridSpacing, y);
+                    this.ctx.lineTo(centerX + gridSize * gridSpacing, y);
+                }
+                this.ctx.stroke();
+            }
+            
+            drawBones() {
+                try {
+                    const boneCount = this.skeleton.getBoneCount();
+                    
+                    for (let i = 0; i < boneCount; i++) {
+                        const pos = this.skeleton.getBonePosition(i);
+                        const rot = this.skeleton.getBoneRotation(i);
+                        const length = this.skeleton.getBoneLength(i);
+                        const radius = this.skeleton.getBoneRadius(i);
+                        
+                        // Use bone rotation to determine direction
+                        // Bones are oriented along their local Y-axis
+                        // Apply quaternion rotation to (0, length, 0)
+                        const localEnd = { x: 0, y: length, z: 0 };
+                        
+                        // Rotate localEnd by quaternion rot
+                        const rotatedEnd = this.rotateVector(localEnd, rot);
+                        
+                        const endPos = {
+                            x: pos.x + rotatedEnd.x,
+                            y: pos.y + rotatedEnd.y,
+                            z: pos.z + rotatedEnd.z
+                        };
+                        
+                        this.drawBone(pos, endPos, radius);
+                    }
+                } catch (error) {
+                    console.error('Error drawing bones:', error);
+                }
+            }
+            
+            drawJoints() {
+                try {
+                    const jointCount = this.skeleton.getJointCount();
+                    
+                    for (let i = 0; i < jointCount; i++) {
+                        const boneIdx = this.skeleton.getJointChildBoneIndex(i);
+                        if (boneIdx >= 0) {
+                            const pos = this.skeleton.getBonePosition(boneIdx);
+                            this.drawJoint(pos, 0.03);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error drawing joints:', error);
+                }
+            }
+            
+            drawCOMMarker() {
+                try {
+                    const com = this.skeleton.computeCenterOfMass();
+                    this.drawCOMPoint(com);
+                } catch (error) {
+                    console.error('Error drawing center of mass:', error);
+                }
             }
             
             onResize() {
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
             }
         }
         
@@ -743,14 +909,39 @@
         // ============================================================================
         
         async function main() {
-            // Initialize physics
-            await initPhysics();
+            let skeleton;
             
-            updateLoadStatus('Creating skeleton...');
-            const skeleton = createSkeleton();
+            // Initialize physics
+            try {
+                // Initialize WASM (optional); we use our JS model for interactive IK
+                await initPhysics().catch(() => {});
+                updateLoadStatus('Creating human skeleton model...');
+                skeleton = createHumanSkeleton(1.7);
+            } catch (error) {
+                console.warn('Falling back to test skeleton:', error);
+                updateLoadStatus('Using test skeleton (model failed)...');
+                skeleton = createTestSkeleton();
+            }
             
             updateLoadStatus('Initializing renderer...');
-            const renderer = new SkeletonRenderer(document.getElementById('canvas-container'), skeleton);
+            // New canvas renderer from public/src
+            const container = document.getElementById('canvas-container');
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.display = 'block';
+            container.innerHTML = '';
+            container.appendChild(canvas);
+
+            const renderer = createCanvasRenderer(canvas);
+            // Zoom out and move camera back for better framing
+            renderer.camera.zoom = 0.9;
+            renderer.camera.z = 2.0;
+            renderer.camera.y = 1.2;
+            
+            // Enable click-drag interaction
+            const { SkeletonInteractionController } = await import('../src/controllers/skeleton/interaction-controller.js');
+            const interactor = new SkeletonInteractionController(renderer, skeleton);
             const poseController = new PoseController(skeleton);
             
             // Update info
@@ -784,8 +975,7 @@
                 
                 // Update renderer
                 const renderStart = performance.now();
-                renderer.update();
-                renderer.render();
+                renderer.render(skeleton);
                 const renderTime = performance.now() - renderStart;
                 
                 // Update performance stats
@@ -863,6 +1053,14 @@
             
             document.getElementById('chk-com').addEventListener('change', (e) => {
                 renderer.showCOM = e.target.checked;
+            });
+            
+            document.getElementById('chk-limits').addEventListener('change', (e) => {
+                renderer.showLimits = e.target.checked;
+            });
+            
+            document.getElementById('chk-ik-targets').addEventListener('change', (e) => {
+                renderer.showIKTargets = e.target.checked;
             });
             
             // Test buttons

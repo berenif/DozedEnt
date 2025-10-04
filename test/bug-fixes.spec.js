@@ -1,3 +1,4 @@
+import './setup.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import LobbyAnalytics from '../src/utils/lobby-analytics.js'
 // Removed EnhancedRoomManager and EnhancedLobbyUI imports

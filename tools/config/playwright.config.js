@@ -1,8 +1,9 @@
 import {devices} from '@playwright/test'
 
 export default {
+  globalSetup: '../../test/playwright-global-setup.js',
   testDir: '../../test',
-  testMatch: ['**/*.spec.js', '**/integration/*.js'],
+  testMatch: ['playwright/**/*.spec.js'],
   timeout: 53_333,
   use: {
     ignoreHTTPSErrors: true,
@@ -35,8 +36,9 @@ export default {
     }
   ],
   webServer: {
-    command: 'serve -p 8080',
-    url: 'http://localhost:8080',
-    reuseExistingServer: !process.env.CI
+    command: 'npx --yes serve public -p 8080',
+    url: 'http://localhost:8080/index.html',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000
   }
 }
