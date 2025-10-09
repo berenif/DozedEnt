@@ -1,0 +1,47 @@
+{
+  "classId": "kensei",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "kensei_essence_gain_i",
+      "title": "Discipline I",
+      "description": "+5% essence on precision hits.",
+      "cost": 150,
+      "maxLevel": 3,
+      "requires": [],
+      "effect": { "type": "economy", "key": "kensei.essence.gain", "perLevel": 0.05 },
+      "tier": 1
+    },
+    {
+      "id": "kensei_dash_iframes",
+      "title": "Ghost Step",
+      "description": "+20ms i-frames per level.",
+      "cost": 200,
+      "maxLevel": 4,
+      "requires": ["kensei_essence_gain_i"],
+      "effect": { "type": "ability", "key": "kensei.dash.iframes_ms", "perLevel": 20 },
+      "tier": 2
+    },
+    {
+      "id": "kensei_dash_chain",
+      "title": "Flow Mastery",
+      "description": "+1 max chain on hit at level 2.",
+      "cost": 260,
+      "maxLevel": 2,
+      "requires": ["kensei_dash_iframes"],
+      "effect": { "type": "ability", "key": "kensei.dash.chain_bonus", "perLevel": 1 },
+      "tier": 3
+    },
+    {
+      "id": "kensei_dash_cost",
+      "title": "Effortless Motion",
+      "description": "-3% stamina cost per level.",
+      "cost": 220,
+      "maxLevel": 3,
+      "requires": ["kensei_essence_gain_i"],
+      "effect": { "type": "ability", "key": "kensei.dash.stamina_cost_reduction", "perLevel": 0.03 },
+      "tier": 2
+    }
+  ]
+}
+

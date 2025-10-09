@@ -1,4 +1,4 @@
-# 🎮 DozedEnt - WebAssembly Survival Game
+# 🎮 DozedEnt - WebAssembly-First Roguelike Game
 
 [![Deploy Status](https://github.com/berenif/DozedEnt/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)](https://github.com/berenif/DozedEnt/actions)
 [![Game Status](https://img.shields.io/badge/status-playable-brightgreen)](https://berenif.github.io/DozedEnt/)
@@ -10,17 +10,17 @@
 
 ## 🌟 Project Overview
 
-**DozedEnt** is a cutting-edge **WebAssembly-first multiplayer survival game** featuring advanced AI, responsive combat, and serverless P2P networking. Built with performance and determinism as core principles, it demonstrates modern web game development techniques.
+**DozedEnt** is a **WebAssembly-first roguelike game** featuring advanced AI, responsive combat, and comprehensive animation systems. Built with performance and determinism as core principles, it demonstrates modern web game development techniques with a focus on modular architecture and clean code practices.
 
-### 🆕 Latest: Premium Mobile Experience (v2.0)
-We've completely overhauled the mobile UI with:
-- ✨ **Modern Design**: Vibrant gradients, glass-morphism, multi-layer shadows
-- 🎮 **Enhanced Controls**: Color-coded buttons, glow effects, improved feedback
-- 📚 **Tutorial System**: Optional onboarding for new players
-- ⚡ **Rich Interactions**: Animations, haptics, visual effects
-- 📱 **Optimized**: GPU-accelerated, < 1% FPS impact
+### 🆕 Latest: Enhanced Player Abilities & Animation Systems (v3.0)
+We've implemented comprehensive character systems with:
+- ⚔️ **Three Character Classes**: Warden (bash), Raider (charge), Kensei (dash)
+- 🎬 **Dual Animation Systems**: Physics-based (top-down) and Procedural (side-view)
+- 🧠 **Advanced AI**: Wolf pack coordination with emotional states and terrain awareness
+- 🔧 **Modular Architecture**: Manager/ViewModel/Coordinator patterns throughout
+- 📱 **Cross-Platform**: Desktop and mobile with optimized controls
 
-👉 [See Full Details](IMPROVEMENTS_SUMMARY.md) | [Try Demo](public/mobile-demo.html)
+👉 [See Full Details](GUIDELINES/PROGRESS/IMPLEMENTATION_SUMMARY.md) | [Try Demo](public/demo.html)
 
 ### ⚡ Key Features
 - **🎯 5-Button Combat** - Responsive fighting system with precise timing
@@ -28,11 +28,113 @@ We've completely overhauled the mobile UI with:
 - **🔄 8-Phase Game Loop** - Complete roguelike progression system
 - **🌐 P2P Multiplayer** - Serverless networking with multiple backends
 - **📱 Cross-Platform** - Desktop and mobile with optimized controls
+- **⚔️ Character Abilities** - Three unique classes with special abilities
+- **🎬 Rich Animation** - Dual animation systems for different gameplay views
 
 ### 🚀 Quick Start
 
 1. **Start Development Server**:
    ```bash
+   cd public
+   python -m http.server 8080
+   # Open http://localhost:8080/demo.html
+   ```
+
+2. **Build WASM Module**:
+   ```bash
+   npm run wasm:build        # Production build
+   npm run wasm:build:dev    # Development build with assertions
+   npm run wasm:build:all    # Build both client and host modules
+   ```
+
+3. **Run Tests**:
+   ```bash
+   npm test                   # End-to-end tests
+   npm run test:unit         # Unit tests (54+ tests)
+   npm run test:coverage     # Coverage report
+   ```
+
+### 🎮 Character Classes
+
+| Class | Ability | Description | Animation |
+|-------|---------|-------------|-----------|
+| **Warden** | Bash | Shield bash with knockback | Heavy, defensive |
+| **Raider** | Charge | Forward dash attack | Aggressive, mobile |
+| **Kensei** | Dash | Teleport with counter-attack | Precise, evasive |
+
+### 🎬 Animation Systems
+
+- **Physics Animation** (`public/src/animation/player/physics/`) - Lightweight, top-down optimized
+- **Procedural Animation** (`public/src/animation/player/procedural/`) - Biomechanically accurate, side-view
+- **Top-Down Renderer** (`public/src/renderer/player/TopDownPlayerRenderer.js`) - Unified rendering interface
+
+### 🧠 AI Systems
+
+- **Wolf Pack AI** - Coordinated hunting with 7 distinct plans
+- **Emotional States** - 6 emotional states affecting behavior
+- **Terrain Awareness** - 6 terrain types with tactical positioning
+- **Adaptive Difficulty** - Real-time player skill estimation
+
+### 🌐 Multiplayer
+
+- **P2P Networking** - Trystero-based with multiple backends
+- **Host Authority** - Deterministic WASM simulation
+- **Rollback Netcode** - GGPO-style prediction and correction
+- **Room System** - Lobby management with spectator support
+
+### 📁 Project Structure
+
+```
+public/src/
+├── animation/          # Dual animation systems
+├── game/              # Game logic and abilities
+├── wasm/              # WASM integration and managers
+├── renderer/          # Rendering systems
+├── netcode/           # Multiplayer networking
+├── entities/          # Game entities (wolves, players)
+├── ui/                # User interface systems
+└── utils/             # Shared utilities
+```
+
+### 🛠️ Development
+
+- **WASM-First Architecture** - All game logic in C++ WebAssembly
+- **Modular Design** - Manager/ViewModel/Coordinator patterns
+- **Performance Optimized** - < 1ms per frame, deterministic execution
+- **Cross-Platform** - Desktop and mobile with responsive controls
+
+### 📚 Documentation
+
+- **[Agent Development Guide](GUIDELINES/AGENTS.md)** - Complete development reference
+- **[Animation Systems](GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md)** - Dual animation architecture
+- **[WASM API Reference](GUIDELINES/BUILD/API.md)** - Complete API documentation
+- **[Player Abilities](GUIDELINES/PROGRESS/playerl/)** - Character class implementation
+
+### 🎯 Current Status
+
+- ✅ **Core Systems**: WASM integration, player movement, combat
+- ✅ **Character Classes**: Warden, Raider, Kensei with unique abilities
+- ✅ **Animation Systems**: Dual physics/procedural animation
+- ✅ **AI Systems**: Advanced wolf pack behavior
+- ✅ **Multiplayer**: P2P networking with host authority
+- ✅ **Testing**: 54+ unit tests, comprehensive coverage
+- 🔄 **In Progress**: Enhanced UI, additional abilities, performance optimization
+
+### 🤝 Contributing
+
+1. Read the [Agent Development Guide](GUIDELINES/AGENTS.md)
+2. Follow the [Development Workflow](GUIDELINES/BUILD/DEVELOPMENT_WORKFLOW.md)
+3. Ensure all tests pass: `npm test`
+4. Build WASM module: `npm run wasm:build`
+5. Submit pull request with clear description
+
+### 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ using WebAssembly, modern JavaScript, and clean architecture principles.**
    npm run dev
    ```
    This starts the server on `http://localhost:8080` with proper ES module support.

@@ -17,7 +17,7 @@ export default [
   },
   pluginJs.configs.recommended,
   {
-    files: ['src/**/*.js'],
+    files: ['public/src/**/*.js'],
     rules: {
       'array-callback-return': 'error',
       'arrow-body-style': 'error',

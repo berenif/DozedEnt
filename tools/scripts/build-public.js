@@ -257,7 +257,7 @@ function copyAssetsAndData() {
   })
 }
 
-// Copy source files for development/debugging
+// Source files are already in public/src/ - no copying needed
 function copySourceFiles() {
   console.log('?? Copying source files...')
   

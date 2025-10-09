@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const SRC_DIR = path.join(ROOT, 'src');
+const SRC_DIR = path.join(ROOT, 'public/src');
 const LIMIT = parseInt(process.env.FILE_LINE_LIMIT || '500', 10);
 
 /** @param {string} dir */
@@ -21,7 +21,7 @@ function* walk(dir) {
 }
 
 if (!fs.existsSync(SRC_DIR)) {
-  console.error('No src/ directory found. Exiting.');
+  console.error('No public/src/ directory found. Exiting.');
   process.exit(0);
 }
 

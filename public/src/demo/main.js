@@ -5,6 +5,8 @@ import { createInputManager } from '../managers/input-migration-adapter.js';
 import { OrientationManager } from '../ui/orientation-manager.js';
 import { AbilityManager, CHARACTER_TYPE } from '../game/abilities/ability-manager.js';
 import { VFXManager } from '../game/vfx/vfx-manager.js';
+import { ProgressionManager } from '../game/progression/progression-manager.js';
+import { ProgressionCoordinator } from '../game/progression/progression-coordinator.js';
 
 import { registerDebugHelpers, createOverlayBuilder } from './debug-tools.js';
 import { setupOrientation } from './orientation.js';
@@ -28,6 +30,8 @@ window.renderer = renderer;
 let inputManager = null;
 let vfxManager = null;
 let abilityManager = null;
+let progressionManager = null;
+let progressionCoordinator = null;
 
 if (wasmApi.exports?.init_run) {
   try {
@@ -54,7 +58,17 @@ inputManager = createInputManager(wasmApi, {
 });
 
 vfxManager = new VFXManager(canvas);
-abilityManager = new AbilityManager(wasmApi, vfxManager, CHARACTER_TYPE.WARDEN);
+progressionManager = new ProgressionManager(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), '/src');
+await progressionManager.init();
+// Default to WARDEN progression for demo
+progressionManager.loadClassState('warden');
+// Optional: mount minimal UI if container exists
+const progRoot = document.getElementById('progression-root');
+if (progRoot) {
+  progressionCoordinator = new ProgressionCoordinator(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), progRoot, { classId: 'warden', basePath: '/src' });
+  try { await progressionCoordinator.start(); } catch {}
+}
+abilityManager = new AbilityManager(wasmApi, vfxManager, CHARACTER_TYPE.WARDEN, progressionManager);
 
 registerDebugHelpers({ wasmApi, inputManagerRef: () => inputManager });
 const buildOverlay = createOverlayBuilder({ wasmApi, config });
@@ -81,6 +95,7 @@ if (window.DZ) {
   window.DZ.inputManager = inputManager;
   window.DZ.vfxManager = vfxManager;
   window.DZ.abilityManager = abilityManager;
+  window.DZ.progression = progressionManager;
   window.DZ.enableInputDebug = () => {
     inputManager.setDebugMode(true);
     console.log('Input debug mode enabled');

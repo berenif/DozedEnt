@@ -10,13 +10,18 @@
  */
 
 #include <cmath>
+#include <vector>
 #include "coordinators/GameCoordinator.h"
 #include "GameGlobals.h"
 #include "physics/PhysicsManager.h"
 #include "physics/PhysicsTypes.h"
+#include "../entities/PhysicsBarrel.h"
 
 // Initialize global coordinator
 GameCoordinator g_coordinator;
+
+// Barrel management
+static std::vector<PhysicsBarrel> g_barrels;
 
 int main() { 
     return 0; 
@@ -171,6 +176,95 @@ int is_bash_hitbox_active() {
 __attribute__((used)) __attribute__((export_name("check_bash_collision")))
 int check_bash_collision(float target_x, float target_y, float target_radius) {
     return g_coordinator.get_player_manager().check_bash_collision(target_x, target_y, target_radius) ? 1 : 0;
+}
+
+// ---- Raider Berserker Charge Abilities ----
+
+__attribute__((used)) __attribute__((export_name("start_berserker_charge")))
+void start_berserker_charge() {
+    g_coordinator.get_player_manager().start_berserker_charge();
+}
+
+__attribute__((used)) __attribute__((export_name("cancel_berserker_charge")))
+void cancel_berserker_charge() {
+    g_coordinator.get_player_manager().cancel_berserker_charge();
+}
+
+__attribute__((used)) __attribute__((export_name("is_berserker_charge_active")))
+int is_berserker_charge_active() {
+    return g_coordinator.get_player_manager().is_berserker_charge_active() ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("get_berserker_charge_duration")))
+float get_berserker_charge_duration() {
+    return g_coordinator.get_player_manager().get_berserker_charge_duration();
+}
+
+__attribute__((used)) __attribute__((export_name("get_berserker_targets_hit")))
+int get_berserker_targets_hit() {
+    return g_coordinator.get_player_manager().get_berserker_targets_hit();
+}
+
+__attribute__((used)) __attribute__((export_name("get_berserker_speed_multiplier")))
+float get_berserker_speed_multiplier() {
+    return g_coordinator.get_player_manager().get_berserker_speed_multiplier();
+}
+
+__attribute__((used)) __attribute__((export_name("get_berserker_charge_dir_x")))
+float get_berserker_charge_dir_x() {
+    return g_coordinator.get_player_manager().get_berserker_charge_dir_x();
+}
+
+__attribute__((used)) __attribute__((export_name("get_berserker_charge_dir_y")))
+float get_berserker_charge_dir_y() {
+    return g_coordinator.get_player_manager().get_berserker_charge_dir_y();
+}
+
+__attribute__((used)) __attribute__((export_name("is_berserker_unstoppable")))
+int is_berserker_unstoppable() {
+    return g_coordinator.get_player_manager().is_berserker_unstoppable() ? 1 : 0;
+}
+
+// ---- Kensei Flow Dash Abilities ----
+
+__attribute__((used)) __attribute__((export_name("execute_flow_dash")))
+void execute_flow_dash(float direction_x, float direction_y) {
+    g_coordinator.get_player_manager().execute_flow_dash(direction_x, direction_y);
+}
+
+__attribute__((used)) __attribute__((export_name("cancel_flow_dash")))
+void cancel_flow_dash() {
+    g_coordinator.get_player_manager().cancel_flow_dash();
+}
+
+__attribute__((used)) __attribute__((export_name("is_flow_dash_active")))
+int is_flow_dash_active() {
+    return g_coordinator.get_player_manager().is_flow_dash_active() ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("get_flow_dash_duration")))
+float get_flow_dash_duration() {
+    return g_coordinator.get_player_manager().get_flow_dash_duration();
+}
+
+__attribute__((used)) __attribute__((export_name("get_flow_dash_combo_level")))
+int get_flow_dash_combo_level() {
+    return g_coordinator.get_player_manager().get_flow_dash_combo_level();
+}
+
+__attribute__((used)) __attribute__((export_name("get_dash_progress")))
+float get_dash_progress() {
+    return g_coordinator.get_player_manager().get_dash_progress();
+}
+
+__attribute__((used)) __attribute__((export_name("is_dash_invulnerable")))
+int is_dash_invulnerable() {
+    return g_coordinator.get_player_manager().is_dash_invulnerable() ? 1 : 0;
+}
+
+__attribute__((used)) __attribute__((export_name("can_dash_cancel")))
+int can_dash_cancel() {
+    return g_coordinator.get_player_manager().can_dash_cancel() ? 1 : 0;
 }
 
 // ---- Game State Getters ----
@@ -386,6 +480,109 @@ float get_physics_player_vel_y() {
 __attribute__((export_name("get_physics_perf_ms")))
 float get_physics_perf_ms() {
     return g_coordinator.get_physics_manager().get_last_step_time_ms();
+}
+
+// ---- Physics Barrel Functions ----
+
+__attribute__((export_name("spawn_barrel")))
+uint32_t spawn_barrel(float x, float y, float z) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    
+    // Create physics body for barrel
+    RigidBody barrel_body;
+    barrel_body.position = FixedVector3::from_floats(x, y, z);
+    barrel_body.mass = Fixed::from_float(PhysicsBarrel::BARREL_MASS);
+    barrel_body.inverse_mass = Fixed::from_float(1.0f / PhysicsBarrel::BARREL_MASS);
+    barrel_body.friction = Fixed::from_float(0.7f);
+    barrel_body.restitution = Fixed::from_float(0.3f);
+    barrel_body.drag = Fixed::from_float(0.95f);
+    barrel_body.radius = Fixed::from_float(PhysicsBarrel::BARREL_RADIUS);
+    barrel_body.type = BodyType::Dynamic;
+    
+    uint32_t body_id = physics_mgr.create_body(barrel_body);
+    
+    // Create barrel entity
+    PhysicsBarrel barrel;
+    barrel.initialize(body_id, x, y, z);
+    g_barrels.push_back(barrel);
+    
+    return body_id;
+}
+
+__attribute__((export_name("throw_barrel")))
+void throw_barrel(uint32_t body_id, float dx, float dy, float dz, float force) {
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    
+    FixedVector3 dir = FixedVector3::from_floats(dx, dy, dz).normalized();
+    FixedVector3 impulse = dir * Fixed::from_float(force);
+    physics_mgr.apply_impulse(body_id, impulse);
+    
+    // Mark as projectile for damage tracking
+    for (auto& barrel : g_barrels) {
+        if (barrel.get_body_id() == body_id) {
+            barrel.mark_as_projectile();
+            break;
+        }
+    }
+}
+
+__attribute__((export_name("get_barrel_count")))
+int get_barrel_count() {
+    return static_cast<int>(g_barrels.size());
+}
+
+__attribute__((export_name("get_barrel_x")))
+float get_barrel_x(int index) {
+    if (index < 0 || index >= static_cast<int>(g_barrels.size())) {
+        return 0.0f;
+    }
+    
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    const RigidBody* body = physics_mgr.get_body(g_barrels[index].get_body_id());
+    return body ? body->position.x.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_barrel_y")))
+float get_barrel_y(int index) {
+    if (index < 0 || index >= static_cast<int>(g_barrels.size())) {
+        return 0.0f;
+    }
+    
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    const RigidBody* body = physics_mgr.get_body(g_barrels[index].get_body_id());
+    return body ? body->position.y.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_barrel_vel_x")))
+float get_barrel_vel_x(int index) {
+    if (index < 0 || index >= static_cast<int>(g_barrels.size())) {
+        return 0.0f;
+    }
+    
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    const RigidBody* body = physics_mgr.get_body(g_barrels[index].get_body_id());
+    return body ? body->velocity.x.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_barrel_vel_y")))
+float get_barrel_vel_y(int index) {
+    if (index < 0 || index >= static_cast<int>(g_barrels.size())) {
+        return 0.0f;
+    }
+    
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    const RigidBody* body = physics_mgr.get_body(g_barrels[index].get_body_id());
+    return body ? body->velocity.y.to_float() : 0.0f;
+}
+
+__attribute__((export_name("clear_all_barrels")))
+void clear_all_barrels() {
+    // Destroy physics bodies for all barrels
+    auto& physics_mgr = g_coordinator.get_physics_manager();
+    for (const auto& barrel : g_barrels) {
+        physics_mgr.destroy_body(barrel.get_body_id());
+    }
+    g_barrels.clear();
 }
 
 // ---- Enemy Physics Functions ----

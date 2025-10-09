@@ -1,0 +1,47 @@
+{
+  "classId": "warden",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "warden_essence_gain_i",
+      "title": "Resolve I",
+      "description": "Gain +5% essence from kills.",
+      "cost": 150,
+      "maxLevel": 3,
+      "requires": [],
+      "effect": { "type": "economy", "key": "warden.essence.gain", "perLevel": 0.05 },
+      "tier": 1
+    },
+    {
+      "id": "warden_bash_power_i",
+      "title": "Impact I",
+      "description": "+15% Shoulder Bash damage per level.",
+      "cost": 200,
+      "maxLevel": 3,
+      "requires": ["warden_essence_gain_i"],
+      "effect": { "type": "ability", "key": "warden.bash.damage", "perLevel": 0.15 },
+      "tier": 2
+    },
+    {
+      "id": "warden_bash_refund",
+      "title": "Calculated Bash",
+      "description": "+10% stamina refund on hit.",
+      "cost": 250,
+      "maxLevel": 2,
+      "requires": ["warden_bash_power_i"],
+      "effect": { "type": "ability", "key": "warden.bash.stamina_refund", "perLevel": 0.1 },
+      "tier": 3
+    },
+    {
+      "id": "warden_guardian_i",
+      "title": "Guardian I",
+      "description": "-5% damage taken during bash.",
+      "cost": 220,
+      "maxLevel": 2,
+      "requires": ["warden_essence_gain_i"],
+      "effect": { "type": "defense", "key": "warden.bash.dr", "perLevel": 0.05 },
+      "tier": 2
+    }
+  ]
+}
+

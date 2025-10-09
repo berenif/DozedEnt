@@ -1,0 +1,47 @@
+{
+  "classId": "raider",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "raider_essence_gain_i",
+      "title": "Pillage I",
+      "description": "+5% essence on kill.",
+      "cost": 150,
+      "maxLevel": 3,
+      "requires": [],
+      "effect": { "type": "economy", "key": "raider.essence.gain", "perLevel": 0.05 },
+      "tier": 1
+    },
+    {
+      "id": "raider_charge_speed",
+      "title": "Bloodrush",
+      "description": "+10% charge speed per level.",
+      "cost": 200,
+      "maxLevel": 3,
+      "requires": ["raider_essence_gain_i"],
+      "effect": { "type": "ability", "key": "raider.charge.speed", "perLevel": 0.10 },
+      "tier": 2
+    },
+    {
+      "id": "raider_charge_duration",
+      "title": "Unrelenting",
+      "description": "+0.3s charge duration per level.",
+      "cost": 220,
+      "maxLevel": 3,
+      "requires": ["raider_charge_speed"],
+      "effect": { "type": "ability", "key": "raider.charge.duration_s", "perLevel": 0.3 },
+      "tier": 3
+    },
+    {
+      "id": "raider_kill_heal",
+      "title": "Blood Feast",
+      "description": "+5 HP heal on kill per level during charge.",
+      "cost": 250,
+      "maxLevel": 3,
+      "requires": ["raider_charge_duration"],
+      "effect": { "type": "ability", "key": "raider.charge.heal_on_kill", "perLevel": 5 },
+      "tier": 4
+    }
+  ]
+}
+

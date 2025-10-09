@@ -67,6 +67,37 @@ public:
         float radius = 0.0f;
         bool active = false;
     };
+    
+    // Raider Berserker Charge state
+    struct BerserkerChargeState {
+        bool is_active = false;
+        float duration = 0.0f;
+        float remaining_duration = 0.0f;
+        Fixed speed_multiplier;
+        uint32_t targets_hit = 0;
+        bool has_hyperarmor = false;
+        float damage_reduction = 0.7f;  // 70% damage reduction
+        float charge_dir_x = 1.0f;
+        float charge_dir_y = 0.0f;
+        
+        BerserkerChargeState() : speed_multiplier(Fixed::from_float(2.5f)) {}
+    };
+    
+    // Kensei Flow Dash state
+    struct FlowDashState {
+        bool is_active = false;
+        float duration = 0.0f;
+        int combo_level = 0;              // 0-3 chain counter
+        Fixed dash_distance;
+        bool can_cancel = false;
+        bool is_invulnerable = false;
+        float target_x = 0.0f;            // Dash target position
+        float target_y = 0.0f;
+        float dash_progress = 0.0f;       // 0-1 interpolation
+        uint32_t last_target_id = 0;      // Last hit target
+        
+        FlowDashState() : dash_distance(Fixed::from_float(3.0f)) {}
+    };
 
     PlayerManager();
     ~PlayerManager() = default;
@@ -115,6 +146,38 @@ public:
     // Facing direction
     void update_facing_direction(float input_x, float input_y);
     
+    // Raider Berserker Charge abilities
+    void start_berserker_charge();
+    void update_berserker_charge(float dt);
+    void cancel_berserker_charge();
+    void on_charge_hit(uint32_t target_id);
+    bool can_charge() const;
+    
+    // Berserker charge getters
+    bool is_berserker_charge_active() const;
+    float get_berserker_charge_duration() const;
+    uint32_t get_berserker_targets_hit() const;
+    float get_berserker_speed_multiplier() const;
+    float get_berserker_charge_dir_x() const;
+    float get_berserker_charge_dir_y() const;
+    bool is_berserker_unstoppable() const;
+    
+    // Kensei Flow Dash abilities
+    void execute_flow_dash(float direction_x, float direction_y);
+    void update_flow_dash(float dt);
+    void cancel_flow_dash();
+    void on_dash_hit(uint32_t target_id);
+    bool can_dash() const;
+    bool can_chain_dash() const;
+    
+    // Flow dash getters
+    bool is_flow_dash_active() const;
+    float get_flow_dash_duration() const;
+    int get_flow_dash_combo_level() const;
+    float get_dash_progress() const;
+    bool is_dash_invulnerable() const;
+    bool can_dash_cancel() const;
+    
     // Getters
     const PlayerState& get_state() const { return state_; }
     PlayerState& get_state_mutable() { return state_; }
@@ -140,6 +203,8 @@ public:
 private:
     PlayerState state_;
     ShoulderBashState bash_state_;
+    BerserkerChargeState charge_state_;
+    FlowDashState dash_state_;
     SkeletonPhysics::PlayerSkeleton skeleton_;
     
     // Movement constants
@@ -161,6 +226,25 @@ private:
     static constexpr float BASH_BASE_FORCE = 15.0f;
     static constexpr float BASH_CHARGE_SLOW_FACTOR = 0.5f;
     static constexpr float BASH_STAMINA_REFUND = 0.1f;
+    
+    // Berserker charge constants
+    static constexpr float CHARGE_STAMINA_COST = 0.4f;        // 40% initial cost
+    static constexpr float CHARGE_DURATION = 3.0f;            // 3 seconds max
+    static constexpr float CHARGE_BASE_FORCE = 25.0f;         // Strong forward impulse
+    static constexpr float CHARGE_SPEED_MULTIPLIER = 2.5f;    // 2.5x movement speed
+    static constexpr float CHARGE_STAMINA_DRAIN = 0.2f;       // Per second
+    static constexpr float CHARGE_DAMAGE_REDUCTION = 0.7f;    // 70% reduction
+    static constexpr float CHARGE_HEAL_PER_KILL = 15.0f;      // HP restoration
+    
+    // Flow dash constants
+    static constexpr float DASH_STAMINA_COST = 0.2f;          // 20% per dash
+    static constexpr float DASH_DURATION = 0.3f;              // Quick dash (300ms)
+    static constexpr float DASH_DISTANCE = 0.15f;             // Distance in world space
+    static constexpr float DASH_BASE_DAMAGE = 25.0f;          // Base damage
+    static constexpr float DASH_COMBO_MULTIPLIER = 0.3f;      // +30% per combo level
+    static constexpr float DASH_STAMINA_REFUND = 0.15f;       // Stamina on hit
+    static constexpr float DASH_COMBO_WINDOW = 0.5f;          // Window to chain
+    static constexpr int DASH_MAX_COMBO = 3;                  // Max chain length
     
     // Helper methods
     void apply_friction(float delta_time);

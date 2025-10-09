@@ -26,6 +26,12 @@ set(PHYSICS_SOURCES
     src/wasm/physics/PhysicsManager.cpp
 )
 
+set(PROGRESSION_SOURCES
+    src/wasm/progression/AbilityUpgradeSystem.cpp
+    src/wasm/progression/UpgradeTree.cpp
+    src/wasm/progression/UpgradeNode.cpp
+)
+
 set(MAIN_SOURCES
     src/wasm/game_refactored.cpp
 )
@@ -36,6 +42,7 @@ set(ALL_SOURCES
     ${COORDINATOR_SOURCES}
     ${CORE_SOURCES}
     ${PHYSICS_SOURCES}
+    ${PROGRESSION_SOURCES}
     ${MAIN_SOURCES}
 )
 
@@ -46,6 +53,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/managers
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/coordinators
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/physics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/progression
 )
 
 # Create executable for testing (when not building for WASM)
@@ -95,6 +103,7 @@ target_include_directories(game_refactored_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/managers
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/coordinators
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/physics
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm/progression
 )
 
 # Compiler flags for the library

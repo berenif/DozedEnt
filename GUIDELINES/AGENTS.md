@@ -14,7 +14,7 @@
 
 ## Overview
 
-This repository implements a **WebAssembly-first multiplayer game architecture** where all game logic resides in WASM (C++) modules, while JavaScript handles only rendering, input capture, and networking. The system features a complete core loop implementation with 8 phases, advanced enemy AI, comprehensive animation systems, and robust multiplayer infrastructure.
+This repository implements a **WebAssembly-first roguelike game architecture** where all game logic resides in WASM (C++) modules, while JavaScript handles only rendering, input capture, and networking. The system features a complete core loop implementation with 8 phases, advanced enemy AI, comprehensive animation systems, character abilities, and robust multiplayer infrastructure.
 
 ## Architecture Principles
 
@@ -69,24 +69,25 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 
 > **Note**: The table below summarizes common APIs. For the **complete canonical API surface**, see **[BUILD/API.md](./BUILD/API.md)**. This section provides overview examples - always consult BUILD/API.md for the definitive function signatures and behavior.
 
-### 📦 Current API Surface (60+ Functions)
+### 📦 Current API Surface (80+ Functions)
 #### ⚙️ Core Simulation Functions
 
 | Function | Description | Parameters | Returns |
 |----------|-------------|------------|----------|
 | `init_run(seed, start_weapon)` | Initialize new run | `seed`: RNG seed<br>`start_weapon`: weapon ID | `void` |
 | `reset_run(new_seed)` | Instant restart with new seed | `new_seed`: RNG seed | `void` |
-| `update(dirX, dirY, isRolling, dtSeconds)` | Main game tick (deterministic) | `dirX`: -1 to 1<br>`dirY`: -1 to 1<br>`isRolling`: 0 or 1<br>`dtSeconds`: delta time | `void` |
+| `update(delta_time)` | Main game tick (deterministic) | `delta_time`: frame time | `void` |
+| `set_player_input(input_x, input_y, rolling, jumping, light_attack, heavy_attack, blocking, special)` | Set player input state | Input flags (0 or 1) | `void` |
 | `get_x()` | Get player X position | None | `float` (0..1) |
 | `get_y()` | Get player Y position | None | `float` (0..1) |
+| `get_vel_x()` | Get player X velocity | None | `float` |
+| `get_vel_y()` | Get player Y velocity | None | `float` |
 | `get_stamina()` | Get current stamina | None | `float` (0..1) |
+| `get_hp()` | Get current health | None | `float` (0..1) |
 | `get_phase()` | Get current game phase | None | Phase enum (0-7) |
-| `get_room_count()` | Room progression counter | None | `int` |
-| `on_attack()` | Execute attack action | None | `1` if successful, `0` if failed |
-| `on_roll_start()` | Start dodge roll | None | `1` if successful, `0` if failed |
-| `set_blocking(on, faceX, faceY, nowSeconds)` | Toggle/update block state | `on`: 0 or 1<br>`faceX`: direction<br>`faceY`: direction<br>`nowSeconds`: timestamp | `1` if active, `0` if not |
-| `get_block_state()` | Query blocking status | None | `1` if blocking, `0` otherwise |
-| `handle_incoming_attack(ax, ay, dirX, dirY, nowSeconds)` | Process incoming attack | Attack parameters | `-1`: ignore<br>`0`: hit<br>`1`: block<br>`2`: perfect parry |
+| `get_is_grounded()` | Check if player is grounded | None | `1` if grounded, `0` otherwise |
+| `get_jump_count()` | Get current jump count | None | `int` |
+| `get_is_wall_sliding()` | Check if wall sliding | None | `1` if sliding, `0` otherwise |
 
 *See [GAME/GAME_FEATURES_SUMMARY.md](./GAME/GAME_FEATURES_SUMMARY.md) for complete API documentation.*
 
@@ -103,6 +104,16 @@ enum Phase {
     Reset    = 7   // Clean restart with early room adjustments
 }
 ```
+
+#### ⚔️ Character Abilities Functions
+| Function | Description | Parameters | Returns |
+|----------|-------------|------------|----------|
+| `get_character_type()` | Get current character class | None | `int` (0=Warden, 1=Raider, 2=Kensei) |
+| `set_character_type(type)` | Set character class | `type`: character ID | `void` |
+| `can_use_ability(ability_id)` | Check if ability can be used | `ability_id`: ability ID | `1` if available, `0` otherwise |
+| `use_ability(ability_id)` | Execute character ability | `ability_id`: ability ID | `1` if successful, `0` if failed |
+| `get_ability_cooldown(ability_id)` | Get ability cooldown remaining | `ability_id`: ability ID | `float` (seconds) |
+| `get_ability_stamina_cost(ability_id)` | Get ability stamina cost | `ability_id`: ability ID | `int` |
 
 #### 🎯 Choice System Functions
 | Function | Description | Parameters | Returns |
@@ -152,17 +163,25 @@ enum Phase {
 ```javascript
 // Main game loop (60 FPS)
 function gameLoop(deltaTime) {
-    // 1. Forward inputs to WASM
-    wasmModule.update(inputX, inputY, isRolling, deltaTime);
+    // 1. Set player input in WASM
+    wasmModule.set_player_input(
+        inputX, inputY, isRolling, isJumping,
+        lightAttack, heavyAttack, isBlocking, special
+    );
     
-    // 2. Read state for rendering
+    // 2. Update WASM simulation
+    wasmModule.update(deltaTime);
+    
+    // 3. Read state for rendering
     const playerX = wasmModule.get_x();
     const playerY = wasmModule.get_y();
     const stamina = wasmModule.get_stamina();
+    const hp = wasmModule.get_hp();
     
-    // 3. Update UI/HUD
+    // 4. Update UI/HUD
     renderPlayer(playerX, playerY);
     updateStaminaBar(stamina);
+    updateHealthBar(hp);
     
     requestAnimationFrame(gameLoop);
 }
@@ -429,10 +448,13 @@ fetch('wasm/game.wasm')  // Located in public/wasm/ or root
 - **Deterministic**: Same seed + inputs = same output across all clients
 - **Memory Efficient**: Flat data structures, no allocations during gameplay
 - **Fast Updates**: < 1ms per frame typical, < 20ms maximum
-- **Small Binary**: ~43KB WASM module with 60+ export functions
+- **Small Binary**: ~45KB WASM module with 80+ export functions
 - **No GC Pressure**: All state in WASM linear memory
 - **Multiplayer Ready**: Room-based P2P networking with host authority
-- **C++ Source**: Game logic in `src/` (C++), UI in `public/src/` (JavaScript)
+- **Modular Architecture**: Manager/ViewModel/Coordinator patterns throughout
+- **Dual Animation**: Physics-based (top-down) and Procedural (side-view) systems
+- **Character Classes**: Three unique classes with special abilities
+- **C++ Source**: Game logic in `public/src/wasm/` (C++), UI in `public/src/` (JavaScript)
 
 ### 🎯 Performance Targets
 - Frame time: ≤ 16ms (60 FPS)
@@ -458,6 +480,9 @@ fetch('wasm/game.wasm')  // Located in public/wasm/ or root
 - **Performance Test**: Frame time and memory monitoring
 - **Phase Transition Test**: Complete core loop verification
 - **Integration Tests**: Multiplayer and networking validation
+- **Character Ability Tests**: Warden, Raider, Kensei ability validation
+- **Animation System Tests**: Dual animation system verification
+- **WASM Integration Tests**: Module loading and API validation
 
 ### 🔬 Test Categories
 1. **Unit Tests**: Individual module functionality

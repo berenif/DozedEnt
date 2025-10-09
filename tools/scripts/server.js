@@ -55,14 +55,14 @@ const server = http.createServer((req, res) => {
     // Check if path starts with ../src/ (relative from public/index.html)
     if (pathname.startsWith('/../src/') || pathname.startsWith('../src/')) {
         const relativePath = pathname.replace(/^(\.\.\/)*/, '').replace(/^\/*/, '');
-        filePath = path.join(__dirname, '../../src', relativePath);
-        baseDir = 'src';
+        filePath = path.join(__dirname, '../../public/src', relativePath);
+        baseDir = 'public/src';
     }
     // Check if path starts with /src/ (direct src access)
     else if (pathname.startsWith('/src/')) {
         const relativePath = pathname.replace(/^\/src\//, '');
-        filePath = path.join(__dirname, '../../src', relativePath);
-        baseDir = 'src';
+        filePath = path.join(__dirname, '../../public/src', relativePath);
+        baseDir = 'public/src';
     }
     // Check if path starts with ../ (other relative paths)
     else if (pathname.startsWith('/../') || pathname.startsWith('../')) {
@@ -177,7 +177,7 @@ server.listen(port, () => {
     console.log(`🚀 DozedEnt development server running at http://localhost:${port}/`);
     console.log(`📁 Serving files from:`);
     console.log(`   - public/ (main game files)`);
-    console.log(`   - src/ (JavaScript modules)`);
+    console.log(`   - public/src/ (JavaScript modules)`);
     console.log(`   - dist/ (distribution files)`);
     console.log(`🎮 Open http://localhost:${port} to play the game`);
     console.log(`⚡ JavaScript modules will be served with proper MIME types`);

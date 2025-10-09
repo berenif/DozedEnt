@@ -183,6 +183,368 @@
         margin: 12px auto;
       }
     }
+      /* Guideline Showcase */
+    .guideline-showcase {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      z-index: 1200;
+      pointer-events: none;
+    }
+    .guideline-launcher {
+      pointer-events: auto;
+      position: relative;
+      margin: 24px;
+      padding: 10px 18px;
+      background: rgba(0, 212, 255, 0.15);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      border-radius: 999px;
+      color: #00d4ff;
+      font-size: 0.95em;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+    .guideline-launcher:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+      background: rgba(0, 212, 255, 0.22);
+    }
+    .guideline-launcher__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00d4ff;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+    }
+    .guideline-launcher__progress {
+      font-size: 0.8em;
+      opacity: 0.8;
+    }
+    .guideline-panel {
+      pointer-events: auto;
+      position: fixed;
+      left: 32px;
+      bottom: 96px;
+      width: min(520px, calc(100vw - 64px));
+      max-height: min(75vh, 660px);
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(6, 12, 24, 0.96);
+      border: 1px solid rgba(0, 212, 255, 0.28);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      color: #d6e4ff;
+    }
+    .guideline-panel.guideline-hidden {
+      display: none;
+    }
+    .guideline-panel__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .guideline-panel__header h2 {
+      margin: 0;
+      font-size: 1.4em;
+      letter-spacing: 0.04em;
+      color: #00d4ff;
+    }
+    .guideline-panel__header p {
+      margin: 6px 0 0 0;
+      color: #9cbaff;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .guideline-panel__close {
+      background: rgba(0, 212, 255, 0.18);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      color: #00d4ff;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.4em;
+      line-height: 1;
+      transition: background 0.3s ease;
+    }
+    .guideline-panel__close:hover {
+      background: rgba(0, 212, 255, 0.35);
+    }
+    .guideline-panel__body {
+      display: flex;
+      gap: 18px;
+      overflow: hidden;
+      flex: 1 1 auto;
+    }
+    .guideline-panel__sidebar {
+      width: 190px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .guideline-sidebar-section h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.9em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7fb9ff;
+    }
+    .guideline-category-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .guideline-category-button {
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.18);
+      border-radius: 10px;
+      padding: 8px 10px;
+      color: #d6e4ff;
+      font-size: 0.85em;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s ease, border 0.2s ease;
+    }
+    .guideline-category-button.is-active {
+      background: rgba(0, 212, 255, 0.26);
+      border-color: rgba(0, 212, 255, 0.55);
+      color: #041321;
+      font-weight: 600;
+    }
+    .guideline-action-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .guideline-action {
+      border: 1px solid rgba(0, 212, 255, 0.18);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(0, 212, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .guideline-action__button {
+      align-self: flex-start;
+      background: rgba(0, 212, 255, 0.22);
+      border: 1px solid rgba(0, 212, 255, 0.5);
+      color: #041321;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .guideline-action__button:hover {
+      background: rgba(0, 212, 255, 0.35);
+      transform: translateY(-1px);
+    }
+    .guideline-action__description {
+      margin: 0;
+      color: #a7c6ff;
+      font-size: 0.8em;
+      line-height: 1.4;
+    }
+    .guideline-action__badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .guideline-action-log {
+      border: 1px solid rgba(0, 212, 255, 0.12);
+      border-radius: 12px;
+      padding: 8px;
+      font-size: 0.72em;
+      line-height: 1.4;
+      max-height: 120px;
+      overflow-y: auto;
+      color: #a8cfff;
+      background: rgba(3, 10, 20, 0.65);
+    }
+    .guideline-action-log__entry {
+      margin-bottom: 6px;
+    }
+    .guideline-action-log__entry:last-child {
+      margin-bottom: 0;
+    }
+    .guideline-action-log__entry.is-error {
+      color: #ff9ba5;
+    }
+    .guideline-action-log__entry.is-success {
+      color: #6ee7b7;
+    }
+    .guideline-action-log__entry.is-info {
+      color: #9dc6ff;
+    }
+    .guideline-panel__main {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+    .guideline-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .guideline-controls input,
+    .guideline-controls select {
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #e0ecff;
+      font-size: 0.85em;
+    }
+    .guideline-controls button {
+      background: rgba(0, 212, 255, 0.18);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #041321;
+      font-size: 0.8em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .guideline-controls button:hover {
+      background: rgba(0, 212, 255, 0.32);
+    }
+    .guideline-progress {
+      font-size: 0.85em;
+      color: #9fc4ff;
+      letter-spacing: 0.04em;
+    }
+    .guideline-feature-list {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 6px;
+    }
+    .guideline-card {
+      border: 1px solid rgba(0, 212, 255, 0.16);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(0, 212, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border 0.2s ease, background 0.2s ease;
+    }
+    .guideline-card.is-complete {
+      border-color: rgba(110, 231, 183, 0.4);
+      background: rgba(110, 231, 183, 0.12);
+    }
+    .guideline-card__title {
+      margin: 0;
+      font-size: 1em;
+      letter-spacing: 0.03em;
+    }
+    .guideline-card__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.75em;
+      color: #9ec2ff;
+    }
+    .guideline-card__subcategory {
+      opacity: 0.8;
+    }
+    .guideline-card__path {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75em;
+      color: #7fa0d8;
+      word-break: break-all;
+    }
+    .guideline-card__actions {
+      display: flex;
+      gap: 8px;
+    }
+    .guideline-card__button {
+      background: rgba(0, 212, 255, 0.16);
+      border: 1px solid rgba(0, 212, 255, 0.28);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #041321;
+      font-size: 0.75em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .guideline-card__button:hover {
+      background: rgba(0, 212, 255, 0.28);
+    }
+    .guideline-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(0, 212, 255, 0.2);
+      color: #041321;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .guideline-empty {
+      text-align: center;
+      color: #7fa0d8;
+      font-size: 0.85em;
+      padding: 40px 0;
+    }
+    @media (max-width: 960px) {
+      .guideline-panel {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 90px;
+        width: min(600px, calc(100vw - 40px));
+      }
+    }
+    @media (max-width: 720px) {
+      .guideline-launcher {
+        margin: 16px;
+      }
+      .guideline-panel {
+        left: 16px;
+        right: 16px;
+        bottom: 80px;
+        width: auto;
+        max-height: calc(100vh - 140px);
+        transform: none;
+      }
+      .guideline-panel__body {
+        flex-direction: column;
+      }
+      .guideline-panel__sidebar {
+        width: 100%;
+        order: 2;
+      }
+      .guideline-panel__main {
+        order: 1;
+      }
+    }
   </style>
 </head>
 <body>
@@ -259,6 +621,12 @@
     </div>
   </div>
   
+  <div id="guideline-panel-root"></div>
+  
+  <!-- Dev Server Check (must be first) -->
+  <script type="module" src="src/utils/cache-buster.js"></script>
+  
+  <!-- WASM and Core Modules -->
   <script type="module" src="src/utils/wasm.js"></script>
   <script type="module" src="src/utils/wasm-lazy-loader.js"></script>
   <script type="module" src="src/utils/wasm-manager.js"></script>
@@ -267,8 +635,9 @@
   <script type="module" src="src/demo/renderer.js"></script>
   <script type="module" src="src/demo/main.js"></script>
   <script type="module">
-    // Import device detector
+    // Import utilities
     import { deviceDetector } from './src/utils/device-detector.js';
+    import { initGuidelineShowcase } from './src/demo/guidelines-showcase.js';
 
     // Initialize device detection and UI
     let desktopUI = null;
@@ -280,6 +649,8 @@
       const playMultiplayerBtn = document.getElementById('play-multiplayer-btn');
       const viewDemoBtn = document.getElementById('view-demo-btn');
       const mobileControls = document.getElementById('mobile-controls');
+
+      initGuidelineShowcase({ containerId: 'guideline-panel-root' });
 
       // Detect device and log info
       deviceDetector.logDeviceInfo();
@@ -614,3 +985,7 @@
   </script>
 </body>
 </html>
+
+
+
+

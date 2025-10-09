@@ -43,16 +43,45 @@ DozedEnt/
 │   ├── 📄 WASM_EXPORTS.json        # WASM exports reference
 │   ├── 📂 src/                     # JavaScript source modules
 │   │   ├── 📂 ai/                  # Enemy AI systems
-│   │   ├── 📂 animation/           # Animation systems ⭐ **ENHANCED**
+│   │   ├── 📂 animation/           # Animation systems ⭐ **DUAL SYSTEM**
 │   │   │   ├── 📂 player/          # Player animation systems
-│   │   │   │   ├── 📂 physics/     # Top-down physics animation (NEW)
+│   │   │   │   ├── 📂 physics/     # Top-down physics animation
 │   │   │   │   │   └── index.js    # PlayerPhysicsAnimator
-│   │   │   │   └── 📂 procedural/  # Biomechanical procedural animation
-│   │   │   │       ├── index.js    # Main export
-│   │   │   │       ├── player-procedural-animator.js
-│   │   │   │       ├── player-procedural-rig.js
-│   │   │   │       └── 📂 modules/ # 9 animation modules (IK, spine, locomotion)
-│   │   │   └── ... (wolf animations, etc.)
+│   │   │   │   ├── 📂 procedural/  # Biomechanical procedural animation
+│   │   │   │   │   ├── player-animator.js        # AnimatedPlayer (main wrapper)
+│   │   │   │   │   ├── player-procedural-animator.js # ProceduralAnimator
+│   │   │   │   │   ├── player-procedural-rig.js  # 29-joint skeleton
+│   │   │   │   │   ├── AnimatedPlayerRefactored.js # Refactored player
+│   │   │   │   │   └── 📂 modules/ # 9 animation modules
+│   │   │   │   │       ├── arm-ik-module.js
+│   │   │   │   │       ├── combat-module.js
+│   │   │   │   │       ├── core-posture-module.js
+│   │   │   │   │       ├── environment-module.js
+│   │   │   │   │       ├── foot-ik-module.js
+│   │   │   │   │       ├── head-gaze-module.js
+│   │   │   │   │       ├── locomotion-module.js
+│   │   │   │   │       ├── secondary-motion-module.js
+│   │   │   │   │       └── spine-module.js
+│   │   │   │   ├── 📂 coordinator/ # Animation coordination
+│   │   │   │   │   └── PlayerAnimationCoordinator.js
+│   │   │   │   ├── 📂 manager/     # Player action management
+│   │   │   │   │   └── PlayerActionManager.js
+│   │   │   │   ├── 📂 viewmodel/   # Player state view model
+│   │   │   │   │   └── PlayerStateViewModel.js
+│   │   │   │   └── IntegratedPlayerController.js # Complete integration
+│   │   │   ├── 📂 abilities/       # Character ability animations
+│   │   │   │   ├── ability-animation-base.js
+│   │   │   │   ├── warden-bash-animation.js
+│   │   │   │   ├── raider-charge-animation.js
+│   │   │   │   └── kensei-dash-animation.js
+│   │   │   ├── 📂 system/          # Core animation systems
+│   │   │   │   ├── animation-system.js      # CharacterAnimator
+│   │   │   │   ├── animation-events.js      # Event system
+│   │   │   │   ├── animation-sync.js        # Multiplayer sync
+│   │   │   │   ├── animation-performance.js # Performance monitoring
+│   │   │   │   └── combo-system.js          # Combo detection
+│   │   │   └── 📂 enemy/           # Enemy animation systems
+│   │   │       └── wolf-animation.js        # Wolf animation system
 │   │   ├── 📂 renderer/            # Rendering systems ⭐ **NEW**
 │   │   │   └── 📂 player/          # Player rendering
 │   │   │       ├── TopDownPlayerRenderer.js  # Dual animation system renderer
@@ -66,8 +95,17 @@ DozedEnt/
 │   │   ├── 📂 audio/               # Audio management
 │   │   ├── 📂 css/                 # Stylesheets
 │   │   ├── 📂 effects/             # Visual effects
-│   │   ├── 📂 game/                # Core game logic
+│   │   ├── 📂 game/                # Core game logic ⭐ **ENHANCED**
+│   │   │   ├── 📂 abilities/       # Character abilities
+│   │   │   │   ├── ability-manager.js       # Ability coordination
+│   │   │   │   ├── warden-abilities.js      # Warden bash ability
+│   │   │   │   ├── raider-abilities.js      # Raider charge ability
+│   │   │   │   └── kensei-abilities.js      # Kensei dash ability
+│   │   │   └── 📂 progression/     # Character progression
+│   │   │       └── progression-manager.js   # Progression system
 │   │   ├── 📂 gameentity/          # Game entities
+│   │   │   ├── wolf-character.js           # Wolf character class
+│   │   │   └── controls.js                # Mobile game controls
 │   │   ├── 📂 gameplay/            # Gameplay systems
 │   │   ├── 📂 images/              # Image assets
 │   │   ├── 📂 input/               # Input handling
@@ -76,7 +114,35 @@ DozedEnt/
 │   │   ├── 📂 netcode/             # Networking code
 │   │   ├── 📂 ui/                  # User interface
 │   │   ├── 📂 utils/               # Utility functions
-│   │   ├── 📂 wasm/                # WebAssembly integration
+│   │   ├── 📂 wasm/                # WebAssembly integration ⭐ **MODULAR**
+│   │   │   ├── 📂 initializer/    # WASM initialization
+│   │   │   │   ├── WasmInitializer.js    # Module loading
+│   │   │   │   └── runtime.js            # Runtime initialization
+│   │   │   ├── 📂 core/           # Core WASM state management
+│   │   │   │   ├── WasmCoreState.js      # State reading and caching
+│   │   │   │   └── WasmCombatSystem.js   # Combat operations
+│   │   │   ├── 📂 phases/         # Phase management
+│   │   │   │   └── WasmPhaseManagers.js  # Phase-specific functions
+│   │   │   ├── 📂 world/          # World simulation
+│   │   │   │   └── WasmWorldSimulation.js # World state management
+│   │   │   ├── 📂 managers/       # WASM managers (C++)
+│   │   │   │   ├── PlayerManager.h/.cpp   # Player state management
+│   │   │   │   ├── CombatManager.h/.cpp  # Combat system
+│   │   │   │   ├── GameStateManager.h/.cpp # Game state
+│   │   │   │   └── InputManager.h/.cpp    # Input processing
+│   │   │   ├── 📂 coordinators/   # WASM coordinators (C++)
+│   │   │   │   └── GameCoordinator.h/.cpp # Main game coordination
+│   │   │   ├── 📂 physics/        # Physics system (C++)
+│   │   │   │   ├── PhysicsManager.h/.cpp # Physics simulation
+│   │   │   │   ├── PhysicsTypes.h         # Physics data types
+│   │   │   │   ├── FixedPoint.h           # Fixed-point math
+│   │   │   │   └── SkeletonPhysics.h      # Skeleton physics
+│   │   │   ├── 📂 progression/    # Character progression (C++)
+│   │   │   │   ├── AbilityUpgradeSystem.h/.cpp # Ability upgrades
+│   │   │   │   └── ProgressionManager.h/.cpp   # Progression logic
+│   │   │   ├── game_refactored.cpp        # Main WASM entry point
+│   │   │   ├── WasmTypes.d.ts            # TypeScript definitions
+│   │   │   └── README.md                  # WASM documentation
 │   │   ├── 📂 sound/               # Sound system
 │   │   ├── 📂 managers/            # Game managers
 │   │   ├── 📂 config/              # Configuration files

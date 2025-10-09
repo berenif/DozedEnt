@@ -4,6 +4,9 @@
  */
 
 import { WardenAbilities } from './warden-abilities.js';
+import { RaiderAbilities } from './raider-abilities.js';
+import { KenseiAbilities } from './kensei-abilities.js';
+import { ProgressionManager } from '../progression/progression-manager.js';
 
 // Character type constants (should match WASM enum)
 export const CHARACTER_TYPE = {
@@ -13,11 +16,12 @@ export const CHARACTER_TYPE = {
 };
 
 export class AbilityManager {
-    constructor(wasmModule, vfxManager, characterType = CHARACTER_TYPE.WARDEN) {
+    constructor(wasmModule, vfxManager, characterType = CHARACTER_TYPE.WARDEN, progression = null) {
         this.wasm = wasmModule;
         this.vfx = vfxManager;
         this.characterType = characterType;
         this.abilityHandler = null;
+        this.progression = progression;
         
         this.initializeAbilities();
     }
@@ -33,15 +37,13 @@ export class AbilityManager {
                 break;
                 
             case CHARACTER_TYPE.RAIDER:
-                // TODO Week 2: RaiderAbilities
-                console.log('⚔️ Raider abilities not yet implemented');
-                this.abilityHandler = null;
+                this.abilityHandler = new RaiderAbilities(this.wasm, this.vfx);
+                console.log('⚔️ Initialized Raider abilities');
                 break;
                 
             case CHARACTER_TYPE.KENSEI:
-                // TODO Week 3: KenseiAbilities
-                console.log('🗡️ Kensei abilities not yet implemented');
-                this.abilityHandler = null;
+                this.abilityHandler = new KenseiAbilities(this.wasm, this.vfx);
+                console.log('🗡️ Initialized Kensei abilities');
                 break;
                 
             default:
@@ -89,6 +91,21 @@ export class AbilityManager {
      */
     getAbilityHandler() {
         return this.abilityHandler;
+    }
+    
+    /**
+     * Optional: Provide progression scalar lookup for abilities
+     */
+    getUpgradeScalar(effectKey) {
+        if (!this.progression) return 0;
+        const classId = this.characterType === CHARACTER_TYPE.WARDEN ? 'warden'
+                       : this.characterType === CHARACTER_TYPE.RAIDER ? 'raider'
+                       : 'kensei';
+        try {
+            return this.progression.getEffectScalar(classId, effectKey) || 0;
+        } catch {
+            return 0;
+        }
     }
 }
 

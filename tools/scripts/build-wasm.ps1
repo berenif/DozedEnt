@@ -85,12 +85,15 @@ function Build-GameWasm {
         "public/src/wasm/managers/PlayerManager.cpp",
         "public/src/wasm/managers/WolfManager.cpp",
         "public/src/wasm/coordinators/GameCoordinator.cpp",
-        "public/src/wasm/physics/PhysicsManager.cpp"
+        "public/src/wasm/physics/PhysicsManager.cpp",
+        "public/src/wasm/progression/AbilityUpgradeSystem.cpp",
+        "public/src/wasm/progression/UpgradeTree.cpp",
+        "public/src/entities/PhysicsBarrel.cpp"
     )
     
     # Keep all exports with __attribute__((export_name)) by not using EXPORT_ALL=0
     # This ensures bash ability functions and other exports are included
-    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -o ./public/wasm/game.wasm"
+    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -o ./public/wasm/game.wasm"
     Write-Host "Command: $cmd" -ForegroundColor Gray
     
     try {

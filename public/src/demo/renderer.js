@@ -1,5 +1,5 @@
 import { CharacterAnimator } from '../animation/system/animation-system.js';
-import PlayerRenderer from '../renderer/player/TopDownPlayerRenderer.js';
+import { PlayerRenderer } from '../renderer/PlayerRenderer.js';
 import { PLAYER_ANIM_CODES } from './wasm-api.js';
 import { WolfRenderer } from '../renderer/WolfRenderer.js';
 
