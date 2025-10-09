@@ -484,7 +484,6 @@ public/src/renderer/
 
 ### Updates and Summaries
 - **[ANIMATION_UPDATE_SUMMARY.md](./ANIMATION_UPDATE_SUMMARY.md)** - Recent system updates
-- **[ANIMATION_IMPLEMENTATION_SUMMARY.md](./ANIMATION_IMPLEMENTATION_SUMMARY.md)** - Demo implementation
 
 ## Contributing
 

@@ -9,6 +9,7 @@ export class SkeletonUIController {
 		this.skeleton = skeleton;
 		this.renderer = renderer;
 		this.currentAnimation = null;
+		this.eventListeners = [];
 	}
 	
 	/**
@@ -20,13 +21,31 @@ export class SkeletonUIController {
 		this._setupVisualizationControls();
 		this._setupTestButtons();
 	}
+
+	/**
+	 * Add event listener with cleanup tracking
+	 */
+	_addEventListenerWithCleanup(target, event, handler, options) {
+		target.addEventListener(event, handler, options);
+		this.eventListeners.push({ target, event, handler, options });
+	}
+
+	/**
+	 * Cleanup all event listeners
+	 */
+	cleanup() {
+		this.eventListeners.forEach(({ target, event, handler, options }) => {
+			target.removeEventListener(event, handler, options);
+		});
+		this.eventListeners.length = 0;
+	}
 	
 	_setupPoseButtons() {
 		const poses = ['apose', 'tpose', 'sit', 'squat', 'reach', 'wave'];
 		poses.forEach(pose => {
 			const btn = document.getElementById(`btn-${pose}`);
 			if (btn) {
-				btn.addEventListener('click', () => {
+				this._addEventListenerWithCleanup(btn, 'click', () => {
 					this._stopCurrentAnimation();
 					applyPoseByName(this.skeleton, pose);
 				});
@@ -38,7 +57,7 @@ export class SkeletonUIController {
 		// Physics enable/disable
 		const chkPhysics = document.getElementById('chk-physics');
 		if (chkPhysics) {
-			chkPhysics.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkPhysics, 'change', (e) => {
 				if (typeof this.skeleton.setPhysicsEnabled === 'function') {
 					this.skeleton.setPhysicsEnabled(e.target.checked);
 				}
@@ -48,7 +67,7 @@ export class SkeletonUIController {
 		// Gravity enable/disable
 		const chkGravity = document.getElementById('chk-gravity');
 		if (chkGravity) {
-			chkGravity.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkGravity, 'change', (e) => {
 				if (typeof this.skeleton.setGravityEnabled === 'function') {
 					this.skeleton.setGravityEnabled(e.target.checked);
 				}
@@ -59,7 +78,7 @@ export class SkeletonUIController {
 		const sliderStiffness = document.getElementById('slider-stiffness');
 		const valStiffness = document.getElementById('val-stiffness');
 		if (sliderStiffness && valStiffness) {
-			sliderStiffness.addEventListener('input', (e) => {
+			this._addEventListenerWithCleanup(sliderStiffness, 'input', (e) => {
 				const value = parseFloat(e.target.value);
 				valStiffness.textContent = value;
 				if (typeof this.skeleton.setGlobalStiffness === 'function') {
@@ -72,7 +91,7 @@ export class SkeletonUIController {
 		const sliderDamping = document.getElementById('slider-damping');
 		const valDamping = document.getElementById('val-damping');
 		if (sliderDamping && valDamping) {
-			sliderDamping.addEventListener('input', (e) => {
+			this._addEventListenerWithCleanup(sliderDamping, 'input', (e) => {
 				const value = parseFloat(e.target.value);
 				valDamping.textContent = value;
 				if (typeof this.skeleton.setGlobalDamping === 'function') {
@@ -86,7 +105,7 @@ export class SkeletonUIController {
 		// Bones
 		const chkBones = document.getElementById('chk-bones');
 		if (chkBones) {
-			chkBones.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkBones, 'change', (e) => {
 				this.renderer.showBones = e.target.checked;
 			});
 		}
@@ -94,7 +113,7 @@ export class SkeletonUIController {
 		// Joints
 		const chkJoints = document.getElementById('chk-joints');
 		if (chkJoints) {
-			chkJoints.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkJoints, 'change', (e) => {
 				this.renderer.showJoints = e.target.checked;
 			});
 		}
@@ -102,7 +121,7 @@ export class SkeletonUIController {
 		// Center of Mass
 		const chkCOM = document.getElementById('chk-com');
 		if (chkCOM) {
-			chkCOM.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkCOM, 'change', (e) => {
 				this.renderer.showCOM = e.target.checked;
 			});
 		}
@@ -110,7 +129,7 @@ export class SkeletonUIController {
 		// Joint Limits
 		const chkLimits = document.getElementById('chk-limits');
 		if (chkLimits) {
-			chkLimits.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkLimits, 'change', (e) => {
 				if (this.renderer.showLimits !== undefined) {
 					this.renderer.showLimits = e.target.checked;
 				}
@@ -120,7 +139,7 @@ export class SkeletonUIController {
 		// IK Targets
 		const chkIKTargets = document.getElementById('chk-ik-targets');
 		if (chkIKTargets) {
-			chkIKTargets.addEventListener('change', (e) => {
+			this._addEventListenerWithCleanup(chkIKTargets, 'change', (e) => {
 				if (this.renderer.showIKTargets !== undefined) {
 					this.renderer.showIKTargets = e.target.checked;
 				}
@@ -132,7 +151,7 @@ export class SkeletonUIController {
 		// Shoulder test
 		const btnTestShoulder = document.getElementById('btn-test-shoulder');
 		if (btnTestShoulder) {
-			btnTestShoulder.addEventListener('click', () => {
+			this._addEventListenerWithCleanup(btnTestShoulder, 'click', () => {
 				this._stopCurrentAnimation();
 				this.currentAnimation = runJointTest(this.skeleton, 'shoulder');
 			});
@@ -141,7 +160,7 @@ export class SkeletonUIController {
 		// Elbow test
 		const btnTestElbow = document.getElementById('btn-test-elbow');
 		if (btnTestElbow) {
-			btnTestElbow.addEventListener('click', () => {
+			this._addEventListenerWithCleanup(btnTestElbow, 'click', () => {
 				this._stopCurrentAnimation();
 				this.currentAnimation = runJointTest(this.skeleton, 'elbow');
 			});
@@ -150,7 +169,7 @@ export class SkeletonUIController {
 		// Knee test
 		const btnTestKnee = document.getElementById('btn-test-knee');
 		if (btnTestKnee) {
-			btnTestKnee.addEventListener('click', () => {
+			this._addEventListenerWithCleanup(btnTestKnee, 'click', () => {
 				this._stopCurrentAnimation();
 				this.currentAnimation = runJointTest(this.skeleton, 'knee');
 			});
@@ -159,7 +178,7 @@ export class SkeletonUIController {
 		// Reset
 		const btnReset = document.getElementById('btn-reset');
 		if (btnReset) {
-			btnReset.addEventListener('click', () => {
+			this._addEventListenerWithCleanup(btnReset, 'click', () => {
 				this._stopCurrentAnimation();
 				resetPose(this.skeleton);
 			});

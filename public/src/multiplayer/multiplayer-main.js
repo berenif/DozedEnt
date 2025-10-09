@@ -8,7 +8,7 @@ import { EnhancedMultiplayerSync } from '../netcode/enhanced-multiplayer-sync.js
 import { RoomLobbyUI } from './multiplayer-ui-controller.js'
 import { MultiplayerGameController } from './multiplayer-game-controller.js'
 import { OrientationManager } from '../ui/orientation-manager.js'
-import { NetworkManager } from '../netcode/NetworkManager.js'
+import { NetworkCoordinator } from '../netcode/NetworkCoordinator.js'
 
 class MultiplayerCoordinator {
   constructor() {
@@ -37,7 +37,7 @@ class MultiplayerCoordinator {
     
     try {
       // Initialize Network Manager
-      this.networkManager = new NetworkManager({
+      this.networkManager = new NetworkCoordinator({
         defaultProvider: 'torrent',
         appId: 'dozedent-multiplayer',
         enableReconnection: true

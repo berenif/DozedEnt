@@ -91,9 +91,15 @@ function Build-GameWasm {
         "public/src/entities/PhysicsBarrel.cpp"
     )
     
-    # Keep all exports with __attribute__((export_name)) by not using EXPORT_ALL=0
-    # This ensures bash ability functions and other exports are included
-    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -o ./public/wasm/game.wasm"
+    # Export specific functions including barrel physics functions
+    $exportedFunctions = @(
+        "_spawn_barrel", "_throw_barrel", "_get_barrel_count", "_get_barrel_x", "_get_barrel_y", 
+        "_get_barrel_vel_x", "_get_barrel_vel_y", "_clear_all_barrels",
+        "_get_physics_player_x", "_get_physics_player_y", "_get_physics_player_vel_x", "_get_physics_player_vel_y", "_get_physics_perf_ms",
+        "_init_run", "_start", "_update", "_set_player_input"
+    )
+    $exportedFunctionsJson = '["' + ($exportedFunctions -join '","') + '"]'
+    $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=`"$exportedFunctionsJson`" -o ./public/wasm/game.wasm"
     Write-Host "Command: $cmd" -ForegroundColor Gray
     
     try {

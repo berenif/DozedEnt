@@ -20,6 +20,7 @@ em++ --version | head -n1
 # Clean previous builds
 echo "Cleaning previous WASM builds..."
 rm -f *.wasm
+rm -f public/wasm/*.wasm
 
 # Generate balance header from data files
 echo "Generating balance data header..."
@@ -46,9 +47,9 @@ build_game_wasm() {
     fi
     
     # Collect all C++ source files
-    SOURCE_FILES="public/src/wasm/game_refactored.cpp public/src/wasm/GameGlobals.cpp public/src/wasm/managers/CombatManager.cpp public/src/wasm/managers/GameStateManager.cpp public/src/wasm/managers/InputManager.cpp public/src/wasm/managers/PlayerManager.cpp public/src/wasm/managers/WolfManager.cpp public/src/wasm/coordinators/GameCoordinator.cpp public/src/wasm/physics/PhysicsManager.cpp"
+    SOURCE_FILES="public/src/wasm/game_refactored.cpp public/src/wasm/GameGlobals.cpp public/src/wasm/managers/CombatManager.cpp public/src/wasm/managers/GameStateManager.cpp public/src/wasm/managers/InputManager.cpp public/src/wasm/managers/PlayerManager.cpp public/src/wasm/managers/WolfManager.cpp public/src/wasm/coordinators/GameCoordinator.cpp public/src/wasm/physics/PhysicsManager.cpp public/src/wasm/progression/AbilityUpgradeSystem.cpp public/src/wasm/progression/UpgradeTree.cpp public/src/entities/PhysicsBarrel.cpp"
     
-    cmd="em++ $SOURCE_FILES $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s EXPORT_ALL=0 -s ALLOW_MEMORY_GROWTH=1 -o ./public/wasm/game.wasm"
+    cmd="em++ $SOURCE_FILES $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=\"[\"_spawn_barrel\",\"_throw_barrel\",\"_get_barrel_count\",\"_get_barrel_x\",\"_get_barrel_y\",\"_get_barrel_vel_x\",\"_get_barrel_vel_y\",\"_clear_all_barrels\",\"_get_physics_player_x\",\"_get_physics_player_y\",\"_get_physics_player_vel_x\",\"_get_physics_player_vel_y\",\"_get_physics_perf_ms\",\"_init_run\",\"_start\",\"_update\",\"_set_player_input\"]\" -o ./public/wasm/game.wasm"
     echo "Command: $cmd"
     
     if eval "$cmd"; then
@@ -119,10 +120,10 @@ case "$BUILD_TYPE" in
 esac
 
 # Copy WASM files to dist/wasm if they exist
-if [ -f "game.wasm" ] || [ -f "game-host.wasm" ]; then
+if [ -f "public/wasm/game.wasm" ] || [ -f "game-host.wasm" ]; then
     echo "Copying WASM files to dist/wasm..."
     mkdir -p dist/wasm
-    [ -f "game.wasm" ] && cp game.wasm dist/wasm/
+    [ -f "public/wasm/game.wasm" ] && cp public/wasm/game.wasm dist/wasm/
     [ -f "game-host.wasm" ] && cp game-host.wasm dist/wasm/
     echo "WASM files copied to dist/wasm/"
 fi

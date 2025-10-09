@@ -55,6 +55,24 @@ void update(float delta_time) {
 __attribute__((export_name("set_player_input")))
 void set_player_input(float input_x, float input_y, int rolling, int jumping,
                      int light_attack, int heavy_attack, int blocking, int special) {
+    // Validate input parameters
+    if (std::isnan(input_x) || std::isinf(input_x) || 
+        std::isnan(input_y) || std::isinf(input_y)) {
+        return; // Ignore invalid float inputs
+    }
+    
+    // Clamp input values to reasonable ranges
+    input_x = std::max(-1.0f, std::min(1.0f, input_x));
+    input_y = std::max(-1.0f, std::min(1.0f, input_y));
+    
+    // Validate boolean-like inputs (should be 0 or 1)
+    rolling = (rolling != 0) ? 1 : 0;
+    jumping = (jumping != 0) ? 1 : 0;
+    light_attack = (light_attack != 0) ? 1 : 0;
+    heavy_attack = (heavy_attack != 0) ? 1 : 0;
+    blocking = (blocking != 0) ? 1 : 0;
+    special = (special != 0) ? 1 : 0;
+    
     g_coordinator.set_player_input(input_x, input_y, rolling, jumping,
                                   light_attack, heavy_attack, blocking, special);
 }
@@ -513,8 +531,24 @@ __attribute__((export_name("throw_barrel")))
 void throw_barrel(uint32_t body_id, float dx, float dy, float dz, float force) {
     auto& physics_mgr = g_coordinator.get_physics_manager();
     
+    // Ensure the body is awake before applying impulse
+    RigidBody* body = physics_mgr.get_body(body_id);
+    if (!body) {
+        // Body not found - this is the problem!
+        return;
+    }
+    
+    body->wake();
+    
     FixedVector3 dir = FixedVector3::from_floats(dx, dy, dz).normalized();
     FixedVector3 impulse = dir * Fixed::from_float(force);
+    
+    // Debug: Check if impulse is valid
+    if (impulse.is_zero()) {
+        // Impulse is zero - direction vector was zero
+        return;
+    }
+    
     physics_mgr.apply_impulse(body_id, impulse);
     
     // Mark as projectile for damage tracking

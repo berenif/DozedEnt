@@ -22,7 +22,7 @@ The FIGHT folder contains the complete implementation documentation and specific
 - **[WEAPONS_IMPLEMENTATION.md](./WEAPONS_IMPLEMENTATION.md)** - Character-specific weapon system with stats and properties
 
 ### Status & Reference
-- **[FIGHT_IMPLEMENTATION_STATUS.md](./FIGHT_IMPLEMENTATION_STATUS.md)** - Detailed implementation status report comparing documentation to codebase
+ 
 - **[README.md](./README.md)** - This overview document
 
 ## 🎮 Combat System Quick Reference

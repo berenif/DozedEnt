@@ -20,7 +20,7 @@ We've implemented comprehensive character systems with:
 - 🔧 **Modular Architecture**: Manager/ViewModel/Coordinator patterns throughout
 - 📱 **Cross-Platform**: Desktop and mobile with optimized controls
 
-👉 [See Full Details](GUIDELINES/PROGRESS/IMPLEMENTATION_SUMMARY.md) | [Try Demo](public/demo.html)
+👉 [See Full Details](GUIDELINES/IMPLEMENTATION_STATUS_SUMMARY.md) | [Try Demo](public/demo.html)
 
 ### ⚡ Key Features
 - **🎯 5-Button Combat** - Responsive fighting system with precise timing
@@ -108,7 +108,7 @@ public/src/
 - **[Agent Development Guide](GUIDELINES/AGENTS.md)** - Complete development reference
 - **[Animation Systems](GUIDELINES/ANIMATION/ANIMATION_SYSTEM_INDEX.md)** - Dual animation architecture
 - **[WASM API Reference](GUIDELINES/BUILD/API.md)** - Complete API documentation
-- **[Player Abilities](GUIDELINES/PROGRESS/playerl/)** - Character class implementation
+ 
 
 ### 🎯 Current Status
 

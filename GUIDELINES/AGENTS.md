@@ -31,6 +31,65 @@ This repository implements a **WebAssembly-first roguelike game architecture** w
 4. **Deterministic by design** - Same seed + inputs = same outcome everywhere
 5. **Code Quality Standards** - Always follow ESLint rules and maintain clean code
 
+### 🚨 Common Pitfalls (Updated January 2025)
+
+#### ❌ Don't: Duplicate Physics in JavaScript
+JavaScript physics will conflict with WASM. Only read positions from WASM.
+```javascript
+// WRONG - Duplicate physics simulation
+this.velocity.x += this.acceleration.x * deltaTime;
+this.position.x += this.velocity.x * deltaTime;
+
+// CORRECT - Read from WASM only
+this.position.x = this.wasmModule.get_physics_player_x();
+this.velocity.x = this.wasmModule.get_physics_player_vel_x();
+```
+
+#### ❌ Don't: Use Math.random() for Gameplay
+Breaks determinism and multiplayer sync. Use WASM RNG or WasmRNG facade.
+```javascript
+// WRONG - Non-deterministic
+const damage = Math.random() * 10;
+
+// CORRECT - Deterministic
+const damage = this.wasmModule.get_random_float() * 10;
+// OR for UI-only randomness:
+import { uiRNG } from '../utils/wasm-rng.js';
+const uiElement = uiRNG.choose(colors);
+```
+
+#### ❌ Don't: Create Multiple State Managers
+WASM is source of truth. JavaScript only reads state.
+```javascript
+// WRONG - Multiple state managers
+class GameStateManager { getPlayerHealth() { return this.health; } }
+class PlayerStateManager { getPlayerHealth() { return this.health; } }
+
+// CORRECT - Single source of truth
+import { WasmCoreState } from '../wasm/WasmCoreState.js';
+const wasmState = new WasmCoreState(wasmModule);
+const health = wasmState.getPlayerState().health;
+```
+
+#### ❌ Don't: Build God Classes (>500 lines)
+Violates single responsibility principle. Split into focused modules.
+```javascript
+// WRONG - NetworkManager (487 lines)
+class NetworkManager {
+  // Connection management
+  // Room management  
+  // Chat system
+  // Matchmaking
+  // Diagnostics
+}
+
+// CORRECT - Focused modules
+class ConnectionManager { /* ~150 lines */ }
+class RoomManager { /* ~150 lines */ }
+class MessageManager { /* ~150 lines */ }
+class NetworkCoordinator { /* ~100 lines */ }
+```
+
 ## Guideline Cross-Reference Index
 
 Use these documents when working on agents, enemies, animations, core loop, and multiplayer systems. Keep gameplay logic in WASM and use JS only for rendering, inputs, and networking.
@@ -44,7 +103,6 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 - [Animation System Index](./ANIMATION/ANIMATION_SYSTEM_INDEX.md) — Dual animation system overview, architecture, components, quick start guide, API, and integration examples.
 - [Top-Down Physics Animation](./ANIMATION/TOPDOWN_PHYSICS_ANIMATION.md) — **NEW!** Lightweight physics-based animation for top-down gameplay with 120 FPS effective physics.
 - [Procedural Animation](./ANIMATION/HUMAN_MOTION_IMPROVEMENTS.md) — Biomechanically accurate human motion with IK solvers and multi-segment spine.
-- [Animation Implementation](./ANIMATION/IMPLEMENTATION_SUMMARY.md) — Complete procedural system implementation details and technical achievements.
 - [Player Animations](./ANIMATION/PLAYER_ANIMATIONS.md) — States, transitions, effects, input mapping, API, performance considerations, and troubleshooting.
 
 ### Game Core Loop
@@ -57,7 +115,7 @@ Use these documents when working on agents, enemies, animations, core loop, and 
 
 ### Build, Deploy, and Testing
 - [Development Workflow](./BUILD/DEVELOPMENT_WORKFLOW.md) — Complete development cycle guide for AI agents.
-- [WASM Feature Implementation Guide](./WASM_FEATURE_IMPLEMENTATION_GUIDE.md) — **NEW!** Complete reference for implementing features, creating demos, and WASM setup.
+- [WASM Feature Implementation Guide](./WASM/DEMO_DEVELOPMENT.md) — Complete reference for implementing features, creating demos, and WASM setup.
 - [WASM API Reference](./BUILD/API.md) — **Canonical API surface** - definitive function signatures and behavior.
 - [Testing Framework](./BUILD/TESTING.md) — Current testing infrastructure (54+ tests, 5.15% coverage, 680% improvement).
 - [Build Instructions](./UTILS/BUILD_INSTRUCTIONS.md) — Build scripts, outputs, demos, troubleshooting, and performance tips.
@@ -448,7 +506,7 @@ fetch('wasm/game.wasm')  // Located in public/wasm/ or root
 - **Deterministic**: Same seed + inputs = same output across all clients
 - **Memory Efficient**: Flat data structures, no allocations during gameplay
 - **Fast Updates**: < 1ms per frame typical, < 20ms maximum
-- **Small Binary**: ~45KB WASM module with 80+ export functions
+- **Small Binary**: ~195KB WASM module with 139+ export functions
 - **No GC Pressure**: All state in WASM linear memory
 - **Multiplayer Ready**: Room-based P2P networking with host authority
 - **Modular Architecture**: Manager/ViewModel/Coordinator patterns throughout
@@ -462,7 +520,7 @@ fetch('wasm/game.wasm')  // Located in public/wasm/ or root
 - WASM memory: < 32MB total
 - GC frequency: < 1/second
 - Network sync: < 100ms latency
-- Binary size: < 50KB (currently ~43KB)
+- Binary size: < 200KB (currently ~195KB)
 
 ### 📈 Optimization Strategies
 1. **Batch State Reads**: Read all WASM state once per frame

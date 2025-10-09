@@ -113,22 +113,40 @@ inline Fixed fixed_sqrt(Fixed x) {
         return Fixed::from_int(0);
     }
     
-    // Initial guess: x / 2
-    int32_t guess = x.raw >> 1;
+    // Compute sqrt for Q16.16 fixed-point correctly:
+    // y_raw = sqrt(x_raw << 16)
+    const uint64_t scaled = static_cast<uint64_t>(x.raw) << Fixed::SHIFT;
     
-    // Newton-Raphson iterations: x_new = (x_old + n/x_old) / 2
-    for (int i = 0; i < 8; i++) {
-        if (guess == 0) {
-            break;
+    // Use integer Newton-Raphson on 64-bit to preserve determinism
+    uint64_t guess = scaled;
+    // Provide a better initial guess to speed convergence
+    if (guess > 0) {
+        // Rough initial guess using bit-length
+        int leadingZeros = 0;
+        {
+            uint64_t v = scaled;
+            while ((v & (1ull << 63)) == 0) { v <<= 1; leadingZeros++; if (leadingZeros >= 64) break; }
         }
-        int32_t next_guess = (guess + x.raw / guess) >> 1;
-        if (next_guess == guess) {
-            break; // Converged
-        }
-        guess = next_guess;
+        int approxLog2 = 63 - leadingZeros; // floor(log2(scaled))
+        int approxSqrtLog2 = approxLog2 / 2;
+        guess = 1ull << approxSqrtLog2;
     }
     
-    return Fixed(guess);
+    // Ensure non-zero guess
+    if (guess == 0) {
+        guess = 1;
+    }
+    
+    for (int i = 0; i < 16; i++) {
+        uint64_t next = (guess + scaled / guess) >> 1;
+        if (next == guess) {
+            break; // Converged
+        }
+        guess = next;
+    }
+    
+    // Clamp to 32-bit and return as Fixed raw
+    return Fixed(static_cast<int32_t>(guess > 0x7FFFFFFF ? 0x7FFFFFFF : guess));
 }
 
 /**

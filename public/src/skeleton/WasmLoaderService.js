@@ -13,8 +13,9 @@ export async function loadWasmModule() {
 		console.log('WASM Module exports:', Object.keys(WasmModule));
 		return WasmModule;
 	} catch (error) {
-		console.error('Failed to load WASM module:', error);
-		throw new Error('WebAssembly module could not be loaded: ' + error.message);
+		console.warn('WASM module not available, using JavaScript fallback:', error.message);
+		WasmModule = null; // Explicitly set to null to indicate fallback mode
+		return null;
 	}
 }
 
@@ -24,7 +25,8 @@ export function getWasmModule() {
 
 export function createWasmSkeleton() {
 	if (!WasmModule || !WasmModule.Skeleton) {
-		throw new Error('WASM module not properly loaded or Skeleton class not available');
+		console.log('Creating JavaScript fallback skeleton...');
+		return createJavaScriptSkeleton();
 	}
 	
 	console.log('Creating WASM skeleton...');
@@ -155,8 +157,103 @@ export function createWasmSkeleton() {
 	
 	console.log('WASM skeleton created. Bones:', skeleton.getBoneCount(), 'Joints:', skeleton.getJointCount());
 	// Attach parents array for renderers/interactions
-	try { Object.defineProperty(skeleton, '__boneParents', { value: parents, enumerable: false, configurable: true }); } catch {}
+	try { Object.defineProperty(skeleton, '__boneParents', { value: parents, enumerable: false, configurable: true }); } catch (error) {
+		console.warn('Failed to set bone parents property:', error);
+	}
 	return skeleton;
+}
+
+// JavaScript fallback skeleton implementation
+function createJavaScriptSkeleton() {
+	console.log('Creating JavaScript skeleton...');
+	
+	// Simple bone data structure
+	const bones = [
+		{ name: 'pelvis', parent: -1, pos: { x: 0, y: 1.0, z: 0 }, length: 0.12, radius: 0.11, mass: 9.5 },
+		{ name: 'spine_01', parent: 0, pos: { x: 0, y: 1.08, z: 0 }, length: 0.10, radius: 0.07, mass: 3.0 },
+		{ name: 'spine_02', parent: 1, pos: { x: 0, y: 1.18, z: 0 }, length: 0.10, radius: 0.07, mass: 3.0 },
+		{ name: 'spine_03', parent: 2, pos: { x: 0, y: 1.28, z: 0 }, length: 0.10, radius: 0.07, mass: 3.0 },
+		{ name: 'chest', parent: 3, pos: { x: 0, y: 1.40, z: 0 }, length: 0.14, radius: 0.10, mass: 15.0 },
+		{ name: 'neck', parent: 4, pos: { x: 0, y: 1.52, z: 0 }, length: 0.08, radius: 0.04, mass: 1.5 },
+		{ name: 'head', parent: 5, pos: { x: 0, y: 1.62, z: 0 }, length: 0.12, radius: 0.08, mass: 6.0 },
+		{ name: 'clav_R', parent: 4, pos: { x: 0.08, y: 1.50, z: 0 }, length: 0.14, radius: 0.02, mass: 0.4 },
+		{ name: 'scap_R', parent: 7, pos: { x: 0.22, y: 1.50, z: 0 }, length: 0.05, radius: 0.06, mass: 0.3 },
+		{ name: 'upperArm_R', parent: 8, pos: { x: 0.27, y: 1.48, z: 0 }, length: 0.28, radius: 0.05, mass: 2.1 },
+		{ name: 'forearm_R', parent: 9, pos: { x: 0.27, y: 1.20, z: 0 }, length: 0.24, radius: 0.04, mass: 1.6 },
+		{ name: 'hand_R', parent: 10, pos: { x: 0.27, y: 0.96, z: 0 }, length: 0.08, radius: 0.035, mass: 0.8 },
+		{ name: 'clav_L', parent: 4, pos: { x: -0.08, y: 1.50, z: 0 }, length: 0.14, radius: 0.02, mass: 0.4 },
+		{ name: 'scap_L', parent: 12, pos: { x: -0.22, y: 1.50, z: 0 }, length: 0.05, radius: 0.06, mass: 0.3 },
+		{ name: 'upperArm_L', parent: 13, pos: { x: -0.27, y: 1.48, z: 0 }, length: 0.28, radius: 0.05, mass: 2.1 },
+		{ name: 'forearm_L', parent: 14, pos: { x: -0.27, y: 1.20, z: 0 }, length: 0.24, radius: 0.04, mass: 1.6 },
+		{ name: 'hand_L', parent: 15, pos: { x: -0.27, y: 0.96, z: 0 }, length: 0.08, radius: 0.035, mass: 0.8 },
+		{ name: 'thigh_R', parent: 0, pos: { x: 0.10, y: 0.92, z: 0 }, length: 0.40, radius: 0.06, mass: 7.5 },
+		{ name: 'shin_R', parent: 17, pos: { x: 0.10, y: 0.52, z: 0 }, length: 0.38, radius: 0.045, mass: 3.8 },
+		{ name: 'foot_R', parent: 18, pos: { x: 0.10, y: 0.14, z: 0.05 }, length: 0.10, radius: 0.035, mass: 0.8 },
+		{ name: 'toe_R', parent: 19, pos: { x: 0.10, y: 0.12, z: 0.13 }, length: 0.05, radius: 0.02, mass: 0.2 },
+		{ name: 'thigh_L', parent: 0, pos: { x: -0.10, y: 0.92, z: 0 }, length: 0.40, radius: 0.06, mass: 7.5 },
+		{ name: 'shin_L', parent: 21, pos: { x: -0.10, y: 0.52, z: 0 }, length: 0.38, radius: 0.045, mass: 3.8 },
+		{ name: 'foot_L', parent: 22, pos: { x: -0.10, y: 0.14, z: 0.05 }, length: 0.10, radius: 0.035, mass: 0.8 },
+		{ name: 'toe_L', parent: 23, pos: { x: -0.10, y: 0.12, z: 0.13 }, length: 0.05, radius: 0.02, mass: 0.2 }
+	];
+
+	const joints = [
+		{ name: 'spine01', parent: 0, child: 1, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
+		{ name: 'spine02', parent: 1, child: 2, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
+		{ name: 'spine03', parent: 2, child: 3, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
+		{ name: 'chest', parent: 3, child: 4, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
+		{ name: 'neck', parent: 4, child: 5, type: 1, limits: [-45*DEG2RAD, -60*DEG2RAD, -80*DEG2RAD, 60*DEG2RAD, 45*DEG2RAD, 80*DEG2RAD] },
+		{ name: 'head', parent: 5, child: 6, type: 1, limits: [-20*DEG2RAD, -10*DEG2RAD, -30*DEG2RAD, 20*DEG2RAD, 10*DEG2RAD, 30*DEG2RAD] },
+		{ name: 'shoulder_R', parent: 8, child: 9, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -90*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 70*DEG2RAD] },
+		{ name: 'elbow_R', parent: 9, child: 10, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0] },
+		{ name: 'wrist_R', parent: 10, child: 11, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD] },
+		{ name: 'shoulder_L', parent: 13, child: 14, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -70*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 90*DEG2RAD] },
+		{ name: 'elbow_L', parent: 14, child: 15, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0] },
+		{ name: 'wrist_L', parent: 15, child: 16, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD] },
+		{ name: 'hip_R', parent: 0, child: 17, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -45*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 35*DEG2RAD] },
+		{ name: 'knee_R', parent: 17, child: 18, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0] },
+		{ name: 'ankle_R', parent: 18, child: 19, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0] },
+		{ name: 'toe_R', parent: 19, child: 20, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0] },
+		{ name: 'hip_L', parent: 0, child: 21, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -35*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 45*DEG2RAD] },
+		{ name: 'knee_L', parent: 21, child: 22, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0] },
+		{ name: 'ankle_L', parent: 22, child: 23, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0] },
+		{ name: 'toe_L', parent: 23, child: 24, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0] }
+	];
+
+	// Create parent mapping for renderers
+	const parents = bones.map(bone => bone.parent);
+
+	return {
+		getBoneCount: () => bones.length,
+		getJointCount: () => joints.length,
+		getBonePosition: (index) => bones[index] ? { ...bones[index].pos } : { x: 0, y: 0, z: 0 },
+		getBoneRotation: (index) => ({ x: 0, y: 0, z: 0, w: 1 }),
+		getBoneName: (index) => bones[index] ? bones[index].name : 'bone_' + index,
+		getBoneLength: (index) => bones[index] ? bones[index].length : 0.1,
+		getBoneRadius: (index) => bones[index] ? bones[index].radius : 0.02,
+		getJointName: (index) => joints[index] ? joints[index].name : 'joint_' + index,
+		getJointChildBoneIndex: (index) => joints[index] ? joints[index].child : -1,
+		computeCenterOfMass: () => ({ x: 0, y: 1.2, z: 0 }),
+		update: (dt) => {
+			// Simple physics update - could be enhanced
+		},
+		setPhysicsEnabled: (enabled) => {
+			console.log('Physics enabled:', enabled);
+		},
+		setGravityEnabled: (enabled) => {
+			console.log('Gravity enabled:', enabled);
+		},
+		setGlobalStiffness: (stiffness) => {
+			console.log('Global stiffness:', stiffness);
+		},
+		setGlobalDamping: (damping) => {
+			console.log('Global damping:', damping);
+		},
+		setJointTargetAngles: (jointIndex, x, y, z) => {
+			// Simple joint angle setting - could be enhanced
+			console.log(`Joint ${jointIndex} angles:`, x, y, z);
+		},
+		__boneParents: parents
+	};
 }
 
 

@@ -8,13 +8,17 @@ void GameCoordinator::initialize(unsigned long long seed, unsigned int start_wea
     // Initialize physics first (deterministic foundation)
     PhysicsConfig physics_config;
     
-    // Top-down game: disable gravity
-    physics_config.gravity = FixedVector3::zero();
+    // Enable gravity for physics demos and realistic physics
+    physics_config.gravity = FixedVector3::from_floats(0.0f, -9.81f, 0.0f);
     
     physics_manager_.initialize(physics_config);
     
-    // Wire physics into combat manager
+    // Wire dependencies between managers
     combat_manager_.set_physics_manager(&physics_manager_);
+    combat_manager_.set_player_manager(&player_manager_);
+    combat_manager_.set_game_state_manager(&game_state_manager_);
+    
+    input_manager_.set_combat_manager(&combat_manager_);
     
     // Initialize game state
     game_state_manager_.initialize(seed, start_weapon);
@@ -197,9 +201,11 @@ void GameCoordinator::handle_defensive_inputs() {
     const auto& input_state = input_manager_.get_input_state();
     
     if (input_state.is_blocking) {
-        // TODO: Get current game time
         float current_time = game_state_manager_.get_game_time();
-        combat_manager_.try_block(0.0f, 0.0f, current_time);  // TODO: Get facing direction
+        // Use player's current facing direction for blocking
+        float face_x = player_manager_.get_facing_x();
+        float face_y = player_manager_.get_facing_y();
+        combat_manager_.try_block(face_x, face_y, current_time);
     } else {
         combat_manager_.stop_blocking();
     }

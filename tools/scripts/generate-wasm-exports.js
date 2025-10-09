@@ -30,6 +30,10 @@ function findWasmFiles() {
   const candidates = [
     join(repoRoot, 'game.wasm'),
     join(repoRoot, 'game-host.wasm'),
+    join(repoRoot, 'public', 'wasm', 'game.wasm'),
+    join(repoRoot, 'public', 'wasm', 'game-host.wasm'),
+    join(repoRoot, 'build', 'wasm', 'game.wasm'),
+    join(repoRoot, 'build', 'wasm', 'game-host.wasm'),
     join(repoRoot, 'dist', 'wasm', 'game.wasm'),
     join(repoRoot, 'dist', 'wasm', 'game-host.wasm'),
   ]

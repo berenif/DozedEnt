@@ -66,7 +66,9 @@ progressionManager.loadClassState('warden');
 const progRoot = document.getElementById('progression-root');
 if (progRoot) {
   progressionCoordinator = new ProgressionCoordinator(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), progRoot, { classId: 'warden', basePath: '/src' });
-  try { await progressionCoordinator.start(); } catch {}
+  try { await progressionCoordinator.start(); } catch (error) {
+    console.warn('Failed to start progression coordinator:', error);
+  }
 }
 abilityManager = new AbilityManager(wasmApi, vfxManager, CHARACTER_TYPE.WARDEN, progressionManager);
 

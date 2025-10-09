@@ -53,6 +53,10 @@ public:
         float armor_value = 0.0f;
         float damage_multiplier = 1.0f;
         
+        // Status effects
+        bool is_stunned = false;
+        float stun_remaining = 0.0f;
+        
         // Timing
         float last_attack_time = -1000.0f;
         float last_roll_time = -1000.0f;
@@ -94,6 +98,8 @@ public:
     float get_armor_value() const { return state_.armor_value; }
     int get_combo_count() const { return state_.combo_count; }
     bool can_counter() const { return state_.can_counter; }
+    bool is_stunned() const { return state_.is_stunned; }
+    float get_stun_remaining() const { return state_.stun_remaining; }
     
     // Timing queries
     float get_attack_cooldown() const;
@@ -107,10 +113,18 @@ public:
     void apply_knockback_impulse(float dir_x, float dir_y, float force);
     void apply_enemy_knockback(uint32_t enemy_body_id, float dir_x, float dir_y, float force);
     void apply_attack_lunge(float facing_x, float facing_y, bool is_heavy = false);
+    
+    // Player manager integration (for stamina)
+    void set_player_manager(class PlayerManager* pm) { player_manager_ = pm; }
+    
+    // Game state manager integration (for timing)
+    void set_game_state_manager(class GameStateManager* gsm) { game_state_manager_ = gsm; }
 
 private:
     CombatState state_;
     PhysicsManager* physics_manager_ = nullptr;
+    class PlayerManager* player_manager_ = nullptr;
+    class GameStateManager* game_state_manager_ = nullptr;
     
     // Combat constants
     static constexpr float ATTACK_WINDUP_SEC = 0.3f;

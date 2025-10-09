@@ -42,7 +42,7 @@ export { IntegratedPlayerController } from './IntegratedPlayerController.js'
 // Legacy export for backward compatibility
 // Note: This will be removed in a future version
 // Use AnimatedPlayerRefactored instead
-export { AnimatedPlayer as AnimatedPlayerLegacy } from './procedural/player-animator.js'
+// Legacy export removed - use AnimatedPlayerRefactored instead
 
 // Procedural animation system
 export { default as PlayerProceduralAnimator } from './procedural/player-procedural-animator.js'

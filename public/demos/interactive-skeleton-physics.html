@@ -345,7 +345,8 @@
             updateLoadStatus('Loading WebAssembly module...');
             
             try {
-                const createModule = await import('../wasm/skeleton-physics.js');
+                // WASM module not available - using JavaScript fallback
+                throw new Error('WASM module not available');
                 WasmModule = await createModule.default();
                 updateLoadStatus('WebAssembly loaded successfully!');
                 console.log('✓ Using WebAssembly physics engine');
@@ -940,7 +941,7 @@
             renderer.camera.y = 1.2;
             
             // Enable click-drag interaction
-            const { SkeletonInteractionController } = await import('../src/controllers/skeleton/interaction-controller.js');
+            const { SkeletonInteractionController } = await import('../src/controllers/skeleton/SkeletonInteractionController.js');
             const interactor = new SkeletonInteractionController(renderer, skeleton);
             const poseController = new PoseController(skeleton);
             

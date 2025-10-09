@@ -86,7 +86,8 @@ export class WolfCharacter {
     this.packRole = this.getPackRole();
     this.packId = null;
 
-    this.furPattern = Math.random();
+    // WASM-first: Use deterministic pattern based on wolf ID
+    this.furPattern = this.generateDeterministicPattern();
     this.tailPosition = 0;
     this.earRotation = 0;
     this.breathingOffset = 0;
@@ -132,5 +133,30 @@ Object.assign(WolfCharacter.prototype, {
   drawLungeEffect,
   drawHealthBar
 });
+
+// Add deterministic pattern generation methods
+WolfCharacter.prototype.generateDeterministicPattern = function() {
+  // Use wolf ID as seed for deterministic pattern
+  const seed = this.id ? this.hashString(this.id.toString()) : Date.now();
+  const rng = this.createSeededRNG(seed);
+  return rng();
+};
+
+WolfCharacter.prototype.createSeededRNG = function(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) | 0;
+    return (s >>> 0) / 4294967296;
+  };
+};
+
+WolfCharacter.prototype.hashString = function(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return hash;
+};
 
 export default WolfCharacter;

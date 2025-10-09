@@ -29,16 +29,21 @@ export class PeerNameGenerator {
   }
 
   /**
-   * Generate a random peer name
-   * @returns {string} Random peer name in format "DescriptorAnimal"
+   * Generate a deterministic peer name based on peer ID
+   * @param {string} peerId - Peer ID to use as seed
+   * @returns {string} Deterministic peer name in format "DescriptorAnimal"
    */
-  generateName() {
+  generateName(peerId = null) {
+    // Use deterministic RNG based on peer ID or timestamp
+    const seed = peerId ? this.hashString(peerId) : Date.now();
+    const rng = this.createSeededRNG(seed);
+    
     let attempts = 0
     const maxAttempts = 100
 
     while (attempts < maxAttempts) {
-      const descriptor = this.descriptors[Math.floor(Math.random() * this.descriptors.length)]
-      const animal = this.animals[Math.floor(Math.random() * this.animals.length)]
+      const descriptor = this.descriptors[Math.floor(rng() * this.descriptors.length)]
+      const animal = this.animals[Math.floor(rng() * this.animals.length)]
       const name = `${descriptor}${animal}`
 
       if (!this.usedNames.has(name)) {
@@ -49,11 +54,38 @@ export class PeerNameGenerator {
       attempts++
     }
 
-    // Fallback: add random number if all combinations are used
-    const descriptor = this.descriptors[Math.floor(Math.random() * this.descriptors.length)]
-    const animal = this.animals[Math.floor(Math.random() * this.animals.length)]
-    const randomNum = Math.floor(Math.random() * 9999) + 1
+    // Fallback: add deterministic number if all combinations are used
+    const descriptor = this.descriptors[Math.floor(rng() * this.descriptors.length)]
+    const animal = this.animals[Math.floor(rng() * this.animals.length)]
+    const randomNum = Math.floor(rng() * 9999) + 1
     return `${descriptor}${animal}${randomNum}`
+  }
+
+  /**
+   * Create seeded RNG function
+   * @param {number} seed - Seed value
+   * @returns {Function} RNG function
+   */
+  createSeededRNG(seed) {
+    let s = seed;
+    return function() {
+      s = (s * 1664525 + 1013904223) | 0;
+      return (s >>> 0) / 4294967296;
+    };
+  }
+
+  /**
+   * Hash string to number
+   * @param {string} str - String to hash
+   * @returns {number} Hash value
+   */
+  hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return hash;
   }
 
   /**

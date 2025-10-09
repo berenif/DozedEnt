@@ -43,7 +43,9 @@ export class LocalProgressStore {
     try {
       const backupKey = `${makeKey(payload.classId || 'unknown')}.backup.v${version}`;
       localStorage.setItem(backupKey, JSON.stringify(payload));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to create backup:', error);
+    }
     return { schemaVersion: SCHEMA_VERSION, classId: payload.classId, essence: 0, nodes: {} };
   }
 }

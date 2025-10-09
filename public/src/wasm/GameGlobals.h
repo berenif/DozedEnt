@@ -11,10 +11,6 @@ class GameCoordinator;
 // Global coordinator instance (temporary during refactoring)
 extern GameCoordinator* g_game_coordinator;
 
-// Temporary globals (to be removed as refactoring progresses)
-extern bool g_is_stunned;
-extern float g_stamina;
-
 // Animation states (shared between systems)
 enum class PlayerAnimState {
     Idle = 0,

@@ -24,13 +24,13 @@ npm install
 ```bash
 npm run wasm:build        # Builds optimized game.wasm
 ```
-**Output**: `./game.wasm` (~43KB optimized)
+**Output**: `./public/wasm/game.wasm` (~195KB optimized)
 
 ### WASM Development Build
 ```bash
 npm run wasm:build:dev    # Builds with debug info and assertions
 ```
-**Output**: `./game.wasm` (larger, with debugging)
+**Output**: `./public/wasm/game.wasm` (larger, with debugging)
 
 ### Host-Authoritative WASM
 ```bash
@@ -48,22 +48,22 @@ npm run wasm:build:all    # Builds both game.wasm and game-host.wasm
 ### What Happens During Build
 
 1. **Environment Setup**: Initializes Emscripten SDK from `emsdk/`
-2. **Balance Generation**: Runs `generate-balance.cjs` to create `src/wasm/generated/balance_data.h`
-3. **C++ Compilation**: Compiles `src/wasm/game.cpp` with all dependencies
+2. **Balance Generation**: Runs `generate-balance.cjs` to create `public/src/wasm/generated/balance_data.h`
+3. **C++ Compilation**: Compiles `public/src/wasm/game_refactored.cpp` with all dependencies
 4. **Optimization**: Applies `-O3` optimization and WASM-specific flags
-5. **Output**: Generates standalone `.wasm` files in project root
+5. **Output**: Generates standalone `.wasm` files in `public/wasm/` directory
 
 ### Build Flags Used
 
 ```bash
 # Production build flags
-em++ src/wasm/game.cpp \
+em++ public/src/wasm/game_refactored.cpp \
     -O3 \                           # Maximum optimization
     -s STANDALONE_WASM=1 \          # Standalone WASM without JS glue
     -s WASM_BIGINT=1 \             # BigInt support for 64-bit integers
     -s EXPORT_ALL=0 \              # Export only marked functions
     -s ALLOW_MEMORY_GROWTH=1 \     # Dynamic memory allocation
-    -o ./game.wasm
+    -o ./public/wasm/game.wasm
 ```
 
 ## 📁 Project Structure

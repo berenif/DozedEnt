@@ -283,7 +283,9 @@ export default ({init, subscribe, announce}) => {
           await didSub
           const relay = await initPromises[i].catch(() => null)
           if (relay) queueAnnounce(relay, i)
-        } catch {}
+        } catch (error) {
+          console.warn('Failed to initialize relay:', error);
+        }
       })
     })
 

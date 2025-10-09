@@ -125,7 +125,7 @@ declare module 'dozedent' {
   export const selfId: string
   
   // Room Manager exports
-  export {default as RoomManager} from '../netcode/room-manager'
+  export {default as RoomManager} from '../netcode/enhanced-room-manager'
   export {default as HostAuthority} from '../netcode/host-authority'
   export {default as RoomLobbyUI} from '../netcode/room-lobby-ui'
   

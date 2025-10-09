@@ -1,5 +1,6 @@
 #include "InputManager.h"
 #include "../GameGlobals.h"
+#include "CombatManager.h"
 #include <cmath>
 #include <algorithm>
 
@@ -57,8 +58,10 @@ void InputManager::clear_input_latches() {
 
 bool InputManager::is_input_allowed() const {
     // Check if player is stunned or in a state that prevents input
-    extern bool g_is_stunned;  // TODO: Replace with proper dependency injection
-    return !g_is_stunned;
+    if (combat_manager_) {
+        return !combat_manager_->is_stunned();
+    }
+    return true;  // Allow input if combat manager not available
 }
 
 void InputManager::apply_stun_restrictions() {

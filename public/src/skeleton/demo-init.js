@@ -44,7 +44,9 @@ export async function initSkeletonDemo(canvasContainer) {
     if (typeof skeleton.setGlobalDamping === 'function') skeleton.setGlobalDamping(1.0);
 
     // Start from a visible neutral pose
-    try { applyPoseByName(skeleton, 'apose'); } catch {}
+    try { applyPoseByName(skeleton, 'apose'); } catch (error) {
+      console.warn('Failed to apply initial pose:', error);
+    }
 
     const idle = new IdleAnimation(skeleton);
     updateStatus('Ready!');

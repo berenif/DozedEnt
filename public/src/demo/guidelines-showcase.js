@@ -34,6 +34,21 @@ const orderedMajors = Array.from(new Set(normalizedFeatures.map((feature) => fea
 
 let inputDebugActive = false;
 
+// Event listener cleanup tracking
+const eventListeners = [];
+
+function addEventListenerWithCleanup(target, event, handler, options) {
+  target.addEventListener(event, handler, options);
+  eventListeners.push({ target, event, handler, options });
+}
+
+function cleanupEventListeners() {
+  eventListeners.forEach(({ target, event, handler, options }) => {
+    target.removeEventListener(event, handler, options);
+  });
+  eventListeners.length = 0;
+}
+
 const ACTIONS = [
   {
     id: 'spawn-pack',
@@ -133,7 +148,7 @@ const ACTIONS = [
     description: 'Copies every guideline spec path to the clipboard for quick reference.',
     categories: ['ROOT', 'BUILD'],
     run: async () => {
-      const lines = normalizedFeatures.map((feature) => `[${formatCategoryLabel(feature.majorCategory)}] ${feature.title} — ${feature.path}`);
+      const lines = normalizedFeatures.map((feature) => `[${formatCategoryLabel(feature.majorCategory)}] ${feature.title} ï¿½ ${feature.path}`);
       const ok = await tryCopy(lines.join('\n'));
       if (!ok) {
         throw new Error('Clipboard permissions denied.');
@@ -253,7 +268,7 @@ export function initGuidelineShowcase(options = {}) {
           </aside>
           <main class="guideline-panel__main">
             <div class="guideline-controls">
-              <input type="search" data-role="search" placeholder="Search features…" autocomplete="off" aria-label="Search features">
+              <input type="search" data-role="search" placeholder="Search featuresï¿½" autocomplete="off" aria-label="Search features">
               <select data-role="status-filter" aria-label="Filter by implementation status">
                 <option value="all">All</option>
                 <option value="pending">Pending</option>
@@ -305,7 +320,7 @@ export function initGuidelineShowcase(options = {}) {
   renderFeatures();
   updateProgress();
 
-  launcher.addEventListener('click', () => {
+  addEventListenerWithCleanup(launcher, 'click', () => {
     if (panel.classList.contains('guideline-hidden')) {
       openPanel();
     } else {
@@ -313,25 +328,25 @@ export function initGuidelineShowcase(options = {}) {
     }
   });
 
-  closeBtn.addEventListener('click', () => closePanel());
+  addEventListenerWithCleanup(closeBtn, 'click', () => closePanel());
 
-  document.addEventListener('keydown', (event) => {
+  addEventListenerWithCleanup(document, 'keydown', (event) => {
     if (event.key === 'Escape' && !panel.classList.contains('guideline-hidden')) {
       closePanel();
     }
   });
 
-  searchInput.addEventListener('input', (event) => {
+  addEventListenerWithCleanup(searchInput, 'input', (event) => {
     searchTerm = event.target.value.trim().toLowerCase();
     renderFeatures();
   });
 
-  statusSelect.addEventListener('change', (event) => {
+  addEventListenerWithCleanup(statusSelect, 'change', (event) => {
     statusFilter = event.target.value;
     renderFeatures();
   });
 
-  markAllBtn.addEventListener('click', () => {
+  addEventListenerWithCleanup(markAllBtn, 'click', () => {
     normalizedFeatures.forEach((feature) => {
       state.completed[feature.id] = true;
     });
@@ -341,7 +356,7 @@ export function initGuidelineShowcase(options = {}) {
     showActionMessage('success', 'Marked every guideline as demoed.');
   });
 
-  resetBtn.addEventListener('click', () => {
+  addEventListenerWithCleanup(resetBtn, 'click', () => {
     state.completed = {};
     saveState(state);
     renderFeatures();
@@ -349,7 +364,7 @@ export function initGuidelineShowcase(options = {}) {
     showActionMessage('info', 'Guideline progress reset.');
   });
 
-  featureList.addEventListener('click', async (event) => {
+  addEventListenerWithCleanup(featureList, 'click', async (event) => {
     const button = event.target.closest('button');
     if (!button) {
       return;
@@ -398,7 +413,7 @@ export function initGuidelineShowcase(options = {}) {
       if (key === activeCategory) {
         button.classList.add('is-active');
       }
-      button.addEventListener('click', () => {
+      addEventListenerWithCleanup(button, 'click', () => {
         if (activeCategory === key) {
           return;
         }
@@ -431,7 +446,7 @@ export function initGuidelineShowcase(options = {}) {
       button.type = 'button';
       button.className = 'guideline-action__button';
       button.textContent = action.label;
-      button.addEventListener('click', () => executeAction(action));
+      addEventListenerWithCleanup(button, 'click', () => executeAction(action));
       wrapper.appendChild(button);
 
       if (Array.isArray(action.categories) && action.categories.length) {
@@ -558,7 +573,7 @@ export function initGuidelineShowcase(options = {}) {
 
   async function executeAction(action) {
     try {
-      showActionMessage('info', `Running ${action.label}…`);
+      showActionMessage('info', `Running ${action.label}ï¿½`);
       const result = await action.run();
       if (action.categories) {
         autoCompleteCategories(action.categories);
@@ -739,3 +754,6 @@ async function tryCopy(text) {
     return false;
   }
 }
+
+// Export cleanup function for external use
+export { cleanupEventListeners };

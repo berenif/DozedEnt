@@ -15,11 +15,16 @@ export default class CorePostureModule {
             pelvisBobAmplitude: config.pelvisBobAmplitude ?? 3,
             headStabilization: config.headStabilization ?? 0.55,
             leanResponsiveness: config.leanResponsiveness ?? 10,
-            bobResponsiveness: config.bobResponsiveness ?? 14
+            bobResponsiveness: config.bobResponsiveness ?? 14,
+            idleMicroAmp: config.idleMicroAmp ?? 0.6,
+            idleMicroRate: config.idleMicroRate ?? 0.8,
+            comShiftResponse: config.comShiftResponse ?? 10
         }
         this.lean = 0
         this.pelvisOffset = 0
         this.breathTimer = 0
+        this.idlePhase = 0
+        this.comShift = 0
     }
 
     apply(deltaTime, pose, context) {
@@ -40,13 +45,28 @@ export default class CorePostureModule {
         const gaitPhase = context.stridePhase ?? normalizedTime
         const bobAmplitude = isGrounded ? this.config.pelvisBobAmplitude : this.config.pelvisBobAmplitude * 0.3
         const fatigueDrop = fatigue * bobAmplitude * 0.5
-        const bobTarget = Math.sin(gaitPhase * Math.PI * 2) * bobAmplitude - fatigueDrop + pelvisOverlay
+        // Idle micro adjustments and tremor
+        const isIdle = (context.playerState === 'idle') && (Math.hypot(velocity.x, velocity.y) < 0.01)
+        if (isIdle) {
+            this.idlePhase = (this.idlePhase + deltaTime * this.config.idleMicroRate) % 1
+        }
+        const idleMicro = isIdle ? Math.sin(this.idlePhase * Math.PI * 2) * this.config.idleMicroAmp : 0
+        const bobTarget = Math.sin(gaitPhase * Math.PI * 2) * bobAmplitude - fatigueDrop + pelvisOverlay + idleMicro
         this.pelvisOffset = damp(this.pelvisOffset, bobTarget, deltaTime, this.config.bobResponsiveness)
 
         this.breathTimer += deltaTime * clamp(breathing, 0.25, 2)
         const breathOffset = Math.sin(this.breathTimer * Math.PI * 2) * 0.6 * breathing
 
-        pose.pelvis.x = this.lean * 4 * facing
+        // COM-based weight transfer during attacks/blocks
+        let comBias = 0
+        if (context.playerState === 'attacking') {
+            comBias = (context.attackIntensity || 1) * 2 * facing
+        } else if (context.playerState === 'blocking') {
+            comBias = -1.5 * facing
+        }
+        this.comShift = damp(this.comShift, comBias, deltaTime, this.config.comShiftResponse)
+
+        pose.pelvis.x = this.lean * 4 * facing + this.comShift
         pose.pelvis.y = this.pelvisOffset
         pose.torso.x = this.lean * 12 * facing
         pose.torso.y = -14 + this.pelvisOffset * 0.35
@@ -62,7 +82,9 @@ export default class CorePostureModule {
             rotation: this.lean * 0.12,
             pelvis: this.pelvisOffset,
             lean: this.lean,
-            breathOffset
+            breathOffset,
+            comShift: this.comShift,
+            idleMicro
         }
     }
 }

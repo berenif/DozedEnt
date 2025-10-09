@@ -21,8 +21,16 @@ export default class SecondaryMotionModule {
         this.hair = Array.from({ length: hairSegments }, (_, index) => ({
             position: { x: 0, y: -index * 3 }
         }))
-        this.equipment = [{ type: 'sword', position: { x: 0, y: 0 } }]
+        this.equipment = [{ type: 'sword', position: { x: 0, y: 0 }, orientation: 0 }]
         this.time = 0
+        // Impulse accumulators for landing/hurt/block impacts
+        this.impulse = { x: 0, y: 0 }
+        this.impulseDecay = config.impulseDecay ?? 12
+        this.impulseStrength = {
+            landing: config.landingImpulse ?? 12,
+            hurt: config.hurtImpulse ?? 10,
+            blockImpact: config.blockImpulse ?? 8
+        }
     }
 
     apply(deltaTime, pose, context) {
@@ -34,6 +42,7 @@ export default class SecondaryMotionModule {
         const clothSway = context.clothSway ?? 0
         const hairBounce = context.hairBounce ?? 0
         const equipmentJiggle = context.equipmentJiggle ?? 0
+        const events = context.events || {}
 
         this.updateChain(this.cloth, {
             x: pose.pelvis.x ?? 0,
@@ -64,15 +73,51 @@ export default class SecondaryMotionModule {
         const weapon = this.equipment[0]
         const jiggleX = Math.sin(this.time * 6) * equipmentJiggle * 2
         const jiggleY = Math.cos(this.time * 4) * equipmentJiggle * 2
-        weapon.position.x = damp(weapon.position.x, anchor.x - facing * 6 + momentum.x * 0.06 + jiggleX, deltaTime, 10)
-        weapon.position.y = damp(weapon.position.y, anchor.y + 6 + momentum.y * 0.06 + jiggleY, deltaTime, 10)
+        // Apply event impulses (brief, damped bursts)
+        if (events.landing) {
+            this.impulse.y += this.impulseStrength.landing
+        }
+        if (events.hurt) {
+            this.impulse.x += -facing * this.impulseStrength.hurt
+        }
+        if (events.blockImpact) {
+            this.impulse.x += facing * this.impulseStrength.blockImpact * 0.5
+            this.impulse.y += this.impulseStrength.blockImpact * 0.3
+        }
+        // Decay impulses
+        this.impulse.x = damp(this.impulse.x, 0, deltaTime, this.impulseDecay)
+        this.impulse.y = damp(this.impulse.y, 0, deltaTime, this.impulseDecay)
+
+        weapon.position.x = damp(
+            weapon.position.x,
+            anchor.x - facing * 6 + momentum.x * 0.06 + jiggleX + this.impulse.x * 0.4,
+            deltaTime,
+            10
+        )
+        weapon.position.y = damp(
+            weapon.position.y,
+            anchor.y + 6 + momentum.y * 0.06 + jiggleY + this.impulse.y * 0.5,
+            deltaTime,
+            10
+        )
+
+        // Orientation: align to wrist→hand vector or wrist orientation if provided
+        const wristOrient = context.armIK?.wristOrientations?.right?.rotation
+        if (typeof wristOrient === 'number') {
+            weapon.orientation = wristOrient
+        } else {
+            const dx = (pose.rightArm.hand.x - (pose.rightArm.wrist?.x ?? pose.rightArm.hand.x))
+            const dy = (pose.rightArm.hand.y - (pose.rightArm.wrist?.y ?? pose.rightArm.hand.y))
+            weapon.orientation = Math.atan2(dy, dx)
+        }
 
         return {
             cloth: cloneChain(this.cloth),
             hair: cloneChain(this.hair),
             equipment: this.equipment.map(item => ({
                 type: item.type,
-                position: { x: item.position.x, y: item.position.y }
+                position: { x: item.position.x, y: item.position.y },
+                orientation: item.orientation
             }))
         }
     }

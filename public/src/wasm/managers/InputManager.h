@@ -26,6 +26,9 @@ public:
     void normalize_movement_input();
     void clear_input_latches();
     
+    // Combat manager integration (for stun state)
+    void set_combat_manager(class CombatManager* cm) { combat_manager_ = cm; }
+    
     // Input validation
     bool is_input_allowed() const;
     void apply_stun_restrictions();
@@ -44,6 +47,7 @@ public:
 private:
     InputState current_input_;
     InputState previous_input_;
+    class CombatManager* combat_manager_ = nullptr;
     
     // Input validation helpers
     bool validate_movement_input(float x, float y) const;

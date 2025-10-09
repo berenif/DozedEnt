@@ -42,8 +42,8 @@ public:
     bool should_despawn() const;
     
     // Physics constants
-    static constexpr float BARREL_MASS = 20.0f;  // kg
-    static constexpr float BARREL_RADIUS = 0.5f;  // World units
+    static constexpr float BARREL_MASS = 5.0f;  // kg (reduced for better throw physics)
+    static constexpr float BARREL_RADIUS = 0.05f;  // World units
     static constexpr float DAMAGE_MULTIPLIER = 0.5f;  // damage = mass * speed * 0.5
     static constexpr float KNOCKBACK_MULTIPLIER = 0.3f;
     static constexpr float MAX_LIFETIME = 30.0f;  // Despawn after 30 seconds

@@ -2,7 +2,7 @@
 
 Authoritative mapping from documented physics features to their primary source locations. Keep gameplay logic in C++/WASM; JS is for rendering/input/networking.
 
-**Implementation Guide**: `GUIDELINES/PROGRESS/PHYSICS_INTEGRATION_IMPLEMENTATION_GUIDE.md` - Complete technical specifications, code templates, and implementation roadmap.
+See `GUIDELINES/SYSTEMS/PHYSICS_ARCHITECTURE.md` and `GUIDELINES/BUILD/API.md` for technical specifications and APIs.
 
 ---
 

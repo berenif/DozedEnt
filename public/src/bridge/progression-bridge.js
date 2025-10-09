@@ -19,7 +19,9 @@ export class ProgressionBridge {
       this.codec = createStringCodec({ memory: this.memory, exports: this.exports });
     }
     if (typeof this.exports.upgrade_create_system === 'function') {
-      try { this.exports.upgrade_create_system(); } catch {}
+      try { this.exports.upgrade_create_system(); } catch (error) {
+        console.warn('Failed to create upgrade system:', error);
+      }
     }
   }
 

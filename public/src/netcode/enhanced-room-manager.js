@@ -5,7 +5,7 @@
 
 import { idGenerator } from '../utils/deterministic-id-generator.js'
 import { LobbyAnalytics } from '../utils/lobby-analytics.js'
-import { NetworkManager } from './NetworkManager.js'
+import { NetworkCoordinator } from './NetworkCoordinator.js'
 
 export class EnhancedRoomManager {
   constructor(appId = 'default-game', config = {}) {

@@ -36,6 +36,7 @@ export class DeterministicIdGenerator {
    */
   generateDeterministicSeed() {
     // Use seconds since epoch for deterministic seeding
+    // Avoid Math.random() - use deterministic time-based seed
     return Math.floor(Date.now() / 1000);
   }
 

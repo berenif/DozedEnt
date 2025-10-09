@@ -254,7 +254,7 @@ No migration needed - both new systems are additive and don't break existing cod
 - [TOPDOWN_PHYSICS_ANIMATION.md](./ANIMATION/TOPDOWN_PHYSICS_ANIMATION.md) - Physics animation system
 - [ANIMATION_SYSTEM_INDEX.md](./ANIMATION/ANIMATION_SYSTEM_INDEX.md) - Animation overview
 - [HUMAN_MOTION_IMPROVEMENTS.md](./ANIMATION/HUMAN_MOTION_IMPROVEMENTS.md) - Procedural system
-- [IMPLEMENTATION_SUMMARY.md](./ANIMATION/IMPLEMENTATION_SUMMARY.md) - Procedural implementation
+ 
 - [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - File organization
 - [BUILD/API.md](./BUILD/API.md) - WASM API reference
 

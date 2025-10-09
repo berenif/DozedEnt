@@ -2,6 +2,8 @@
 #include "../GameGlobals.h"
 #include "../physics/PhysicsManager.h"
 #include "../physics/PhysicsTypes.h"
+#include "PlayerManager.h"
+#include "GameStateManager.h"
 #include <cmath>
 #include <algorithm>
 
@@ -108,8 +110,9 @@ bool CombatManager::try_block(float face_x, float face_y, float current_time) {
 bool CombatManager::try_parry() {
     if (!state_.is_blocking) return false;
     
-    // TODO: Get current time from game system
-    float current_time = 0.0f;  // Placeholder
+    if (!game_state_manager_) return false;
+    
+    float current_time = game_state_manager_->get_game_time();
     float time_since_block_start = current_time - state_.block_start_time;
     
     return time_since_block_start <= PARRY_WINDOW_SEC;
@@ -178,9 +181,8 @@ float CombatManager::get_roll_cooldown() const {
 }
 
 float CombatManager::get_parry_window() const {
-    if (state_.is_blocking) {
-        // TODO: Get current time from game system
-        float current_time = 0.0f;  // Placeholder
+    if (state_.is_blocking && game_state_manager_) {
+        float current_time = game_state_manager_->get_game_time();
         float time_since_block_start = current_time - state_.block_start_time;
         return std::max(0.0f, PARRY_WINDOW_SEC - time_since_block_start);
     }
@@ -274,18 +276,29 @@ void CombatManager::update_counter_system(float delta_time) {
             state_.can_counter = false;
         }
     }
+    
+    // Update stun state
+    if (state_.is_stunned && state_.stun_remaining > 0.0f) {
+        state_.stun_remaining -= delta_time;
+        if (state_.stun_remaining <= 0.0f) {
+            state_.is_stunned = false;
+            state_.stun_remaining = 0.0f;
+        }
+    }
 }
 
 bool CombatManager::has_sufficient_stamina(float required) const {
-    // TODO: Get stamina from player manager
-    extern float g_stamina;  // Temporary - should use dependency injection
-    return g_stamina >= required;
+    if (!player_manager_) {
+        return false;  // Can't check stamina without player manager
+    }
+    return player_manager_->get_stamina() >= required;
 }
 
 void CombatManager::consume_stamina(float amount) {
-    // TODO: Consume stamina through player manager
-    extern float g_stamina;  // Temporary - should use dependency injection
-    g_stamina = std::max(0.0f, g_stamina - amount);
+    if (!player_manager_) {
+        return;  // Can't consume stamina without player manager
+    }
+    player_manager_->consume_stamina(amount);
 }
 
 float CombatManager::calculate_parry_effectiveness(float timing_offset) const {

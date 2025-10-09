@@ -193,9 +193,13 @@ export class SkeletonInteractionController {
 		const jMid = chain.jMid;   // elbow or knee
 
 		// Shoulder/Hip: use (x=pitch, y=yaw, z=0)
-		try { this.skeleton.setJointTargetAngles(jRoot, pitch, yaw, 0); } catch {}
+		try { this.skeleton.setJointTargetAngles(jRoot, pitch, yaw, 0); } catch (error) {
+		  console.warn('Failed to set joint target angles for root:', error);
+		}
 		// Elbow/Knee hinge about X
-		try { this.skeleton.setJointTargetAngles(jMid, elbow, 0, 0); } catch {}
+		try { this.skeleton.setJointTargetAngles(jMid, elbow, 0, 0); } catch (error) {
+		  console.warn('Failed to set joint target angles for mid:', error);
+		}
 	}
 }
 

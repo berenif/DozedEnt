@@ -105,6 +105,21 @@ export class WasmCoreState {
       }
     } catch (error) {
       console.error('WASM update error:', error);
+      
+      // Re-throw critical errors that indicate system failure
+      if (error.name === 'RuntimeError' || 
+          error.message.includes('out of memory') ||
+          error.message.includes('segmentation fault') ||
+          error.message.includes('null pointer')) {
+        console.error('Critical WASM error detected, re-throwing:', error);
+        throw error;
+      }
+      
+      // For non-critical errors, continue execution but mark as degraded
+      this._errorCount = (this._errorCount || 0) + 1;
+      if (this._errorCount > 10) {
+        console.warn('High error count detected, WASM may be unstable');
+      }
     }
   }
 

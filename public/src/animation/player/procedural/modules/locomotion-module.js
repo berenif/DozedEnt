@@ -70,15 +70,16 @@ export default class LocomotionModule {
             movementDirection.y = velocity.y / speed
         }
 
-        // Update gait cycle based on movement
+        // Update gait cycle based on movement (with subtle left/right asymmetry)
         if (moving) {
             // Natural cadence: faster speeds = higher stride frequency
             const strideRate = this.config.basePhaseSpeed * (1 + speedRatio * this.config.cadenceScaling)
             this.phase = (this.phase + deltaTime * strideRate) % 1
             
             // Calculate individual leg phases (offset by 50% for alternating gait)
-            this.leftPhase = this.phase
-            this.rightPhase = (this.phase + 0.5) % 1
+            const asym = context.asymmetry || { leftPhaseOffset: 0, rightPhaseOffset: 0 }
+            this.leftPhase = (this.phase + (asym.leftPhaseOffset || 0)) % 1
+            this.rightPhase = (this.phase + 0.5 + (asym.rightPhaseOffset || 0)) % 1
         } else {
             // Return to neutral position when stopped
             this.phase = damp(this.phase, 0, deltaTime, 6)
@@ -90,7 +91,7 @@ export default class LocomotionModule {
         this.updateWeightShifting(deltaTime, speedRatio, movementDirection)
 
         // Apply realistic human locomotion
-        this.applyRealisticLocomotion(pose, speedRatio, movementDirection, isGrounded, groundOffset)
+        this.applyRealisticLocomotion(pose, speedRatio, movementDirection, isGrounded, groundOffset, context)
 
         // Debug logging (disabled by default - uncomment to enable)
         // if (!this._debugCounter) this._debugCounter = 0
@@ -140,7 +141,7 @@ export default class LocomotionModule {
     }
 
     // Apply realistic human locomotion with proper biomechanics
-    applyRealisticLocomotion(pose, speedRatio, movementDirection, isGrounded, groundOffset) {
+    applyRealisticLocomotion(pose, speedRatio, movementDirection, isGrounded, groundOffset, context) {
         const groundedMultiplier = isGrounded ? 1.0 : 0.6
         
         // Base foot positions
@@ -177,8 +178,9 @@ export default class LocomotionModule {
         pose.rightLeg.ankle.x = rightAnkle.x
         pose.rightLeg.ankle.y = rightAnkle.y
 
-        // Apply weight shifting to hip positions
-        const hipShift = this.weightShift * 0.5
+        // Apply weight shifting to hip positions with small asymmetry bias
+        const asymArmBias = (context.asymmetry?.armSwingBias || 0) * 0.2
+        const hipShift = this.weightShift * 0.5 + asymArmBias
         pose.leftLeg.hip.x += hipShift
         pose.rightLeg.hip.x -= hipShift
     }

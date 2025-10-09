@@ -33,6 +33,8 @@ export default class SpineModule {
         const posture = context.posture || { lean: 0 }
         const locomotion = context.locomotion || { stridePhase: 0, moving: false }
         const breathing = context.breathing ?? 1
+        const combatDir = context.combatDir || null
+        const isAttacking = context.playerState === 'attacking'
         
         const horizontalVelocity = clamp(velocity.x / maxSpeed, -1, 1)
         const speed = context.speed ?? Math.hypot(velocity.x, velocity.y)
@@ -51,7 +53,16 @@ export default class SpineModule {
         
         // Counter-rotation: chest rotates opposite to pelvis during stride
         const pelvisRotation = Math.sin(locomotion.stridePhase * Math.PI * 2) * speedRatio * 0.15
-        const chestRotationTarget = -pelvisRotation * this.config.counterRotationRatio
+        // Add strike-facing rotation during attack
+        let strikeRotation = 0
+        if (isAttacking) {
+            if (combatDir) {
+                strikeRotation = Math.atan2(combatDir.y || 0, combatDir.x || 0) * 0.1
+            } else {
+                strikeRotation = facing * 0.08
+            }
+        }
+        const chestRotationTarget = (-pelvisRotation * this.config.counterRotationRatio) + strikeRotation
         this.spineState.chestRotation = damp(
             this.spineState.chestRotation,
             chestRotationTarget,

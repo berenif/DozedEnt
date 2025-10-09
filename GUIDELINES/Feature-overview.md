@@ -41,7 +41,7 @@ This guide mirrors the `public/src/` directory so you can quickly map gameplay s
 
 **Integration notes:** Abilities follow WASM-first architecture with logic in C++ and visual effects in JavaScript. Each ability has cooldowns, stamina costs, and unique animations.
 
-**Further reading:** [`GUIDELINES/PROGRESS/playerl/`](../GUIDELINES/PROGRESS/playerl/) for character implementation details.
+**Further reading:** See `GUIDELINES/ANIMATION/` for character animation details and `GUIDELINES/IMPLEMENTATION_STATUS_SUMMARY.md` for overall implementation status.
 
 ## WASM Integration (`public/src/wasm/`) ⭐ **MODULAR**
 

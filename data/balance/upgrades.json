@@ -1,0 +1,198 @@
+{
+  "essence": {
+    "startingEssence": 0,
+    "perRoomClear": 10,
+    "perEliteKill": 25,
+    "perBossKill": 100,
+    "perChoiceRejected": 5
+  },
+  "upgradeTiers": {
+    "tier1": {
+      "cost": 50,
+      "effectMultiplier": 1.1,
+      "description": "Basic upgrade"
+    },
+    "tier2": {
+      "cost": 100,
+      "effectMultiplier": 1.25,
+      "description": "Advanced upgrade",
+      "requiresTier1": true
+    },
+    "tier3": {
+      "cost": 200,
+      "effectMultiplier": 1.5,
+      "description": "Elite upgrade",
+      "requiresTier2": true
+    },
+    "tier4": {
+      "cost": 400,
+      "effectMultiplier": 2.0,
+      "description": "Master upgrade",
+      "requiresTier3": true
+    }
+  },
+  "upgradeCategories": {
+    "combat": {
+      "damage": {
+        "baseEffect": 1.0,
+        "perTier": 0.1,
+        "maxTier": 4
+      },
+      "attackSpeed": {
+        "baseEffect": 1.0,
+        "perTier": 0.08,
+        "maxTier": 4
+      },
+      "criticalChance": {
+        "baseEffect": 0.05,
+        "perTier": 0.05,
+        "maxTier": 3
+      },
+      "criticalMultiplier": {
+        "baseEffect": 1.5,
+        "perTier": 0.25,
+        "maxTier": 3
+      }
+    },
+    "defense": {
+      "maxHealth": {
+        "baseEffect": 100.0,
+        "perTier": 25.0,
+        "maxTier": 4
+      },
+      "armor": {
+        "baseEffect": 0.0,
+        "perTier": 5.0,
+        "maxTier": 4
+      },
+      "blockEfficiency": {
+        "baseEffect": 0.5,
+        "perTier": 0.1,
+        "maxTier": 3
+      },
+      "dodgeChance": {
+        "baseEffect": 0.0,
+        "perTier": 0.05,
+        "maxTier": 3
+      }
+    },
+    "mobility": {
+      "moveSpeed": {
+        "baseEffect": 1.0,
+        "perTier": 0.1,
+        "maxTier": 3
+      },
+      "rollDistance": {
+        "baseEffect": 1.0,
+        "perTier": 0.15,
+        "maxTier": 3
+      },
+      "rollCooldown": {
+        "baseEffect": 1.0,
+        "perTier": -0.1,
+        "maxTier": 3
+      },
+      "staminaRegen": {
+        "baseEffect": 1.0,
+        "perTier": 0.2,
+        "maxTier": 4
+      }
+    },
+    "utility": {
+      "goldFind": {
+        "baseEffect": 1.0,
+        "perTier": 0.15,
+        "maxTier": 3
+      },
+      "essenceFind": {
+        "baseEffect": 1.0,
+        "perTier": 0.2,
+        "maxTier": 3
+      },
+      "healingEfficiency": {
+        "baseEffect": 1.0,
+        "perTier": 0.15,
+        "maxTier": 3
+      },
+      "curseResistance": {
+        "baseEffect": 0.0,
+        "perTier": 0.1,
+        "maxTier": 3
+      }
+    }
+  },
+  "classSpecificUpgrades": {
+    "warden": {
+      "bashDamage": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.5
+      },
+      "bashRadius": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.3
+      },
+      "bashCooldown": {
+        "tier": 3,
+        "cost": 200,
+        "effect": 0.7
+      },
+      "shieldMastery": {
+        "tier": 4,
+        "cost": 400,
+        "effect": 2.0
+      }
+    },
+    "raider": {
+      "chargeDuration": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.5
+      },
+      "chargeSpeed": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.3
+      },
+      "chargeArmor": {
+        "tier": 3,
+        "cost": 200,
+        "effect": 2.0
+      },
+      "berserkerRage": {
+        "tier": 4,
+        "cost": 400,
+        "effect": 2.5
+      }
+    },
+    "kensei": {
+      "dashInvulnerability": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.5
+      },
+      "dashCombo": {
+        "tier": 2,
+        "cost": 100,
+        "effect": 1.4
+      },
+      "dashCooldown": {
+        "tier": 3,
+        "cost": 200,
+        "effect": 0.6
+      },
+      "flowMastery": {
+        "tier": 4,
+        "cost": 400,
+        "effect": 3.0
+      }
+    }
+  },
+  "resetCost": {
+    "baseGold": 100,
+    "perUpgrade": 50,
+    "essenceRefundPercent": 0.8
+  }
+}
+

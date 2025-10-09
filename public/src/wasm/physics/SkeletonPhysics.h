@@ -41,6 +41,7 @@ struct Joint {
         if (fixed) return;
         Fixed ax = fx / mass;
         Fixed ay = fy / mass;
+        x += ax * dt * dt;
         y += ay * dt * dt;
     }
     

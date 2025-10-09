@@ -43,18 +43,17 @@ export function createFallbackExports(initializer) {
       const dt = Math.max(0, Math.min(deltaTime || 0.016, 0.1));
       fallbackState.lastUpdate = performance.now();
 
-      fallbackState.playerX += (Math.random() - 0.5) * 0.01 * dt * 60;
-      fallbackState.playerY += (Math.random() - 0.5) * 0.01 * dt * 60;
-
-      fallbackState.playerX = clamp01(fallbackState.playerX);
-      fallbackState.playerY = clamp01(fallbackState.playerY);
-
+      // WASM-first: No randomness in fallback mode - deterministic behavior
+      // Fallback mode should be predictable and stable
       fallbackState.stamina = clamp01(fallbackState.stamina + 0.1 * dt);
       fallbackState.health = clamp01(fallbackState.health + 0.05 * dt);
 
       if (fallbackState.isBlocking) {
         fallbackState.stamina = clamp01(fallbackState.stamina - 0.2 * dt);
       }
+      
+      // Keep player stationary in fallback mode (no random movement)
+      // Position changes should only come from WASM physics
     },
 
     set_player_input(inputX, inputY, roll, jump, lightAttack, heavyAttack, block, special) {

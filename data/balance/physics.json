@@ -1,0 +1,56 @@
+{
+  "physics": {
+    "timestepMicros": 8333,
+    "timestepHz": 120,
+    "maxIterations": 4,
+    "maxVelocity": 50.0,
+    "gravity": {
+      "x": 0.0,
+      "y": 9.8,
+      "z": 0.0
+    }
+  },
+  "player": {
+    "mass": 70.0,
+    "radius": 0.5,
+    "drag": 0.88,
+    "restitution": 0.3
+  },
+  "enemy": {
+    "mass": 70.0,
+    "radius": 0.35,
+    "drag": 0.9,
+    "restitution": 0.4
+  },
+  "barrel": {
+    "mass": 40.0,
+    "radius": 0.25,
+    "drag": 0.9,
+    "restitution": 0.5
+  },
+  "knockback": {
+    "lightAttackForce": 15.0,
+    "heavyAttackForce": 30.0,
+    "bashForce": 50.0,
+    "parryForce": 20.0,
+    "minimumForce": 5.0,
+    "maximumForce": 100.0
+  },
+  "lunge": {
+    "playerLungeForce": 25.0,
+    "enemyLungeForce": 30.0,
+    "chargeForce": 40.0
+  },
+  "sleep": {
+    "velocityThreshold": 0.01,
+    "timeThresholdMicros": 500000,
+    "wakeVelocity": 0.1
+  },
+  "collision": {
+    "enableBroadPhase": true,
+    "enableSleeping": true,
+    "maxCollisionChecks": 1000,
+    "separationSlop": 0.001
+  }
+}
+

@@ -53,7 +53,7 @@ struct RigidBody {
         , friction(Fixed::from_float(0.9f))
         , restitution(Fixed::from_float(0.3f))
         , drag(Fixed::from_float(0.98f))
-        , radius(Fixed::from_float(0.5f))
+        , radius(Fixed::from_float(0.05f))
         , collision_layer(1)
         , collision_mask(0xFFFFFFFF)
         , is_sleeping(false)
@@ -128,10 +128,10 @@ struct PhysicsConfig {
         , max_bodies(50)
         , max_iterations(4)
         , max_velocity(Fixed::from_float(50.0f))
-        , world_min_x(Fixed::from_int(0))
-        , world_max_x(Fixed::from_int(1))
-        , world_min_y(Fixed::from_int(0))
-        , world_max_y(Fixed::from_int(1))
+        , world_min_x(Fixed::from_int(-10))
+        , world_max_x(Fixed::from_int(10))
+        , world_min_y(Fixed::from_int(-10))
+        , world_max_y(Fixed::from_int(10))
     {}
     
     // Helper: Get timestep as fixed-point seconds

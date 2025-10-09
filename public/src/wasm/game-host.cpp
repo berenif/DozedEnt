@@ -303,6 +303,10 @@ const char* game_get_state(GameState* state) {
         if (g_stateJsonBuffer) free(g_stateJsonBuffer);
         g_stateJsonBufferSize = json.size() + 1024; // Add some extra space
         g_stateJsonBuffer = (char*)malloc(g_stateJsonBufferSize);
+        if (!g_stateJsonBuffer) {
+            g_stateJsonBufferSize = 0;
+            return nullptr; // Handle malloc failure
+        }
     }
     
     strcpy(g_stateJsonBuffer, json.c_str());

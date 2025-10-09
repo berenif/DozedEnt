@@ -7,7 +7,7 @@ export function update(deltaTime, player) {
     if (this.wasmModule) {
         try {
             // Get current WASM enemy data for this wolf using array index (not ID!)
-            const wasmIndex = this.wasmIndex >= 0 ? this.wasmIndex : this.id - 1; // Fallback: ID-1 = index
+            const wasmIndex = this.wasmIndex >= 0 ? this.wasmIndex : Math.max(0, this.id - 1); // Fallback: ID-1 = index, min 0
             const wasmEnemyType = typeof this.wasmModule.get_enemy_type === 'function' ? 
                 this.wasmModule.get_enemy_type(wasmIndex) : 0;
             const wasmEnemyState = typeof this.wasmModule.get_enemy_state === 'function' ? 
@@ -40,7 +40,7 @@ export function update(deltaTime, player) {
             // WASM already handles physics (position integration, friction, etc.)
             // So we skip JS-side physics to avoid double application
             // Just sync position from WASM using the array index (not ID!)
-            const wasmIndex = this.wasmIndex >= 0 ? this.wasmIndex : this.id - 1; // Fallback: ID-1 = index
+            // wasmIndex already declared above
             const wasmEnemyX = typeof this.wasmModule.get_enemy_x === 'function' ? 
                 this.wasmModule.get_enemy_x(wasmIndex) : this.position.x;
             const wasmEnemyY = typeof this.wasmModule.get_enemy_y === 'function' ? 
@@ -61,24 +61,10 @@ export function update(deltaTime, player) {
         }
     }
 
-    // Handle lunge attack (fallback JS behavior only)
-    this.updateLungeAttack(deltaTime, player)
-
-    // Update physics (fallback JS behavior only)
-    this.velocity.x += this.acceleration.x * deltaTime
-    this.velocity.y += this.acceleration.y * deltaTime
-
-    // Apply friction
-    this.velocity.x *= this.friction
-    this.velocity.y *= this.friction
-
-    // Update position
-    this.position.x += this.velocity.x * deltaTime
-    this.position.y += this.velocity.y * deltaTime
-
-    // Reset acceleration
-    this.acceleration.x = 0
-    this.acceleration.y = 0
+    // Fallback behavior: If WASM is not available, log error and return
+    // Note: The early return at line 57 means this code only runs if WASM module
+    // exists but the try block above failed
+    console.error('Wolf update failed: WASM module present but calls failed');
 }
 
 export function updateLungeAttack(deltaTime, player) {
@@ -164,6 +150,13 @@ export function executeLunge(target) {
     const dx = target.position.x - this.position.x
     const dy = target.position.y - this.position.y
     const distance = Math.sqrt(dx * dx + dy * dy)
+    
+    // Prevent division by zero if wolf and target are at same position
+    if (distance === 0) {
+        console.warn('Wolf executeLunge: target at same position, canceling lunge');
+        return;
+    }
+    
     const normalizedDx = dx / distance
     const normalizedDy = dy / distance
 
@@ -195,7 +188,7 @@ export function endLunge() {
 }
 
 export function getDistanceTo(target) {
-    if (!target || !target.position) {return Infinity}
+    if (!target || !target.position) { return Infinity; }
     const dx = this.position.x - target.position.x
     const dy = this.position.y - target.position.y
     return Math.sqrt(dx * dx + dy * dy)
@@ -226,7 +219,8 @@ export function moveTowards(target, speed = null) {
     const dy = targetY - this.position.y
     const distance = Math.sqrt(dx * dx + dy * dy)
 
-    if (distance > 0) {
+    // Prevent division by zero
+    if (distance > 0.001) {
         const moveSpeed = speed || this.speed
         this.velocity.x = (dx / distance) * moveSpeed
         this.velocity.y = (dy / distance) * moveSpeed

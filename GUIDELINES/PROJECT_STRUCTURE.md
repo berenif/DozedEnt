@@ -32,7 +32,7 @@ DozedEnt/
 │   ├── 📄 favicon.ico              # Site favicon
 │   ├── 📄 _config.yml              # Jekyll configuration for GitHub Pages
 │   ├── 📄 _headers                  # HTTP headers configuration
-│   ├── 📄 ANIMATION_IMPLEMENTATION_SUMMARY.md
+│   ├── 📄 IMPLEMENTATION_STATUS_SUMMARY.md
 │   ├── 📄 demo.html                # Demo page
 │   ├── 📄 multiplayer.html         # Multiplayer demo
 │   ├── 📄 wasm-test.html           # WASM testing page

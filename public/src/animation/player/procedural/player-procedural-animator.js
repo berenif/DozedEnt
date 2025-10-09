@@ -1,4 +1,5 @@
 import PlayerProceduralRig from './player-procedural-rig.js'
+import { generateAnthropometrics, generateAsymmetry } from './utils/anthropometrics.js'
 import CorePostureModule from './modules/core-posture-module.js'
 import LocomotionModule from './modules/locomotion-module.js'
 import FootIKModule from './modules/foot-ik-module.js'
@@ -24,6 +25,16 @@ const identityTransform = () => ({
 export default class PlayerProceduralAnimator {
     constructor(options = {}) {
         this.rig = new PlayerProceduralRig()
+        // Per-character variation (anthropometrics and asymmetry)
+        try {
+            const anthro = options.anthropometrics || generateAnthropometrics?.(options.anthropometricsSeed)
+            if (anthro && typeof this.rig.applyAnthropometrics === 'function') {
+                this.rig.applyAnthropometrics(anthro)
+            }
+        } catch (_) {
+            // Safe fallback if util not available
+        }
+        this.asymmetry = options.asymmetry || generateAsymmetry?.(options.asymmetrySeed) || { leftPhaseOffset: 0, rightPhaseOffset: 0, armSwingBias: 0 }
         this.modules = {
             core: new CorePostureModule(options.core),
             locomotion: new LocomotionModule(options.locomotion),
@@ -49,6 +60,31 @@ export default class PlayerProceduralAnimator {
         const velocity = inputContext.velocity || { x: 0, y: 0 }
         const momentum = inputContext.momentum || velocity
         const speed = Math.hypot(velocity.x, velocity.y)
+        // Ground normal adaptation (precompute offsets for FootIK)
+        const hasGroundNormal = typeof overlay.groundNormalX === 'number' || typeof overlay.groundNormalY === 'number'
+        const groundNormal = hasGroundNormal ? {
+            x: overlay.groundNormalX ?? 0,
+            y: overlay.groundNormalY ?? 1
+        } : null
+        // Estimate stance width from FootIK config if available
+        const defaultStance = (this.modules?.footIK?.config?.stanceWidth) || 8
+        const halfStance = defaultStance * 0.5
+        // Simple slope coupling across X: positive nx raises left foot, lowers right
+        const slopeAcrossX = groundNormal ? -groundNormal.x : 0
+        const groundOffsetLeft = slopeAcrossX * halfStance
+        const groundOffsetRight = -slopeAcrossX * halfStance
+        // Pelvis tilt hint from ground normal (small)
+        const pelvisTilt = groundNormal ? slopeAcrossX * 0.15 : 0
+        // Events and combat context
+        const events = overlay.events || {
+            landing: overlay.landing || false,
+            hurt: overlay.hurt || false,
+            blockImpact: overlay.blockImpact || false
+        }
+        const combatDir = (typeof overlay.attackDirX === 'number' || typeof overlay.attackDirY === 'number')
+            ? { x: overlay.attackDirX || 0, y: overlay.attackDirY || 0 }
+            : null
+        const attackIntensity = typeof overlay.attackIntensity === 'number' ? overlay.attackIntensity : (inputContext.attackStrength ?? 1)
 
         return {
             deltaTime,
@@ -68,6 +104,9 @@ export default class PlayerProceduralAnimator {
             legLiftLeft: inputContext.legLiftLeft ?? 0,
             legLiftRight: inputContext.legLiftRight ?? 0,
             groundOffset: inputContext.groundOffset ?? 0,
+            groundOffsetLeft,
+            groundOffsetRight,
+            pelvisTilt,
             wind: inputContext.wind ?? 0,
             temperatureShiver: inputContext.temperatureShiver ?? 0,
             clothSway: inputContext.clothSway ?? 0,
@@ -78,12 +117,17 @@ export default class PlayerProceduralAnimator {
             inputState: inputContext.inputState || {},
             attackStrength: inputContext.attackStrength ?? 1,
             attackType: inputContext.attackType || 'light',
+            events,
+            combatDir,
+            attackIntensity,
+            asymmetry: this.asymmetry,
             overlay: {
                 scaleX: overlay.scaleX ?? 1,
                 scaleY: overlay.scaleY ?? 1,
                 rotation: overlay.rotation ?? 0,
                 offsetX: overlay.offsetX ?? 0,
-                offsetY: overlay.offsetY ?? 0
+                offsetY: overlay.offsetY ?? 0,
+                groundY: overlay.groundY
             }
         }
     }
@@ -163,7 +207,8 @@ export default class PlayerProceduralAnimator {
                     right: footIK?.rightFootPlanted ?? false
                 },
                 spineCounterRotation: spine?.counterRotation ?? 0,
-                headYaw: headGaze?.yaw ?? 0
+                headYaw: headGaze?.yaw ?? 0,
+                pelvisTilt: context.pelvisTilt || 0
             }
         }
 

@@ -69,7 +69,9 @@ export class WardenBashAnimation extends AbilityAnimationBase {
         if (this.audio?.play) { this.audio.play('bash_execute') }
         this.spawnImpactEffect()
         // Notify WASM if available (purely visual here; gameplay is WASM-only)
-        try { this.wasm?.start_warden_bash && this.wasm.start_warden_bash() } catch {}
+        try { this.wasm?.start_warden_bash && this.wasm.start_warden_bash() } catch (error) {
+          console.warn('Failed to start warden bash WASM function:', error);
+        }
         return true
     }
     
@@ -112,7 +114,9 @@ export class WardenBashAnimation extends AbilityAnimationBase {
         if (this.cameraEffects?.zoom) {
             this.cameraEffects.zoom(1.2, 0.1)
             setTimeout(() => {
-                try { this.cameraEffects && this.cameraEffects.zoom(1.0, 0.3) } catch {}
+                try { this.cameraEffects && this.cameraEffects.zoom(1.0, 0.3) } catch (error) {
+                  console.warn('Failed to reset camera zoom:', error);
+                }
             }, 100)
         }
     }

@@ -18,11 +18,12 @@ void PhysicsManager::initialize(const PhysicsConfig& config) {
     // Create player body (ID 0) at spawn position
     RigidBody player_body;
     player_body.id = 0;
+    player_body.type = BodyType::Kinematic;  // Kinematic: not affected by gravity, but can receive knockback
     player_body.position = FixedVector3::from_floats(0.5f, 0.5f, 0.0f);
     player_body.mass = Fixed::from_int(70);
-    player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);
+    player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);  // Non-zero to allow knockback
     player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
-    player_body.radius = Fixed::from_float(0.5f);
+    player_body.radius = Fixed::from_float(0.05f);
     bodies_.push_back(player_body);
 }
 
@@ -34,10 +35,12 @@ void PhysicsManager::reset() {
     // Recreate player body
     RigidBody player_body;
     player_body.id = 0;
+    player_body.type = BodyType::Kinematic;  // Kinematic: not affected by gravity, but can receive knockback
     player_body.position = FixedVector3::from_floats(0.5f, 0.5f, 0.0f);
     player_body.mass = Fixed::from_int(70);
-    player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);
+    player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);  // Non-zero to allow knockback
     player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
+    player_body.radius = Fixed::from_float(0.05f);
     bodies_.push_back(player_body);
 }
 
@@ -237,18 +240,65 @@ void PhysicsManager::set_position(uint32_t body_id, const FixedVector3& position
 }
 
 void PhysicsManager::detect_and_resolve_collisions() {
+    // Ground collision detection (check all bodies against ground at y=0)
+    const Fixed GROUND_Y = Fixed::from_int(0);
+    const Fixed GROUND_RESTITUTION = Fixed::from_float(0.3f);
+    const Fixed GROUND_FRICTION = Fixed::from_float(0.7f);
+    
+    for (auto& body : bodies_) {
+        // Skip static bodies, but check both Dynamic and Kinematic
+        if (body.type == BodyType::Static) continue;
+        if (body.type == BodyType::Dynamic && body.is_sleeping) continue;
+        
+        // Check if body is below ground level
+        if (body.position.y - body.radius < GROUND_Y) {
+            // Wake the body
+            body.wake();
+            
+            // Calculate overlap with ground
+            Fixed overlap = GROUND_Y - (body.position.y - body.radius);
+            
+            // Move body above ground
+            body.position.y = GROUND_Y + body.radius;
+            
+            // Apply ground collision response
+            if (body.velocity.y < Fixed::from_int(0)) {
+                // Apply restitution (bounce)
+                body.velocity.y *= -GROUND_RESTITUTION;
+                
+                // Apply friction to horizontal velocity
+                body.velocity.x *= GROUND_FRICTION;
+                body.velocity.z *= GROUND_FRICTION;
+            }
+        }
+    }
+    
     // Simple sphere-sphere collision detection and response
     for (size_t i = 0; i < bodies_.size(); ++i) {
-        if (!bodies_[i].should_simulate()) continue;
+        // Skip static bodies, but include both Dynamic and Kinematic
+        if (bodies_[i].type == BodyType::Static) continue;
+        if (bodies_[i].type == BodyType::Dynamic && bodies_[i].is_sleeping) continue;
         
         for (size_t j = i + 1; j < bodies_.size(); ++j) {
-            if (!bodies_[j].should_simulate()) continue;
+            // Skip static bodies, but include both Dynamic and Kinematic
+            if (bodies_[j].type == BodyType::Static) continue;
+            if (bodies_[j].type == BodyType::Dynamic && bodies_[j].is_sleeping) continue;
             
             // Calculate distance between bodies
             FixedVector3 delta = bodies_[j].position - bodies_[i].position;
             Fixed dist_sq = delta.length_squared();
             Fixed combined_radius = bodies_[i].radius + bodies_[j].radius;
             Fixed combined_radius_sq = combined_radius * combined_radius;
+            
+            // Bounds checking for extreme values
+            const Fixed MAX_DISTANCE_SQ = Fixed::from_int(1000000); // 1000 units max distance
+            const Fixed MIN_RADIUS = Fixed::from_float(0.001f); // Minimum reasonable radius
+            
+            if (dist_sq > MAX_DISTANCE_SQ || 
+                bodies_[i].radius < MIN_RADIUS || 
+                bodies_[j].radius < MIN_RADIUS) {
+                continue; // Skip this collision pair
+            }
             
             // Check for collision
             if (dist_sq < combined_radius_sq && dist_sq > Fixed::from_int(0)) {

@@ -17,6 +17,10 @@ test-results/
 .rpt2_cache/
 .rollup.cache/
 
+# WASM build outputs (root level - these get copied to public/)
+/game.wasm
+/game-host.wasm
+
 
 # OS
 .DS_Store
