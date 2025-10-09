@@ -1,6 +1,7 @@
 #include "GameStateManager.h"
 #include "../GameGlobals.h"
 #include <algorithm>
+#include <cstdint>
 
 GameStateManager::GameStateManager() {
     // Initialize with default state

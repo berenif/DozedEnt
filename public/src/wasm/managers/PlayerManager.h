@@ -214,10 +214,10 @@ private:
     static constexpr float WALL_SLIDE_SPEED = 0.3f;
     
     // Tuning constants for responsiveness
-    static constexpr float ACCELERATION = 16.0f;      // Faster acceleration for snappier input
-    static constexpr float TURN_BOOST = 2.5f;         // Extra boost when reversing direction
-    static constexpr float FRICTION_WHEN_IDLE = 8.0f;  // Reduced from 14.0f for better responsiveness
-    static constexpr float FRICTION_WHEN_MOVING = 1.5f; // Reduced from 3.0f for smoother movement
+    static constexpr float ACCELERATION = 8.0f;       // Reduced from 16.0f to make movement less floaty
+    static constexpr float TURN_BOOST = 1.5f;        // Reduced from 2.5f to make direction changes less dramatic
+    static constexpr float FRICTION_WHEN_IDLE = 12.0f; // Increased from 8.0f to stop player faster when no input
+    static constexpr float FRICTION_WHEN_MOVING = 3.0f; // Increased from 1.5f to reduce momentum buildup
     
     // Bash constants
     static constexpr float BASH_MIN_CHARGE = 0.3f;

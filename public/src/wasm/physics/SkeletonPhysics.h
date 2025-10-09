@@ -77,10 +77,44 @@ struct Constraint {
         Fixed dy = joint2->y - joint1->y;
         Fixed dist_sq = dx * dx + dy * dy;
         
-        if (dist_sq < Fixed::from_float(0.0001f)) return;
+        // Prevent division by zero with minimum distance threshold
+        Fixed min_dist_sq = Fixed::from_float(0.0001f);
+        if (dist_sq < min_dist_sq) {
+            // Joints are too close, push them apart slightly
+            Fixed push_distance = Fixed::from_float(0.01f);
+            Fixed push_x = push_distance;
+            Fixed push_y = push_distance;
+            
+            // Use cardinal directions if joints are at same position
+            if (dx == Fixed::from_int(0) && dy == Fixed::from_int(0)) {
+                push_x = push_distance;
+                push_y = Fixed::from_int(0);
+            } else {
+                // Use existing direction scaled to push distance
+                Fixed dist = fixed_sqrt(dist_sq);
+                if (dist.raw > 0) {
+                    push_x = (dx * push_distance) / dist;
+                    push_y = (dy * push_distance) / dist;
+                }
+            }
+            
+            if (!joint1->fixed) {
+                joint1->x -= push_x;
+                joint1->y -= push_y;
+            }
+            if (!joint2->fixed) {
+                joint2->x += push_x;
+                joint2->y += push_y;
+            }
+            return;
+        }
         
         // Approximate sqrt for distance
         Fixed dist = fixed_sqrt(dist_sq);
+        
+        // Additional safety check for distance
+        if (dist < Fixed::from_float(0.01f)) return;
+        
         Fixed diff = (length - dist) / dist;
         Fixed half_stiff = stiffness * Fixed::from_float(0.5f);
         Fixed offset_x = dx * diff * half_stiff;

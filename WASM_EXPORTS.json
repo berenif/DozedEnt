@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2025-10-09T21:39:19.207Z",
+  "generatedAt": "2025-10-09T22:24:48.289Z",
   "tools": {
     "wasmDis": "C:\\Users\\flori\\Desktop\\DozedEnt\\emsdk\\upstream\\bin\\wasm-dis.exe"
   },
   "modules": [
     {
       "file": "public\\wasm\\game.wasm",
-      "exportCount": 139,
+      "exportCount": 145,
       "byType": {
         "memory": [
           "memory"
@@ -93,6 +93,12 @@
           "get_physics_player_vel_x",
           "get_physics_player_vel_y",
           "get_physics_perf_ms",
+          "physics_get_event_count",
+          "physics_get_events_ptr",
+          "physics_clear_events",
+          "set_body_collision_filter",
+          "get_collision_pairs_checked",
+          "get_collisions_resolved",
           "spawn_barrel",
           "throw_barrel",
           "get_barrel_count",
@@ -237,6 +243,12 @@
         "get_physics_player_vel_x",
         "get_physics_player_vel_y",
         "get_physics_perf_ms",
+        "physics_get_event_count",
+        "physics_get_events_ptr",
+        "physics_clear_events",
+        "set_body_collision_filter",
+        "get_collision_pairs_checked",
+        "get_collisions_resolved",
         "spawn_barrel",
         "throw_barrel",
         "get_barrel_count",

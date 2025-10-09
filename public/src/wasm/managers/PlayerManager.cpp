@@ -1,8 +1,12 @@
 #include "PlayerManager.h"
 #include "../GameGlobals.h"
 #include "../progression/AbilityUpgradeSystem.h"
+#include "../physics/FixedPoint.h"
+#include "../physics/PhysicsTypes.h"
 #include <cmath>
 #include <algorithm>
+
+// Using the real upgrade system function from AbilityUpgradeSystem
 
 PlayerManager::PlayerManager() {
     reset_to_spawn();

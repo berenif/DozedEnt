@@ -96,6 +96,8 @@ function Build-GameWasm {
         "_spawn_barrel", "_throw_barrel", "_get_barrel_count", "_get_barrel_x", "_get_barrel_y", 
         "_get_barrel_vel_x", "_get_barrel_vel_y", "_clear_all_barrels",
         "_get_physics_player_x", "_get_physics_player_y", "_get_physics_player_vel_x", "_get_physics_player_vel_y", "_get_physics_perf_ms",
+        "_physics_get_event_count", "_physics_get_events_ptr", "_physics_clear_events",
+        "_set_body_collision_filter", "_get_collision_pairs_checked", "_get_collisions_resolved",
         "_init_run", "_start", "_update", "_set_player_input"
     )
     $exportedFunctionsJson = '["' + ($exportedFunctions -join '","') + '"]'

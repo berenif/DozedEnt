@@ -1,5 +1,7 @@
 #include "WolfManager.h"
 #include "../coordinators/GameCoordinator.h"
+#include "../physics/FixedPoint.h"
+#include "../physics/PhysicsTypes.h"
 #include <cmath>
 #include <algorithm>
 
@@ -69,6 +71,11 @@ void WolfManager::spawn_wolf(float x, float y, WolfType type) {
     
     init_wolf_stats(wolf);
     
+    // Create physics body for collision detection
+    if (coordinator_) {
+        wolf.physics_body_id = coordinator_->get_physics_manager().create_wolf_body(x, y);
+    }
+    
     wolves_.push_back(wolf);
 }
 
@@ -117,6 +124,12 @@ void WolfManager::init_wolf_stats(Wolf& wolf) {
 }
 
 void WolfManager::remove_wolf(uint32_t wolf_id) {
+    // Find wolf to get physics body ID
+    Wolf* wolf = find_wolf_by_id(wolf_id);
+    if (wolf && wolf->physics_body_id > 0 && coordinator_) {
+        coordinator_->get_physics_manager().destroy_body(wolf->physics_body_id);
+    }
+    
     wolves_.erase(
         std::remove_if(wolves_.begin(), wolves_.end(),
             [wolf_id](const Wolf& w) { return w.id == wolf_id; }),
@@ -500,29 +513,48 @@ bool WolfManager::is_player_in_attack_range(const Wolf& wolf) const {
 // ============================================================================
 
 void WolfManager::update_wolf_physics(Wolf& wolf, float delta_time) {
-    // Integrate position with time-scaled velocity (match player integration style)
-    Fixed dt = Fixed::from_float(std::max(0.0f, delta_time));
-    wolf.x += wolf.vx * dt;
-    wolf.y += wolf.vy * dt;
-    
-    // Apply time-based friction to velocities
-    float friction_factor = 1.0f / (1.0f + WOLF_FRICTION * std::max(0.0f, delta_time));
-    Fixed f = Fixed::from_float(friction_factor);
-    wolf.vx *= f;
-    wolf.vy *= f;
-    
-    // Boundary checks (keep in world bounds 0-1)
-    if (wolf.x < Fixed::from_int(0)) {
-        wolf.x = Fixed::from_int(0);
-    }
-    if (wolf.x > Fixed::from_int(1)) {
-        wolf.x = Fixed::from_int(1);
-    }
-    if (wolf.y < Fixed::from_int(0)) {
-        wolf.y = Fixed::from_int(0);
-    }
-    if (wolf.y > Fixed::from_int(1)) {
-        wolf.y = Fixed::from_int(1);
+    // Sync with PhysicsManager if available
+    if (coordinator_ && wolf.physics_body_id > 0) {
+        auto& physics_mgr = coordinator_->get_physics_manager();
+        auto* body = physics_mgr.get_body(wolf.physics_body_id);
+        
+        if (body) {
+            // Update physics body velocity based on wolf AI
+            physics_mgr.set_velocity(wolf.physics_body_id, FixedVector3::from_floats(wolf.vx.to_float(), wolf.vy.to_float(), 0.0f));
+            
+            // Read back position from physics (handles collision resolution)
+            wolf.x = body->position.x;
+            wolf.y = body->position.y;
+            
+            // Read back velocity from physics (handles collision response)
+            wolf.vx = body->velocity.x;
+            wolf.vy = body->velocity.y;
+        }
+    } else {
+        // Fallback: manual physics integration
+        Fixed dt = Fixed::from_float(std::max(0.0f, delta_time));
+        wolf.x += wolf.vx * dt;
+        wolf.y += wolf.vy * dt;
+        
+        // Apply time-based friction to velocities
+        float friction_factor = 1.0f / (1.0f + WOLF_FRICTION * std::max(0.0f, delta_time));
+        Fixed f = Fixed::from_float(friction_factor);
+        wolf.vx *= f;
+        wolf.vy *= f;
+        
+        // Boundary checks (keep in world bounds 0-1)
+        if (wolf.x < Fixed::from_int(0)) {
+            wolf.x = Fixed::from_int(0);
+        }
+        if (wolf.x > Fixed::from_int(1)) {
+            wolf.x = Fixed::from_int(1);
+        }
+        if (wolf.y < Fixed::from_int(0)) {
+            wolf.y = Fixed::from_int(0);
+        }
+        if (wolf.y > Fixed::from_int(1)) {
+            wolf.y = Fixed::from_int(1);
+        }
     }
     
     // Update stamina
@@ -677,7 +709,7 @@ void WolfManager::assign_pack_roles(Pack& pack) {
         
         if (w->aggression > 0.6f) {
             w->pack_role = PackRole::Bruiser;
-        } else if (w->speed > 280.0f) {
+        } else if (w->speed > 0.28f) {
             w->pack_role = PackRole::Skirmisher;
         } else if (w->intelligence > 0.7f) {
             w->pack_role = PackRole::Support;
@@ -811,5 +843,32 @@ float WolfManager::estimate_player_skill() const {
     // Combine metrics
     float skill = (dodge_rate * 0.4f + block_rate * 0.3f + kill_speed * 0.3f);
     return std::clamp(skill, 0.0f, 1.0f);
+}
+
+bool WolfManager::should_attack(const Wolf& wolf) const {
+    float dist_to_player = get_distance_to_player(wolf);
+    
+    // Check if in attack range and ready
+    if (dist_to_player < wolf.attack_range) {
+        return wolf.attack_cooldown <= 0.0f && wolf.stamina > 0.3f;
+    }
+    
+    return false;
+}
+
+bool WolfManager::should_retreat(const Wolf& wolf) const {
+    float health_percent = wolf.health / wolf.max_health;
+    
+    // Retreat if low health and low morale
+    if (health_percent < 0.3f && wolf.morale < 0.4f) {
+        return true;
+    }
+    
+    // Retreat if very low health regardless of morale
+    if (health_percent < 0.15f) {
+        return true;
+    }
+    
+    return false;
 }
 

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced WASM Skeleton Physics Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow: hidden;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #canvas {
+            display: block;
+            background: #1a1a2e;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 300px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+        
+        .section h3 {
+            color: #4fc3f7;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .control-group label {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .control-group input, .control-group select {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .control-group input[type="checkbox"] {
+            flex: 0;
+            margin-left: 10px;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        #balance-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 12px;
+            min-width: 250px;
+        }
+        
+        .balance-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .balance-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f44336, #ff9800, #4caf50);
+            transition: width 0.3s ease;
+        }
+        
+        .strategy-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        
+        .strategy-ankle { background: #4caf50; }
+        .strategy-hip { background: #ff9800; }
+        .strategy-stepping { background: #f44336; }
+        .strategy-adaptive { background: #2196f3; }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #4fc3f7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <h3>Loading Enhanced Skeleton Physics...</h3>
+            <p id="loading-status">Initializing...</p>
+        </div>
+        
+        <div id="ui" style="display: none;">
+            <div class="section">
+                <h3>🎮 Controls</h3>
+                <button onclick="resetPose()">Reset Pose</button>
+                <button onclick="applyDisturbance()">Apply Disturbance</button>
+                <button onclick="togglePhysics()">Toggle Physics</button>
+            </div>
+            
+            <div class="section">
+                <h3>⚙️ Physics Settings</h3>
+                <div class="control-group">
+                    <label>Gravity:</label>
+                    <input type="checkbox" id="gravity-enabled" checked onchange="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>Collision Detection:</label>
+                    <input type="checkbox" id="collision-enabled" checked onchange="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>Foot Contact:</label>
+                    <input type="checkbox" id="foot-contact-enabled" checked onchange="updatePhysics()">
+                </div>
+                <div class="control-group">
+                    <label>Ground Y:</label>
+                    <input type="range" id="ground-y" min="-0.5" max="0.5" step="0.01" value="0" onchange="updatePhysics()">
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>🎯 Balance Strategy</h3>
+                <div class="control-group">
+                    <label>Strategy:</label>
+                    <select id="balance-strategy" onchange="updateBalanceStrategy()">
+                        <option value="3">Adaptive</option>
+                        <option value="0">Ankle Only</option>
+                        <option value="1">Hip + Ankle</option>
+                        <option value="2">Stepping</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div id="status" style="display: none;">
+            <div><strong>Performance:</strong></div>
+            <div>FPS: <span id="fps">60</span></div>
+            <div>Physics: <span id="physics-time">0</span>ms</div>
+            <div>Render: <span id="render-time">0</span>ms</div>
+            <div><strong>Bones:</strong> <span id="bone-count">0</span></div>
+            <div><strong>Joints:</strong> <span id="joint-count">0</span></div>
+        </div>
+        
+        <div id="balance-info" style="display: none;">
+            <div><strong>Balance State:</strong></div>
+            <div>Strategy: <span id="current-strategy" class="strategy-indicator strategy-adaptive">Adaptive</span></div>
+            <div>Quality: <span id="balance-quality">1.00</span></div>
+            <div class="balance-bar">
+                <div class="balance-fill" id="balance-bar" style="width: 100%"></div>
+            </div>
+            <div>COM Offset X: <span id="com-offset-x">0.00</span></div>
+            <div>COM Offset Y: <span id="com-offset-y">0.00</span></div>
+            <div>Left Foot: <span id="left-foot">❌</span></div>
+            <div>Right Foot: <span id="right-foot">❌</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
+        
+        let scene, camera, renderer, controls;
+        let skeleton, bones = [], joints = [];
+        let physicsEnabled = true;
+        let lastTime = 0;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        
+        // Performance tracking
+        let physicsTime = 0;
+        let renderTime = 0;
+        
+        // Balance state
+        let balanceState = {
+            strategy: 3,
+            com_offset_x: 0,
+            com_offset_y: 0,
+            left_foot_grounded: false,
+            right_foot_grounded: false,
+            balance_quality: 1.0
+        };
+        
+        async function init() {
+            updateLoadingStatus("Setting up 3D scene...");
+            
+            // Initialize Three.js
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(10, 10);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(10, 20, 0x444444, 0x444444);
+            scene.add(gridHelper);
+            
+            updateLoadingStatus("Loading WASM skeleton physics...");
+            
+            try {
+                // Try to load WASM module
+                const wasmModule = await loadWasmModule();
+                
+                if (wasmModule.Skeleton) {
+                    // Using mock implementation
+                    skeleton = new wasmModule.Skeleton();
+                } else if (wasmModule.wasmManager) {
+                    // Using real WASM module
+                    console.log('✓ WASM loaded, but skeleton physics not yet integrated');
+                    console.log('Using mock implementation for demonstration');
+                    skeleton = new createMockModule().Skeleton();
+                } else {
+                    throw new Error('Invalid WASM module');
+                }
+                
+                updateLoadingStatus("Building skeleton structure...");
+                buildSkeleton();
+                
+                updateLoadingStatus("Initializing physics...");
+                initializePhysics();
+                
+                updateLoadingStatus("Starting simulation...");
+                
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('ui').style.display = 'block';
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('balance-info').style.display = 'block';
+                
+                // Start animation loop
+                animate();
+                
+            } catch (error) {
+                console.error('Failed to load WASM module:', error);
+                updateLoadingStatus("Failed to load WASM module. Please check console for details.");
+            }
+        }
+        
+        async function loadWasmModule() {
+            // Try to load the main WASM module
+            try {
+                // Try different possible paths for the WASM manager
+                const possiblePaths = [
+                    '/src/utils/wasm-manager.js',
+                    '../src/utils/wasm-manager.js',
+                    '../../src/utils/wasm-manager.js'
+                ];
+                
+                let wasmManager = null;
+                let WasmManager = null;
+                
+                for (const path of possiblePaths) {
+                    try {
+                        console.log(`Attempting to load WASM manager from: ${path}`);
+                        const module = await import(path);
+                        WasmManager = module.WasmManager || module.default?.WasmManager || module.default;
+                        if (WasmManager) {
+                            wasmManager = new WasmManager();
+                            await wasmManager.load();
+                            console.log(`✓ Successfully loaded WASM manager from: ${path}`);
+                            break;
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to load WASM manager from ${path}:`, error.message);
+                    }
+                }
+                
+                if (wasmManager && wasmManager.isLoaded) {
+                    console.log('✓ Using WebAssembly physics engine');
+                    return { WasmManager, wasmManager };
+                } else {
+                    throw new Error('WASM failed to load from any path');
+                }
+            } catch (error) {
+                console.warn('WASM module not available, using fallback implementation');
+                // Return a mock module for demonstration
+                return createMockModule();
+            }
+        }
+        
+        function createMockModule() {
+            // Mock implementation for demonstration
+            return {
+                Skeleton: class MockSkeleton {
+                    constructor() {
+                        this.bones = [];
+                        this.joints = [];
+                        this.physicsEnabled = true;
+                        this.gravityEnabled = true;
+                        this.collisionEnabled = true;
+                        this.footContactEnabled = true;
+                        this.groundY = 0;
+                        this.globalStiffness = 100;
+                        this.globalDamping = 20;
+                    }
+                    
+                    addBone(name, parentIndex, px, py, pz, length, radius, mass) {
+                        const bone = {
+                            name, parentIndex, position: { x: px, y: py, z: pz },
+                            length, radius, mass, rotation: { x: 0, y: 0, z: 0, w: 1 }
+                        };
+                        this.bones.push(bone);
+                        return this.bones.length - 1;
+                    }
+                    
+                    addJoint(name, parentIdx, childIdx, type, minX, minY, minZ, maxX, maxY, maxZ, stiffness, damping) {
+                        const joint = { name, parentIdx, childIdx, type, targetAngles: { x: 0, y: 0, z: 0 } };
+                        this.joints.push(joint);
+                        return this.joints.length - 1;
+                    }
+                    
+                    update(dt) {
+                        // Mock physics update
+                        for (let bone of this.bones) {
+                            if (this.gravityEnabled) {
+                                bone.position.y -= 9.81 * dt * dt;
+                            }
+                            if (this.collisionEnabled && bone.position.y < this.groundY) {
+                                bone.position.y = this.groundY;
+                            }
+                        }
+                    }
+                    
+                    getBoneCount() { return this.bones.length; }
+                    getJointCount() { return this.joints.length; }
+                    getBonePosition(index) { return this.bones[index]?.position || { x: 0, y: 0, z: 0 }; }
+                    getBoneRotation(index) { return this.bones[index]?.rotation || { x: 0, y: 0, z: 0, w: 1 }; }
+                    getBoneName(index) { return this.bones[index]?.name || ''; }
+                    getBoneLength(index) { return this.bones[index]?.length || 0; }
+                    getBoneRadius(index) { return this.bones[index]?.radius || 0; }
+                    
+                    setPhysicsEnabled(enabled) { this.physicsEnabled = enabled; }
+                    setGravityEnabled(enabled) { this.gravityEnabled = enabled; }
+                    setGlobalStiffness(value) { this.globalStiffness = value; }
+                    setGlobalDamping(value) { this.globalDamping = value; }
+                    setCollisionDetectionEnabled(enabled) { this.collisionEnabled = enabled; }
+                    setFootContactDetectionEnabled(enabled) { this.footContactEnabled = enabled; }
+                    setGroundY(y) { this.groundY = y; }
+                    setJointTargetAngles(index, x, y, z) {
+                        if (this.joints[index]) {
+                            this.joints[index].targetAngles = { x, y, z };
+                        }
+                    }
+                    setBoneLocalRotation(index, x, y, z, w) {
+                        if (this.bones[index]) {
+                            this.bones[index].rotation = { x, y, z, w };
+                        }
+                    }
+                    
+                    getPhysicsEnabled() { return this.physicsEnabled; }
+                    getGravityEnabled() { return this.gravityEnabled; }
+                    getGlobalStiffness() { return this.globalStiffness; }
+                    getGlobalDamping() { return this.globalDamping; }
+                    getCollisionDetectionEnabled() { return this.collisionEnabled; }
+                    getFootContactDetectionEnabled() { return this.footContactEnabled; }
+                    getGroundY() { return this.groundY; }
+                    
+                    getBalanceState() {
+                        return {
+                            strategy: 3,
+                            com_offset_x: Math.random() * 0.1 - 0.05,
+                            com_offset_y: Math.random() * 0.1 - 0.05,
+                            left_foot_grounded: Math.random() > 0.5,
+                            right_foot_grounded: Math.random() > 0.5,
+                            balance_quality: Math.random()
+                        };
+                    }
+                }
+            };
+        }
+        
+        function buildSkeleton() {
+            // Build a simple humanoid skeleton
+            const pelvis = skeleton.addBone('pelvis', -1, 0, 1.0, 0, 0.12, 0.11, 9.5);
+            const spine1 = skeleton.addBone('spine_01', pelvis, 0, 1.15, 0, 0.08, 0.08, 2.5);
+            const spine2 = skeleton.addBone('spine_02', spine1, 0, 1.25, 0, 0.08, 0.08, 2.5);
+            const spine3 = skeleton.addBone('spine_03', spine2, 0, 1.35, 0, 0.08, 0.08, 2.5);
+            const chest = skeleton.addBone('chest', spine3, 0, 1.45, 0, 0.15, 0.12, 15.0);
+            const neck = skeleton.addBone('neck', chest, 0, 1.55, 0, 0.06, 0.06, 1.0);
+            const head = skeleton.addBone('head', neck, 0, 1.65, 0, 0.12, 0.12, 6.0);
+            
+            // Arms
+            const clavL = skeleton.addBone('clav_L', chest, -0.15, 1.45, 0, 0.06, 0.04, 0.5);
+            const scapL = skeleton.addBone('scap_L', clavL, -0.20, 1.40, 0, 0.08, 0.06, 1.0);
+            const upperArmL = skeleton.addBone('upperArm_L', scapL, -0.30, 1.30, 0, 0.25, 0.06, 2.1);
+            const forearmL = skeleton.addBone('forearm_L', upperArmL, -0.50, 1.10, 0, 0.22, 0.05, 1.6);
+            const handL = skeleton.addBone('hand_L', forearmL, -0.65, 0.95, 0, 0.08, 0.04, 0.4);
+            
+            const clavR = skeleton.addBone('clav_R', chest, 0.15, 1.45, 0, 0.06, 0.04, 0.5);
+            const scapR = skeleton.addBone('scap_R', clavR, 0.20, 1.40, 0, 0.08, 0.06, 1.0);
+            const upperArmR = skeleton.addBone('upperArm_R', scapR, 0.30, 1.30, 0, 0.25, 0.06, 2.1);
+            const forearmR = skeleton.addBone('forearm_R', upperArmR, 0.50, 1.10, 0, 0.22, 0.05, 1.6);
+            const handR = skeleton.addBone('hand_R', forearmR, 0.65, 0.95, 0, 0.08, 0.04, 0.4);
+            
+            // Legs
+            const hipL = skeleton.addBone('hip_L', pelvis, -0.08, 0.95, 0, 0.08, 0.08, 1.5);
+            const thighL = skeleton.addBone('thigh_L', hipL, -0.10, 0.70, 0, 0.35, 0.08, 7.5);
+            const shinL = skeleton.addBone('shin_L', thighL, -0.10, 0.35, 0, 0.35, 0.06, 3.8);
+            const footL = skeleton.addBone('foot_L', shinL, -0.10, 0.05, 0, 0.20, 0.04, 1.0);
+            const toeL = skeleton.addBone('toe_L', footL, -0.15, 0.02, 0, 0.08, 0.03, 0.3);
+            
+            const hipR = skeleton.addBone('hip_R', pelvis, 0.08, 0.95, 0, 0.08, 0.08, 1.5);
+            const thighR = skeleton.addBone('thigh_R', hipR, 0.10, 0.70, 0, 0.35, 0.08, 7.5);
+            const shinR = skeleton.addBone('shin_R', thighR, 0.10, 0.35, 0, 0.35, 0.06, 3.8);
+            const footR = skeleton.addBone('foot_R', shinR, 0.10, 0.05, 0, 0.20, 0.04, 1.0);
+            const toeR = skeleton.addBone('toe_R', footR, 0.15, 0.02, 0, 0.08, 0.03, 0.3);
+            
+            // Add joints
+            skeleton.addJoint('spine_01_joint', pelvis, spine1, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('spine_02_joint', spine1, spine2, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('spine_03_joint', spine2, spine3, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('chest_joint', spine3, chest, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('neck_joint', chest, neck, 0, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('head_joint', neck, head, 0, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            
+            // Arm joints
+            skeleton.addJoint('shoulder_L', scapL, upperArmL, 0, -3.14, -1.57, -3.14, 3.14, 1.57, 3.14, 100, 20);
+            skeleton.addJoint('elbow_L', upperArmL, forearmL, 1, 0, -3.14, -3.14, 0, 0, 3.14, 100, 20);
+            skeleton.addJoint('wrist_L', forearmL, handL, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            
+            skeleton.addJoint('shoulder_R', scapR, upperArmR, 0, -3.14, -1.57, -3.14, 3.14, 1.57, 3.14, 100, 20);
+            skeleton.addJoint('elbow_R', upperArmR, forearmR, 1, 0, -3.14, -3.14, 0, 0, 3.14, 100, 20);
+            skeleton.addJoint('wrist_R', forearmR, handR, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            
+            // Leg joints
+            skeleton.addJoint('hip_L', pelvis, thighL, 0, -1.57, -1.57, -1.57, 1.57, 1.57, 1.57, 100, 20);
+            skeleton.addJoint('knee_L', thighL, shinL, 1, 0, -3.14, -3.14, 0, 0, 3.14, 100, 20);
+            skeleton.addJoint('ankle_L', shinL, footL, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('toe_L', footL, toeL, 1, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            
+            skeleton.addJoint('hip_R', pelvis, thighR, 0, -1.57, -1.57, -1.57, 1.57, 1.57, 1.57, 100, 20);
+            skeleton.addJoint('knee_R', thighR, shinR, 1, 0, -3.14, -3.14, 0, 0, 3.14, 100, 20);
+            skeleton.addJoint('ankle_R', shinR, footR, 2, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+            skeleton.addJoint('toe_R', footR, toeR, 1, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 100, 20);
+        }
+        
+        function initializePhysics() {
+            // Set initial physics parameters
+            skeleton.setGlobalStiffness(100);
+            skeleton.setGlobalDamping(20);
+            skeleton.setGravityEnabled(true);
+            skeleton.setCollisionDetectionEnabled(true);
+            skeleton.setFootContactDetectionEnabled(true);
+            skeleton.setGroundY(0);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const currentTime = performance.now();
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            // Update physics
+            const physicsStart = performance.now();
+            if (physicsEnabled) {
+                skeleton.update(deltaTime);
+            }
+            physicsTime = performance.now() - physicsStart;
+            
+            // Update balance state
+            balanceState = skeleton.getBalanceState();
+            
+            // Update 3D visualization
+            const renderStart = performance.now();
+            updateVisualization();
+            renderer.render(scene, camera);
+            renderTime = performance.now() - renderStart;
+            
+            // Update UI
+            updateUI();
+            
+            // Update FPS counter
+            frameCount++;
+            if (currentTime - lastFpsUpdate > 1000) {
+                const fps = Math.round(frameCount * 1000 / (currentTime - lastFpsUpdate));
+                document.getElementById('fps').textContent = fps;
+                frameCount = 0;
+                lastFpsUpdate = currentTime;
+            }
+        }
+        
+        function updateVisualization() {
+            // Clear existing bones and joints
+            bones.forEach(bone => scene.remove(bone));
+            joints.forEach(joint => scene.remove(joint));
+            bones = [];
+            joints = [];
+            
+            // Create bone visualizations
+            for (let i = 0; i < skeleton.getBoneCount(); i++) {
+                const pos = skeleton.getBonePosition(i);
+                const rot = skeleton.getBoneRotation(i);
+                const length = skeleton.getBoneLength(i);
+                const radius = skeleton.getBoneRadius(i);
+                const name = skeleton.getBoneName(i);
+                
+                // Create bone geometry
+                const geometry = new THREE.CapsuleGeometry(radius, length, 4, 8);
+                const material = new THREE.MeshLambertMaterial({ 
+                    color: name.includes('foot') || name.includes('toe') ? 0xff6b6b : 0x4ecdc4 
+                });
+                const bone = new THREE.Mesh(geometry, material);
+                
+                bone.position.set(pos.x, pos.y, pos.z);
+                bone.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+                bone.castShadow = true;
+                bone.receiveShadow = true;
+                
+                scene.add(bone);
+                bones.push(bone);
+                
+                // Create joint visualization
+                const jointGeometry = new THREE.SphereGeometry(radius * 0.3, 8, 6);
+                const jointMaterial = new THREE.MeshLambertMaterial({ color: 0xff4757 });
+                const joint = new THREE.Mesh(jointGeometry, jointMaterial);
+                
+                joint.position.set(pos.x, pos.y, pos.z);
+                joint.castShadow = true;
+                
+                scene.add(joint);
+                joints.push(joint);
+            }
+        }
+        
+        function updateUI() {
+            // Update performance stats
+            document.getElementById('physics-time').textContent = physicsTime.toFixed(2);
+            document.getElementById('render-time').textContent = renderTime.toFixed(2);
+            document.getElementById('bone-count').textContent = skeleton.getBoneCount();
+            document.getElementById('joint-count').textContent = skeleton.getJointCount();
+            
+            // Update balance info
+            const strategyNames = ['Ankle Only', 'Hip + Ankle', 'Stepping', 'Adaptive'];
+            const strategyClasses = ['strategy-ankle', 'strategy-hip', 'strategy-stepping', 'strategy-adaptive'];
+            
+            const strategyElement = document.getElementById('current-strategy');
+            strategyElement.textContent = strategyNames[balanceState.strategy];
+            strategyElement.className = `strategy-indicator ${strategyClasses[balanceState.strategy]}`;
+            
+            document.getElementById('balance-quality').textContent = balanceState.balance_quality.toFixed(2);
+            document.getElementById('balance-bar').style.width = `${balanceState.balance_quality * 100}%`;
+            document.getElementById('com-offset-x').textContent = balanceState.com_offset_x.toFixed(3);
+            document.getElementById('com-offset-y').textContent = balanceState.com_offset_y.toFixed(3);
+            document.getElementById('left-foot').textContent = balanceState.left_foot_grounded ? '✅' : '❌';
+            document.getElementById('right-foot').textContent = balanceState.right_foot_grounded ? '✅' : '❌';
+        }
+        
+        function updateLoadingStatus(message) {
+            document.getElementById('loading-status').textContent = message;
+        }
+        
+        // Control functions
+        function resetPose() {
+            // Reset all joint target angles to 0
+            for (let i = 0; i < skeleton.getJointCount(); i++) {
+                skeleton.setJointTargetAngles(i, 0, 0, 0);
+            }
+        }
+        
+        function applyDisturbance() {
+            // Apply random disturbance to joints
+            for (let i = 0; i < skeleton.getJointCount(); i++) {
+                const x = (Math.random() - 0.5) * 0.5;
+                const y = (Math.random() - 0.5) * 0.5;
+                const z = (Math.random() - 0.5) * 0.5;
+                skeleton.setJointTargetAngles(i, x, y, z);
+            }
+        }
+        
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            skeleton.setPhysicsEnabled(physicsEnabled);
+        }
+        
+        function updatePhysics() {
+            skeleton.setGravityEnabled(document.getElementById('gravity-enabled').checked);
+            skeleton.setCollisionDetectionEnabled(document.getElementById('collision-enabled').checked);
+            skeleton.setFootContactDetectionEnabled(document.getElementById('foot-contact-enabled').checked);
+            skeleton.setGroundY(parseFloat(document.getElementById('ground-y').value));
+        }
+        
+        function updateBalanceStrategy() {
+            const strategy = parseInt(document.getElementById('balance-strategy').value);
+            // Note: Strategy setting would need to be implemented in the skeleton class
+            console.log('Balance strategy changed to:', strategy);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Initialize the demo
+        init();
+    </script>
+</body>
+</html>

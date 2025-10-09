@@ -11,10 +11,13 @@
 
 #include <cmath>
 #include <vector>
+#include <cstdint>
 #include "coordinators/GameCoordinator.h"
 #include "GameGlobals.h"
 #include "physics/PhysicsManager.h"
 #include "physics/PhysicsTypes.h"
+#include "physics/PhysicsEvents.h"
+#include "physics/ForceField.h"
 #include "../entities/PhysicsBarrel.h"
 
 // Initialize global coordinator
@@ -498,6 +501,46 @@ float get_physics_player_vel_y() {
 __attribute__((export_name("get_physics_perf_ms")))
 float get_physics_perf_ms() {
     return g_coordinator.get_physics_manager().get_last_step_time_ms();
+}
+
+// ---- Physics Event Queue Exports ----
+
+__attribute__((export_name("physics_get_event_count")))
+int physics_get_event_count() {
+    return GetPhysicsEventQueue().count();
+}
+
+__attribute__((export_name("physics_get_events_ptr")))
+uintptr_t physics_get_events_ptr() {
+    return reinterpret_cast<uintptr_t>(GetPhysicsEventQueue().data());
+}
+
+__attribute__((export_name("physics_clear_events")))
+void physics_clear_events() {
+    GetPhysicsEventQueue().clear();
+}
+
+// ---- Physics Collision Filter Utilities ----
+
+__attribute__((export_name("set_body_collision_filter")))
+void set_body_collision_filter(uint32_t body_id, uint32_t layer, uint32_t mask) {
+    auto &pm = g_coordinator.get_physics_manager();
+    RigidBody *body = pm.get_body(body_id);
+    if (!body) return;
+    body->collision_layer = layer;
+    body->collision_mask = mask;
+}
+
+// ---- Physics Perf Counters ----
+
+__attribute__((export_name("get_collision_pairs_checked")))
+uint32_t get_collision_pairs_checked() {
+    return g_coordinator.get_physics_manager().get_pairs_checked();
+}
+
+__attribute__((export_name("get_collisions_resolved")))
+uint32_t get_collisions_resolved() {
+    return g_coordinator.get_physics_manager().get_collisions_resolved();
 }
 
 // ---- Physics Barrel Functions ----

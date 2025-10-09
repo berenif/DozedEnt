@@ -2,6 +2,7 @@
 #include "../GameGlobals.h"
 #include "../physics/PhysicsManager.h"
 #include "../physics/PhysicsTypes.h"
+#include "../physics/FixedPoint.h"
 #include "PlayerManager.h"
 #include "GameStateManager.h"
 #include <cmath>

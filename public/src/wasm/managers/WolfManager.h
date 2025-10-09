@@ -76,6 +76,7 @@ struct Wolf {
     // Identity
     uint32_t id = 0;
     WolfType type = WolfType::Normal;
+    uint32_t physics_body_id = 0;  // PhysicsManager body ID for collision
     
     // Physics & Position (deterministic fixed-point)
     Fixed x = Fixed::from_float(0.5f);
@@ -90,7 +91,7 @@ struct Wolf {
     float max_health = 100.0f;
     float stamina = 1.0f;
     float damage = 15.0f;
-    float speed = 250.0f;  // Units per second
+    float speed = 0.25f;  // Normalized 0-1 space (same as BASE_WOLF_SPEED)
     float detection_range = 0.4f;  // Normalized world space
     float attack_range = 0.08f;
     

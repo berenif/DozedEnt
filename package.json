@@ -93,6 +93,7 @@
     "wasm:setup": "bash -c 'source ./emsdk/emsdk_env.sh && em++ --version'",
     "wasm:build:skeleton": "bash public/wasm/build-skeleton-physics.sh",
     "demo:skeleton": "npx serve public -p 8080",
+    "demo:enhanced-skeleton": "powershell -ExecutionPolicy Bypass -File tools/scripts/demo-enhanced-skeleton.ps1",
     "get-bundle-sizes": "node tools/scripts/get-bundle-sizes.js",
     "optimize:performance": "node tools/scripts/performance-optimizer.js",
     "optimize:bundle": "node -e \"console.log('Bundle optimization disabled: dead-code-eliminator removed')\"",

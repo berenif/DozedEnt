@@ -1,11 +1,25 @@
 #include "PhysicsManager.h"
 #include <algorithm>
+#include "CollisionLayers.h"
+#include "PhysicsEvents.h"
+#include "SpatialHash.h"
+#include "ForceField.h"
 
 PhysicsManager::PhysicsManager() 
     : next_body_id_(1)
     , tick_accumulator_(0)
     , last_step_time_ms_(0.0f)
+    , spatial_hash_(nullptr)
+    , force_field_mgr_(nullptr)
+    , use_broadphase_(false)
+    , pairs_checked_(0)
+    , collisions_resolved_(0)
 {
+}
+
+PhysicsManager::~PhysicsManager() {
+    delete spatial_hash_;
+    delete force_field_mgr_;
 }
 
 void PhysicsManager::initialize(const PhysicsConfig& config) {
@@ -24,6 +38,8 @@ void PhysicsManager::initialize(const PhysicsConfig& config) {
     player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);  // Non-zero to allow knockback
     player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
     player_body.radius = Fixed::from_float(0.05f);
+    player_body.collision_layer = CollisionLayers::Player;
+    player_body.collision_mask = CollisionLayers::Enemy | CollisionLayers::Environment;
     bodies_.push_back(player_body);
 }
 
@@ -41,6 +57,8 @@ void PhysicsManager::reset() {
     player_body.inverse_mass = Fixed::from_float(1.0f / 70.0f);  // Non-zero to allow knockback
     player_body.drag = Fixed::from_float(0.88f);  // Faster deceleration for responsive knockback
     player_body.radius = Fixed::from_float(0.05f);
+    player_body.collision_layer = CollisionLayers::Player;
+    player_body.collision_mask = CollisionLayers::Enemy | CollisionLayers::Environment;
     bodies_.push_back(player_body);
 }
 
@@ -70,6 +88,10 @@ void PhysicsManager::update(float delta_time) {
 
 void PhysicsManager::step(Fixed dt) {
     // Integrate forces for all dynamic bodies
+    if (force_field_mgr_) {
+        // Force fields modify accelerations before integration
+        force_field_mgr_->apply(bodies_, dt);
+    }
     integrate_forces(dt);
     
     // Detect and resolve collisions
@@ -156,6 +178,24 @@ uint32_t PhysicsManager::create_body(const RigidBody& body) {
     return new_body.id;
 }
 
+uint32_t PhysicsManager::create_wolf_body(float x, float y, float radius) {
+    RigidBody wolf_body;
+    wolf_body.id = generate_body_id();
+    wolf_body.type = BodyType::Dynamic;
+    wolf_body.position = FixedVector3::from_floats(x, y, 0.0f);
+    wolf_body.mass = Fixed::from_int(50);  // Wolves are lighter than player
+    wolf_body.inverse_mass = Fixed::from_float(1.0f / 50.0f);
+    wolf_body.drag = Fixed::from_float(0.85f);  // Slightly more friction than player
+    wolf_body.radius = Fixed::from_float(radius);
+    wolf_body.collision_layer = CollisionLayers::Enemy;
+    wolf_body.collision_mask = CollisionLayers::Player | CollisionLayers::Environment;
+    wolf_body.velocity = FixedVector3::zero();
+    wolf_body.acceleration = FixedVector3::zero();
+    
+    bodies_.push_back(wolf_body);
+    return wolf_body.id;
+}
+
 void PhysicsManager::destroy_body(uint32_t id) {
     bodies_.erase(
         std::remove_if(bodies_.begin(), bodies_.end(),
@@ -240,6 +280,8 @@ void PhysicsManager::set_position(uint32_t body_id, const FixedVector3& position
 }
 
 void PhysicsManager::detect_and_resolve_collisions() {
+    pairs_checked_ = 0;
+    collisions_resolved_ = 0;
     // Ground collision detection (check all bodies against ground at y=0)
     const Fixed GROUND_Y = Fixed::from_int(0);
     const Fixed GROUND_RESTITUTION = Fixed::from_float(0.3f);
@@ -274,7 +316,72 @@ void PhysicsManager::detect_and_resolve_collisions() {
     }
     
     // Simple sphere-sphere collision detection and response
-    for (size_t i = 0; i < bodies_.size(); ++i) {
+    // Optionally use broadphase to reduce candidate pairs
+    std::vector<std::pair<uint32_t, uint32_t>> potentialPairs;
+    if (use_broadphase_) {
+        if (!spatial_hash_) spatial_hash_ = new SpatialHash();
+        spatial_hash_->update(bodies_);
+        spatial_hash_->getPotentialPairs(bodies_, potentialPairs);
+    }
+
+    if (use_broadphase_ && !potentialPairs.empty()) {
+        // Build an index for body id -> index lookup
+        // Note: ids are not guaranteed to be contiguous
+        for (const auto &p : potentialPairs) {
+            // Find indices for both ids
+            RigidBody *bi = find_body(p.first);
+            RigidBody *bj = find_body(p.second);
+            if (!bi || !bj) continue;
+            if (bi->type == BodyType::Static) continue;
+            if (bj->type == BodyType::Static) continue;
+            if (bi->type == BodyType::Dynamic && bi->is_sleeping) continue;
+            if (bj->type == BodyType::Dynamic && bj->is_sleeping) continue;
+            pairs_checked_++;
+            // Layer/mask filtering
+            if (!shouldCollide(bi->collision_layer, bi->collision_mask, bj->collision_layer, bj->collision_mask)) continue;
+            // Narrow phase
+            FixedVector3 delta = bj->position - bi->position;
+            Fixed dist_sq = delta.length_squared();
+            Fixed combined_radius = bi->radius + bj->radius;
+            Fixed combined_radius_sq = combined_radius * combined_radius;
+            const Fixed MAX_DISTANCE_SQ = Fixed::from_int(1000000);
+            const Fixed MIN_RADIUS = Fixed::from_float(0.001f);
+            if (dist_sq > MAX_DISTANCE_SQ || bi->radius < MIN_RADIUS || bj->radius < MIN_RADIUS) continue;
+            if (dist_sq < combined_radius_sq && dist_sq > Fixed::from_int(0)) {
+                bi->wake();
+                bj->wake();
+                Fixed dist = fixed_sqrt(dist_sq);
+                FixedVector3 normal = delta.normalized();
+                Fixed overlap = combined_radius - dist;
+                Fixed total_inv_mass = bi->inverse_mass + bj->inverse_mass;
+                if (total_inv_mass > Fixed::from_int(0)) {
+                    Fixed ratio_i = bi->inverse_mass / total_inv_mass;
+                    Fixed ratio_j = bj->inverse_mass / total_inv_mass;
+                    *bi = *bi; *bj = *bj; // no-op to keep formatting blocks similar
+                    bi->position -= normal * overlap * ratio_i;
+                    bj->position += normal * overlap * ratio_j;
+                    FixedVector3 relative_velocity = bj->velocity - bi->velocity;
+                    Fixed velocity_along_normal = relative_velocity.dot(normal);
+                    if (velocity_along_normal < Fixed::from_int(0)) {
+                        Fixed restitution = Fixed::from_float(0.5f);
+                        Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
+                        FixedVector3 impulse = normal * impulse_magnitude;
+                        bi->velocity -= impulse * bi->inverse_mass;
+                        bj->velocity += impulse * bj->inverse_mass;
+                        collisions_resolved_++;
+                        CollisionEvent ev{};
+                        ev.bodyA = bi->id; ev.bodyB = bj->id;
+                        ev.nx = normal.x.to_float(); ev.ny = normal.y.to_float(); ev.nz = normal.z.to_float();
+                        FixedVector3 contact = bi->position + (normal * bi->radius);
+                        ev.px = contact.x.to_float(); ev.py = contact.y.to_float(); ev.pz = contact.z.to_float();
+                        ev.impulse = impulse_magnitude.to_float();
+                        GetPhysicsEventQueue().push(ev);
+                    }
+                }
+            }
+        }
+    } else {
+        for (size_t i = 0; i < bodies_.size(); ++i) {
         // Skip static bodies, but include both Dynamic and Kinematic
         if (bodies_[i].type == BodyType::Static) continue;
         if (bodies_[i].type == BodyType::Dynamic && bodies_[i].is_sleeping) continue;
@@ -283,6 +390,13 @@ void PhysicsManager::detect_and_resolve_collisions() {
             // Skip static bodies, but include both Dynamic and Kinematic
             if (bodies_[j].type == BodyType::Static) continue;
             if (bodies_[j].type == BodyType::Dynamic && bodies_[j].is_sleeping) continue;
+            pairs_checked_++;
+            // Collision layer/mask filtering (cheap bitmask test before math)
+            if (!shouldCollide(
+                bodies_[i].collision_layer, bodies_[i].collision_mask,
+                bodies_[j].collision_layer, bodies_[j].collision_mask)) {
+                continue;
+            }
             
             // Calculate distance between bodies
             FixedVector3 delta = bodies_[j].position - bodies_[i].position;
@@ -335,11 +449,46 @@ void PhysicsManager::detect_and_resolve_collisions() {
                         FixedVector3 impulse = normal * impulse_magnitude;
                         bodies_[i].velocity -= impulse * bodies_[i].inverse_mass;
                         bodies_[j].velocity += impulse * bodies_[j].inverse_mass;
+                        collisions_resolved_++;
+
+                        // Emit collision event for callbacks/telemetry
+                        CollisionEvent ev{};
+                        ev.bodyA = bodies_[i].id;
+                        ev.bodyB = bodies_[j].id;
+                        ev.nx = normal.x.to_float();
+                        ev.ny = normal.y.to_float();
+                        ev.nz = normal.z.to_float();
+                        // Approximate contact point on surface of A along normal
+                        FixedVector3 contact = bodies_[i].position + (normal * bodies_[i].radius);
+                        ev.px = contact.x.to_float();
+                        ev.py = contact.y.to_float();
+                        ev.pz = contact.z.to_float();
+                        ev.impulse = impulse_magnitude.to_float();
+                        GetPhysicsEventQueue().push(ev);
                     }
                 }
             }
         }
     }
+    
+    // Ground collisions generate events as well (optional)
+    // Using sentinel 0xFFFFFFFF for ground id
+    const uint32_t GROUND_ID = 0xFFFFFFFFu;
+    for (auto &body : bodies_) {
+        if (body.type == BodyType::Static) continue;
+        if (body.type == BodyType::Dynamic && body.is_sleeping) continue;
+        const Fixed GROUND_Y = Fixed::from_int(0);
+        if (body.position.y - body.radius == GROUND_Y) {
+            CollisionEvent ev{};
+            ev.bodyA = body.id;
+            ev.bodyB = GROUND_ID;
+            ev.nx = 0.0f; ev.ny = 1.0f; ev.nz = 0.0f;
+            ev.px = body.position.x.to_float();
+            ev.py = (GROUND_Y + body.radius).to_float();
+            ev.pz = body.position.z.to_float();
+            ev.impulse = 0.0f; // Not computed here; can be extended later
+            GetPhysicsEventQueue().push(ev);
+        }
+    }
 }
-
-
+}

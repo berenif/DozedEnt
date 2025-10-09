@@ -1,6 +1,8 @@
 #pragma once
 #include "PhysicsTypes.h"
 #include <vector>
+class SpatialHash;
+class ForceFieldManager;
 
 /**
  * PhysicsManager - Manages physics simulation with fixed-point determinism
@@ -14,7 +16,7 @@
 class PhysicsManager {
 public:
     PhysicsManager();
-    ~PhysicsManager() = default;
+    ~PhysicsManager();
     
     // Lifecycle
     void initialize(const PhysicsConfig& config);
@@ -25,6 +27,7 @@ public:
     
     // Body management
     uint32_t create_body(const RigidBody& body);
+    uint32_t create_wolf_body(float x, float y, float radius = 0.04f);
     void destroy_body(uint32_t id);
     RigidBody* get_body(uint32_t id);
     const RigidBody* get_body(uint32_t id) const;
@@ -78,6 +81,19 @@ private:
     
     RigidBody* find_body(uint32_t id);
     const RigidBody* find_body(uint32_t id) const;
+
+    // Optional systems (declared in cpp to keep header light)
+    SpatialHash* spatial_hash_ = nullptr;
+    ForceFieldManager* force_field_mgr_ = nullptr;
+    bool use_broadphase_ = false;
+    // Perf counters
+    uint32_t pairs_checked_ = 0;
+    uint32_t collisions_resolved_ = 0;
+public:
+    // Toggle/configure optional systems
+    void enable_broadphase(bool on) { use_broadphase_ = on; }
+    uint32_t get_pairs_checked() const { return pairs_checked_; }
+    uint32_t get_collisions_resolved() const { return collisions_resolved_; }
 };
 
 
