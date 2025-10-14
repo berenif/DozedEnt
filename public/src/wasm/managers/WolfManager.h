@@ -1,8 +1,9 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include <algorithm>
+#include <algorithm>\n#include <unordered_map>
 #include "../physics/FixedPoint.h"
+#include "wolves/WolfTypes.h"
 
 /**
  * WolfManager - Manages wolf enemy AI, behavior, and combat
@@ -13,141 +14,7 @@
 // Forward declarations
 class GameCoordinator;
 
-// Wolf types (from WOLF_AI.md)
-enum class WolfType : uint8_t {
-    Normal = 0,
-    Alpha = 1,
-    Scout = 2,
-    Hunter = 3,
-    Omega = 4
-};
-
-// Wolf AI states (from ENEMY_AI.md and WOLF_AI.md)
-enum class WolfState : uint8_t {
-    Idle = 0,
-    Patrol = 1,
-    Investigate = 2,
-    Alert = 3,
-    Approach = 4,
-    Strafe = 5,
-    Attack = 6,
-    Retreat = 7,
-    Recover = 8,
-    Flee = 9,
-    Ambush = 10,
-    Flank = 11
-};
-
-// Pack roles for coordination
-enum class PackRole : uint8_t {
-    Leader = 0,
-    Bruiser = 1,
-    Skirmisher = 2,
-    Support = 3,
-    Scout = 4
-};
-
-// Emotional states affecting behavior
-enum class EmotionalState : uint8_t {
-    Calm = 0,
-    Aggressive = 1,
-    Fearful = 2,
-    Desperate = 3,
-    Confident = 4,
-    Frustrated = 5
-};
-
-// Pack hunting plans
-enum class PackPlan : uint8_t {
-    None = 0,
-    Ambush = 1,    // Coordinated surprise attack
-    Pincer = 2,    // Flank from both sides
-    Retreat = 3,   // Tactical withdrawal
-    Commit = 4,    // All-in synchronized attack
-    Flank = 5,     // One distracts, others flank
-    Distract = 6,  // Support creates openings
-    Regroup = 7    // Reform formation
-};
-
-/**
- * Core wolf structure - all state deterministic for multiplayer
- */
-struct Wolf {
-    // Identity
-    uint32_t id = 0;
-    WolfType type = WolfType::Normal;
-    uint32_t physics_body_id = 0;  // PhysicsManager body ID for collision
-    
-    // Physics & Position (deterministic fixed-point)
-    Fixed x = Fixed::from_float(0.5f);
-    Fixed y = Fixed::from_float(0.5f);
-    Fixed vx = Fixed::from_int(0);
-    Fixed vy = Fixed::from_int(0);
-    Fixed facing_x = Fixed::from_int(1);
-    Fixed facing_y = Fixed::from_int(0);
-    
-    // Stats
-    float health = 100.0f;
-    float max_health = 100.0f;
-    float stamina = 1.0f;
-    float damage = 15.0f;
-    float speed = 0.25f;  // Normalized 0-1 space (same as BASE_WOLF_SPEED)
-    float detection_range = 0.4f;  // Normalized world space
-    float attack_range = 0.08f;
-    
-    // AI State
-    WolfState state = WolfState::Idle;
-    PackRole pack_role = PackRole::Scout;
-    EmotionalState emotion = EmotionalState::Calm;
-    float state_timer = 0.0f;
-    
-    // Attributes (from WOLF_AI.md)
-    float aggression = 0.5f;     // 0.3-0.7
-    float intelligence = 0.6f;   // 0.4-0.8
-    float coordination = 0.65f;  // 0.5-0.8
-    float morale = 0.7f;         // 0.6-0.8
-    float awareness = 0.5f;      // 0-1
-    
-    // Pack coordination
-    uint32_t pack_id = 0;
-    int pack_index = -1;
-    
-    // Memory & Learning
-    float player_speed_estimate = 0.3f;
-    float player_reaction_time = 0.3f;
-    float last_player_block_time = 999.0f;
-    float last_player_roll_time = 999.0f;
-    uint32_t successful_attacks = 0;
-    uint32_t failed_attacks = 0;
-    
-    // Timers & Cooldowns
-    float attack_cooldown = 0.0f;
-    float dodge_cooldown = 0.0f;
-    float decision_timer = 0.0f;
-    
-    // Animation data (for JS rendering)
-    float body_stretch = 1.0f;
-    float head_pitch = 0.0f;
-    float head_yaw = 0.0f;
-    float tail_wag = 0.0f;
-    float ear_rotation[2] = {0.0f, 0.0f};
-    float leg_positions[4][2] = {{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
-};
-
-/**
- * Pack coordination structure
- */
-struct Pack {
-    uint32_t pack_id = 0;
-    std::vector<uint32_t> wolf_ids;
-    PackPlan current_plan = PackPlan::None;
-    float plan_timer = 0.0f;
-    float coordination_bonus = 1.0f;
-    
-    // Pack state
-    float pack_morale = 0.7f;
-    int leader_index = -1;
-};
+// Wolf and pack type definitions are declared in wolves/WolfTypes.h
 
 /**
  * WolfManager - Main manager class for all wolf enemy logic
@@ -177,10 +44,16 @@ public:
     const Wolf* get_wolf(int index) const;
     Wolf* get_wolf_mutable(int index);
     Wolf* find_wolf_by_id(uint32_t wolf_id);
+    Wolf* find_wolf_by_body(uint32_t body_id);
+    const Wolf* find_wolf_by_body(uint32_t body_id) const;
     
     // Adaptive difficulty
     void update_difficulty_scaling(float player_skill);
     float estimate_player_skill() const;
+    
+    // Pack info queries (for WASM exports)
+    int get_pack_count() const { return static_cast<int>(packs_.size()); }
+    const Pack* get_pack(int index) const;
 
 private:
     GameCoordinator* coordinator_ = nullptr;
@@ -194,6 +67,9 @@ private:
     uint32_t player_dodges_ = 0;
     uint32_t player_blocks_ = 0;
     float average_kill_time_ = 30.0f;
+    
+    // Adaptive difficulty timer
+    float difficulty_update_timer_ = 0.0f;
     
     // Internal AI methods
     void update_wolf_ai(Wolf& wolf, float delta_time);
@@ -217,7 +93,9 @@ private:
     WolfState evaluate_best_state(const Wolf& wolf) const;
     bool should_attack(const Wolf& wolf) const;
     bool should_retreat(const Wolf& wolf) const;
+    // State durations with emotion-aware adjustment and jitter
     float get_state_duration(WolfState state) const;
+    float get_state_duration_for(const Wolf& wolf, WolfState state) const;
     void on_state_enter(Wolf& wolf, WolfState new_state);
     
     // Movement & targeting
@@ -225,6 +103,8 @@ private:
     void circle_strafe(Wolf& wolf, float delta_time);
     float get_distance_to_player(const Wolf& wolf) const;
     bool is_player_in_attack_range(const Wolf& wolf) const;
+    float compute_facing_dot_to_player(const Wolf& wolf) const;
+    int count_current_attackers() const;
     
     // Emotional AI
     void apply_emotion_modifiers(Wolf& wolf);
@@ -245,5 +125,33 @@ private:
     // Helper methods
     Pack* find_pack_by_id(uint32_t pack_id);
     void init_wolf_stats(Wolf& wolf);
+    void rebuild_body_index_map();
+    
+    // New systems - Phase 2 & 3 (Pack Intelligence & Reactive Combat)
+    bool check_interrupt_conditions(Wolf& wolf, WolfState& out_new_state);
+    WolfState get_preferred_state(const Wolf& wolf) const;
+    uint8_t select_attack_type(const Wolf& wolf) const;
+    void update_wolf_spatial_awareness(Wolf& wolf, float delta_time);
+    bool has_clear_path_to_player(const Wolf& wolf) const;
+    FixedVector3 calculate_separation_force(const Wolf& wolf) const;
+    float get_optimal_attack_angle(const Wolf& wolf) const;
+    
+    // Pack plan executors
+    void execute_flank_plan(Pack& pack);
+    void execute_distract_plan(Pack& pack);
+    void execute_regroup_plan(Pack& pack);
+
+    // Threat budget for concurrent attackers (pack/global)
+    int max_concurrent_attackers_ = 2;
+
+    // Observability counters (for diagnostics/tests)
+    uint32_t interrupt_critical_health_count_ = 0;
+    uint32_t interrupt_pack_command_count_ = 0;
+    uint32_t interrupt_close_proximity_count_ = 0;
+    uint32_t interrupt_damage_count_ = 0;
+    uint32_t gating_angle_rejects_count_ = 0;
+    uint32_t gating_los_rejects_count_ = 0;
+    uint32_t threat_budget_deferrals_count_ = 0;
 };
+
 

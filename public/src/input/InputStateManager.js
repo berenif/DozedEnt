@@ -1,4 +1,4 @@
-﻿import { InputValidator } from '../managers/input-validator.js';
+import { InputValidator } from '../managers/input-validator.js';
 
 const DEFAULT_CONFIG = {
   bufferDuration: 120,
@@ -73,7 +73,7 @@ export class InputStateManager {
     const validation = this.validator.validateInputAction(action, isPressed);
     if (!validation.valid) {
       if (this.config.debugInput) {
-        console.warn(`�s��,? Input rejected: ${validation.reason}`);
+        console.warn(`?s??,? Input rejected: ${validation.reason}`);
       }
       return;
     }
@@ -264,15 +264,15 @@ export class InputStateManager {
       );
 
       if (!validation.valid) {
-        console.warn('�s��,? WASM input validation failed:', validation.reason);
+        console.warn('?s??,? WASM input validation failed:', validation.reason);
         return;
       }
 
       if (this.config.debugInput && (validation.inputX !== 0 || validation.inputY !== 0)) {
-        console.log(`dY"� Sending to WASM: dir=(${validation.inputX.toFixed(2)}, ${validation.inputY.toFixed(2)})`);
+        console.log(`dY"? Sending to WASM: dir=(${validation.inputX.toFixed(2)}, ${validation.inputY.toFixed(2)})`);
       }
 
-      this.wasmManager.exports.set_player_input(
+      this.wasmManager.setPlayerInput(
         validation.inputX,
         validation.inputY,
         validation.isRolling,
@@ -292,7 +292,7 @@ export class InputStateManager {
         );
       }
     } catch (error) {
-      console.error('�?O Failed to send input to WASM:', error);
+      console.error('??O Failed to send input to WASM:', error);
       this.syncState.wasmReady = false;
     }
   }
@@ -339,10 +339,10 @@ export class InputStateManager {
     this.syncState.wasmReady = this.#hasWasmExports();
 
     if (!wasReady && this.syncState.wasmReady) {
-      console.log('�o. WASM input system ready');
+      console.log('?o. WASM input system ready');
       this.clearAllInputs();
     } else if (wasReady && !this.syncState.wasmReady) {
-      console.warn('�s��,? WASM input system not ready');
+      console.warn('?s??,? WASM input system not ready');
     }
   }
 

@@ -96,7 +96,10 @@ test('Golden Test: 60s deterministic gameplay with identical seed and inputs', a
         }
         
         // Update simulation
-        api.update(dirX, dirY, isRolling, dt)
+        const safeX = Number.isFinite(dirX) ? dirX : 0
+        const safeY = Number.isFinite(dirY) ? dirY : 0
+        api.set_player_input(safeX, safeY, isRolling ? 1 : 0, 0, 0, 0, 0, 0)
+        api.update(dt)
         totalTime += dt
         
         // Capture state every second
@@ -187,7 +190,8 @@ test('Golden Test: Pity timer for rare choices', async ({page}) => {
         // Trigger phase change to Choose by attacking
         for (let i = 0; i < 5; i++) {
           api.on_attack()
-          api.update(0, 0, 0, 0.5) // wait for cooldown
+          api.set_player_input(0, 0, 0, 0, 0, 0, 0, 0)
+          api.update(0.5) // wait for cooldown
         }
         
         if (api.get_phase() === 2) { // Choose phase
@@ -205,7 +209,8 @@ test('Golden Test: Pity timer for rare choices', async ({page}) => {
         }
         
         // Step simulation
-        api.update(0, 0, 0, 0.1)
+        api.set_player_input(0, 0, 0, 0, 0, 0, 0, 0)
+        api.update(0.1)
       }
       
       return rarities

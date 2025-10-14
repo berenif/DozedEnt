@@ -15,6 +15,7 @@
 #include "coordinators/GameCoordinator.h"
 #include "GameGlobals.h"
 #include "physics/PhysicsManager.h"
+#include "physics/PhysicsConstants.h"
 #include "physics/PhysicsTypes.h"
 #include "physics/PhysicsEvents.h"
 #include "physics/ForceField.h"
@@ -35,6 +36,42 @@ int main() {
 // ============================================================================
 
 extern "C" {
+// ---- Arm System Exports ----
+
+__attribute__((export_name("init_player_arms")))
+void init_player_arms() {
+    g_coordinator.get_arm_manager().initialize(&g_coordinator.get_physics_manager(), &g_coordinator.get_player_manager());
+}
+
+__attribute__((export_name("set_left_hand_target")))
+void set_left_hand_target(float x, float y, float z) {
+    g_coordinator.get_arm_manager().set_left_target(x, y, z);
+}
+
+__attribute__((export_name("set_right_hand_target")))
+void set_right_hand_target(float x, float y, float z) {
+    g_coordinator.get_arm_manager().set_right_target(x, y, z);
+}
+
+__attribute__((export_name("get_left_shoulder_x"))) float get_left_shoulder_x() { float x,y,z; g_coordinator.get_arm_manager().get_left_shoulder(x,y,z); return x; }
+__attribute__((export_name("get_left_shoulder_y"))) float get_left_shoulder_y() { float x,y,z; g_coordinator.get_arm_manager().get_left_shoulder(x,y,z); return y; }
+__attribute__((export_name("get_left_shoulder_z"))) float get_left_shoulder_z() { float x,y,z; g_coordinator.get_arm_manager().get_left_shoulder(x,y,z); return z; }
+__attribute__((export_name("get_left_elbow_x"))) float get_left_elbow_x() { float x,y,z; g_coordinator.get_arm_manager().get_left_elbow(x,y,z); return x; }
+__attribute__((export_name("get_left_elbow_y"))) float get_left_elbow_y() { float x,y,z; g_coordinator.get_arm_manager().get_left_elbow(x,y,z); return y; }
+__attribute__((export_name("get_left_elbow_z"))) float get_left_elbow_z() { float x,y,z; g_coordinator.get_arm_manager().get_left_elbow(x,y,z); return z; }
+__attribute__((export_name("get_left_hand_x"))) float get_left_hand_x() { float x,y,z; g_coordinator.get_arm_manager().get_left_hand(x,y,z); return x; }
+__attribute__((export_name("get_left_hand_y"))) float get_left_hand_y() { float x,y,z; g_coordinator.get_arm_manager().get_left_hand(x,y,z); return y; }
+__attribute__((export_name("get_left_hand_z"))) float get_left_hand_z() { float x,y,z; g_coordinator.get_arm_manager().get_left_hand(x,y,z); return z; }
+
+__attribute__((export_name("get_right_shoulder_x"))) float get_right_shoulder_x() { float x,y,z; g_coordinator.get_arm_manager().get_right_shoulder(x,y,z); return x; }
+__attribute__((export_name("get_right_shoulder_y"))) float get_right_shoulder_y() { float x,y,z; g_coordinator.get_arm_manager().get_right_shoulder(x,y,z); return y; }
+__attribute__((export_name("get_right_shoulder_z"))) float get_right_shoulder_z() { float x,y,z; g_coordinator.get_arm_manager().get_right_shoulder(x,y,z); return z; }
+__attribute__((export_name("get_right_elbow_x"))) float get_right_elbow_x() { float x,y,z; g_coordinator.get_arm_manager().get_right_elbow(x,y,z); return x; }
+__attribute__((export_name("get_right_elbow_y"))) float get_right_elbow_y() { float x,y,z; g_coordinator.get_arm_manager().get_right_elbow(x,y,z); return y; }
+__attribute__((export_name("get_right_elbow_z"))) float get_right_elbow_z() { float x,y,z; g_coordinator.get_arm_manager().get_right_elbow(x,y,z); return z; }
+__attribute__((export_name("get_right_hand_x"))) float get_right_hand_x() { float x,y,z; g_coordinator.get_arm_manager().get_right_hand(x,y,z); return x; }
+__attribute__((export_name("get_right_hand_y"))) float get_right_hand_y() { float x,y,z; g_coordinator.get_arm_manager().get_right_hand(x,y,z); return y; }
+__attribute__((export_name("get_right_hand_z"))) float get_right_hand_z() { float x,y,z; g_coordinator.get_arm_manager().get_right_hand(x,y,z); return z; }
 
 // ---- Core Lifecycle Functions ----
 
@@ -463,8 +500,7 @@ int on_attack() {
 
 __attribute__((export_name("start")))
 void start() {
-    // Legacy function - reset player to spawn
-    // This would need to be implemented in PlayerManager
+    g_coordinator.initialize(1ull, 0u);
 }
 
 // ---- Physics System Functions ----
@@ -772,12 +808,27 @@ void sync_player_position_from_physics() {
     auto& physics_mgr = g_coordinator.get_physics_manager();
     auto& player_mgr = g_coordinator.get_player_manager();
     
-    // Get player body (ID 0)
-    const RigidBody* player_body = physics_mgr.get_body(0);
-    if (player_body) {
-        // TODO: Add method to PlayerManager to set position from physics
-        // For now, physics is the authority for position
+    const RigidBody* player_body = physics_mgr.get_body(PhysicsConstants::kPlayerBodyId);
+    if (!player_body) {
+        return;
     }
+
+    const PhysicsConfig& config = physics_mgr.get_config();
+    const float normalized_x = CoordinateSpace::physicsToNormalizedX(
+        config,
+        player_body->position.x.to_float()
+    );
+    const float normalized_y = CoordinateSpace::physicsToNormalizedY(
+        config,
+        player_body->position.y.to_float()
+    );
+    player_mgr.set_position(normalized_x, normalized_y);
+
+    const float span_x = config.world_max_x.to_float() - config.world_min_x.to_float();
+    const float span_y = config.world_max_y.to_float() - config.world_min_y.to_float();
+    const float velocity_x = (span_x > 0.0f) ? (player_body->velocity.x.to_float() / span_x) : 0.0f;
+    const float velocity_y = (span_y > 0.0f) ? (player_body->velocity.y.to_float() / span_y) : 0.0f;
+    player_mgr.set_velocity(velocity_x, velocity_y);
 }
 
 // ---- Wolf Enemy System ----
@@ -952,6 +1003,55 @@ void remove_wolf(int wolf_index) {
     if (wolf) {
         g_coordinator.get_wolf_manager().remove_wolf(wolf->id);
     }
+}
+
+// ---- NEW: Enhanced Wolf AI Exports ----
+
+__attribute__((export_name("get_wolf_type")))
+int get_wolf_type(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    return wolf ? static_cast<int>(wolf->type) : 0;
+}
+
+__attribute__((export_name("get_wolf_emotion")))
+int get_wolf_emotion(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    return wolf ? static_cast<int>(wolf->emotion) : 0;
+}
+
+__attribute__((export_name("get_wolf_pack_id")))
+int get_wolf_pack_id(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    return wolf ? static_cast<int>(wolf->pack_id) : 0;
+}
+
+__attribute__((export_name("get_wolf_pack_role")))
+int get_wolf_pack_role(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    return wolf ? static_cast<int>(wolf->pack_role) : 0;
+}
+
+__attribute__((export_name("get_pack_count")))
+int get_pack_count() {
+    return g_coordinator.get_wolf_manager().get_pack_count();
+}
+
+__attribute__((export_name("get_pack_plan")))
+int get_pack_plan(int pack_index) {
+    const Pack* pack = g_coordinator.get_wolf_manager().get_pack(pack_index);
+    return pack ? static_cast<int>(pack->current_plan) : 0;
+}
+
+__attribute__((export_name("get_pack_morale")))
+float get_pack_morale(int pack_index) {
+    const Pack* pack = g_coordinator.get_wolf_manager().get_pack(pack_index);
+    return pack ? pack->pack_morale : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_attack_type")))
+int get_wolf_attack_type(int wolf_index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
+    return wolf ? static_cast<int>(wolf->current_attack_type) : 0;
 }
 
 } // extern "C"

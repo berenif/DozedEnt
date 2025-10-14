@@ -1,4 +1,6 @@
 #include "GameCoordinator.h"
+#include "../physics/PhysicsEvents.h"\n#include "../physics/PhysicsConstants.h"
+#include <cmath>
 
 GameCoordinator::GameCoordinator() {
     // Managers are initialized with their default constructors
@@ -25,6 +27,7 @@ void GameCoordinator::initialize(unsigned long long seed, unsigned int start_wea
     
     // Initialize wolf manager
     wolf_manager_.initialize(this);
+    arm_manager_.initialize(&physics_manager_, &player_manager_);
     
     // Reset all managers to clean state
     player_manager_.reset_to_spawn();
@@ -68,6 +71,7 @@ void GameCoordinator::update(float delta_time) {
     update_player_systems(delta_time);
     update_combat_systems(delta_time);
     wolf_manager_.update(delta_time);  // Update wolf AI and behavior
+    arm_manager_.update(delta_time);
     update_game_state(delta_time);
     
     // Coordinate cross-system interactions
@@ -75,6 +79,9 @@ void GameCoordinator::update(float delta_time) {
     coordinate_combat_actions();
     coordinate_movement_and_combat();
     coordinate_stamina_consumption();
+    
+    // Process physics collision events
+    process_collision_events();
     
     // Synchronize states between managers
     synchronize_manager_states();
@@ -218,4 +225,100 @@ void GameCoordinator::synchronize_manager_states() {
     // TODO: Implement state synchronization as needed
     // This might include updating global variables for WASM exports
 }
+
+void GameCoordinator::process_collision_events() {
+    // Get collision events from physics system
+    auto& event_queue = GetPhysicsEventQueue();
+    int event_count = event_queue.count();
+    const CollisionEvent* events = event_queue.data();
+    
+    // Process each collision event
+    for (int i = 0; i < event_count; i++) {
+        const CollisionEvent& event = events[i];
+        
+        // Check if collision involves player (player body ID is 0)
+        const uint32_t playerBodyId = PhysicsConstants::kPlayerBodyId;
+        bool player_is_bodyA = (event.bodyA == playerBodyId);
+        bool player_is_bodyB = (event.bodyB == playerBodyId);
+        
+        if (player_is_bodyA || player_is_bodyB) {\r\n            const uint32_t other_body_id = player_is_bodyA ? event.bodyB : event.bodyA;\r\n            const Wolf* wolf = wolf_manager_.find_wolf_by_body(other_body_id);\r\n            if (wolf) {\r\n                handle_player_wolf_collision(other_body_id, event.impulse);\r\n            }\r\n        }
+    }
+    
+    // Clear processed events
+    event_queue.clear();
+}
+
+void GameCoordinator::handle_player_wolf_collision(uint32_t wolf_body_id, float impulse_magnitude) {
+    // Find the wolf that owns this physics body
+    int wolf_count = wolf_manager_.get_wolf_count();
+    Wolf* colliding_wolf = nullptr;
+    
+    for (int i = 0; i < wolf_count; i++) {
+        Wolf* wolf = wolf_manager_.get_wolf_mutable(i);
+        if (wolf && wolf->physics_body_id == wolf_body_id) {
+            colliding_wolf = wolf;
+            break;
+        }
+    }
+    
+    if (!colliding_wolf) {
+        return;
+    }
+    
+    // Calculate collision damage based on wolf state and impulse
+    float base_damage = 5.0f;  // Base collision damage
+    float damage = base_damage;
+    
+    // If wolf is attacking, deal more damage
+    if (colliding_wolf->state == WolfState::Attack) {
+        damage = colliding_wolf->damage;  // Use wolf's full attack damage
+    } else {
+        // Scale damage by collision impulse (stronger collision = more damage)
+        float impulse_scale = impulse_magnitude * 0.5f;  // Scale factor
+        damage = base_damage * (1.0f + impulse_scale);
+    }
+    
+    // Clamp damage to reasonable range
+    damage = std::max(1.0f, std::min(damage, 50.0f));
+    
+    // Check if player is blocking
+    const auto& combat_state = combat_manager_.get_state();
+    if (combat_state.is_blocking) {
+        // Calculate if block is effective (wolf must be in front of player)
+        float player_x = player_manager_.get_x();
+        float player_y = player_manager_.get_y();
+        float player_face_x = player_manager_.get_facing_x();
+        float player_face_y = player_manager_.get_facing_y();
+        
+        // Direction from player to wolf
+        float dx = colliding_wolf->x.to_float() - player_x;
+        float dy = colliding_wolf->y.to_float() - player_y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0.001f) {
+            dx /= dist;
+            dy /= dist;
+            
+            // Dot product to check if wolf is in front
+            float dot = dx * player_face_x + dy * player_face_y;
+            
+            if (dot > 0.5f) {  // Wolf is in front (within ~60 degree cone)
+                // Successful block - reduce damage significantly
+                damage *= 0.2f;  // Block absorbs 80% of damage
+                
+                // Consume stamina for blocking
+                player_manager_.consume_stamina(0.1f);
+            }
+        }
+    }
+    
+    // Apply damage to player
+    player_manager_.take_damage(damage);
+    
+    // Track collision for wolf AI
+    if (colliding_wolf->state == WolfState::Attack) {
+        colliding_wolf->successful_attacks++;
+    }
+}
+
 

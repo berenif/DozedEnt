@@ -15,6 +15,7 @@ import { createEntityCollector } from './entities.js';
 import { createInputApplier } from './input-loop.js';
 import { createGameLoop } from './game-loop.js';
 import { clamp } from './utils.js';
+import { HandInputController } from '../game/input/hands/HandInputController.js';
 
 const canvas = document.getElementById('demo-canvas');
 if (!canvas) {
@@ -26,6 +27,15 @@ const wasmApi = await createWasmApi();
 
 window.wasmApi = wasmApi;
 window.renderer = renderer;
+
+// Hook hand controller into main game boot
+try {
+  const handController = new HandInputController(renderer);
+  handController.attach(document.body);
+  window.handController = handController;
+} catch (e) {
+  console.warn('[Main] HandInputController unavailable:', e);
+}
 
 let inputManager = null;
 let vfxManager = null;

@@ -12,6 +12,7 @@ set(MANAGER_SOURCES
     src/wasm/managers/CombatManager.cpp
     src/wasm/managers/GameStateManager.cpp
     src/wasm/managers/WolfManager.cpp
+    src/wasm/managers/wolves/StateMachine.cpp
 )
 
 set(COORDINATOR_SOURCES

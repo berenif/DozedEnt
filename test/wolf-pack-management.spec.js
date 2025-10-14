@@ -17,6 +17,16 @@ test('Wolf Pack Management: 3 packs with 30s respawn', async ({page}) => {
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
+    const step = (dirX, dirY, isRolling, dt) => {
+      api.set_player_input(
+        Number.isFinite(dirX) ? dirX : 0,
+        Number.isFinite(dirY) ? dirY : 0,
+        isRolling ? 1 : 0,
+        0, 0, 0, 0, 0
+      )
+      api.update(dt)
+    }
+
     // Test results object
     const results = {
       initialPackCount: 0,
@@ -47,7 +57,7 @@ test('Wolf Pack Management: 3 packs with 30s respawn', async ({page}) => {
       
       // Update for several frames to let pack system detect deaths
       for (let i = 0; i < 20; i++) {
-        api.update(0, 0, 0, 0.016) // 16ms frame
+        step(0, 0, 0, 0.016) // 16ms frame
       }
 
       // Check for dead packs with respawn timers
@@ -64,7 +74,7 @@ test('Wolf Pack Management: 3 packs with 30s respawn', async ({page}) => {
 
       // Test 3: Simulate 31 seconds passing (respawn should trigger)
       for (let i = 0; i < 31; i++) {
-        api.update(0, 0, 0, 1.0) // 1 second per update
+        step(0, 0, 0, 1.0) // 1 second per update
       }
 
       // Check that packs respawned
@@ -80,7 +90,7 @@ test('Wolf Pack Management: 3 packs with 30s respawn', async ({page}) => {
 
       // Test 4: Run longer simulation to ensure pack count is maintained
       for (let i = 0; i < 200; i++) {
-        api.update(0, 0, 0, 0.1) // 100ms per update
+        step(0, 0, 0, 0.1) // 100ms per update
       }
 
       const finalPackCount = api.get_wolf_pack_count()

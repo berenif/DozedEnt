@@ -2,20 +2,11 @@
 #include "../coordinators/GameCoordinator.h"
 #include "../physics/FixedPoint.h"
 #include "../physics/PhysicsTypes.h"
+#include "generated/balance_data.h"\n#include "wolves/WolfConstants.h"
 #include <cmath>
 #include <algorithm>
 
 // Constants
-namespace {
-    constexpr float PI = 3.14159265359f;
-    constexpr float BASE_WOLF_SPEED = 0.25f;  // Normalized 0-1 space (slightly slower than player's 0.3)
-    // Time-based friction coefficient (per second), similar scale to player
-    constexpr float WOLF_FRICTION = 12.0f;
-    constexpr float ATTACK_ANTICIPATION_TIME = 0.3f;
-    constexpr float ATTACK_EXECUTE_TIME = 0.2f;
-    constexpr float ATTACK_RECOVERY_TIME = 0.3f;
-}
-
 WolfManager::WolfManager() 
     : coordinator_(nullptr)
     , next_wolf_id_(1)
@@ -53,11 +44,20 @@ void WolfManager::update(float delta_time) {
         update_wolf_physics(wolf, delta_time);
         update_wolf_emotion(wolf, delta_time);
         update_wolf_memory(wolf, delta_time);
+        update_wolf_spatial_awareness(wolf, delta_time);
         update_wolf_animation(wolf, delta_time);
     }
     
     // Update pack coordination
     update_pack_coordination(delta_time);
+    
+    // Update adaptive difficulty every 10 seconds
+    difficulty_update_timer_ += delta_time;
+    if (difficulty_update_timer_ >= 10.0f) {
+        float player_skill = estimate_player_skill();
+        update_difficulty_scaling(player_skill);
+        difficulty_update_timer_ = 0.0f;
+    }
 }
 
 void WolfManager::spawn_wolf(float x, float y, WolfType type) {
@@ -67,7 +67,10 @@ void WolfManager::spawn_wolf(float x, float y, WolfType type) {
     wolf.x = Fixed::from_float(x);
     wolf.y = Fixed::from_float(y);
     wolf.state = WolfState::Idle;
-    wolf.state_timer = get_state_duration(WolfState::Idle);  // Initialize timer properly
+    wolf.state_timer = get_state_duration_for(wolf, WolfState::Idle);  // Initialize timer properly
+    wolf.health_at_state_enter = wolf.health;
+    wolf.decision_interval = 0.15f;
+    wolf.decision_timer = wolf.decision_interval;
     
     init_wolf_stats(wolf);
     
@@ -84,22 +87,28 @@ void WolfManager::init_wolf_stats(Wolf& wolf) {
     wolf.max_health = 100.0f;
     wolf.health = wolf.max_health;
     wolf.stamina = 1.0f;
-    wolf.damage = 15.0f;
-    wolf.speed = BASE_WOLF_SPEED;
-    wolf.detection_range = 0.4f;
-    wolf.attack_range = 0.08f;
+    wolf.base_damage = 15.0f;
+    wolf.damage = wolf.base_damage;
+    wolf.base_speed = BASE_WOLF_SPEED;
+    wolf.speed = wolf.base_speed;
+    wolf.base_detection_range = 0.4f;
+    wolf.detection_range = wolf.base_detection_range;
+    wolf.base_attack_range = 0.08f;
+    wolf.attack_range = wolf.base_attack_range;
     
-    // Randomize attributes slightly (deterministic using wolf ID as seed)
-    uint32_t seed = wolf.id * 12345u;
-    auto pseudo_rand = [&seed]() -> float {
-        seed = seed * 1664525u + 1013904223u;
-        return static_cast<float>(seed % 1000) / 1000.0f;
+    // Randomize attributes using global RNG for determinism across systems
+    auto* game_state = coordinator_ ? &coordinator_->get_game_state_manager() : nullptr;
+    const auto next_random = [game_state]() -> float {
+        if (game_state) {
+            return game_state->get_random_float();
+        }
+        return 0.5f;
     };
-    
-    wolf.aggression = 0.3f + pseudo_rand() * 0.4f;      // 0.3-0.7
-    wolf.intelligence = 0.4f + pseudo_rand() * 0.4f;    // 0.4-0.8
-    wolf.coordination = 0.5f + pseudo_rand() * 0.3f;    // 0.5-0.8
-    wolf.morale = 0.6f + pseudo_rand() * 0.2f;          // 0.6-0.8
+
+    wolf.aggression = 0.3f + next_random() * 0.4f;      // 0.3-0.7
+    wolf.intelligence = 0.4f + next_random() * 0.4f;    // 0.4-0.8
+    wolf.coordination = 0.5f + next_random() * 0.3f;    // 0.5-0.8
+    wolf.morale = 0.6f + next_random() * 0.2f;          // 0.6-0.8
     
     // Type-specific modifiers
     switch (wolf.type) {
@@ -126,15 +135,19 @@ void WolfManager::init_wolf_stats(Wolf& wolf) {
 void WolfManager::remove_wolf(uint32_t wolf_id) {
     // Find wolf to get physics body ID
     Wolf* wolf = find_wolf_by_id(wolf_id);
-    if (wolf && wolf->physics_body_id > 0 && coordinator_) {
-        coordinator_->get_physics_manager().destroy_body(wolf->physics_body_id);
+    if (wolf) {
+        if (wolf->physics_body_id > 0 && coordinator_) {
+            coordinator_->get_physics_manager().destroy_body(wolf->physics_body_id);
+        }
+        body_id_to_index_.erase(wolf->physics_body_id);
     }
-    
+
     wolves_.erase(
         std::remove_if(wolves_.begin(), wolves_.end(),
             [wolf_id](const Wolf& w) { return w.id == wolf_id; }),
         wolves_.end()
     );
+    rebuild_body_index_map();
 }
 
 void WolfManager::damage_wolf(uint32_t wolf_id, float damage, float knockback_x, float knockback_y) {
@@ -193,6 +206,40 @@ Wolf* WolfManager::find_wolf_by_id(uint32_t wolf_id) {
     return nullptr;
 }
 
+Wolf* WolfManager::find_wolf_by_body(uint32_t body_id) {
+    auto it = body_id_to_index_.find(body_id);
+    if (it == body_id_to_index_.end()) {
+        return nullptr;
+    }
+    const int index = it->second;
+    if (index < 0 || static_cast<std::size_t>(index) >= wolves_.size()) {
+        return nullptr;
+    }
+    return &wolves_[index];
+}
+
+const Wolf* WolfManager::find_wolf_by_body(uint32_t body_id) const {
+    auto it = body_id_to_index_.find(body_id);
+    if (it == body_id_to_index_.end()) {
+        return nullptr;
+    }
+    const int index = it->second;
+    if (index < 0 || static_cast<std::size_t>(index) >= wolves_.size()) {
+        return nullptr;
+    }
+    return &wolves_[index];
+}
+
+void WolfManager::rebuild_body_index_map() {
+    body_id_to_index_.clear();
+    for (std::size_t i = 0; i < wolves_.size(); ++i) {
+        const auto body_id = wolves_[i].physics_body_id;
+        if (body_id != 0) {
+            body_id_to_index_[body_id] = static_cast<int>(i);
+        }
+    }
+}
+
 // ============================================================================
 // AI UPDATE - Main wolf AI logic
 // ============================================================================
@@ -212,227 +259,6 @@ void WolfManager::update_wolf_ai(Wolf& wolf, float delta_time) {
         wolf.decision_timer -= delta_time;
     }
 }
-
-void WolfManager::update_wolf_state_machine(Wolf& wolf, float delta_time) {
-    wolf.state_timer -= delta_time;
-    
-    // State transition check
-    if (wolf.state_timer <= 0.0f) {
-        WolfState new_state = evaluate_best_state(wolf);
-        
-        if (new_state != wolf.state) {
-            wolf.state = new_state;
-            wolf.state_timer = get_state_duration(new_state);
-            on_state_enter(wolf, new_state);
-        } else {
-            // Even if state doesn't change, reset timer to avoid getting stuck
-            wolf.state_timer = get_state_duration(new_state);
-        }
-    }
-    
-    // Execute current state behavior
-    switch (wolf.state) {
-        case WolfState::Idle:
-            update_idle_behavior(wolf, delta_time);
-            break;
-        case WolfState::Patrol:
-            update_patrol_behavior(wolf, delta_time);
-            break;
-        case WolfState::Alert:
-            update_alert_behavior(wolf, delta_time);
-            break;
-        case WolfState::Approach:
-            update_approach_behavior(wolf, delta_time);
-            break;
-        case WolfState::Strafe:
-            update_strafe_behavior(wolf, delta_time);
-            break;
-        case WolfState::Attack:
-            update_attack_behavior(wolf, delta_time);
-            break;
-        case WolfState::Retreat:
-            update_retreat_behavior(wolf, delta_time);
-            break;
-        case WolfState::Recover:
-            update_recover_behavior(wolf, delta_time);
-            break;
-        default:
-            break;
-    }
-}
-
-WolfState WolfManager::evaluate_best_state(const Wolf& wolf) const {
-    float dist_to_player = get_distance_to_player(wolf);
-    
-    // Detection range check
-    if (dist_to_player > wolf.detection_range) {
-        return wolf.state == WolfState::Patrol ? WolfState::Patrol : WolfState::Idle;
-    }
-    
-    // Low health -> retreat
-    if (wolf.health < wolf.max_health * 0.3f && wolf.morale < 0.4f) {
-        return WolfState::Retreat;
-    }
-    
-    // In attack range and ready
-    if (dist_to_player < wolf.attack_range) {
-        if (wolf.attack_cooldown <= 0.0f && wolf.stamina > 0.3f) {
-            return WolfState::Attack;
-        }
-        return WolfState::Strafe;
-    }
-    
-    // Medium range -> approach
-    if (dist_to_player < wolf.detection_range * 0.7f) {
-        return WolfState::Approach;
-    }
-    
-    // Detected player -> alert
-    return WolfState::Alert;
-}
-
-float WolfManager::get_state_duration(WolfState state) const {
-    switch (state) {
-        case WolfState::Idle: return 2.0f;
-        case WolfState::Patrol: return 4.0f;
-        case WolfState::Alert: return 1.0f;
-        case WolfState::Approach: return 3.0f;
-        case WolfState::Strafe: return 2.0f;
-        case WolfState::Attack: return ATTACK_ANTICIPATION_TIME + ATTACK_EXECUTE_TIME + ATTACK_RECOVERY_TIME;
-        case WolfState::Retreat: return 2.0f;
-        case WolfState::Recover: return 1.0f;
-        default: return 1.0f;
-    }
-}
-
-void WolfManager::on_state_enter(Wolf& wolf, WolfState new_state) {
-    // State entry logic
-    switch (new_state) {
-        case WolfState::Attack:
-            wolf.body_stretch = 0.8f; // Crouch
-            break;
-        case WolfState::Retreat:
-            wolf.morale = std::max(0.0f, wolf.morale - 0.1f);
-            break;
-        default:
-            wolf.body_stretch = 1.0f;
-            break;
-    }
-}
-
-// ============================================================================
-// STATE BEHAVIORS
-// ============================================================================
-
-void WolfManager::update_idle_behavior(Wolf& wolf, float delta_time) {
-    // Just stand still, look around
-    // Apply time-based friction to bleed off any residual motion
-    float friction_factor = 1.0f / (1.0f + WOLF_FRICTION * std::max(0.0f, delta_time));
-    Fixed f = Fixed::from_float(friction_factor);
-    wolf.vx *= f;
-    wolf.vy *= f;
-    
-    // Subtle head movement
-    wolf.head_yaw = std::sin(wolf.state_timer * 2.0f) * 0.2f;
-}
-
-void WolfManager::update_patrol_behavior(Wolf& wolf, float delta_time) {
-    // Simple patrol: move in a circle or random direction
-    float time = wolf.state_timer;
-    float patrol_x = std::cos(time) * 0.1f;
-    float patrol_y = std::sin(time) * 0.1f;
-    
-    wolf.facing_x = Fixed::from_float(patrol_x);
-    wolf.facing_y = Fixed::from_float(patrol_y);
-    
-    // Set per-second velocity; physics integrates using delta_time
-    Fixed move_speed = Fixed::from_float(wolf.speed * 0.3f);
-    wolf.vx = wolf.facing_x * move_speed;
-    wolf.vy = wolf.facing_y * move_speed;
-}
-
-void WolfManager::update_alert_behavior(Wolf& wolf, float delta_time) {
-    // Face player, heightened awareness
-    move_towards_player(wolf, 0.0f); // Just update facing
-    wolf.awareness = 1.0f;
-    wolf.ear_rotation[0] = 0.3f;
-    wolf.ear_rotation[1] = 0.3f;
-}
-
-void WolfManager::update_approach_behavior(Wolf& wolf, float delta_time) {
-    // Move towards player
-    move_towards_player(wolf, delta_time);
-}
-
-void WolfManager::update_strafe_behavior(Wolf& wolf, float delta_time) {
-    // Circle around player, maintaining distance
-    circle_strafe(wolf, delta_time);
-}
-
-void WolfManager::update_attack_behavior(Wolf& wolf, float delta_time) {
-    float time_remaining = wolf.state_timer;
-    float total_time = ATTACK_ANTICIPATION_TIME + ATTACK_EXECUTE_TIME + ATTACK_RECOVERY_TIME;
-    
-    if (time_remaining > (ATTACK_EXECUTE_TIME + ATTACK_RECOVERY_TIME)) {
-        // Anticipation phase - crouch
-        wolf.body_stretch = 0.8f;
-        move_towards_player(wolf, 0.0f); // Face player
-    } 
-    else if (time_remaining > ATTACK_RECOVERY_TIME) {
-        // Execute phase - lunge
-        wolf.body_stretch = 1.3f;
-        
-        // Check if player is in range
-        if (is_player_in_attack_range(wolf) && coordinator_) {
-            // Send attack to combat manager
-            // Note: This would integrate with the combat system
-            // For now, just track the attempt
-            wolf.successful_attacks++; // Simplified
-            total_attacks_++;
-        }
-    } 
-    else {
-        // Recovery phase
-        wolf.body_stretch = 1.0f;
-        wolf.attack_cooldown = 1.5f / (1.0f + wolf.aggression);
-    }
-}
-
-void WolfManager::update_retreat_behavior(Wolf& wolf, float delta_time) {
-    // Move away from player
-    if (!coordinator_) {
-        return;
-    }
-    
-    float player_x = coordinator_->get_player_manager().get_x();
-    float player_y = coordinator_->get_player_manager().get_y();
-    
-    Fixed dx = wolf.x - Fixed::from_float(player_x);
-    Fixed dy = wolf.y - Fixed::from_float(player_y);
-    
-    Fixed distance = fixed_sqrt(dx * dx + dy * dy);
-    
-    if (distance > Fixed::from_int(0)) {
-        wolf.facing_x = dx / distance;
-        wolf.facing_y = dy / distance;
-        
-        // Per-second velocity; integrated in physics
-        Fixed move_speed = Fixed::from_float(wolf.speed);
-        wolf.vx = wolf.facing_x * move_speed;
-        wolf.vy = wolf.facing_y * move_speed;
-    }
-}
-
-void WolfManager::update_recover_behavior(Wolf& wolf, float delta_time) {
-    // Stunned/recovering, can't act
-    wolf.vx *= Fixed::from_float(0.7f); // Heavy friction
-    wolf.vy *= Fixed::from_float(0.7f);
-    wolf.body_stretch = 0.9f;
-}
-
-// ============================================================================
-// MOVEMENT & TARGETING
-// ============================================================================
 
 void WolfManager::move_towards_player(Wolf& wolf, float delta_time) {
     if (!coordinator_) {
@@ -506,6 +332,33 @@ float WolfManager::get_distance_to_player(const Wolf& wolf) const {
 
 bool WolfManager::is_player_in_attack_range(const Wolf& wolf) const {
     return get_distance_to_player(wolf) < wolf.attack_range;
+}
+
+float WolfManager::compute_facing_dot_to_player(const Wolf& wolf) const {
+    if (!coordinator_) {
+        return 1.0f;
+    }
+    float player_x = coordinator_->get_player_manager().get_x();
+    float player_y = coordinator_->get_player_manager().get_y();
+    float dx = player_x - wolf.x.to_float();
+    float dy = player_y - wolf.y.to_float();
+    float len = std::sqrt(dx * dx + dy * dy);
+    if (len <= 0.0f) {
+        return 1.0f;
+    }
+    float norm_dx = dx / len;
+    float norm_dy = dy / len;
+    return norm_dx * wolf.facing_x.to_float() + norm_dy * wolf.facing_y.to_float();
+}
+
+int WolfManager::count_current_attackers() const {
+    int count = 0;
+    for (const Wolf& w : wolves_) {
+        if (w.state == WolfState::Attack) {
+            count++;
+        }
+    }
+    return count;
 }
 
 // ============================================================================
@@ -592,26 +445,48 @@ void WolfManager::update_wolf_emotion(Wolf& wolf, float delta_time) {
 }
 
 void WolfManager::apply_emotion_modifiers(Wolf& wolf) {
-    // Reset modifiers to base values first
-    // (In a more complete system, we'd store base values separately)
+    // Only apply modifiers if emotion changed
+    if (wolf.emotion == wolf.previous_emotion) {
+        return;
+    }
     
+    // Reset to base values first
+    wolf.speed = wolf.base_speed;
+    wolf.detection_range = wolf.base_detection_range;
+    wolf.attack_range = wolf.base_attack_range;
+    wolf.damage = wolf.base_damage;
+    
+    // Apply emotion-specific modifiers
     switch (wolf.emotion) {
         case EmotionalState::Confident:
-            wolf.attack_cooldown *= 0.8f;
+            wolf.speed *= 1.1f;  // 10% faster
+            wolf.attack_cooldown *= 0.8f;  // Attack 25% more frequently
             break;
         case EmotionalState::Fearful:
-            wolf.detection_range *= 1.3f;
-            wolf.attack_range *= 0.7f;
+            wolf.detection_range *= 1.3f;  // See player from farther
+            wolf.attack_range *= 0.7f;     // Reluctant to get close
+            wolf.speed *= 0.9f;            // Slightly slower (cautious)
             break;
         case EmotionalState::Frustrated:
-            wolf.aggression = std::min(1.0f, wolf.aggression + 0.2f);
+            wolf.aggression = std::min(1.0f, wolf.aggression + 0.2f);  // More aggressive
+            wolf.damage *= 1.1f;  // Hit harder out of frustration
             break;
         case EmotionalState::Desperate:
-            wolf.damage *= 1.3f;
+            wolf.damage *= 1.3f;   // 30% more damage (all-in)
+            wolf.speed *= 1.15f;   // Faster movement
             break;
+        case EmotionalState::Aggressive:
+            wolf.attack_range *= 1.2f;  // Willing to engage farther
+            wolf.speed *= 1.05f;        // Slightly faster
+            break;
+        case EmotionalState::Calm:
         default:
+            // No modifiers for calm state
             break;
     }
+    
+    // Update previous emotion
+    wolf.previous_emotion = wolf.emotion;
 }
 
 // ============================================================================
@@ -731,33 +606,268 @@ void WolfManager::update_pack_coordination(float delta_time) {
 }
 
 void WolfManager::update_pack_ai(Pack& pack, float delta_time) {
-    // Placeholder for Phase 4
     pack.plan_timer -= delta_time;
+    
+    // Re-evaluate pack plan every 3 seconds
+    if (pack.plan_timer <= 0.0f) {
+        pack.plan_timer = 3.0f;
+        
+        // Count wolves in attack range and check pack health
+        int wolves_near_player = 0;
+        int wolves_ready_to_attack = 0;
+        float avg_health = 0.0f;
+        int alive_wolves = 0;
+        
+        for (uint32_t wolf_id : pack.wolf_ids) {
+            Wolf* wolf = find_wolf_by_id(wolf_id);
+            if (!wolf || wolf->health <= 0.0f) {
+                continue;
+            }
+            
+            alive_wolves++;
+            avg_health += wolf->health / wolf->max_health;
+            
+            float dist = get_distance_to_player(*wolf);
+            if (dist < wolf->attack_range * 2.0f) {
+                wolves_near_player++;
+            }
+            if (wolf->attack_cooldown <= 0.0f && wolf->stamina > 0.3f) {
+                wolves_ready_to_attack++;
+            }
+        }
+        
+        if (alive_wolves == 0) {
+            return;
+        }
+        
+        avg_health /= alive_wolves;
+        pack.pack_morale = avg_health * 0.7f + 0.3f;
+        
+        // Select appropriate pack plan based on situation
+        if (avg_health < 0.3f) {
+            pack.current_plan = PackPlan::Retreat;
+        } else if (wolves_ready_to_attack >= 3) {
+            pack.current_plan = PackPlan::Commit;  // All-in attack
+        } else if (wolves_near_player >= 2 && wolves_near_player < alive_wolves) {
+            pack.current_plan = PackPlan::Flank;  // Some distract, others flank
+        } else if (alive_wolves >= 3) {
+            pack.current_plan = PackPlan::Pincer;  // Split and surround
+        } else {
+            pack.current_plan = PackPlan::None;  // Individual behavior
+        }
+    }
+    
+    // Execute current plan
+    if (pack.current_plan != PackPlan::None) {
+        execute_pack_plan(pack);
+    }
 }
 
 void WolfManager::execute_pack_plan(Pack& pack) {
-    // Placeholder for Phase 4
+    switch (pack.current_plan) {
+        case PackPlan::Ambush:
+            execute_ambush_plan(pack);
+            break;
+        case PackPlan::Pincer:
+            execute_pincer_plan(pack);
+            break;
+        case PackPlan::Commit:
+            execute_commit_plan(pack);
+            break;
+        case PackPlan::Flank:
+            execute_flank_plan(pack);
+            break;
+        case PackPlan::Distract:
+            execute_distract_plan(pack);
+            break;
+        case PackPlan::Retreat:
+            // All wolves retreat individually
+            for (uint32_t wolf_id : pack.wolf_ids) {
+                Wolf* wolf = find_wolf_by_id(wolf_id);
+                if (wolf && wolf->state != WolfState::Retreat) {
+                    wolf->state = WolfState::Retreat;
+                    wolf->state_timer = 2.0f;
+                }
+            }
+            break;
+        case PackPlan::Regroup:
+            execute_regroup_plan(pack);
+            break;
+        default:
+            break;
+    }
 }
 
 void WolfManager::execute_ambush_plan(Pack& pack) {
-    // Placeholder for Phase 4
+    // Scout lures player, others wait in flanking positions
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf) {
+            continue;
+        }
+        
+        if (wolf->pack_role == PackRole::Scout) {
+            // Scout approaches to lure
+            if (wolf->state != WolfState::Approach) {
+                wolf->state = WolfState::Approach;
+                wolf->state_timer = 3.0f;
+            }
+        } else {
+            // Others wait at flanking angles
+            float target_angle = get_optimal_attack_angle(*wolf);
+            // Convert angle to position (simplified)
+            // TODO: Calculate position at flanking angle
+        }
+    }
 }
 
 void WolfManager::execute_pincer_plan(Pack& pack) {
-    // Placeholder for Phase 4
+    if (!coordinator_) {
+        return;
+    }
+    
+    float player_x = coordinator_->get_player_manager().get_x();
+    float player_y = coordinator_->get_player_manager().get_y();
+    
+    // Split pack into two groups attacking from opposite sides
+    int wolf_count = 0;
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf) {
+            continue;
+        }
+        
+        // First half attacks from one side, second half from opposite
+        float target_angle = (wolf_count % 2 == 0) ? 0.0f : PI;
+        float target_x = player_x + std::cos(target_angle) * 0.15f;
+        float target_y = player_y + std::sin(target_angle) * 0.15f;
+        
+        move_wolf_to_position(*wolf, target_x, target_y);
+        wolf_count++;
+    }
 }
 
 void WolfManager::execute_commit_plan(Pack& pack) {
-    // Placeholder for Phase 4
+    // Threat budget: choose up to N wolves to attack; others strafe/position
+    struct Candidate { uint32_t id; float dist; };
+    std::vector<Candidate> candidates;
+    candidates.reserve(pack.wolf_ids.size());
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf || wolf->health <= 0.0f) {
+            continue;
+        }
+        candidates.push_back({wolf_id, get_distance_to_player(*wolf)});
+    }
+    std::sort(candidates.begin(), candidates.end(), [](const Candidate& a, const Candidate& b){ return a.dist < b.dist; });
+    int attackers_allowed = std::max(1, max_concurrent_attackers_);
+    int attackers_assigned = 0;
+    for (const Candidate& c : candidates) {
+        Wolf* wolf = find_wolf_by_id(c.id);
+        if (!wolf) continue;
+        if (attackers_assigned < attackers_allowed && wolf->attack_cooldown <= 0.0f && wolf->stamina > 0.3f) {
+            wolf->pack_command_received = true;
+            attackers_assigned++;
+        } else {
+            if (wolf->state != WolfState::Strafe) {
+                wolf->state = WolfState::Strafe;
+                wolf->state_timer = get_state_duration_for(*wolf, WolfState::Strafe);
+            }
+        }
+    }
+}
+
+void WolfManager::execute_flank_plan(Pack& pack) {
+    // Bruiser distracts from front, others flank from sides
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf) {
+            continue;
+        }
+        
+        if (wolf->pack_role == PackRole::Bruiser) {
+            // Bruiser approaches directly
+            if (wolf->state != WolfState::Approach) {
+                wolf->state = WolfState::Approach;
+                wolf->state_timer = 3.0f;
+            }
+        } else {
+            // Others strafe to flanking positions
+            if (wolf->state != WolfState::Strafe) {
+                wolf->state = WolfState::Strafe;
+                wolf->state_timer = 2.0f;
+            }
+        }
+    }
+}
+
+void WolfManager::execute_distract_plan(Pack& pack) {
+    // Support wolf creates opening for coordinated strike
+    int support_count = 0;
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf) {
+            continue;
+        }
+        
+        if (wolf->pack_role == PackRole::Support && support_count == 0) {
+            // First support wolf distracts
+            if (wolf->state != WolfState::Approach) {
+                wolf->state = WolfState::Approach;
+                wolf->state_timer = 3.0f;
+            }
+            support_count++;
+        } else {
+            // Others wait for opening, then strike
+            if (wolf->state == WolfState::Strafe && wolf->attack_cooldown <= 0.0f) {
+                wolf->pack_command_received = true;
+            }
+        }
+    }
+}
+
+void WolfManager::execute_regroup_plan(Pack& pack) {
+    if (!coordinator_) {
+        return;
+    }
+    
+    // Calculate pack center
+    float center_x = 0.0f;
+    float center_y = 0.0f;
+    int count = 0;
+    
+    for (uint32_t wolf_id : pack.wolf_ids) {
+        Wolf* wolf = find_wolf_by_id(wolf_id);
+        if (!wolf) {
+            continue;
+        }
+        center_x += wolf->x.to_float();
+        center_y += wolf->y.to_float();
+        count++;
+    }
+    
+    if (count > 0) {
+        center_x /= count;
+        center_y /= count;
+        
+        // Move all wolves toward pack center
+        for (uint32_t wolf_id : pack.wolf_ids) {
+            Wolf* wolf = find_wolf_by_id(wolf_id);
+            if (!wolf) {
+                continue;
+            }
+            move_wolf_to_position(*wolf, center_x, center_y);
+        }
+    }
 }
 
 bool WolfManager::wolves_in_position(const Pack& pack) const {
-    // Placeholder for Phase 4
-    return false;
+    // Check if all wolves are close to their target positions
+    // For now, simplified check
+    return true;
 }
 
 void WolfManager::move_wolf_to_position(Wolf& wolf, float target_x, float target_y) {
-    // Placeholder for Phase 4
     Fixed dx = Fixed::from_float(target_x) - wolf.x;
     Fixed dy = Fixed::from_float(target_y) - wolf.y;
     
@@ -766,7 +876,8 @@ void WolfManager::move_wolf_to_position(Wolf& wolf, float target_x, float target
         wolf.facing_x = dx / distance;
         wolf.facing_y = dy / distance;
         
-        Fixed move_speed = Fixed::from_float(wolf.speed * 0.016f); // Assume 60 FPS
+        // Set per-second velocity, physics integrates with delta_time
+        Fixed move_speed = Fixed::from_float(wolf.speed);
         wolf.vx = wolf.facing_x * move_speed;
         wolf.vy = wolf.facing_y * move_speed;
     }
@@ -781,33 +892,77 @@ Pack* WolfManager::find_pack_by_id(uint32_t pack_id) {
     return nullptr;
 }
 
+const Pack* WolfManager::get_pack(int index) const {
+    if (index < 0 || index >= static_cast<int>(packs_.size())) {
+        return nullptr;
+    }
+    return &packs_[index];
+}
+
 // ============================================================================
 // ANIMATION
 // ============================================================================
 
 void WolfManager::update_wolf_animation(Wolf& wolf, float delta_time) {
-    // Simple animation updates
-    // Body stretch animates based on state
+    // State-based animation targets
     float target_stretch = 1.0f;
+    float target_head_pitch = 0.0f;
+    float target_ear_rotation = 0.0f;
+    
+    // Attack state with enhanced telegraphs
     if (wolf.state == WolfState::Attack) {
         if (wolf.state_timer > (ATTACK_EXECUTE_TIME + ATTACK_RECOVERY_TIME)) {
-            target_stretch = 0.8f; // Crouch
+            // Anticipation phase - clear telegraph
+            target_stretch = 0.7f;  // Crouch lower
+            target_head_pitch = -0.2f;  // Head down
+            target_ear_rotation = -0.3f;  // Ears back
         } else if (wolf.state_timer > ATTACK_RECOVERY_TIME) {
-            target_stretch = 1.3f; // Lunge
+            // Execute phase - lunge
+            target_stretch = 1.3f;
+            target_head_pitch = 0.1f;
+            target_ear_rotation = 0.2f;
         }
     }
     
-    // Smooth interpolation
-    wolf.body_stretch += (target_stretch - wolf.body_stretch) * delta_time * 10.0f;
-    
-    // Tail wag based on emotion
-    if (wolf.emotion == EmotionalState::Confident) {
-        wolf.tail_wag = std::sin(wolf.state_timer * 6.0f) * 0.5f;
-    } else if (wolf.emotion == EmotionalState::Fearful) {
-        wolf.tail_wag = -0.8f; // Tucked
-    } else {
-        wolf.tail_wag = 0.0f;
+    // Emotion-based posture modifiers
+    switch (wolf.emotion) {
+        case EmotionalState::Confident:
+            target_stretch *= 1.1f;  // Chest out
+            target_head_pitch += 0.1f;  // Head high
+            wolf.tail_wag = std::sin(wolf.state_timer * 8.0f) * 0.6f;  // Vigorous wag
+            break;
+            
+        case EmotionalState::Fearful:
+            target_stretch *= 0.85f;  // Slightly crouched
+            target_ear_rotation += 0.5f;  // Ears alert
+            wolf.tail_wag = -0.9f;  // Tail tucked tight
+            break;
+            
+        case EmotionalState::Desperate:
+            target_stretch *= 0.95f;  // Tense posture
+            target_head_pitch -= 0.1f;  // Head slightly down
+            wolf.tail_wag = std::sin(wolf.state_timer * 12.0f) * 0.3f;  // Nervous twitch
+            break;
+            
+        case EmotionalState::Aggressive:
+            target_stretch *= 1.05f;  // Puffed up
+            target_head_pitch += 0.05f;
+            wolf.tail_wag = 0.2f;  // Tail up
+            break;
+            
+        default:  // Calm, Frustrated
+            wolf.tail_wag = 0.0f;
+            break;
     }
+    
+    // Smooth interpolation toward targets (faster for urgent signals)
+    float anim_speed = (wolf.state == WolfState::Attack) ? 15.0f : 10.0f;
+    wolf.body_stretch += (target_stretch - wolf.body_stretch) * delta_time * anim_speed;
+    wolf.head_pitch += (target_head_pitch - wolf.head_pitch) * delta_time * anim_speed;
+    
+    // Apply ear rotation to both ears
+    wolf.ear_rotation[0] += (target_ear_rotation - wolf.ear_rotation[0]) * delta_time * anim_speed;
+    wolf.ear_rotation[1] += (target_ear_rotation - wolf.ear_rotation[1]) * delta_time * anim_speed;
 }
 
 // ============================================================================
@@ -850,7 +1005,27 @@ bool WolfManager::should_attack(const Wolf& wolf) const {
     
     // Check if in attack range and ready
     if (dist_to_player < wolf.attack_range) {
-        return wolf.attack_cooldown <= 0.0f && wolf.stamina > 0.3f;
+        if (!(wolf.attack_cooldown <= 0.0f && wolf.stamina > 0.3f)) {
+            return false;
+        }
+        // Facing angle gating
+        float facing_dot = compute_facing_dot_to_player(wolf);
+        if (facing_dot < ATTACK_FACING_COS_THRESHOLD) {
+            // Observability
+            const_cast<WolfManager*>(this)->gating_angle_rejects_count_++;
+            return false;
+        }
+        // Line of sight gating
+        if (!has_clear_path_to_player(wolf)) {
+            const_cast<WolfManager*>(this)->gating_los_rejects_count_++;
+            return false;
+        }
+        // Threat budget: limit concurrent attackers globally (simple first pass)
+        if (count_current_attackers() >= max_concurrent_attackers_) {
+            const_cast<WolfManager*>(this)->threat_budget_deferrals_count_++;
+            return false;
+        }
+        return true;
     }
     
     return false;
@@ -871,4 +1046,230 @@ bool WolfManager::should_retreat(const Wolf& wolf) const {
     
     return false;
 }
+
+// ============================================================================
+// NEW SYSTEMS - Phase 2: Pack Intelligence & Reactive Combat
+// ============================================================================
+
+// Wolf type behavior preferences
+WolfState WolfManager::get_preferred_state(const Wolf& wolf) const {
+    float dist_to_player = get_distance_to_player(wolf);
+    
+    // Type-specific behavior preferences
+    switch (wolf.type) {
+        case WolfType::Alpha:
+            // Prefers frontal assault, aggressive engagement
+            if (dist_to_player < wolf.attack_range * 1.5f) {
+                return WolfState::Attack;
+            }
+            return WolfState::Approach;
+            
+        case WolfType::Scout:
+            // Hit-and-run, prefers flanking
+            if (wolf.health < wolf.max_health * 0.5f) {
+                return WolfState::Retreat;  // Break off when half health
+            }
+            if (dist_to_player < wolf.attack_range * 1.2f) {
+                return WolfState::Strafe;  // Circle and strike
+            }
+            return WolfState::Approach;
+            
+        case WolfType::Hunter:
+            // Waits for pack coordination, tactical
+            if (wolf.pack_id > 0 && !wolf.pack_command_received) {
+                return WolfState::Strafe;  // Wait for pack signal
+            }
+            return WolfState::Approach;
+            
+        default:
+            // Normal wolves have no preference
+            return WolfState::Idle;
+    }
+}
+
+// Attack variety selection based on emotion and intelligence
+uint8_t WolfManager::select_attack_type(const Wolf& wolf) const {
+    // Desperate wolves use quick jabs
+    if (wolf.emotion == EmotionalState::Desperate) {
+        return static_cast<uint8_t>(AttackType::QuickJab);
+    }
+    
+    // Intelligent wolves use feints if player blocks frequently
+    if (wolf.intelligence > 0.7f && wolf.player_blocks > 2) {
+        return static_cast<uint8_t>(AttackType::Feint);
+    }
+    
+    // Confident/Aggressive wolves use power lunges
+    if (wolf.emotion == EmotionalState::Confident || wolf.emotion == EmotionalState::Aggressive) {
+        if (wolf.aggression > 0.6f) {
+            return static_cast<uint8_t>(AttackType::PowerLunge);
+        }
+    }
+    
+    // Default to standard lunge
+    return static_cast<uint8_t>(AttackType::StandardLunge);
+}
+
+// Spatial Awareness - Calculate separation force from nearby wolves
+FixedVector3 WolfManager::calculate_separation_force(const Wolf& wolf) const {
+    constexpr float SEPARATION_DISTANCE = 0.1f;  // Minimum distance between wolves
+    constexpr float SEPARATION_STRENGTH = 0.05f;
+    
+    FixedVector3 separation_force = FixedVector3::zero();
+    int nearby_count = 0;
+    
+    for (const Wolf& other : wolves_) {
+        if (other.id == wolf.id) {
+            continue;
+        }
+        
+        Fixed dx = wolf.x - other.x;
+        Fixed dy = wolf.y - other.y;
+        Fixed dist_sq = dx * dx + dy * dy;
+        Fixed separation_dist = Fixed::from_float(SEPARATION_DISTANCE);
+        
+        if (dist_sq < separation_dist * separation_dist && dist_sq.raw > 0) {
+            Fixed dist = fixed_sqrt(dist_sq);
+            // Normalize and apply force inversely proportional to distance
+            FixedVector3 push_dir(dx / dist, dy / dist, Fixed::from_int(0));
+            Fixed force_magnitude = (separation_dist - dist) / separation_dist;
+            separation_force += push_dir * force_magnitude;
+            nearby_count++;
+        }
+    }
+    
+    if (nearby_count > 0) {
+        separation_force *= Fixed::from_float(SEPARATION_STRENGTH);
+    }
+    
+    return separation_force;
+}
+
+// Check if wolf has clear path to player (simple line-of-sight)
+bool WolfManager::has_clear_path_to_player(const Wolf& wolf) const {
+    // Simplified: check if any other wolf is directly between this wolf and player
+    if (!coordinator_) {
+        return true;
+    }
+    
+    float player_x = coordinator_->get_player_manager().get_x();
+    float player_y = coordinator_->get_player_manager().get_y();
+    
+    for (const Wolf& other : wolves_) {
+        if (other.id == wolf.id) {
+            continue;
+        }
+        
+        // Check if other wolf is on the line between this wolf and player
+        float wolf_to_player_x = player_x - wolf.x.to_float();
+        float wolf_to_player_y = player_y - wolf.y.to_float();
+        float wolf_to_other_x = other.x.to_float() - wolf.x.to_float();
+        float wolf_to_other_y = other.y.to_float() - wolf.y.to_float();
+        
+        // Dot product to check if in same direction
+        float dot = wolf_to_player_x * wolf_to_other_x + wolf_to_player_y * wolf_to_other_y;
+        if (dot > 0.0f) {
+            // Other wolf is in front, check if close to line
+            float dist_to_line = std::abs(wolf_to_player_x * wolf_to_other_y - wolf_to_player_y * wolf_to_other_x);
+            float line_length = std::sqrt(wolf_to_player_x * wolf_to_player_x + wolf_to_player_y * wolf_to_player_y);
+            if (line_length > 0.0f && dist_to_line / line_length < 0.05f) {
+                return false;  // Path blocked
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Calculate optimal attack angle based on pack positions
+float WolfManager::get_optimal_attack_angle(const Wolf& wolf) const {
+    if (!coordinator_) {
+        return 0.0f;
+    }
+    
+    float player_x = coordinator_->get_player_manager().get_x();
+    float player_y = coordinator_->get_player_manager().get_y();
+    
+    // Start with preferred angle from memory
+    float best_angle = wolf.preferred_attack_angle;
+    
+    // Check angles occupied by other wolves
+    constexpr int NUM_ANGLES = 8;
+    bool angle_occupied[NUM_ANGLES] = {false};
+    
+    for (const Wolf& other : wolves_) {
+        if (other.id == wolf.id || other.pack_id != wolf.pack_id) {
+            continue;
+        }
+        
+        // Calculate angle of other wolf relative to player
+        float dx = other.x.to_float() - player_x;
+        float dy = other.y.to_float() - player_y;
+        float angle = std::atan2(dy, dx);
+        
+        // Mark this angle sector as occupied
+        int sector = static_cast<int>((angle + PI) / (2.0f * PI / NUM_ANGLES)) % NUM_ANGLES;
+        angle_occupied[sector] = true;
+    }
+    
+    // Find first unoccupied angle
+    for (int i = 0; i < NUM_ANGLES; i++) {
+        if (!angle_occupied[i]) {
+            best_angle = (2.0f * PI * i / NUM_ANGLES) - PI;
+            break;
+        }
+    }
+    
+    return best_angle;
+}
+
+// Update spatial awareness - apply separation forces
+void WolfManager::update_wolf_spatial_awareness(Wolf& wolf, float delta_time) {
+    FixedVector3 separation = calculate_separation_force(wolf);
+    
+    // Apply separation force to velocity
+    wolf.vx += separation.x * Fixed::from_float(delta_time);
+    wolf.vy += separation.y * Fixed::from_float(delta_time);
+}
+
+// Interrupt-Based State Transitions
+bool WolfManager::check_interrupt_conditions(Wolf& wolf, WolfState& out_new_state) {
+    float health_percent = wolf.health / wolf.max_health;
+    float dist_to_player = get_distance_to_player(wolf);
+    
+    // Priority 1: Critical health - always retreat
+    if (health_percent < 0.2f && wolf.state != WolfState::Retreat) {
+        out_new_state = WolfState::Retreat;
+        interrupt_critical_health_count_++;
+        return true;
+    }
+    
+    // Priority 2: Pack command for coordinated attack
+    if (wolf.pack_command_received && wolf.attack_cooldown <= 0.0f) {
+        out_new_state = WolfState::Attack;
+        wolf.pack_command_received = false;
+        interrupt_pack_command_count_++;
+        return true;
+    }
+    
+    // Priority 3: Player suddenly too close
+    if (dist_to_player < wolf.attack_range * 0.7f && wolf.state == WolfState::Patrol) {
+        out_new_state = WolfState::Strafe;
+        interrupt_close_proximity_count_++;
+        return true;
+    }
+    
+    // Priority 4: Damaged while attacking - recover based on damage delta
+    if (wolf.state == WolfState::Attack) {
+        float damage_taken = wolf.health_at_state_enter - wolf.health;
+        if (damage_taken >= DAMAGE_INTERRUPT_THRESHOLD) {
+            out_new_state = WolfState::Recover;
+            interrupt_damage_count_++;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 

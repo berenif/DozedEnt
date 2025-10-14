@@ -133,7 +133,7 @@ describe('WASM Subsystems', () => {
       coreState.setExports(mockExports);
       
       const state1 = coreState.getPlayerState();
-      coreState.update(0, 1, false, 0.016);
+      coreState.update(0.016);
       const state2 = coreState.getPlayerState();
       
       // Should return new state object after update

@@ -90,9 +90,7 @@ export class WasmManager {
       
       // Clear any lingering state
       try {
-        if (typeof this.exports.set_player_input === 'function') {
-          this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
-        }
+        this.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
         if (typeof this.exports.set_blocking === 'function') {
           try {
             this.exports.set_blocking(0, 0, 0);
@@ -124,9 +122,7 @@ export class WasmManager {
     
     // Clear lingering state
     try {
-      if (typeof this.exports.set_player_input === 'function') {
-        this.exports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0);
-      }
+      this.setPlayerInput(0, 0, 0, 0, 0, 0, 0, 0);
       if (typeof this.exports.set_blocking === 'function') {
         try {
           this.exports.set_blocking(0, 0, 0);
@@ -179,8 +175,47 @@ export class WasmManager {
 
   // ========== Core State Delegation ==========
   
-  update(dirX, dirY, isRolling, deltaTime) {
-    return this.coreState.update(dirX, dirY, isRolling, deltaTime);
+  update(deltaTime = 1 / 60) {
+    if (arguments.length > 1) {
+      throw new Error('WasmManager.update expects deltaTime in seconds; supply inputs via setPlayerInput first.');
+    }
+    return this.coreState.update(deltaTime);
+  }
+
+  setPlayerInput(
+    inputX,
+    inputY,
+    rolling = 0,
+    jumping = 0,
+    lightAttack = 0,
+    heavyAttack = 0,
+    blocking = 0,
+    special = 0
+  ) {
+    const exports = this.exports;
+    if (!exports || typeof exports.set_player_input !== 'function') {
+      return;
+    }
+
+    const clampAxis = (value) => {
+      const numeric = Number.isFinite(value) ? value : 0;
+      if (!Number.isFinite(value)) {
+        console.warn('[WasmManager] Invalid axis input, coercing to 0.', value);
+      }
+      return Math.max(-1, Math.min(1, numeric));
+    };
+    const toBinary = (value) => (value ? 1 : 0);
+
+    exports.set_player_input(
+      clampAxis(inputX),
+      clampAxis(inputY),
+      toBinary(rolling),
+      toBinary(jumping),
+      toBinary(lightAttack),
+      toBinary(heavyAttack),
+      toBinary(blocking),
+      toBinary(special)
+    );
   }
   
   getPlayerPosition() {

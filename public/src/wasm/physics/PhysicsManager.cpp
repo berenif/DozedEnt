@@ -96,6 +96,8 @@ void PhysicsManager::step(Fixed dt) {
     
     // Detect and resolve collisions
     detect_and_resolve_collisions();
+    // Solve constraints after collision resolution
+    solve_constraints(4);
     
     // Update sleeping state for all bodies
     update_sleeping_bodies(config_.timestep_micros);
@@ -188,7 +190,7 @@ uint32_t PhysicsManager::create_wolf_body(float x, float y, float radius) {
     wolf_body.drag = Fixed::from_float(0.85f);  // Slightly more friction than player
     wolf_body.radius = Fixed::from_float(radius);
     wolf_body.collision_layer = CollisionLayers::Enemy;
-    wolf_body.collision_mask = CollisionLayers::Player | CollisionLayers::Environment;
+    wolf_body.collision_mask = CollisionLayers::Player | CollisionLayers::Enemy | CollisionLayers::Environment;
     wolf_body.velocity = FixedVector3::zero();
     wolf_body.acceleration = FixedVector3::zero();
     
@@ -491,4 +493,14 @@ void PhysicsManager::detect_and_resolve_collisions() {
         }
     }
 }
+}
+
+void PhysicsManager::solve_constraints(int iterations) {
+    if (iterations <= 0) return;
+    if (!distance_constraints_.empty()) {
+        ConstraintSolver::solve_distance_constraints(bodies_, distance_constraints_, iterations);
+    }
+    if (!range_constraints_.empty()) {
+        RangeConstraintSolver::solve(bodies_, range_constraints_, iterations);
+    }
 }

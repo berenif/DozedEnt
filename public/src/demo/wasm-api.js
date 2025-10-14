@@ -20,8 +20,9 @@ const REQUIRED_EXPORTS = [
   'reset_run'
 ];
 
-// Prefer paths that work when public/ is the web root
+// Prefer absolute web-root path first to avoid resolving under /demos
 const DIRECT_PATHS = [
+  '/wasm/game.wasm',
   'wasm/game.wasm'
   
   // Removed 'dist/game.wasm' as it has incomplete exports

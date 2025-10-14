@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DozedEnt – Core Loop MVP</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0b0f14; color: #e6f2ff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #root { position: relative; height: 100%; width: 100%; overflow: hidden; }
+    #gameCanvas { display: block; width: 100%; height: 100%; background: #0b0f14; }
+    .overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
+    .ui { position: absolute; left: 0; right: 0; top: 0; padding: 8px 12px; display: flex; gap: 12px; align-items: center; pointer-events: none; }
+    .panel { background: rgba(10, 16, 24, 0.9); border: 1px solid #163049; border-radius: 8px; padding: 10px 12px; pointer-events: auto; }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .bar { width: 180px; height: 10px; background: #1b2a38; border-radius: 6px; overflow: hidden; border: 1px solid #20405f; }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #2ee6a3, #29c4ff); }
+    .bar.stamina > i { background: linear-gradient(90deg, #ffe066, #ffb347); }
+    .phase { font-size: 12px; opacity: 0.9; letter-spacing: .02em; }
+    .corner { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 8px; }
+    button { background: #13324d; color: #e6f2ff; border: 1px solid #265a86; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #154266; }
+    .modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 92vw); background: rgba(8, 12, 18, 0.95); border: 1px solid #224664; border-radius: 10px; padding: 16px; display: none; pointer-events: auto; }
+    .modal.active { display: block; }
+    .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .card { padding: 12px; border-radius: 8px; border: 1px solid #2a4a6a; background: #0f1722; cursor: pointer; }
+    .card:hover { border-color: #3e79b5; }
+    .shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    <div class="overlay">
+      <div id="hud" class="ui panel">
+        <div class="row">
+          <span>HP</span>
+          <div class="bar" id="hpBar"><i style="width: 100%"></i></div>
+          <span>STA</span>
+          <div class="bar stamina" id="staminaBar"><i style="width: 100%"></i></div>
+          <span class="phase" id="phaseText">Phase: ?</span>
+        </div>
+      </div>
+      <div class="corner">
+        <button id="btnRestart" title="Restart (new seed)">Restart</button>
+        <button id="btnHelp" title="Show controls">Help</button>
+      </div>
+      <div id="helpModal" class="modal">
+        <h3>Controls</h3>
+        <div style="font-size: 14px; line-height: 1.6">
+          <div>Move: WASD or Arrow Keys</div>
+          <div>Light Attack: J</div>
+          <div>Heavy Attack: L</div>
+          <div>Block (hold): Shift</div>
+          <div>Roll/Dodge: Space</div>
+          <div>Special (Raider Charge): K</div>
+          <div>Restart: Button at bottom-right</div>
+        </div>
+        <div style="margin-top: 12px; text-align: right"><button id="btnCloseHelp">Close</button></div>
+      </div>
+      <div id="choiceModal" class="modal"></div>
+      <div id="shopModal" class="modal"></div>
+    </div>
+  </div>
+  <script type="module">
+    import { startMVPDemo } from '../src/game/loop/MVPLoop.js';
+    startMVPDemo({
+      canvasId: 'gameCanvas',
+      ui: {
+        hpBar: 'hpBar',
+        staminaBar: 'staminaBar',
+        phaseText: 'phaseText',
+        helpModal: 'helpModal',
+        btnHelp: 'btnHelp',
+        btnCloseHelp: 'btnCloseHelp',
+        btnRestart: 'btnRestart',
+        choiceModal: 'choiceModal',
+        shopModal: 'shopModal'
+      }
+    });
+  </script>
+</body>
+</html>
+

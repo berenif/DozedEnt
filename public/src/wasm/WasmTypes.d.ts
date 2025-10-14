@@ -18,7 +18,7 @@ export interface WasmExports {
   start?: () => void;
   init_run?: (seed: bigint, weapon: number) => void;
   reset_run?: (seed: bigint) => void;
-  update?: (dirX: number, dirY: number, isRolling: number, deltaTime: number) => void;
+  update?: (deltaTime: number) => void;
   set_player_input?: (inputX: number, inputY: number, isRolling: number, isJumping: number, 
                       lightAttack: number, heavyAttack: number, isBlocking: number, special: number) => void;
   get_x?: () => number;
@@ -112,7 +112,7 @@ export declare class WasmCoreState {
   constructor(exports: WasmExports | null);
   
   setExports(exports: WasmExports): void;
-  update(dirX: number, dirY: number, isRolling: boolean, deltaTime: number): void;
+  update(deltaTime: number): void;
   getPlayerPosition(): Position2D;
   getPlayerState(): PlayerState;
   getX(): number;
@@ -380,7 +380,17 @@ export declare class WasmManager {
   
   // Delegated methods from subsystems
   // (All methods from coreState, combat, phases, world are available)
-  update(dirX: number, dirY: number, isRolling: boolean, deltaTime: number): void;
+  update(deltaTime: number): void;
+  setPlayerInput(
+    inputX: number,
+    inputY: number,
+    rolling?: number | boolean,
+    jumping?: number | boolean,
+    lightAttack?: number | boolean,
+    heavyAttack?: number | boolean,
+    blocking?: number | boolean,
+    special?: number | boolean
+  ): void;
   getPlayerPosition(): Position2D;
   getPlayerState(): PlayerState;
   attack(): boolean;

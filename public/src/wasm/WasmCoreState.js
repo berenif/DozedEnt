@@ -22,6 +22,8 @@ export class WasmCoreState {
       _lastMetricsUpdate: 0,
       _metricsUpdateInterval: 1000 // Update metrics every second
     };
+
+    this._legacyUpdateArityWarned = false;
   }
 
   /**
@@ -31,40 +33,37 @@ export class WasmCoreState {
   setExports(exports) {
     this.exports = exports;
     this.isLoaded = Boolean(exports);
+    this._legacyUpdateArityWarned = false;
   }
 
   /**
-   * Update game state with deterministic inputs
-   * @param {number} dirX - X direction (-1 to 1)
-   * @param {number} dirY - Y direction (-1 to 1)
-   * @param {boolean} isRolling - Is player rolling
-   * @param {number} deltaTime - Delta time in seconds
+   * Advance the simulation by the provided timestep.
+   * Directional input must already be supplied via `set_player_input`.
+   * @param {number} deltaTime - Delta time in seconds.
    */
-  update(dirX, dirY, isRolling, deltaTime) {
+  update(deltaTime) {
     if (!this.isLoaded || typeof this.exports.update !== 'function') {
       return;
     }
     
     const updateStart = performance.now();
     
-    // Validate input parameters
-    const safeDirectionX = Number.isFinite(dirX) ? Math.max(-1, Math.min(1, dirX)) : 0;
-    const safeDirY = Number.isFinite(dirY) ? Math.max(-1, Math.min(1, dirY)) : 0;
-    const safeIsRolling = isRolling ? 1 : 0;
-    const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime > 0 ? Math.min(deltaTime, 0.1) : 0.016;
+    // Normalize time step (seconds with clamp for runaway frames)
+    const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime > 0
+      ? Math.min(deltaTime, 0.1)
+      : 0.016;
     
     try {
       const wasmUpdate = this.exports.update;
-      const arity = Number.isInteger(wasmUpdate.length) ? wasmUpdate.length : 0;
-
-      // If using legacy 1-arg update, set input first
-      if (arity < 4 && typeof this.exports.set_player_input === 'function') {
-        this.exports.set_player_input(
-          safeDirectionX,
-          safeDirY,
-          safeIsRolling,
-          0, 0, 0, 0, 0
+      const arity = Number.isInteger(wasmUpdate.length) ? wasmUpdate.length : 1;
+      
+      if (arity !== 1 && !this._legacyUpdateArityWarned) {
+        console.warn(
+          '[WasmCoreState] Expected update(deltaTime) signature but received arity',
+          arity,
+          '- falling back to first-argument deltaTime behaviour.'
         );
+        this._legacyUpdateArityWarned = true;
       }
       
       // Call update with timeout protection
@@ -77,11 +76,7 @@ export class WasmCoreState {
       }, 50);
 
       try {
-        if (arity >= 4) {
-          wasmUpdate(safeDirectionX, safeDirY, safeIsRolling, safeDeltaTime);
-        } else {
-          wasmUpdate(safeDeltaTime);
-        }
+        wasmUpdate(safeDeltaTime);
         clearTimeout(updateTimeout);
       } catch (error) {
         clearTimeout(updateTimeout);

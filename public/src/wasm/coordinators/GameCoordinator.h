@@ -5,6 +5,7 @@
 #include "../managers/CombatManager.h"
 #include "../managers/GameStateManager.h"
 #include "../managers/WolfManager.h"
+#include "../managers/ArmManager.h"
 #include "../physics/PhysicsManager.h"
 
 /**
@@ -51,6 +52,7 @@ private:
     GameStateManager game_state_manager_;
     PhysicsManager physics_manager_;
     WolfManager wolf_manager_;
+    ArmManager arm_manager_;
     
     // Coordination state
     bool is_initialized_ = false;
@@ -66,11 +68,16 @@ private:
     void coordinate_combat_actions();
     void coordinate_movement_and_combat();
     void coordinate_stamina_consumption();
+    void process_collision_events();
     
     // Helper methods
     void handle_attack_inputs();
     void handle_movement_inputs(float delta_time);
     void handle_defensive_inputs();
     void synchronize_manager_states();
+    void handle_player_wolf_collision(uint32_t wolf_body_id, float impulse_magnitude);
+public:
+    ArmManager& get_arm_manager() { return arm_manager_; }
+    const ArmManager& get_arm_manager() const { return arm_manager_; }
 };
 

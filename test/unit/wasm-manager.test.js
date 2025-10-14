@@ -14,6 +14,7 @@ describe('WasmManager', () => {
       init_run: sinon.stub(),
       reset_run: sinon.stub(),
       update: sinon.stub(),
+      set_player_input: sinon.stub(),
       get_x: sinon.stub().returns(0.5),
       get_y: sinon.stub().returns(0.5),
       get_stamina: sinon.stub().returns(100),
@@ -289,8 +290,22 @@ describe('WasmManager', () => {
     });
 
     it('should execute update function', () => {
-      wasmManager.update(1, 0, 0, 16);
-      expect(mockWasmModule.update.calledWith(1, 0, 0, 16)).to.be.true;
+      wasmManager.update(0.016);
+      expect(mockWasmModule.update.calledWith(0.016)).to.be.true;
+    });
+
+    it('should normalize and forward player input', () => {
+      wasmManager.setPlayerInput(2, Number.NaN, true, 0, 1, 0, 0.4, 1);
+      expect(mockWasmModule.set_player_input.calledOnce).to.be.true;
+      const args = mockWasmModule.set_player_input.getCall(0).args;
+      expect(args[0]).to.equal(1);
+      expect(args[1]).to.equal(0);
+      expect(args[2]).to.equal(1);
+      expect(args[3]).to.equal(0);
+      expect(args[4]).to.equal(1);
+      expect(args[5]).to.equal(0);
+      expect(args[6]).to.equal(1);
+      expect(args[7]).to.equal(1);
     });
 
     it('should execute getter functions', () => {

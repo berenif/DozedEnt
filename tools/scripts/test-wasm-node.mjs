@@ -57,6 +57,18 @@ async function testWasmModule() {
         
         // Test initialization
         exports.init_run(12345n, 0);
+
+        const step = (dx, dy, roll, dt) => {
+            if (typeof exports.set_player_input === 'function') {
+                exports.set_player_input(
+                    Number.isFinite(dx) ? dx : 0,
+                    Number.isFinite(dy) ? dy : 0,
+                    roll ? 1 : 0,
+                    0, 0, 0, 0, 0
+                );
+            }
+            exports.update(dt);
+        };
         console.log('✅ Game initialized successfully');
         
         // Test pack count (should be 3 after init)
@@ -101,7 +113,7 @@ async function testWasmModule() {
         
         // Update for several frames to let pack system detect deaths
         for (let i = 0; i < 20; i++) {
-            exports.update(0, 0, 0, 0.016); // 16ms frame
+            step(0, 0, 0, 0.016); // 16ms frame
         }
         
         let deadPacks = 0;
@@ -135,3 +147,7 @@ async function testWasmModule() {
 testWasmModule().then(success => {
     process.exit(success ? 0 : 1);
 });
+
+
+
+

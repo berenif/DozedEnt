@@ -17,6 +17,16 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
+    const step = (dirX, dirY, isRolling, dt) => {
+      api.set_player_input(
+        Number.isFinite(dirX) ? dirX : 0,
+        Number.isFinite(dirY) ? dirY : 0,
+        isRolling ? 1 : 0,
+        0, 0, 0, 0, 0
+      )
+      api.update(dt)
+    }
+
     // Performance metrics
     const metrics = {
       frameTimeMs: [],
@@ -74,7 +84,7 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
         if (Math.random() < 0.05) {api.set_blocking(0, 0, 0)}
         
         // Update simulation
-        api.update(dirX, dirY, isRolling, frameDuration / 1000)
+        step(dirX, dirY, isRolling, frameDuration / 1000)
         
         // Trigger phase transitions occasionally
         if (frameCount % 180 === 0) {
@@ -82,7 +92,7 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
           for (let i = 0; i < 3; i++) {
             if (api.get_enemy_count && api.get_enemy_count() > 0) {
               // Simulate enemy defeat (would normally happen through combat)
-              api.update(0, 0, 0, 0.1)
+              step(0, 0, 0, 0.1)
             }
           }
         }
@@ -137,7 +147,7 @@ test('Performance Test: No GC churn/regressions, memory within limits', async ({
         const dirY = Math.cos(t * 2)
         const isRolling = Math.floor(t) % 3 === 0 ? 1 : 0
         
-        api.update(dirX, dirY, isRolling, 1/60)
+        step(dirX, dirY, isRolling, 1/60)
         
         const frameTime = performance.now() - frameStart
         metrics.frameTimeMs.push(frameTime)
@@ -219,12 +229,12 @@ test('Performance Test: WASM memory usage stays within limits', async ({page}) =
     for (let cycle = 0; cycle < 100; cycle++) {
       // Move around
       for (let i = 0; i < 10; i++) {
-        api.update(Math.random() * 2 - 1, Math.random() * 2 - 1, 0, 0.1)
+        step(Math.random() * 2 - 1, Math.random() * 2 - 1, 0, 0.1)
       }
       
       // Combat actions
       api.on_attack()
-      api.update(0, 0, 0, 0.5)
+      step(0, 0, 0, 0.5)
       
       // Trigger choices if possible
       if (api.get_phase() === 2) {

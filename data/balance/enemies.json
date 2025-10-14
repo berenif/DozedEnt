@@ -23,12 +23,109 @@
     "fatigueRecoveryPerSec": 0.2,
     "commRange": 0.3
   },
+  "wolf": {
+    "baseSpeed": 0.25,
+    "detectionRange": 0.4,
+    "attackRange": 0.08,
+    "baseDamage": 15.0,
+    "maxHealth": 100.0,
+    "separationDistance": 0.1,
+    "separationStrength": 0.05,
+    "difficultyUpdateInterval": 10.0,
+    "packPlanInterval": 3.0,
+    "attacks": {
+      "standard": {
+        "anticipationTime": 0.3,
+        "executeTime": 0.2,
+        "recoveryTime": 0.3,
+        "damageMultiplier": 1.0,
+        "cooldown": 1.5
+      },
+      "quickJab": {
+        "anticipationTime": 0.15,
+        "executeTime": 0.15,
+        "recoveryTime": 0.2,
+        "damageMultiplier": 0.7,
+        "cooldown": 0.8
+      },
+      "powerLunge": {
+        "anticipationTime": 0.5,
+        "executeTime": 0.3,
+        "recoveryTime": 0.4,
+        "damageMultiplier": 1.5,
+        "cooldown": 2.5
+      },
+      "feint": {
+        "anticipationTime": 0.2,
+        "executeTime": 0.3,
+        "recoveryTime": 0.3,
+        "damageMultiplier": 1.0,
+        "cooldown": 1.5
+      }
+    },
+    "emotions": {
+      "confident": {
+        "speedMultiplier": 1.1,
+        "cooldownMultiplier": 0.8
+      },
+      "fearful": {
+        "detectionMultiplier": 1.3,
+        "attackRangeMultiplier": 0.7,
+        "speedMultiplier": 0.9
+      },
+      "frustrated": {
+        "aggressionBonus": 0.2,
+        "damageMultiplier": 1.1
+      },
+      "desperate": {
+        "damageMultiplier": 1.3,
+        "speedMultiplier": 1.15
+      },
+      "aggressive": {
+        "attackRangeMultiplier": 1.2,
+        "speedMultiplier": 1.05
+      }
+    },
+    "adaptiveDifficulty": {
+      "speedRange": {
+        "min": 0.85,
+        "max": 1.15
+      },
+      "aggressionRange": {
+        "min": 0.3,
+        "max": 0.85
+      },
+      "reactionTimeRange": {
+        "min": 0.09,
+        "max": 0.22
+      }
+    },
+    "memory": {
+      "learningRate": 0.1,
+      "blockThreshold": 2,
+      "feintIntelligenceThreshold": 0.7
+    },
+    "attackEnterMult": 1.0,
+    "attackExitMult": 1.15,
+    "approachEnterMult": 0.7,
+    "approachExitMult": 0.85,
+    "attackFacingCosThreshold": 0.5,
+    "maxConcurrentAttackers": 2,
+    "damageInterruptThreshold": 6.0,
+    "durations": {
+      "confidentRecoverMult": 0.8,
+      "fearfulStrafeMult": 1.3,
+      "desperateAttackMult": 0.9
+    }
+  },
   "radii": {
     "enemyRadius": 0.015
   },
   "pack": {
     "maxPacks": 3,
-    "respawnDelay": 5.0
+    "respawnDelay": 5.0,
+    "coordinationDelay": 3.0,
+    "minWolvesForPack": 2
   },
   "spawn": {
     "minSpawnDistance": 0.2,

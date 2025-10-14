@@ -248,7 +248,10 @@ test.describe('Golden Gameplay Tests', () => {
         if (!window.wasmExports) {return}
         
         // Simulate time passing
-        window.wasmExports.update && window.wasmExports.update(0, 0, 0, 0.1)
+        if (window.wasmExports.set_player_input) {
+          window.wasmExports.set_player_input(0, 0, 0, 0, 0, 0, 0, 0)
+        }
+        window.wasmExports.update && window.wasmExports.update(0.1)
         
         // Simulate enemy defeats to trigger choices
         if (i % 3 === 0) {

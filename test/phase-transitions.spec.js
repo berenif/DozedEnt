@@ -17,6 +17,16 @@ test('Phase Transitions: Complete core loop test', async ({page}) => {
     const {instance, memory, exports} = await loadWasm(res)
     const api = exports
 
+    const step = (dirX, dirY, isRolling, dt) => {
+      api.set_player_input(
+        Number.isFinite(dirX) ? dirX : 0,
+        Number.isFinite(dirY) ? dirY : 0,
+        isRolling ? 1 : 0,
+        0, 0, 0, 0, 0
+      )
+      api.update(dt)
+    }
+
     // Track phase transitions
     const phaseTransitions = []
     const phaseNames = ['Explore', 'Fight', 'Choose', 'PowerUp', 'Risk', 'Escalate', 'CashOut', 'Reset']
@@ -50,7 +60,7 @@ test('Phase Transitions: Complete core loop test', async ({page}) => {
     
     while (simTime < maxSimTime) {
       // Update simulation
-      api.update(Math.sin(simTime) * 0.5, Math.cos(simTime) * 0.5, 0, 0.1)
+      step(Math.sin(simTime) * 0.5, Math.cos(simTime) * 0.5, 0, 0.1)
       simTime += 0.1
       
       const newPhase = api.get_phase()
@@ -198,7 +208,7 @@ test('Phase Transitions: Risk phase mechanics', async ({page}) => {
     // Trigger multiple risk events
     for (let i = 0; i < 5; i++) {
       api.trigger_risk_event()
-      api.update(0, 0, 0, 0.5)
+      step(0, 0, 0, 0.5)
     }
     
     riskData.cursesAfter = api.get_active_curse_count()
@@ -268,7 +278,7 @@ test('Phase Transitions: Escalate phase mechanics', async ({page}) => {
     // Trigger escalation events
     for (let i = 0; i < 3; i++) {
       api.trigger_escalation_event()
-      api.update(0, 0, 0, 1.0)
+      step(0, 0, 0, 1.0)
     }
     
     escalateData.levelAfter = api.get_escalation_level()
@@ -330,7 +340,7 @@ test('Phase Transitions: CashOut phase mechanics', async ({page}) => {
     // Add some currency first
     for (let i = 0; i < 10; i++) {
       api.on_attack()
-      api.update(0, 0, 0, 0.5)
+      step(0, 0, 0, 0.5)
     }
     
     api.force_phase_transition(6) // CashOut phase

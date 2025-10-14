@@ -135,6 +135,20 @@ function main() {
   out += define('BAL_SPAWN_SPREAD', sp.spread);
   out += define('BAL_SPAWN_MARGIN', sp.spawnMargin);
 
+  // Wolf-specific tunables
+  const w = enemies.wolf;
+  out += define('BAL_WOLF_ATTACK_ENTER_MULT', w.attackEnterMult);
+  out += define('BAL_WOLF_ATTACK_EXIT_MULT', w.attackExitMult);
+  out += define('BAL_WOLF_APPROACH_ENTER_MULT', w.approachEnterMult);
+  out += define('BAL_WOLF_APPROACH_EXIT_MULT', w.approachExitMult);
+  out += define('BAL_WOLF_ATTACK_FACING_COS', w.attackFacingCosThreshold);
+  out += define('BAL_WOLF_MAX_CONCURRENT_ATTACKERS', w.maxConcurrentAttackers);
+  out += define('BAL_WOLF_DAMAGE_INTERRUPT_THRESHOLD', w.damageInterruptThreshold);
+  const wd = w.durations;
+  out += define('BAL_WOLF_CONFIDENT_RECOVER_MULT', wd.confidentRecoverMult);
+  out += define('BAL_WOLF_FEARFUL_STRAFE_MULT', wd.fearfulStrafeMult);
+  out += define('BAL_WOLF_DESPERATE_ATTACK_MULT', wd.desperateAttackMult);
+
   const outDir = path.join(root, 'public', 'src', 'wasm', 'generated');
   ensureDir(outDir);
   const outFile = path.join(outDir, 'balance_data.h');

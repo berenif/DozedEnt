@@ -109,7 +109,8 @@ describe('Comprehensive Performance Optimizations', () => {
       const initialCallCount = mockWasmModule.get_x.callCount;
       
       // Update should invalidate cache
-      wasmManager.update(0.1, 0.1, false, 0.016);
+      wasmManager.setPlayerInput(0.1, 0.1, false, 0, 0, 0, 0, 0);
+      wasmManager.update(0.016);
       
       // Next state read should hit WASM again
       const state2 = wasmManager.getPlayerState();
@@ -121,7 +122,8 @@ describe('Comprehensive Performance Optimizations', () => {
     it('should track performance metrics', () => {
       // Perform some operations
       for (let i = 0; i < 10; i++) {
-        wasmManager.update(Math.random(), Math.random(), false, 0.016);
+        wasmManager.setPlayerInput(Math.random(), Math.random(), false, 0, 0, 0, 0, 0);
+        wasmManager.update(0.016);
         wasmManager.getPlayerState();
       }
       
@@ -510,3 +512,4 @@ describe('Comprehensive Performance Optimizations', () => {
     });
   });
 });
+

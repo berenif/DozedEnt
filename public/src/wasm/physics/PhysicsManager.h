@@ -1,6 +1,8 @@
 #pragma once
 #include "PhysicsTypes.h"
 #include <vector>
+#include "constraints/DistanceConstraint.h"
+#include "constraints/DistanceRangeConstraint.h"
 class SpatialHash;
 class ForceFieldManager;
 
@@ -73,6 +75,7 @@ private:
     void apply_world_bounds(RigidBody& body);
     void update_sleeping_bodies(int32_t timestep_micros);
     void detect_and_resolve_collisions();
+    void solve_constraints(int iterations);
     
     // Utility
     uint32_t generate_body_id() { 
@@ -89,11 +92,18 @@ private:
     // Perf counters
     uint32_t pairs_checked_ = 0;
     uint32_t collisions_resolved_ = 0;
+    // Constraints
+    std::vector<DistanceConstraint> distance_constraints_;
+    std::vector<DistanceRangeConstraint> range_constraints_;
 public:
     // Toggle/configure optional systems
     void enable_broadphase(bool on) { use_broadphase_ = on; }
     uint32_t get_pairs_checked() const { return pairs_checked_; }
     uint32_t get_collisions_resolved() const { return collisions_resolved_; }
+    // Constraints API
+    void clear_constraints() { distance_constraints_.clear(); range_constraints_.clear(); }
+    void add_distance_constraint(const DistanceConstraint& c) { distance_constraints_.push_back(c); }
+    void add_range_constraint(const DistanceRangeConstraint& c) { range_constraints_.push_back(c); }
 };
 
 

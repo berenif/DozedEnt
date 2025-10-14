@@ -133,11 +133,14 @@ export class WasmResourceFetcher {
     }
 
     const candidates = [
+      // Prefer absolute server root first so demo pages don't prefix /demos
+      `/wasm/${moduleName}.wasm`,
+      // Then common relative locations
+      `wasm/${moduleName}.wasm`,
       `${moduleName}.wasm`,
       `public/${moduleName}.wasm`,
-      `dist/${moduleName}.wasm`,
       `src/wasm/${moduleName}.wasm`,
-      `wasm/${moduleName}.wasm`,
+      `dist/${moduleName}.wasm`,
       `../${moduleName}.wasm`,
       `../src/wasm/${moduleName}.wasm`
     ];

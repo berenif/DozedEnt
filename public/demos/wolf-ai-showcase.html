@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wolf AI Showcase - Enhanced Pack Intelligence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+      color: #eee;
+      overflow: hidden;
+    }
+    
+    #gameCanvas {
+      display: block;
+      background: #111;
+      border: 3px solid #444;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+      gap: 20px;
+      padding: 20px;
+    }
+    
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .sidebar {
+      width: 320px;
+      background: rgba(30, 30, 50, 0.9);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #88f;
+    }
+    
+    h2 {
+      font-size: 18px;
+      margin: 15px 0 10px 0;
+      color: #6cf;
+      border-bottom: 2px solid #444;
+      padding-bottom: 5px;
+    }
+    
+    .info-panel {
+      background: rgba(20, 20, 35, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .stat-item {
+      background: rgba(40, 40, 60, 0.6);
+      padding: 8px;
+      border-radius: 5px;
+      border-left: 3px solid #66f;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+    
+    .stat-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+    }
+    
+    .wolf-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .wolf-item {
+      background: rgba(40, 40, 60, 0.4);
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border-left: 4px solid #f66;
+      font-size: 12px;
+    }
+    
+    .wolf-item.alpha {
+      border-left-color: #f90;
+    }
+    
+    .wolf-item.scout {
+      border-left-color: #6cf;
+    }
+    
+    .wolf-item.hunter {
+      border-left-color: #9c6;
+    }
+    
+    .controls {
+      background: rgba(20, 20, 35, 0.95);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button.secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    button.danger {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+    
+    .scenario-selector {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .scenario-btn {
+      flex: 1;
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="main-area">
+      <div class="info-panel">
+        <h1>🐺 Wolf AI Showcase - Enhanced Pack Intelligence</h1>
+        <p>Demonstrating reactive combat, pack coordination, spatial awareness, and adaptive difficulty</p>
+      </div>
+      
+      <canvas id="gameCanvas" width="800" height="600"></canvas>
+      
+      <div class="controls">
+        <button id="scenario1" class="scenario-btn">1. Single Wolf</button>
+        <button id="scenario2" class="scenario-btn secondary">2. Pack of 3</button>
+        <button id="scenario3" class="scenario-btn secondary">3. Mixed Types</button>
+        <button id="scenario4" class="scenario-btn secondary">4. Large Pack (5)</button>
+        <button id="scenario5" class="scenario-btn secondary">5. Multiple Packs</button>
+        <button id="clearAll" class="danger">Clear All</button>
+      </div>
+    </div>
+    
+    <div class="sidebar">
+      <h2>Wolf AI Features</h2>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ffffff"></div>
+          <span>Idle</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ff8c00"></div>
+          <span>Patrol</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ff6600"></div>
+          <span>Approach</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #cc66ff"></div>
+          <span>Strafe</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #8b0000"></div>
+          <span>Attack</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #00aaff"></div>
+          <span>Retreat</span>
+        </div>
+      </div>
+      
+      <h2>Live Wolf Stats</h2>
+      <div class="stat-grid">
+        <div class="stat-item">
+          <div class="stat-label">Total Wolves</div>
+          <div class="stat-value" id="wolfCount">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Active Packs</div>
+          <div class="stat-value" id="packCount">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Avg Health</div>
+          <div class="stat-value" id="avgHealth">100%</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Difficulty</div>
+          <div class="stat-value" id="difficulty">0.5</div>
+        </div>
+      </div>
+      
+      <h2>Wolf Details</h2>
+      <div id="wolfList" class="wolf-list"></div>
+      
+      <h2>Pack Plans</h2>
+      <div id="packPlans"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createWasmApi } from '../src/demo/wasm-api.js'
+    import { EnemyRenderer } from '../src/game/renderer/EnemyRenderer.js'
+    
+    const canvas = document.getElementById('gameCanvas')
+    const ctx = canvas.getContext('2d')
+    
+    let wasmApi = null
+    let enemyRenderer = null
+    let lastTime = performance.now()
+    
+    // Initialize WASM module
+    async function init() {
+      try {
+        wasmApi = await createWasmApi()
+        enemyRenderer = new EnemyRenderer(canvas)
+        
+        // Initialize game already handled by createWasmApi(); ensure seed init if available
+        if (typeof wasmApi.exports?.init_run === 'function') {
+          try {
+            const seed = BigInt(Date.now())
+            wasmApi.exports.init_run(seed, 0)
+          } catch {}
+        }
+        
+        console.log('Wolf AI Showcase initialized')
+        console.log('Available exports:', Object.keys(wasmApi.exports).filter(k => k.includes('wolf')))
+        
+        requestAnimationFrame(gameLoop)
+      } catch (error) {
+        console.error('Failed to initialize:', error)
+      }
+    }
+    
+    // Helpers
+    function spawnOneWolf(x, y, type) {
+      const ex = wasmApi?.exports || {}
+      if (typeof ex.spawn_wolf === 'function') {
+        ex.spawn_wolf(x, y, type | 0)
+        return
+      }
+      if (typeof ex.spawn_wolves === 'function') {
+        ex.spawn_wolves(1)
+        return
+      }
+      console.warn('No spawn_wolf/spawn_wolves export found')
+    }
+
+    function clearEnemies() {
+      const ex = wasmApi?.exports || {}
+      if (typeof ex.clear_enemies === 'function') {
+        ex.clear_enemies()
+      } else if (typeof ex.clear_wolves === 'function') {
+        ex.clear_wolves()
+      }
+    }
+
+    // Spawn scenarios
+    function spawnScenario1() {
+      // Single normal wolf
+      clearAll()
+      spawnOneWolf(0.5, 0.3, 0) // Normal
+    }
+    
+    function spawnScenario2() {
+      // Pack of 3 normal wolves
+      clearAll()
+      spawnOneWolf(0.4, 0.3, 0)
+      spawnOneWolf(0.5, 0.3, 0)
+      spawnOneWolf(0.6, 0.3, 0)
+      // Create pack would need to be exposed or done in WASM
+    }
+    
+    function spawnScenario3() {
+      // Mixed wolf types (Alpha + 2 Scouts)
+      clearAll()
+      spawnOneWolf(0.5, 0.3, 1) // Alpha
+      spawnOneWolf(0.4, 0.4, 2) // Scout
+      spawnOneWolf(0.6, 0.4, 2) // Scout
+    }
+    
+    function spawnScenario4() {
+      // Large pack of 5
+      clearAll()
+      spawnOneWolf(0.5, 0.3, 1) // Alpha
+      spawnOneWolf(0.4, 0.35, 3) // Hunter
+      spawnOneWolf(0.6, 0.35, 3) // Hunter
+      spawnOneWolf(0.45, 0.4, 2) // Scout
+      spawnOneWolf(0.55, 0.4, 2) // Scout
+    }
+    
+    function spawnScenario5() {
+      // Multiple packs
+      clearAll()
+      // Pack 1
+      spawnOneWolf(0.3, 0.3, 1) // Alpha
+      spawnOneWolf(0.25, 0.35, 0) // Normal
+      spawnOneWolf(0.35, 0.35, 0) // Normal
+      // Pack 2
+      spawnOneWolf(0.7, 0.3, 1) // Alpha
+      spawnOneWolf(0.65, 0.35, 2) // Scout
+      spawnOneWolf(0.75, 0.35, 2) // Scout
+    }
+    
+    function clearAll() {
+      if (!wasmApi) {return}
+      clearEnemies()
+    }
+    
+    // Game loop
+    function gameLoop(currentTime) {
+      const deltaTime = (currentTime - lastTime) / 1000
+      lastTime = currentTime
+      
+      if (!wasmApi) {
+        requestAnimationFrame(gameLoop)
+        return
+      }
+      
+      // Update simulation
+      const ex = wasmApi.exports
+      if (typeof ex.update === 'function') {
+        ex.update(Math.min(deltaTime, 0.033)) // Cap at ~30 FPS
+      } else if (typeof wasmApi.update === 'function') {
+        wasmApi.update(Math.min(deltaTime, 0.033))
+      }
+      
+      // Clear canvas
+      ctx.fillStyle = '#111'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      
+      // Render enemies
+      if (enemyRenderer) {
+        enemyRenderer.renderEnemies(wasmApi)
+      }
+      
+      // Render player (simple circle)
+      // Prefer wrapper state when available
+      let playerX = 0.5
+      let playerY = 0.5
+      if (typeof wasmApi.getPlayerState === 'function') {
+        const st = wasmApi.getPlayerState()
+        playerX = Number.isFinite(st.x) ? st.x : 0.5
+        playerY = Number.isFinite(st.y) ? st.y : 0.5
+      } else {
+        playerX = wasmApi.exports.get_x?.() ?? 0.5
+        playerY = wasmApi.exports.get_y?.() ?? 0.5
+      }
+      ctx.fillStyle = '#33ff33'
+      ctx.beginPath()
+      ctx.arc(playerX * canvas.width, playerY * canvas.height, 12, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Update stats
+      updateStats()
+      
+      requestAnimationFrame(gameLoop)
+    }
+    
+    // Update sidebar stats
+    function updateStats() {
+      if (!wasmApi) return
+      
+      const wolfCount = wasmApi.exports.get_wolf_count?.() ?? 0
+      const packCount = wasmApi.exports.get_pack_count?.() ?? 0
+      
+      document.getElementById('wolfCount').textContent = wolfCount
+      document.getElementById('packCount').textContent = packCount
+      
+      // Calculate average health
+      let totalHealth = 0
+      let maxHealth = 0
+      for (let i = 0; i < wolfCount; i++) {
+        const health = wasmApi.exports.get_wolf_health?.(i) ?? 100
+        totalHealth += health
+        maxHealth += 100
+      }
+      const avgHealth = wolfCount > 0 ? (totalHealth / maxHealth * 100).toFixed(0) : 100
+      document.getElementById('avgHealth').textContent = `${avgHealth}%`
+      
+      // Wolf list
+      const wolfList = document.getElementById('wolfList')
+      wolfList.innerHTML = ''
+      
+      const stateNames = ['Idle', 'Patrol', 'Investigate', 'Alert', 'Approach', 'Strafe', 'Attack', 'Retreat', 'Recover', 'Flee', 'Ambush', 'Flank']
+      const emotionNames = ['Calm', 'Aggressive', 'Fearful', 'Desperate', 'Confident', 'Frustrated']
+      const typeNames = ['Normal', 'Alpha', 'Scout', 'Hunter', 'Omega']
+      
+      for (let i = 0; i < wolfCount; i++) {
+        const x = wasmApi.exports.get_wolf_x?.(i) ?? 0
+        const y = wasmApi.exports.get_wolf_y?.(i) ?? 0
+        const health = wasmApi.exports.get_wolf_health?.(i) ?? 100
+        const state = wasmApi.exports.get_wolf_state?.(i) ?? 0
+        const emotion = wasmApi.exports.get_wolf_emotion?.(i) ?? 0
+        const type = wasmApi.exports.get_wolf_type?.(i) ?? 0
+        const packId = wasmApi.exports.get_wolf_pack_id?.(i) ?? 0
+        
+        const div = document.createElement('div')
+        div.className = `wolf-item ${typeNames[type].toLowerCase()}`
+        div.innerHTML = `
+          <strong>Wolf #${i+1}</strong> (${typeNames[type]})<br>
+          State: ${stateNames[state] || '?'}<br>
+          Emotion: ${emotionNames[emotion] || '?'}<br>
+          Health: ${health.toFixed(0)}<br>
+          Pack: ${packId > 0 ? `#${packId}` : 'Solo'}<br>
+          Pos: (${x.toFixed(2)}, ${y.toFixed(2)})
+        `
+        wolfList.appendChild(div)
+      }
+      
+      // Pack plans
+      const packPlans = document.getElementById('packPlans')
+      packPlans.innerHTML = ''
+      
+      const planNames = ['None', 'Ambush', 'Pincer', 'Retreat', 'Commit', 'Flank', 'Distract', 'Regroup']
+      
+      for (let i = 0; i < packCount; i++) {
+        const plan = wasmApi.exports.get_pack_plan?.(i) ?? 0
+        const morale = wasmApi.exports.get_pack_morale?.(i) ?? 0.7
+        
+        const div = document.createElement('div')
+        div.className = 'stat-item'
+        div.innerHTML = `
+          <div class="stat-label">Pack #${i+1}</div>
+          <div class="stat-value">${planNames[plan] || '?'}</div>
+          <div style="font-size: 11px; color: #aaa; margin-top: 4px;">
+            Morale: ${(morale * 100).toFixed(0)}%
+          </div>
+        `
+        packPlans.appendChild(div)
+      }
+    }
+    
+    // Button event listeners
+    document.getElementById('scenario1').addEventListener('click', spawnScenario1)
+    document.getElementById('scenario2').addEventListener('click', spawnScenario2)
+    document.getElementById('scenario3').addEventListener('click', spawnScenario3)
+    document.getElementById('scenario4').addEventListener('click', spawnScenario4)
+    document.getElementById('scenario5').addEventListener('click', spawnScenario5)
+    document.getElementById('clearAll').addEventListener('click', clearAll)
+    
+    // Initialize
+    init()
+  </script>
+</body>
+</html>
+

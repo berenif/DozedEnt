@@ -10,6 +10,7 @@ namespace CollisionLayers {
         Enemy       = 1u << 2,
         Environment = 1u << 3,
         Projectile  = 1u << 4,
+        PlayerArm   = 1u << 5,
         All         = 0xFFFFFFFFu
     };
 }

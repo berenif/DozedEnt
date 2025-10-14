@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2025-10-09T22:24:48.289Z",
+  "generatedAt": "2025-10-10T15:57:19.447Z",
   "tools": {
     "wasmDis": "C:\\Users\\flori\\Desktop\\DozedEnt\\emsdk\\upstream\\bin\\wasm-dis.exe"
   },
   "modules": [
     {
       "file": "public\\wasm\\game.wasm",
-      "exportCount": 145,
+      "exportCount": 153,
       "byType": {
         "memory": [
           "memory"
@@ -142,6 +142,14 @@
           "get_enemy_vy",
           "damage_wolf",
           "remove_wolf",
+          "get_wolf_type",
+          "get_wolf_emotion",
+          "get_wolf_pack_id",
+          "get_wolf_pack_role",
+          "get_pack_count",
+          "get_pack_plan",
+          "get_pack_morale",
+          "get_wolf_attack_type",
           "upgrade_get_effect_scalar",
           "upgrade_create_system",
           "upgrade_set_tree",
@@ -292,6 +300,14 @@
         "get_enemy_vy",
         "damage_wolf",
         "remove_wolf",
+        "get_wolf_type",
+        "get_wolf_emotion",
+        "get_wolf_pack_id",
+        "get_wolf_pack_role",
+        "get_pack_count",
+        "get_pack_plan",
+        "get_pack_morale",
+        "get_wolf_attack_type",
         "__indirect_function_table",
         "upgrade_get_effect_scalar",
         "upgrade_create_system",

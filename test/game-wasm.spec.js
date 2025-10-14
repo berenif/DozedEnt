@@ -18,7 +18,10 @@ test('Game WASM: movement, stamina, block/parry, choices', async ({page}) => {
     const api = exports
 
     // Helper to step sim deterministically
-    const step = (ix, iy, roll, dt) => api.update(ix, iy, roll ? 1 : 0, dt)
+    const step = (ix, iy, roll, dt) => {
+      api.set_player_input(ix, iy, roll ? 1 : 0, 0, 0, 0, 0, 0)
+      api.update(dt)
+    }
 
     // Seed and reset
     api.init_run(123n, 0)
@@ -149,7 +152,7 @@ test('Game WASM: player anim/state timers and overlay exports exist and behave',
 
     // Start a roll if possible and step during roll window
     const acceptedRoll = api.on_roll_start()
-    api.set_player_input(1, 0, 1, 0, 0, 0)
+    api.set_player_input(1, 0, 1, 0, 0, 0, 0, 0)
     for (let i = 0; i < 4; i++) {api.update(1/60)}
     const rolling = api.get_is_rolling()
     const invuln = api.get_is_invulnerable()

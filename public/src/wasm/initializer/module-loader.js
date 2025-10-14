@@ -33,6 +33,7 @@ export async function loadTraditional(initializer, loadWasm) {
   };
 
   const candidatePaths = [
+    '/wasm/game.wasm',
     'game.wasm',
     'wasm/game.wasm',
     'src/wasm/game.wasm',

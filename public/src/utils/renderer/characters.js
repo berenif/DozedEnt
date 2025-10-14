@@ -1,5 +1,6 @@
 // Character drawings and combat VFX
 import { CharacterAnimator } from '../../animation/system/animation-system.js';
+import { renderPlayerArms } from './arms.js'
 
 export function drawEnhancedCharacter(renderer, x, y, width, height, color, facing, state, stateTimer, effects) {
   const ctx = renderer.ctx;
@@ -311,10 +312,11 @@ export function drawProceduralPlayer(renderer, state, position, baseRadius, tran
   // Main body
   const renderSize = Math.max(64, Math.min(renderer.canvas.width, renderer.canvas.height) * 0.14);
   const attacking = (typeof state.anim === 'string' && state.anim === 'attacking') || 
-                   (typeof state.animState === 'number' && state.animState === 2);
+                   (typeof state.animState === 'number' && state.animState === 2) ||
+                   (typeof state.attackState === 'number' && state.attackState > 0);
   const blocking = !!state.block || !!state.isBlocking || 
                   (typeof state.animState === 'number' && state.animState === 3);
-  const rolling = !!state.blocking || !!state.isRolling || 
+  const rolling = !!state.rolling || !!state.isRolling || 
                   (typeof state.animState === 'number' && state.animState === 4);
 
   ctx.save();
@@ -390,6 +392,7 @@ export function renderPlayer(renderer) {
   const jumpCount = typeof window.wasmExports.get_jump_count === 'function' ? window.wasmExports.get_jump_count() : 0;
   const isWallSliding = typeof window.wasmExports.get_is_wall_sliding === 'function' ? window.wasmExports.get_is_wall_sliding() : 0;
   const stateTimer = typeof window.wasmExports.get_player_state_timer === 'function' ? window.wasmExports.get_player_state_timer() : 0;
+  const attackState = typeof window.wasmExports.get_attack_state === 'function' ? window.wasmExports.get_attack_state() : 0;
 
   const playerWorldPos = renderer.wasmToWorld(wasmX, wasmY);
   renderer.player.x = playerWorldPos.x;
@@ -492,6 +495,7 @@ export function renderPlayer(renderer) {
     grounded: !!isGrounded,
     rolling: !!isRolling,
     block: !!isBlocking,
+    attackState,
     anim: currentAnimState,
     animState: animState
   };
@@ -499,5 +503,27 @@ export function renderPlayer(renderer) {
   // Use procedural rendering instead of enhanced character drawing
   drawProceduralPlayer(renderer, playerState, screenPos, baseRadius, transform);
 
+  // Visual effects for attack, block, and roll
+  try {
+    const isAttackingVis = (currentAnimState === 'attacking') || (animState === 2) || (attackState > 0);
+    const isBlockingVis = (!!isBlocking) || (animState === 3);
+    const isRollingVis = (!!isRolling) || (animState === 4);
+
+    if (isAttackingVis) {
+      drawWeaponTrail(renderer, screenPos, renderer.player.facing, stateTimer);
+    }
+    if (isBlockingVis) {
+      drawShieldEffect(renderer, screenPos, renderer.player.facing);
+    }
+    if (isRollingVis) {
+      drawRollTrail(renderer, screenPos, velX, velY);
+    }
+  } catch (e) {
+    // Ignore VFX errors to avoid breaking render loop
+  }
+
   ctx.restore();
+
+  // Arms overlay (physics-driven)
+  try { renderPlayerArms(renderer); } catch (e) {}
 }
