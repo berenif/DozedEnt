@@ -5,14 +5,14 @@ A comprehensive wolf character enhancement system for the game, featuring anatom
 ## 📁 File Structure
 
 ```
-src/animation/
+public/src/animation/
 ├── enhanced-wolf-body.js          # Core body rendering system
 ├── advanced-fur-system.js         # Realistic fur simulation
 ├── wolf-anatomy.js                # Anatomical accuracy system
 ├── wolf-body-variations.js        # Procedural variations
 ├── enhanced-wolf-integration.js   # System integration
 ├── wolf-body-physics.js           # Physics simulation
-└── wolf-animation.js              # Original animation system (enhanced)
+└── enemy/wolf-animation.js        # Wolf animation system
 
 test/
 └── enhanced-wolf-body-test.js     # Comprehensive test suite
@@ -26,7 +26,7 @@ WOLF_BODY_SYSTEM_README.md         # This documentation
 ### Basic Usage
 
 ```javascript
-import EnhancedWolfIntegration from './src/animation/enhanced-wolf-integration.js'
+import EnhancedWolfIntegration from './public/src/animation/enhanced-wolf-integration.js'
 
 // Initialize the system
 const wolfSystem = new EnhancedWolfIntegration()

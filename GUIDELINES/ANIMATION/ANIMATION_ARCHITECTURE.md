@@ -14,7 +14,7 @@ DozedEnt uses a **layered animation architecture** where multiple systems work t
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     WASM Game Logic                          │
-│  (Rust) - Physics, Combat, State Management                 │
+│  (C++) - Physics, Combat, State Management                  │
 │  Exports: get_x(), get_y(), get_player_anim_state(), etc.  │
 └────────────────────┬────────────────────────────────────────┘
                      │ WASM Exports

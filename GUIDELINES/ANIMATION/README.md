@@ -109,7 +109,7 @@ See: [PLAYER_ANIMATIONS.md](./PLAYER_ANIMATIONS.md)
 ### Layered Design
 
 ```
-WASM (Rust)
+WASM (C++)
     ↓
 JavaScript Bridge
     ↓

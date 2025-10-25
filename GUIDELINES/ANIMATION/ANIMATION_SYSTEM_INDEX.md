@@ -94,12 +94,12 @@ Complete documentation for all player character animations including:
 
 #### Enemy Animation Systems
 
-7. **Enhanced Wolf Body System** (`src/animation/enhanced-wolf-body.js`)
+7. **Enhanced Wolf Body System** (`public/src/animation/enhanced-wolf-body.js`)
    - Anatomically accurate wolf rendering
    - Advanced fur simulation with physics
    - Procedural variations and environmental adaptations
 
-8. **Wolf Animation System** (`src/animation/wolf-animation.js`)
+8. **Wolf Animation System** (`public/src/animation/enemy/wolf-animation.js`)
    - Complete wolf animation implementation
    - Pack coordination and emotional state visualization
    - Integration with enhanced AI system
@@ -288,7 +288,7 @@ class AnimatedPlayer {
 ### Animation Presets
 
 ```javascript
-import { AnimationPresets } from './src/animation/animation-system.js'
+import { AnimationPresets } from './animation/system/animation-system.js'
 
 // Get player animations
 const playerAnimations = AnimationPresets.createPlayerAnimations()

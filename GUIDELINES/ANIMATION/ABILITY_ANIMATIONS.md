@@ -326,15 +326,15 @@ Abilities can integrate with WASM for server-side validation:
 class WardenBashAbility extends AbilityAnimationBase {
     onStart(player, target) {
         // Call WASM function
-        if (wasmModule && wasmModule.start_warden_bash) {
-            wasmModule.start_warden_bash(player.id, target.id)
+        if (wasmModule && wasmModule.start_charging_bash) {
+            wasmModule.start_charging_bash()
         }
     }
     
     onUpdate(deltaTime) {
         // Read bash state from WASM
-        if (wasmModule && wasmModule.get_bash_active) {
-            const isActive = wasmModule.get_bash_active()
+        if (wasmModule && wasmModule.is_bash_active) {
+            const isActive = wasmModule.is_bash_active()
             
             if (!isActive && this.isActive()) {
                 this.end()
