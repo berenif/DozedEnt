@@ -47,15 +47,22 @@ build_game_wasm() {
     fi
     
     # Collect all C++ source files
-    SOURCE_FILES="public/src/wasm/game_refactored.cpp public/src/wasm/GameGlobals.cpp public/src/wasm/managers/CombatManager.cpp public/src/wasm/managers/GameStateManager.cpp public/src/wasm/managers/InputManager.cpp public/src/wasm/managers/PlayerManager.cpp public/src/wasm/managers/WolfManager.cpp public/src/wasm/coordinators/GameCoordinator.cpp public/src/wasm/physics/PhysicsManager.cpp public/src/wasm/progression/AbilityUpgradeSystem.cpp public/src/wasm/progression/UpgradeTree.cpp public/src/entities/PhysicsBarrel.cpp"
+    SOURCE_FILES="public/src/wasm/game_refactored.cpp public/src/wasm/GameGlobals.cpp public/src/wasm/managers/CombatManager.cpp public/src/wasm/managers/GameStateManager.cpp public/src/wasm/managers/InputManager.cpp public/src/wasm/managers/PlayerManager.cpp public/src/wasm/managers/WolfManager.cpp public/src/wasm/managers/wolves/StateMachine.cpp public/src/wasm/managers/ArmManager.cpp public/src/wasm/coordinators/GameCoordinator.cpp public/src/wasm/physics/PhysicsManager.cpp public/src/wasm/progression/AbilityUpgradeSystem.cpp public/src/wasm/progression/UpgradeTree.cpp public/src/entities/PhysicsBarrel.cpp"
     
-    cmd="em++ $SOURCE_FILES $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=\"[\"_spawn_barrel\",\"_throw_barrel\",\"_get_barrel_count\",\"_get_barrel_x\",\"_get_barrel_y\",\"_get_barrel_vel_x\",\"_get_barrel_vel_y\",\"_clear_all_barrels\",\"_get_physics_player_x\",\"_get_physics_player_y\",\"_get_physics_player_vel_x\",\"_get_physics_player_vel_y\",\"_get_physics_perf_ms\",\"_physics_get_event_count\",\"_physics_get_events_ptr\",\"_physics_clear_events\",\"_set_body_collision_filter\",\"_get_collision_pairs_checked\",\"_get_collisions_resolved\",\"_init_run\",\"_start\",\"_update\",\"_set_player_input\"]\" -o ./public/wasm/game.wasm"
+    cmd="em++ $SOURCE_FILES $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=\"[\"_spawn_barrel\",\"_throw_barrel\",\"_get_barrel_count\",\"_get_barrel_x\",\"_get_barrel_y\",\"_get_barrel_vel_x\",\"_get_barrel_vel_y\",\"_clear_all_barrels\",\"_get_physics_player_x\",\"_get_physics_player_y\",\"_get_physics_player_vel_x\",\"_get_physics_player_vel_y\",\"_get_physics_perf_ms\",\"_physics_get_event_count\",\"_physics_get_events_ptr\",\"_physics_clear_events\",\"_set_body_collision_filter\",\"_get_collision_pairs_checked\",\"_get_collisions_resolved\",\"_init_run\",\"_start\",\"_update\",\"_set_player_input\",\"_get_skeleton_joint_count\",\"_get_skeleton_joint_x\",\"_get_skeleton_joint_y\",\"_get_balance_quality\",\"_get_left_foot_grounded\",\"_get_right_foot_grounded\",\"_write_skeleton_joints_xy\",\"_get_wolf_health\",\"_get_wolf_state\",\"_get_wolf_emotion\",\"_get_wolf_x\",\"_get_wolf_y\",\"_get_pack_count\",\"_get_pack_plan\",\"_get_pack_morale\",\"_get_terrain_feature_count\",\"_get_terrain_feature_x\",\"_get_terrain_feature_y\",\"_get_terrain_feature_type\",\"_get_wolf_aggression\",\"_get_wolf_morale\",\"_get_wolf_stamina\",\"_get_wolf_pack_id\",\"_get_wolf_pack_role\",\"_get_wolf_limp_severity\",\"_get_wolf_facing_x\",\"_get_wolf_facing_y\",\"_get_pack_wolf_count\",\"_get_pack_leader_index\",\"_get_wolf_body_stretch\",\"_get_wolf_head_yaw\",\"_get_wolf_tail_wag\",\"_get_wolf_attack_success_rate\",\"_get_pack_coordination_bonus\",\"_get_player_skill_estimate\",\"_get_wolf_message_count\",\"_get_wolf_last_message_type\"]\" -o ./public/wasm/game.wasm"
     echo "Command: $cmd"
     
     if eval "$cmd"; then
         size=$(stat -c%s "public/wasm/game.wasm" 2>/dev/null || stat -f%z "public/wasm/game.wasm" 2>/dev/null)
         size_kb=$((size / 1024))
         echo "game.wasm built successfully (${size_kb} KB)"
+        echo "Verifying required skeleton exports..."
+        if node ./tools/scripts/verify-skeleton-exports.js ./public/wasm/game.wasm; then
+            echo "Skeleton exports verified."
+        else
+            echo "Error: Required skeleton exports missing."
+            return 1
+        fi
         return 0
     else
         echo "game.wasm build failed"

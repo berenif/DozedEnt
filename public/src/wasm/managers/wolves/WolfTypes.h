@@ -116,6 +116,7 @@ struct Wolf {
     float attack_cooldown = 0.0f;
     float dodge_cooldown = 0.0f;
     float decision_timer = 0.0f;
+    float collision_cooldown = 0.0f;  // Prevents immediate re-collision after separation
 
     float body_stretch = 1.0f;
     float head_pitch = 0.0f;

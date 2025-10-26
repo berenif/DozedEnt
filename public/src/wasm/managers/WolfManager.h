@@ -1,7 +1,8 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include <algorithm>\n#include <unordered_map>
+#include <algorithm>
+#include <unordered_map>
 #include "../physics/FixedPoint.h"
 #include "wolves/WolfTypes.h"
 
@@ -39,6 +40,9 @@ public:
     void update_pack_roles();
     void coordinate_pack_attack();
     
+    // Collision handling
+    void set_wolf_collision_cooldown(uint32_t body_id, float cooldown_time);
+    
     // State queries (for WASM exports)
     int get_wolf_count() const { return static_cast<int>(wolves_.size()); }
     const Wolf* get_wolf(int index) const;
@@ -59,6 +63,7 @@ private:
     GameCoordinator* coordinator_ = nullptr;
     std::vector<Wolf> wolves_;
     std::vector<Pack> packs_;
+    std::unordered_map<uint32_t, int> body_id_to_index_;
     uint32_t next_wolf_id_ = 1;
     uint32_t next_pack_id_ = 1;
     

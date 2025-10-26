@@ -479,4 +479,22 @@ export class WasmCoreState {
       _metricsUpdateInterval: 1000
     };
   }
+
+  async getWolfState() {
+    if (!this._wolfStateManager) {
+      try {
+        const { WolfStateManager } = await import('../game/state/WolfStateManager.js');
+        this._wolfStateManager = new WolfStateManager(this.exports || {});
+      } catch (e) {
+        // Dynamic import fallback (older bundlers)
+        try {
+          const mod = await import('../game/state/WolfStateManager.js');
+          this._wolfStateManager = new mod.WolfStateManager(this.exports || {});
+        } catch (_) {
+          this._wolfStateManager = { getSnapshot: () => ({ wolves: [], packs: [], valid: false }) };
+        }
+      }
+    }
+    return this._wolfStateManager;
+  }
 }

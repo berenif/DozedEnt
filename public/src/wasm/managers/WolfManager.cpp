@@ -2,9 +2,13 @@
 #include "../coordinators/GameCoordinator.h"
 #include "../physics/FixedPoint.h"
 #include "../physics/PhysicsTypes.h"
-#include "generated/balance_data.h"\n#include "wolves/WolfConstants.h"
+#include "generated/balance_data.h"
+#include "wolves/WolfConstants.h"
 #include <cmath>
 #include <algorithm>
+
+// Use wolf constants namespace
+using namespace wolves::constants;
 
 // Constants
 WolfManager::WolfManager() 
@@ -80,6 +84,11 @@ void WolfManager::spawn_wolf(float x, float y, WolfType type) {
     }
     
     wolves_.push_back(wolf);
+    
+    // Map physics body ID to wolf index
+    if (wolf.physics_body_id != 0) {
+        body_id_to_index_[wolf.physics_body_id] = static_cast<int>(wolves_.size() - 1);
+    }
 }
 
 void WolfManager::init_wolf_stats(Wolf& wolf) {
@@ -240,6 +249,13 @@ void WolfManager::rebuild_body_index_map() {
     }
 }
 
+void WolfManager::set_wolf_collision_cooldown(uint32_t body_id, float cooldown_time) {
+    Wolf* wolf = find_wolf_by_body(body_id);
+    if (wolf) {
+        wolf->collision_cooldown = cooldown_time;
+    }
+}
+
 // ============================================================================
 // AI UPDATE - Main wolf AI logic
 // ============================================================================
@@ -258,10 +274,21 @@ void WolfManager::update_wolf_ai(Wolf& wolf, float delta_time) {
     if (wolf.decision_timer > 0.0f) {
         wolf.decision_timer -= delta_time;
     }
+    if (wolf.collision_cooldown > 0.0f) {
+        wolf.collision_cooldown -= delta_time;
+    }
 }
 
 void WolfManager::move_towards_player(Wolf& wolf, float delta_time) {
     if (!coordinator_) {
+        return;
+    }
+    
+    // Don't chase player if we're in collision cooldown (let separation take effect)
+    if (wolf.collision_cooldown > 0.0f) {
+        // Maintain current velocity or zero it out
+        wolf.vx *= Fixed::from_float(0.9f);  // Slow down gradually
+        wolf.vy *= Fixed::from_float(0.9f);
         return;
     }
     
@@ -573,6 +600,15 @@ void WolfManager::assign_pack_roles(Pack& pack) {
     
     if (leader) {
         leader->pack_role = PackRole::Leader;
+        // Cache leader index for exports
+        // Find index within wolves_ vector; fallback -1 if not found
+        int li = -1;
+        for (std::size_t i = 0; i < wolves_.size(); ++i) {
+            if (wolves_[i].id == leader->id) { li = static_cast<int>(i); break; }
+        }
+        pack.leader_index = li;
+    } else {
+        pack.leader_index = -1;
     }
     
     // Assign other roles based on attributes
@@ -1112,8 +1148,10 @@ uint8_t WolfManager::select_attack_type(const Wolf& wolf) const {
 
 // Spatial Awareness - Calculate separation force from nearby wolves
 FixedVector3 WolfManager::calculate_separation_force(const Wolf& wolf) const {
-    constexpr float SEPARATION_DISTANCE = 0.1f;  // Minimum distance between wolves
-    constexpr float SEPARATION_STRENGTH = 0.05f;
+    // Wolves should maintain at least 2x their collision radius apart
+    constexpr float WOLF_RADIUS = 0.04f;  // Default wolf radius from physics
+    constexpr float SEPARATION_DISTANCE = WOLF_RADIUS * 2.5f;  // ~0.1 units minimum spacing
+    constexpr float SEPARATION_STRENGTH = 0.8f;  // Much stronger force (was 0.05)
     
     FixedVector3 separation_force = FixedVector3::zero();
     int nearby_count = 0;
@@ -1132,13 +1170,18 @@ FixedVector3 WolfManager::calculate_separation_force(const Wolf& wolf) const {
             Fixed dist = fixed_sqrt(dist_sq);
             // Normalize and apply force inversely proportional to distance
             FixedVector3 push_dir(dx / dist, dy / dist, Fixed::from_int(0));
-            Fixed force_magnitude = (separation_dist - dist) / separation_dist;
+            
+            // Stronger force when closer - squared falloff for more aggressive separation
+            Fixed normalized_overlap = (separation_dist - dist) / separation_dist;
+            Fixed force_magnitude = normalized_overlap * normalized_overlap;  // Squared for stronger close-range
+            
             separation_force += push_dir * force_magnitude;
             nearby_count++;
         }
     }
     
     if (nearby_count > 0) {
+        // Apply strong separation force
         separation_force *= Fixed::from_float(SEPARATION_STRENGTH);
     }
     

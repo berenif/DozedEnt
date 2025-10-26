@@ -1,135 +1,208 @@
-// GameLoopCoordinator.js
-// Coordinates the main game loop components
+// GameLoopCoordinator.js (REFACTORED)
+// Orchestrates game loop components using focused coordinators
+// Single responsibility: coordinate subsystems, no business logic
 
-import { InputMapper } from '../input/InputMapper.js'
-import { WasmStateBridge } from '../state/WasmStateBridge.js'
-import { GameRenderer } from '../renderer/GameRenderer.js'
-import { EnemyRenderer } from '../renderer/EnemyRenderer.js'
+import { StateCoordinator } from '../coordinators/StateCoordinator.js'
+import { RenderingCoordinator } from '../coordinators/RenderingCoordinator.js'
+import { InputCoordinator } from '../coordinators/InputCoordinator.js'
+import { SpawnCoordinator } from '../coordinators/SpawnCoordinator.js'
+import { AbilityCoordinator } from '../coordinators/AbilityCoordinator.js'
 import { UIManager } from '../ui/UIManager.js'
-import { ArenaSpawner } from '../spawn/ArenaSpawner.js'
-import { BerserkerChargeController } from '../abilities/BerserkerChargeController.js'
+import { ReplayRecorder } from '../replay/ReplayRecorder.js'
 
+/**
+ * GameLoopCoordinator orchestrates the game loop.
+ * This is a thin coordinator that delegates to focused subsystems.
+ * 
+ * Architecture (ADR-001, ADR-002, ADR-003 compliant):
+ * - All physics from WASM (validated by StateCoordinator)
+ * - All RNG from WASM (no Math.random())
+ * - Single state facade (WasmCoreState via StateCoordinator)
+ * - Focused coordinators (no god class)
+ * 
+ * Responsibilities:
+ * - Orchestrate coordinators (State, Rendering, Input, Spawn, Ability)
+ * - Run game loop (requestAnimationFrame)
+ * - Handle start/stop/reset
+ * - Optional replay recording
+ */
 export class GameLoopCoordinator {
   constructor(canvas, options, wasmApi) {
+    if (!canvas) {
+      throw new Error('Canvas is required')
+    }
+    if (!wasmApi) {
+      throw new Error('WASM API is required')
+    }
+
     this.canvas = canvas
     this.wasmApi = wasmApi
     this.options = options
 
-    // Initialize components
-    this.stateBridge = new WasmStateBridge(wasmApi)
-    this.gameRenderer = new GameRenderer(canvas)
-    this.enemyRenderer = new EnemyRenderer(canvas)
-    this.uiManager = new UIManager(options, wasmApi)
-    
-    // Initialize input
-    this.inputMapper = new InputMapper()
-    this.inputMapper.attach()
+    // Initialize coordinators
+    this.stateCoordinator = new StateCoordinator(wasmApi)
+    this.renderingCoordinator = new RenderingCoordinator(canvas)
+    this.inputCoordinator = new InputCoordinator(wasmApi, {
+      recordingEnabled: options.recordingEnabled || false
+    })
+    this.spawnCoordinator = new SpawnCoordinator(wasmApi)
+    this.abilityCoordinator = new AbilityCoordinator(wasmApi, this.inputCoordinator)
 
-    // Initialize game systems
-    this.arenaSpawner = new ArenaSpawner(wasmApi)
-    this.chargeController = new BerserkerChargeController({ wasmApi, input: this.inputMapper })
+    // UI manager (reads from state coordinator)
+    this.uiManager = new UIManager(options, wasmApi)
+
+    // Replay recorder
+    this.replayRecorder = new ReplayRecorder({
+      enabled: options.recordingEnabled || false
+    })
 
     // Setup character type
-    this.setupCharacterType()
+    this.abilityCoordinator.setCharacterType(1) // Raider class
+
+    // Initialize seed for deterministic gameplay
+    const initialSeed = Date.now()
+    this.stateCoordinator.setSeed(initialSeed)
+    if (this.replayRecorder.isRecording()) {
+      this.replayRecorder.start(initialSeed)
+    }
 
     // Initialize arena
-    this.arenaSpawner.spawnInitial()
+    this.spawnCoordinator.initialize()
 
     // Loop state
-    this.lastFrameTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    this.lastFrameTime = this._getTime()
     this.isRunning = false
+    this.tick = 0
   }
 
-  setupCharacterType() {
-    try {
-      const ex = this.wasmApi.exports || {}
-      if (typeof ex.set_character_type === 'function') { 
-        ex.set_character_type(1) // Raider class
-      }
-    } catch (_e) {
-      // Silently handle WASM errors
-    }
-  }
-
+  /**
+   * Start game loop
+   */
   start() {
     if (this.isRunning) return
     this.isRunning = true
-    this.lastFrameTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    this.lastFrameTime = this._getTime()
     this.frame()
   }
 
+  /**
+   * Stop game loop
+   */
   stop() {
     this.isRunning = false
   }
 
+  /**
+   * Main game loop frame
+   */
   frame() {
     if (!this.isRunning) return
 
-    const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    // Calculate delta time
+    const now = this._getTime()
     const deltaTime = Math.min(0.05, Math.max(0, (now - this.lastFrameTime) / 1000))
     this.lastFrameTime = now
+    this.tick++
 
-    // Process input
-    this.processInput()
+    // 1. Process input
+    const inputFrame = this.inputCoordinator.processInput()
 
-    // Update ability controller
-    this.chargeController.update(deltaTime)
+    // 2. Update abilities
+    this.abilityCoordinator.update(deltaTime)
 
-    // Update WASM simulation
+    // 3. Update WASM simulation (physics happens here)
     this.wasmApi.update(deltaTime)
 
-    // Read state
-    const playerState = this.stateBridge.readPlayer()
-    const uiState = this.stateBridge.readUI()
+    // 4. Update state snapshot (once per frame)
+    this.stateCoordinator.update()
 
-    // Render frame
-    this.render(playerState)
+    // 5. Get centralized state
+    const wasmState = this.stateCoordinator.getState()
 
-    // Update UI
+    // 6. Record frame for replay
+    if (this.replayRecorder.isRecording()) {
+      this.replayRecorder.recordFrame({
+        tick: this.tick,
+        input: inputFrame
+      })
+
+      // Record state snapshot every 60 frames
+      if (this.tick % 60 === 0) {
+        this.replayRecorder.recordStateSnapshot(
+          this.tick,
+          wasmState.serialize()
+        )
+      }
+    }
+
+    // 7. Render frame
+    this.renderingCoordinator.render(wasmState, this.wasmApi)
+
+    // 8. Update UI
+    const playerState = wasmState.getPlayerState()
+    const uiState = wasmState.getUIState()
     this.uiManager.update(playerState, uiState)
 
-    // Update arena
-    this.arenaSpawner.update(deltaTime)
+    // 9. Update spawning
+    this.spawnCoordinator.update(deltaTime)
 
     // Continue loop
     requestAnimationFrame(() => this.frame())
   }
 
-  processInput() {
-    const axisX = this.inputMapper.axisX()
-    const axisY = this.inputMapper.axisY()
-    const flags = this.inputMapper.flags()
-
-    this.wasmApi.setPlayerInput(
-      axisX, 
-      axisY, 
-      flags.roll, 
-      flags.jump, 
-      flags.light, 
-      flags.heavy, 
-      flags.block, 
-      flags.special
-    )
-  }
-
-  render(playerState) {
-    // Clear canvas
-    this.gameRenderer.clear()
-
-    // Render player
-    this.gameRenderer.renderPlayer(playerState)
-
-    // Render enemies
-    this.enemyRenderer.renderEnemies(this.wasmApi)
-  }
-
+  /**
+   * Reset game
+   */
   reset() {
-    try { 
-      this.wasmApi.resetRun(BigInt(Date.now())) 
-    } catch { 
-      this.wasmApi.resetRun(Date.now()) 
+    const newSeed = Date.now()
+    
+    try {
+      this.wasmApi.resetRun(BigInt(newSeed))
+    } catch {
+      this.wasmApi.resetRun(newSeed)
     }
-    this.arenaSpawner.reset()
+
+    this.stateCoordinator.setSeed(newSeed)
+    this.spawnCoordinator.reset()
     this.uiManager.reset()
+    this.inputCoordinator.clearHistory()
+    
+    if (this.replayRecorder.isRecording()) {
+      this.replayRecorder.start(newSeed)
+    }
+
+    this.tick = 0
+  }
+
+  /**
+   * Export replay
+   */
+  exportReplay() {
+    return this.replayRecorder.export()
+  }
+
+  /**
+   * Get current state (for debugging)
+   */
+  getState() {
+    return this.stateCoordinator.getState()
+  }
+
+  /**
+   * Enable/disable replay recording
+   */
+  setRecording(enabled) {
+    this.inputCoordinator.setRecording(enabled)
+    if (enabled) {
+      this.replayRecorder.start(this.stateCoordinator.getSeed())
+    } else {
+      this.replayRecorder.stop()
+    }
+  }
+
+  // Private helpers
+
+  _getTime() {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now()
   }
 }

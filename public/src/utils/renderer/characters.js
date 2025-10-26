@@ -424,7 +424,22 @@ export function renderPlayer(renderer) {
     'idle', 'running', 'attacking', 'blocking', 'rolling', 'hurt', 'dead',
     'jumping', 'doubleJumping', 'landing', 'wallSliding', 'dashing', 'chargingAttack'
   ];
-  const currentAnimState = animStateNames[animState] || 'idle';
+  
+  // Determine animation state based on WASM state
+  // Priority: attack > roll > block > movement
+  let currentAnimState = 'idle';
+  if (attackState > 0) {
+    // AttackState: 0=Idle, 1=Windup, 2=Active, 3=Recovery
+    currentAnimState = 'attacking';
+  } else if (isRolling) {
+    currentAnimState = 'rolling';
+  } else if (isBlocking) {
+    currentAnimState = 'blocking';
+  } else if (animState > 0 && animState < animStateNames.length) {
+    currentAnimState = animStateNames[animState];
+  } else if (Math.hypot(velX, velY) > 0.05) {
+    currentAnimState = 'running';
+  }
 
   // Convert to screen coordinates for procedural rendering
   const screenPos = renderer.worldToScreen(playerWorldPos.x, playerWorldPos.y);

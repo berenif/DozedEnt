@@ -26,6 +26,7 @@ export class AbilityAnimationBase {
         this.duration = Number.isFinite(config.duration) ? config.duration : 0.6
         this.cooldown = Number.isFinite(config.cooldown) ? config.cooldown : 2.0
         this.staminaCost = Number.isFinite(config.staminaCost) ? config.staminaCost : 15
+        this.manaCost = Number.isFinite(config.manaCost) ? config.manaCost : 0
         this.canMoveWhileCasting = !!config.canMoveWhileCasting
         this.canCancelEarly = !!config.canCancelEarly
         this.interruptible = config.interruptible !== false

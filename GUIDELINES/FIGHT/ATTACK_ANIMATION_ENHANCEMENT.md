@@ -121,6 +121,8 @@ The attack trail provides visual feedback during the swing:
 - Attack state managed in WASM core
 - JavaScript handles only visual presentation
 - Deterministic across all clients
+ - Hit detection and damage are computed in WASM only; JS never applies gameplay effects
+ - `queueAttack()` must only set WASM input flags (no gameplay branching in JS)
 
 ### Animation Pipeline
 ```
@@ -167,7 +169,7 @@ WASM State → Player Animator → Combat Module → Procedural Animation → Re
 ## 🧪 Testing
 
 ### Demo File
-A comprehensive demo is available at `/demos/attack-animation-demo.html`
+A comprehensive demo is available at `public/demos/animation-system-demo.html`
 
 Features:
 - Visual grid and crosshair for positioning
@@ -259,7 +261,7 @@ Features:
 ## 🔗 Related Documentation
 
 - [Player Animations](../ANIMATION/PLAYER_ANIMATIONS.md)
-- [5-Button Combat System](./5-BUTTON_COMBAT_IMPLEMENTATION.md)
+- [3-Button Combat System](./3-BUTTON_COMBAT_IMPLEMENTATION.md)
 - [Combat System Architecture](./COMBAT_SYSTEM.md)
 - [Animation System Index](../ANIMATION/ANIMATION_SYSTEM_INDEX.md)
 

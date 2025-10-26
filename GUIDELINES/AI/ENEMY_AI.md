@@ -1,11 +1,3 @@
-# 👾 Enhanced Enemy AI System
-
-<div align="center">
-  <h2>Advanced Modular Enemy Behavior System</h2>
-  <p><strong>Intelligent pack hunting • Adaptive difficulty • Emotional states • Environmental awareness • WASM Integration</strong></p>
-</div>
-
----
 
 ## 🎯 Purpose
 
@@ -174,12 +166,75 @@ struct TerrainFeature { float x, y, radius; TerrainType type; float advantage; }
 
 Prefer event-driven updates for costly work (e.g., on damage, on block, on ally signal).
 
+## 🎚️ Fairness, Readability, and Pressure Management
+
+To increase encounter complexity while keeping fights fair and fun, adopt these systemic controls:
+
+- Pack pressure budget
+  - Only one attacker may be in commit range at a time, plus one probing at strafe distance; remaining pack members threaten from ≥1.5× attack range.
+  - Per-wolf engage cooldown after an attack/whiff: 1.5–2.5 s to prevent dogpiles.
+  - Budget scales with pack size and the player's current HP/stamina.
+
+- Imperfect communications
+  - Range-limited jitter on message delivery (±80–160 ms) and a small drop chance (3–5%) beyond 0.35 units.
+  - Keeps ambushes organic and avoids robotic synchronization.
+
+- Telegraph tiers and feint discipline
+  - Three tiers: short probe, medium strike, rare heavy with large whiff-punish windows.
+  - Feints gated by stamina and frustration; cap global feint rate per wolf (e.g., 2–3/min, never when stamina < 0.3).
+
+- Role fluidity with locks
+  - Allow mid-fight role swaps under clear triggers (e.g., low HP → Support/Scout; high morale → Skirmisher).
+  - Enforce a minimum role lock window (6–10 s) to avoid thrash.
+
+- Terrain-driven routing (not just positioning)
+  - Approaches prefer cover nodes; avoid open field under low morale.
+  - Retreats bias to chokepoints/high ground; regroup off line-of-sight.
+
+- Emotion–injury coupling
+  - HP thresholds (≈70/40/20%) trigger limp (reduced acceleration/turn rate), fear spikes, fewer feints, more pack calls.
+
+- Adaptive cadence vs raw stats
+  - Scale attack cadence, feint probability, and strafe radius with player-skill estimates; smooth via 10% interpolation per update.
+
+- Shuffle-bag selection for plans/telegraphs
+  - Use non-repeating bags for plan and tell choices to avoid streaks while staying deterministic.
+
+- Anti-frustration safety valves
+  - Mercy window: after the player takes 2 hits in 2 s, attackers back off for 0.8–1.2 s.
+  - Anti corner-lock: if ≥2 enemies occupy a ≤30° arc on the player, one yields position.
+
+- Player-counter hooks
+  - Successful parry/dodge briefly reduces local aggression for nearby enemies, creating momentum without trivializing.
+
+### Suggested parameter dials
+
+- Reaction delay: 110–220 ms (skill-scaled, emotion-modified)
+- Engage cooldown per enemy: 1.5–2.5 s
+- Pack pressure: 1 commit, 1 probe, others threaten at ≥1.5× range
+- Feint rate: base 6–10%, cap 20% under high frustration; 0% when stamina < 0.3
+- Flank eval cadence: every 1.2–1.8 s; fail early if LOS risk too high
+- Comms jitter: ±80–160 ms; 3–5% drop beyond 0.35 units
+
+### Determinism & performance notes
+
+- Implement all logic in WASM; JS remains a read-only renderer.
+- Use the project RNG and shuffle-bags for selection randomness.
+- Maintain O(n) per-enemy logic; stagger terrain scans across ticks.
+
+### Telemetry & tests
+
+- Export counters per encounter: attack cadence, time-in-contact, flank attempts, feint success, mercy-window triggers.
+- Unit tests: enforce pressure budget invariants; role lock timing; mercy-window activation; shuffle-bag no immediate repeat.
+
 ## 🎮 Tuning Guidelines
 
 - Keep transitions readable and testable; avoid hidden side-effects.
 - Use cool-downs for expensive actions (feints, big attacks, scans).
 - Gate risky choices by morale and stamina.
 - Randomize within tight bounds to avoid predictability.
+- Enforce pressure budgets and mercy windows to prevent unfair dogpiling.
+- Introduce communication jitter and role locks to avoid robotic behavior and thrash.
 
 ## 🚀 Performance
 

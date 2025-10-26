@@ -7,7 +7,22 @@ let WasmModule = null;
 
 export async function loadWasmModule() {
 	try {
-		const createModule = await import('../../wasm/skeleton-physics.js');
+		// Probe for module availability with correct MIME to avoid module MIME errors
+		const moduleUrl = '/wasm/skeleton-physics.js';
+		let canLoad = false;
+		try {
+			const head = await fetch(moduleUrl, { method: 'HEAD' });
+			const ctype = head.headers.get('Content-Type') || '';
+			canLoad = head.ok && /javascript|ecmascript/.test(ctype);
+		} catch (_) {
+			canLoad = false;
+		}
+
+		if (!canLoad) {
+			throw new Error('WASM JS glue not present or wrong MIME');
+		}
+
+		const createModule = await import(moduleUrl);
 		WasmModule = await createModule.default();
 		console.log('✓ WebAssembly physics engine loaded');
 		console.log('WASM Module exports:', Object.keys(WasmModule));

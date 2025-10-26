@@ -57,10 +57,10 @@ export class UIManager {
   }
 
   update(playerState, uiState) {
-    // Update HUD
+    // Update HUD - hp and stamina come from playerState, phase from uiState
     this.hud.update({ 
-      hp: uiState.hp, 
-      stamina: uiState.stamina, 
+      hp: playerState.hp, 
+      stamina: playerState.stamina, 
       phase: uiState.phase 
     })
 

@@ -27,10 +27,10 @@ export class InputMapper {
     return {
       roll: this.keys[' '], // space
       jump: this.keys['w'] || this.keys['arrowup'],
-      light: this.keys['j'],
-      heavy: this.keys['l'],
-      block: this.keys['shift'],
-      special: this.keys['k']
+      light: !!(this.keys['j']),
+      heavy: !!(this.keys['l']),
+      block: !!(this.keys['shift']),
+      special: !!(this.keys['k'])
     }
   }
 }

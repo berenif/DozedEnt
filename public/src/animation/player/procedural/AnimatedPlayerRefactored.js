@@ -58,6 +58,84 @@ export class AnimatedPlayer {
 		}
 	}
 
+	// ===========================================
+	// Property Getters (for backward compatibility)
+	// ===========================================
+
+	/**
+	 * Get current health value
+	 * @returns {number}
+	 */
+	get health() {
+		const stats = this.stateViewModel.getStats()
+		return stats.health
+	}
+
+	/**
+	 * Set health value (for demos/testing)
+	 * @param {number} value
+	 */
+	set health(value) {
+		this.stateViewModel._cachedHealth = value
+		// Note: This only updates cached value, WASM state is authoritative
+	}
+
+	/**
+	 * Get current stamina value
+	 * @returns {number}
+	 */
+	get stamina() {
+		const stats = this.stateViewModel.getStats()
+		return stats.stamina
+	}
+
+	/**
+	 * Set stamina value (for demos/testing)
+	 * @param {number} value
+	 */
+	set stamina(value) {
+		this.stateViewModel._cachedStamina = value
+		// Note: This only updates cached value, WASM state is authoritative
+	}
+
+	/**
+	 * Get current mana value (placeholder for ability system)
+	 * @returns {number}
+	 */
+	get mana() {
+		return this.stateViewModel._cachedMana ?? 100
+	}
+
+	/**
+	 * Set mana value (for demos/testing)
+	 * @param {number} value
+	 */
+	set mana(value) {
+		this.stateViewModel._cachedMana = value
+	}
+
+	/**
+	 * Get current horizontal velocity
+	 * @returns {number}
+	 */
+	get vx() {
+		const velocity = this.stateViewModel.getVelocity()
+		return velocity.x
+	}
+
+	/**
+	 * Get current vertical velocity
+	 * @returns {number}
+	 */
+	get vy() {
+		const velocity = this.stateViewModel.getVelocity()
+		return velocity.y
+	}
+
+	// ===========================================
+	// Main Update Loop
+	// ===========================================
+
 	/**
 	 * Main update loop - coordinates all modules
 	 * @param {number} deltaTime - Frame time in seconds
@@ -86,6 +164,7 @@ export class AnimatedPlayer {
 		)
 		
 		// 5. Update legacy properties for backward compatibility
+		// Note: WASM returns normalized coordinates (0-1), keep them as-is for consistency
 		this.x = playerState.x
 		this.y = playerState.y
 		this.facing = this.animationCoordinator.facing
@@ -196,6 +275,44 @@ export class AnimatedPlayer {
 	 */
 	jump() {
 		return this.actionManager.tryJump()
+	}
+
+	/**
+	 * Take damage (for demos/testing)
+	 * @param {number} amount - Damage amount
+	 * @param {number} knockbackX - Horizontal knockback
+	 * @param {number} knockbackY - Vertical knockback
+	 */
+	takeDamage(amount, knockbackX = 0, knockbackY = 0) {
+		// Update cached health
+		const stats = this.stateViewModel.getStats()
+		this.stateViewModel._cachedHealth = Math.max(0, stats.health - amount)
+		
+		// Trigger hurt animation
+		this.setState('hurt')
+		
+		// Note: In production, damage should be handled by WASM
+		if (this.actionManager.wasmExports?.damage_player) {
+			this.actionManager.wasmExports.damage_player(amount)
+		}
+	}
+
+	/**
+	 * Respawn player at position (for demos/testing)
+	 * @param {number} x - X position
+	 * @param {number} y - Y position
+	 */
+	respawn(x = 400, y = 300) {
+		this.x = x
+		this.y = y
+		this.stateViewModel._cachedHealth = this.stateViewModel.maxHealth
+		this.stateViewModel._cachedStamina = this.stateViewModel.maxStamina
+		this.setState('idle')
+		
+		// Note: In production, respawn should be handled by WASM
+		if (this.actionManager.wasmExports?.respawn_player) {
+			this.actionManager.wasmExports.respawn_player(x, y)
+		}
 	}
 
 	// ===========================================

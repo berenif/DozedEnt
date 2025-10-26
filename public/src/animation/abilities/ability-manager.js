@@ -48,7 +48,15 @@ export class AbilityManager {
             return false
         }
         
-        const ability = new abilityClass(this.player.wasmModule, this.player.vfxManager)
+        // Get wasmModule and vfxManager from player or use defaults
+        const wasmModule = this.player.wasmModule || this.player.actionManager?.wasmExports || globalThis.wasmExports || null
+        const vfxManager = this.player.vfxManager || {
+            particles: this.player.particleSystem || null,
+            camera: null,
+            audio: null
+        }
+        
+        const ability = new abilityClass(wasmModule, vfxManager)
         
         // Store ability configuration
         this.abilities.set(name, {

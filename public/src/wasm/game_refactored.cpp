@@ -364,6 +364,41 @@ int get_attack_state() {
     return static_cast<int>(g_coordinator.get_combat_manager().get_attack_state());
 }
 
+__attribute__((export_name("get_player_anim_state")))
+int get_player_anim_state() {
+    // Return animation state code based on combat and player state
+    // Animation codes: 0=idle, 1=running, 2=attacking, 3=blocking, 4=rolling, 
+    // 5=hurt, 6=dead, 7=jumping, 8=doubleJumping, 9=landing, 10=wallSliding, 11=dashing, 12=chargingAttack
+    
+    const auto& combat = g_coordinator.get_combat_manager();
+    const auto& player = g_coordinator.get_player_manager();
+    
+    // Priority order: attacking > rolling > blocking > movement
+    
+    // Check attack state
+    if (combat.get_attack_state() != CombatManager::AttackState::Idle) {
+        return 2; // attacking
+    }
+    
+    // Check roll state
+    if (combat.is_roll_sliding()) {
+        return 4; // rolling
+    }
+    
+    // Check blocking
+    if (combat.is_blocking()) {
+        return 3; // blocking
+    }
+    
+    // Check if player is moving
+    float speed = player.get_speed();
+    if (speed > 0.05f) {
+        return 1; // running
+    }
+    
+    return 0; // idle
+}
+
 __attribute__((export_name("get_roll_state")))
 int get_roll_state() {
     return static_cast<int>(g_coordinator.get_combat_manager().get_roll_state());
@@ -1052,6 +1087,209 @@ __attribute__((export_name("get_wolf_attack_type")))
 int get_wolf_attack_type(int wolf_index) {
     const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(wolf_index);
     return wolf ? static_cast<int>(wolf->current_attack_type) : 0;
+}
+
+// ---- Phase 2A: Terrain System (stubbed) ----
+__attribute__((export_name("get_terrain_feature_count")))
+int get_terrain_feature_count() {
+    // Terrain system not implemented yet; safe default
+    return 0;
+}
+
+__attribute__((export_name("get_terrain_feature_x")))
+float get_terrain_feature_x(int /*feature_index*/) {
+    return 0.0f;
+}
+
+__attribute__((export_name("get_terrain_feature_y")))
+float get_terrain_feature_y(int /*feature_index*/) {
+    return 0.0f;
+}
+
+__attribute__((export_name("get_terrain_feature_type")))
+int get_terrain_feature_type(int /*feature_index*/) {
+    return 0;
+}
+
+// ---- Phase 2B: Advanced Wolf State ----
+__attribute__((export_name("get_wolf_aggression")))
+float get_wolf_aggression(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->aggression : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_morale")))
+float get_wolf_morale(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->morale : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_stamina")))
+float get_wolf_stamina(int index) {
+    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
+    return wolf ? wolf->stamina : 0.0f;
+}
+
+__attribute__((export_name("get_wolf_limp_severity")))
+float get_wolf_limp_severity(int /*index*/) {
+    // Limp/injury system not yet implemented; safe default
+    return 0.0f;
+}
+
+__attribute__((export_name("get_pack_wolf_count")))
+int get_pack_wolf_count(int pack_index) {
+    const Pack* pack = g_coordinator.get_wolf_manager().get_pack(pack_index);
+    return pack ? static_cast<int>(pack->wolf_ids.size()) : 0;
+}
+
+__attribute__((export_name("get_pack_leader_index")))
+int get_pack_leader_index(int pack_index) {
+    const Pack* pack = g_coordinator.get_wolf_manager().get_pack(pack_index);
+    return pack ? pack->leader_index : -1;
+}
+
+// ---- Phase 3: Performance Metrics ----
+__attribute__((export_name("get_wolf_attack_success_rate")))
+float get_wolf_attack_success_rate() {
+    const int count = g_coordinator.get_wolf_manager().get_wolf_count();
+    unsigned int attempts = 0;
+    unsigned int successes = 0;
+    for (int i = 0; i < count; ++i) {
+        const Wolf* w = g_coordinator.get_wolf_manager().get_wolf(i);
+        if (!w) continue;
+        successes += w->successful_attacks;
+        attempts += (w->successful_attacks + w->failed_attacks);
+    }
+    if (attempts == 0) return 0.0f;
+    return static_cast<float>(successes) / static_cast<float>(attempts);
+}
+
+__attribute__((export_name("get_pack_coordination_bonus")))
+float get_pack_coordination_bonus() {
+    // Return average coordination bonus across all packs
+    float sum = 0.0f;
+    int packs = g_coordinator.get_wolf_manager().get_pack_count();
+    if (packs <= 0) return 1.0f;
+    for (int i = 0; i < packs; ++i) {
+        const Pack* p = g_coordinator.get_wolf_manager().get_pack(i);
+        sum += p ? p->coordination_bonus : 1.0f;
+    }
+    return sum / static_cast<float>(packs);
+}
+
+__attribute__((export_name("get_player_skill_estimate")))
+float get_player_skill_estimate() {
+    return g_coordinator.get_wolf_manager().estimate_player_skill();
+}
+
+__attribute__((export_name("get_wolf_message_count")))
+int get_wolf_message_count(int /*wolf_index*/) {
+    // Communication system not yet implemented; safe default
+    return 0;
+}
+
+__attribute__((export_name("get_wolf_last_message_type")))
+int get_wolf_last_message_type(int /*wolf_index*/) {
+    // Communication system not yet implemented; safe default
+    return 0;
+}
+
+// ---- Skeleton Snapshot Exports (v1 getters) ----
+
+__attribute__((export_name("get_skeleton_joint_count")))
+int get_skeleton_joint_count() {
+    const auto &pm = g_coordinator.get_player_manager();
+    const SkeletonPhysics::PlayerSkeleton* skel = pm.get_skeleton();
+    if (!skel) {
+        return 0;
+    }
+    // Defined joint set: 26
+    return 26;
+}
+
+// Helper to map index to joint pointer
+static inline const SkeletonPhysics::Joint* _skel_joint_by_index(const SkeletonPhysics::PlayerSkeleton* s, int i) {
+    // Order must be stable and documented
+    switch (i) {
+        case 0: return &s->head; case 1: return &s->neck; case 2: return &s->chest; case 3: return &s->mid_spine;
+        case 4: return &s->lower_spine; case 5: return &s->pelvis; case 6: return &s->shoulder_l; case 7: return &s->shoulder_r;
+        case 8: return &s->elbow_l; case 9: return &s->elbow_r; case 10: return &s->wrist_l; case 11: return &s->wrist_r;
+        case 12: return &s->hand_l; case 13: return &s->hand_r; case 14: return &s->hip_l; case 15: return &s->hip_r;
+        case 16: return &s->knee_l; case 17: return &s->knee_r; case 18: return &s->ankle_l; case 19: return &s->ankle_r;
+        case 20: return &s->heel_l; case 21: return &s->heel_r; case 22: return &s->foot_l; case 23: return &s->foot_r;
+        case 24: return &s->toe_l; case 25: return &s->toe_r; default: return nullptr;
+    }
+}
+
+__attribute__((export_name("get_skeleton_joint_x")))
+float get_skeleton_joint_x(int index) {
+    if (index < 0 || index >= 26) {
+        return 0.0f;
+    }
+    const auto &pm = g_coordinator.get_player_manager();
+    const SkeletonPhysics::PlayerSkeleton* skel = pm.get_skeleton();
+    if (!skel) {
+        return 0.0f;
+    }
+    const SkeletonPhysics::Joint* j = _skel_joint_by_index(skel, index);
+    return j ? j->x.to_float() : 0.0f;
+}
+
+__attribute__((export_name("get_skeleton_joint_y")))
+float get_skeleton_joint_y(int index) {
+    if (index < 0 || index >= 26) {
+        return 0.0f;
+    }
+    const auto &pm = g_coordinator.get_player_manager();
+    const SkeletonPhysics::PlayerSkeleton* skel = pm.get_skeleton();
+    if (!skel) {
+        return 0.0f;
+    }
+    const SkeletonPhysics::Joint* j = _skel_joint_by_index(skel, index);
+    return j ? j->y.to_float() : 0.0f;
+}
+
+// ---- Skeleton Snapshot Exports (v2 bulk writer) ----
+// Writes XY pairs for all joints into a provided buffer.
+// Buffer layout: [x0, y0, x1, y1, ...] of length count*2 floats.
+// Returns number of floats written (count*2). Returns 0 on error.
+__attribute__((export_name("write_skeleton_joints_xy")))
+int write_skeleton_joints_xy(uintptr_t out_ptr, int max_pairs) {
+    if (out_ptr == 0 || max_pairs <= 0) {
+        return 0;
+    }
+    const auto &pm = g_coordinator.get_player_manager();
+    const SkeletonPhysics::PlayerSkeleton* skel = pm.get_skeleton();
+    if (!skel) {
+        return 0;
+    }
+    const int total_joints = 26;
+    const int pairs_to_write = std::min(max_pairs, total_joints);
+    float* out = reinterpret_cast<float*>(out_ptr);
+    int written = 0;
+    for (int i = 0; i < pairs_to_write; ++i) {
+        const SkeletonPhysics::Joint* j = _skel_joint_by_index(skel, i);
+        const float x = j ? j->x.to_float() : 0.0f;
+        const float y = j ? j->y.to_float() : 0.0f;
+        out[written++] = x;
+        out[written++] = y;
+    }
+    return written; // number of floats written
+}
+
+__attribute__((export_name("get_balance_quality")))
+float get_balance_quality() {
+    return g_coordinator.get_player_manager().get_balance_quality();
+}
+
+__attribute__((export_name("get_left_foot_grounded")))
+int get_left_foot_grounded() {
+    return g_coordinator.get_player_manager().is_left_foot_grounded() ? 1 : 0;
+}
+
+__attribute__((export_name("get_right_foot_grounded")))
+int get_right_foot_grounded() {
+    return g_coordinator.get_player_manager().is_right_foot_grounded() ? 1 : 0;
 }
 
 } // extern "C"

@@ -1,16 +1,64 @@
 # 🎮 Agent Development Guide (WASM-First Architecture)
 
 ## 📋 Table of Contents
+- [Quick Start](#quick-start-5-minute-setup)
 - [Overview](#overview)
 - [Architecture Principles](#architecture-principles)
+- [Decision Trees](#decision-trees)
 - [Guideline Cross-Reference Index](#guideline-cross-reference-index)
 - [WASM API Reference](#wasm-api-reference)
 - [JavaScript Integration](#javascript-integration)
+- [Common Tasks Cookbook](#common-tasks-cookbook)
+- [File Location Quick Reference](#file-location-quick-reference)
 - [Build Process](#build-process)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 - [Performance Metrics](#performance-metrics)
 - [Testing Framework](#testing-framework)
+- [Glossary](#glossary)
+
+## 🚀 Quick Start (5-Minute Setup)
+
+### Your First Code Change
+
+1. **Clone and Build**
+```bash
+git clone https://github.com/BerenIf/DozedEnt.git
+cd DozedEnt
+npm install
+npm run wasm:build
+```
+
+2. **Run Local Development**
+```bash
+npm run serve
+# Open http://localhost:8080/public/
+```
+
+3. **Make a Simple Change**
+- **WASM (C++)**: Edit `public/src/wasm/game_refactored.cpp`
+  - Rebuild: `npm run wasm:build`
+- **JavaScript**: Edit `public/src/game/` files
+  - No rebuild needed, just refresh browser
+- **Balance Data**: Edit `data/balance/player.json`
+  - Regenerate: `node ./tools/scripts/generate-balance.cjs`
+  - Rebuild WASM: `npm run wasm:build`
+
+### First-Time Agent Checklist
+- [ ] Read this document (AGENTS.md) - You are here! ✓
+- [ ] Review [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - File organization
+- [ ] Check [ADR documents](./ADR/) - Recent architectural decisions
+- [ ] Run tests: `npm run test:unit` - Verify setup
+- [ ] Try a small change - Modify player speed in `data/balance/player.json`
+
+### Key Files to Know
+| File | Purpose | When to Edit |
+|------|---------|--------------|
+| `public/src/wasm/game_refactored.cpp` | Main game logic | Gameplay rules, state |
+| `public/src/wasm/managers/*.cpp` | Domain-specific logic | Wolves, combat, physics |
+| `public/src/game/loop/MVPLoop.js` | Game loop | Rendering, updates |
+| `data/balance/player.json` | Player stats | Balancing, tuning |
+| `WASM_EXPORTS.json` | Available WASM functions | Reference |
 
 ## Overview
 
@@ -31,7 +79,37 @@ This repository implements a **WebAssembly-first roguelike game architecture** w
 4. **Deterministic by design** - Same seed + inputs = same outcome everywhere
 5. **Code Quality Standards** - Always follow ESLint rules and maintain clean code
 
+### ✅ Enforced Rules (One‑Shot Plan Workflow)
+- One‑Shot plan required before implementation
+  - Use template: `.cursor/plans/ONE-SHOT-PLAN-TEMPLATE.md`
+  - Store as `.cursor/plans/s-<short-id>.plan.md` and keep ≤ 200 lines
+- File/function/class size limits
+  - Max file: 500 lines (split at ~400)
+  - Max function: 30–40 lines; prefer early returns
+  - Classes >200 lines must be split into focused helpers
+- Responsibility and patterns
+  - One concern per file; use Manager (business), ViewModel (UI state), Coordinator (flow)
+  - JS in `public/src/` only; no gameplay logic in JS
+- WASM exports and build gates
+  - When adding exports: mark `EMSCRIPTEN_KEEPALIVE`, update build scripts EXPORTED_FUNCTIONS, regenerate `WASM_EXPORTS.json`
+  - Post‑build must pass export verification (e.g., `npm run wasm:verify:skeleton` or feature‑specific verify)
+- Feature flags and safe fallback
+  - Guard with URL param + localStorage; if exports missing or non‑finite data, disable feature without throwing
+- Performance budgets (hard)
+  - JS render ≤ 0.5 ms; WASM update ≤ 1.0 ms; snapshot ≤ 0.3 ms
+  - Batch WASM reads once per frame; prefer a single bulk call
+- Determinism constraints
+  - No `Math.random()` in gameplay; no JS physics; clamp dt on WASM side as needed
+- Testing requirements
+  - Unit: state contract/shape; Coordinator integration
+  - Node smoke: instantiate WASM and call key exports
+  - Visual (when applicable): golden frame tolerance on demo
+- CI gates (fail the build if any fails)
+  - Missing required exports; lints; file >500 lines; tests; export manifest generation
+
 ### 🚨 Common Pitfalls (Updated January 2025)
+
+> **Note**: These pitfalls are addressed in detail in our Architecture Decision Records. See [ADR-001](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md), [ADR-002](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md), and [ADR-003](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md) for the architectural decisions and migration paths.
 
 #### ❌ Don't: Duplicate Physics in JavaScript
 JavaScript physics will conflict with WASM. Only read positions from WASM.
@@ -44,6 +122,8 @@ this.position.x += this.velocity.x * deltaTime;
 this.position.x = this.wasmModule.get_physics_player_x();
 this.velocity.x = this.wasmModule.get_physics_player_vel_x();
 ```
+
+**See**: [ADR-001: Remove JavaScript Physics](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md) for complete rationale and implementation details.
 
 #### ❌ Don't: Use Math.random() for Gameplay
 Breaks determinism and multiplayer sync. Use WASM RNG or WasmRNG facade.
@@ -58,6 +138,8 @@ import { uiRNG } from '../utils/wasm-rng.js';
 const uiElement = uiRNG.choose(colors);
 ```
 
+**See**: [ADR-002: Math.random() Elimination](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md) for complete rationale and linting rules.
+
 #### ❌ Don't: Create Multiple State Managers
 WASM is source of truth. JavaScript only reads state.
 ```javascript
@@ -70,6 +152,8 @@ import { WasmCoreState } from '../wasm/WasmCoreState.js';
 const wasmState = new WasmCoreState(wasmModule);
 const health = wasmState.getPlayerState().health;
 ```
+
+**See**: [ADR-003: State Manager Consolidation](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md) for migration guide and implementation patterns.
 
 #### ❌ Don't: Build God Classes (>500 lines)
 Violates single responsibility principle. Split into focused modules.
@@ -90,9 +174,107 @@ class MessageManager { /* ~150 lines */ }
 class NetworkCoordinator { /* ~100 lines */ }
 ```
 
+## 🌲 Decision Trees
+
+### "Where Should This Code Live?"
+
+```
+START: I need to implement [feature]
+│
+├─ Does it affect game state or rules?
+│  ├─ YES → Must be in WASM (C++)
+│  │      Location: public/src/wasm/
+│  │      Files: managers/, coordinators/, or game_refactored.cpp
+│  │
+│  └─ NO → Continue...
+│
+├─ Is it visual-only (particles, UI, animations)?
+│  ├─ YES → JavaScript
+│  │      Location: public/src/animation/, public/src/renderer/
+│  │
+│  └─ NO → Continue...
+│
+├─ Is it input handling?
+│  ├─ YES → JavaScript (capture) + WASM (processing)
+│  │      JS Location: public/src/game/input/
+│  │      WASM: set_player_input() in game_refactored.cpp
+│  │
+│  └─ NO → Continue...
+│
+└─ Is it networking/multiplayer?
+   └─ YES → JavaScript (P2P layer) + WASM (state sync)
+         JS Location: public/src/networking/
+         WASM: Deterministic state exports
+```
+
+### "Which Animation System Should I Use?"
+
+```
+START: I need animations for [entity]
+│
+├─ Is this for the player character?
+│  ├─ YES → Top-down gameplay?
+│  │      ├─ YES → PlayerPhysicsAnimator 
+│  │      │        Location: public/src/animation/player/physics/
+│  │      │        Use case: Performance-critical, mobile
+│  │      │
+│  │      └─ NO → PlayerProceduralAnimator
+│  │               Location: public/src/animation/player/procedural/
+│  │               Use case: Side-view, detailed motion
+│  │
+│  └─ NO → Is it for wolves/enemies?
+│         └─ YES → WolfAnimationSystem
+│                  Location: public/src/animation/enemy/wolf-animation.js
+│
+└─ Custom entity? → Extend AnimationBase
+                    Location: public/src/animation/system/
+```
+
+### "How Do I Debug This?"
+
+```
+START: Something is broken
+│
+├─ Is it a WASM crash or error?
+│  ├─ YES → Build with debug flags
+│  │      Command: npm run wasm:build:dev
+│  │      Check: Browser console for WASM errors
+│  │      Tool: Use em++ --profiling flag for detailed traces
+│  │
+│  └─ NO → Continue...
+│
+├─ Is it a state/logic issue?
+│  ├─ YES → Check determinism
+│  │      Test: Run with fixed seed (init_run(12345, 0))
+│  │      Record: Log all inputs and state changes
+│  │      Replay: Verify same inputs produce same state
+│  │
+│  └─ NO → Continue...
+│
+├─ Is it a visual/rendering issue?
+│  ├─ YES → Check rendering pipeline
+│  │      Debug: Enable debug overlays
+│  │      Check: Animation mode ('physics' vs 'procedural')
+│  │      Verify: State reading from WASM (not stale data)
+│  │
+│  └─ NO → Continue...
+│
+└─ Is it a multiplayer desync?
+   └─ YES → Verify determinism
+         Check: No Math.random() in gameplay
+         Check: No JS physics simulation
+         Check: Same WASM version on all clients
+         Tool: Enable network debug logs
+```
+
 ## Guideline Cross-Reference Index
 
 Use these documents when working on agents, enemies, animations, core loop, and multiplayer systems. Keep gameplay logic in WASM and use JS only for rendering, inputs, and networking.
+
+### Architecture Decision Records (ADRs)
+- [ADR-001: Remove JavaScript Physics](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md) — **Critical**: Eliminates duplicate physics simulation in JS; WASM PhysicsManager is single source of truth
+- [ADR-002: Math.random() Elimination](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md) — **Critical**: Removes non-deterministic RNG; all randomness must come from WASM
+- [ADR-003: State Manager Consolidation](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md) — **Critical**: Consolidates state management; WASM owns all gameplay state, JS reads snapshots only
 
 ### AI
 - [Enemy AI Template](./AI/ENEMY_TEMPLATE.md) — Baseline rules, state machine structure, properties, combat patterns, animation integration, performance, and testing checklist for all enemies.
@@ -286,6 +468,321 @@ function restartGame() {
 - **NO state mutations** - JS is read-only observer
 - **NO timing-based gameplay** - Use deterministic WASM timers
 
+## 👨‍🍳 Common Tasks Cookbook
+
+### Task: Add a New WASM Export Function
+
+**1. C++ Side** (`public/src/wasm/game_refactored.cpp`):
+```cpp
+// Add function implementation
+extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    float get_my_new_value() {
+        return gameState.myNewValue;
+    }
+}
+```
+
+**2. Rebuild WASM**:
+```bash
+npm run wasm:build
+```
+
+**3. JavaScript Side** (`public/src/game/state/WasmCoreState.js`):
+```javascript
+export class WasmCoreState {
+    getMyNewValue() {
+        return this.wasmModule.get_my_new_value?.() ?? 0;
+    }
+}
+```
+
+**4. Verify Export** (check `WASM_EXPORTS.json`):
+```bash
+grep "get_my_new_value" WASM_EXPORTS.json
+```
+
+**5. Test**:
+```javascript
+// test/unit/state/wasm-core-state.test.js
+it('should get my new value', () => {
+    const value = wasmState.getMyNewValue();
+    expect(value).to.be.a('number');
+});
+```
+
+---
+
+### Task: Add a New Enemy Type
+
+**1. Define Stats** (`data/balance/enemies.json`):
+```json
+{
+    "myEnemy": {
+        "health": 100,
+        "damage": 15,
+        "speed": 200,
+        "detectionRange": 300
+    }
+}
+```
+
+**2. Regenerate Balance Data**:
+```bash
+node ./tools/scripts/generate-balance.cjs
+```
+
+**3. Register in WASM** (`public/src/wasm/managers/EnemyManager.cpp`):
+```cpp
+void EnemyManager::spawnEnemy(EnemyType type) {
+    if (type == ENEMY_MY_ENEMY) {
+        Enemy enemy;
+        enemy.health = BALANCE_MY_ENEMY_HEALTH;
+        enemy.damage = BALANCE_MY_ENEMY_DAMAGE;
+        enemies.push_back(enemy);
+    }
+}
+```
+
+**4. Rebuild WASM**:
+```bash
+npm run wasm:build
+```
+
+**5. Add Renderer** (`public/src/renderer/enemies/MyEnemyRenderer.js`):
+```javascript
+export class MyEnemyRenderer {
+    render(ctx, enemy, camera) {
+        // Visual rendering only - read state from enemy object
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(enemy.x - camera.x, enemy.y - camera.y, 32, 32);
+    }
+}
+```
+
+---
+
+### Task: Modify Game Balance
+
+**1. Edit Balance File** (`data/balance/player.json`):
+```json
+{
+    "player": {
+        "speed": 300,        // Changed from 250
+        "health": 150,       // Changed from 100
+        "stamina": 120       // Changed from 100
+    }
+}
+```
+
+**2. Regenerate C++ Header**:
+```bash
+node ./tools/scripts/generate-balance.cjs
+```
+
+**3. Rebuild WASM** (constants are compiled in):
+```bash
+npm run wasm:build
+```
+
+**4. Test Changes**:
+- Refresh browser
+- Verify player moves faster
+- Verify health bar shows 150 max
+- Check stamina regeneration
+
+---
+
+### Task: Add a New UI Component
+
+**1. Create Component** (`public/src/game/ui/components/MyComponent.js`):
+```javascript
+export class MyComponent {
+    constructor(container) {
+        this.element = document.createElement('div');
+        this.element.className = 'my-component';
+        container.appendChild(this.element);
+    }
+    
+    update(gameState) {
+        // Read from WASM state only
+        const value = gameState.getMyValue();
+        this.element.textContent = `Value: ${value}`;
+    }
+    
+    destroy() {
+        this.element.remove();
+    }
+}
+```
+
+**2. Add Styles** (`public/src/styles/ui.css`):
+```css
+.my-component {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 5px;
+}
+```
+
+**3. Register in UIManager** (`public/src/game/ui/UIManager.js`):
+```javascript
+import { MyComponent } from './components/MyComponent.js';
+
+class UIManager {
+    constructor() {
+        this.myComponent = new MyComponent(this.container);
+    }
+    
+    update(gameState) {
+        this.myComponent.update(gameState);
+    }
+}
+```
+
+**4. No rebuild needed** - Just refresh browser
+
+---
+
+### Task: Debug a WASM Function
+
+**1. Check if Function Exists**:
+```javascript
+console.log('Function exists?', typeof wasmModule.get_my_value === 'function');
+```
+
+**2. Check WASM Exports Manifest**:
+```bash
+cat WASM_EXPORTS.json | grep "get_my_value"
+```
+
+**3. Add Debug Logging in C++**:
+```cpp
+extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    float get_my_value() {
+        printf("get_my_value called, returning: %f\n", myValue);
+        return myValue;
+    }
+}
+```
+
+**4. Rebuild with Debug Symbols**:
+```bash
+npm run wasm:build:dev
+```
+
+**5. Check Browser Console** for `printf` output
+
+---
+
+### Task: Fix a Multiplayer Desync
+
+**1. Enable Deterministic Replay**:
+```javascript
+// Record inputs
+const inputs = [];
+function recordInput(input) {
+    inputs.push({ frame: frameCount, input: { ...input } });
+}
+
+// Replay with same seed
+wasmModule.init_run(12345, 0);
+inputs.forEach(({ input }) => {
+    wasmModule.set_player_input(...Object.values(input));
+    wasmModule.update(0.016);
+});
+```
+
+**2. Check for Non-Deterministic Code**:
+```bash
+# Search for Math.random() in gameplay code
+grep -r "Math.random()" public/src/game/
+grep -r "Math.random()" public/src/wasm/
+
+# Should find ZERO results in gameplay code
+```
+
+**3. Verify WASM Versions Match**:
+```javascript
+// Add version check
+const WASM_VERSION = '1.0.0';
+if (remoteWasmVersion !== WASM_VERSION) {
+    console.error('WASM version mismatch!');
+}
+```
+
+**4. Check State Sync**:
+```javascript
+// Log state checksums
+const stateHash = hashGameState(wasmModule);
+console.log('State hash:', stateHash);
+// Compare with other clients
+```
+
+## 📁 File Location Quick Reference
+
+### "Where do I find...?"
+
+| What | Location | Key Files |
+|------|----------|-----------|
+| **Game Logic (C++)** | `public/src/wasm/` | `game_refactored.cpp`, `GameGlobals.cpp` |
+| **Managers (C++)** | `public/src/wasm/managers/` | `WolfManager.cpp`, `CombatManager.cpp` |
+| **Coordinators (C++)** | `public/src/wasm/coordinators/` | `GameCoordinator.cpp` |
+| **Physics (C++)** | `public/src/wasm/physics/` | `PhysicsManager.cpp` |
+| **Game Loop (JS)** | `public/src/game/loop/` | `GameLoopCoordinator.js`, `MVPLoop.js` |
+| **Rendering (JS)** | `public/src/renderer/` | `GameRenderer.js`, `PlayerRenderer.js` |
+| **Input (JS)** | `public/src/game/input/` | `InputMapper.js` |
+| **UI (JS)** | `public/src/game/ui/` | `UIManager.js` |
+| **Animation - Player (JS)** | `public/src/animation/player/` | `physics/`, `procedural/` |
+| **Animation - Enemies (JS)** | `public/src/animation/enemy/` | `wolf-animation.js` |
+| **WASM State Bridge (JS)** | `public/src/game/state/` | `WasmCoreState.js` |
+| **Coordinators (JS)** | `public/src/game/coordinators/` | `*Coordinator.js` |
+| **Balance Data** | `data/balance/` | `player.json`, `enemies.json` |
+| **Tests - Unit** | `test/unit/` | `*/*.test.js` (54+ tests) |
+| **Tests - Integration** | `test/integration/` | `*.js` |
+| **Build Scripts** | `tools/scripts/` | `build-wasm.ps1`, `build-wasm.sh` |
+| **Documentation** | `GUIDELINES/` | All `.md` files |
+| **WASM Exports Manifest** | Root | `WASM_EXPORTS.json` |
+
+### File Naming Conventions
+
+- **Managers**: `*Manager.js/.cpp` - Handle specific domain logic (e.g., `WolfManager`, `CombatManager`)
+- **Coordinators**: `*Coordinator.js/.cpp` - Orchestrate multiple systems (e.g., `GameCoordinator`)
+- **Renderers**: `*Renderer.js` - Visual display only, no logic (e.g., `PlayerRenderer`, `WolfRenderer`)
+- **Bridges**: `*Bridge.js` - WASM ↔ JS data translation (e.g., `progression-bridge.js`)
+- **Utils**: `*-utils.js` - Pure helper functions (e.g., `math-utils.js`)
+- **States**: `*State.js` - State management facades (e.g., `WasmCoreState.js`)
+
+### Directory Organization
+
+```
+public/src/
+├── wasm/              # C++ game logic (WASM source)
+│   ├── managers/      # Domain managers (Wolf, Combat, etc.)
+│   ├── coordinators/  # System orchestrators
+│   ├── physics/       # Physics simulation
+│   └── progression/   # Progression systems
+├── game/              # JavaScript game systems
+│   ├── loop/          # Game loop
+│   ├── input/         # Input handling
+│   ├── ui/            # User interface
+│   ├── state/         # State management
+│   └── coordinators/  # JS coordinators
+├── animation/         # Animation systems
+│   ├── player/        # Player animations
+│   ├── enemy/         # Enemy animations
+│   ├── abilities/     # Ability animations
+│   └── system/        # Animation framework
+├── renderer/          # Rendering systems
+│   └── player/        # Player renderers
+└── networking/        # Multiplayer networking
+```
+
 ## Build Process
 
 ### 🛠️ Prerequisites
@@ -456,24 +953,67 @@ function renderChoice(choice) {
 
 ## 📝 Pull Request Checklist
 
-### Required Checks
-- [ ] **All game logic in WASM** - No gameplay code in JavaScript
-- [ ] **Deterministic execution** - Same seed + inputs = same result
-- [ ] **Build successful** - `game.wasm` updated and tested
-- [ ] **No regressions** - Core systems still functional:
-  - [ ] Movement (`update` function)
-  - [ ] Stamina system
-  - [ ] Roll/dodge mechanics
-  - [ ] Block/parry system
-- [ ] **Memory safe** - No leaks or buffer overflows
-- [ ] **Performance maintained** - Frame time ≤ 16ms
-- [ ] **Documentation updated** - API changes documented
+### Code Quality
+- [ ] **ESLint passes** - Run `npm run lint`, fix all errors
+- [ ] **No console.log** - Remove debug statements in production code
+- [ ] **No unused imports** - Clean up dead code
+- [ ] **Curly braces** - All if/else statements have braces
+- [ ] **File size** - No files >500 lines (split if needed)
+- [ ] **Single responsibility** - Each file/class does one thing
+- [ ] **Descriptive names** - Clear, intention-revealing names
 
-### Testing Requirements
-- [ ] **Golden test passes** - Replay produces identical results
-- [ ] **Cross-platform** - Works on Windows/Mac/Linux
-- [ ] **Browser compatibility** - Chrome, Firefox, Safari tested
-- [ ] **Network sync** - Multiplayer stays synchronized
+### WASM Changes (if applicable)
+- [ ] **Builds successfully** - `npm run wasm:build` succeeds
+- [ ] **WASM_EXPORTS.json updated** - All new exports documented
+- [ ] **EMSCRIPTEN_KEEPALIVE** - All exports properly marked
+- [ ] **No memory leaks** - Valgrind clean (if unsure)
+- [ ] **Balance data regenerated** - If modified `data/balance/*.json`
+- [ ] **Golden test passes** - Deterministic replay works
+
+### Architecture Compliance
+- [ ] **WASM-first** - All game logic in WASM, not JavaScript
+- [ ] **No Math.random()** - Use WASM RNG for gameplay
+- [ ] **No JS physics** - Physics only in WASM PhysicsManager
+- [ ] **Single state source** - WASM owns state, JS reads only
+- [ ] **Deterministic** - Same seed + inputs = same result
+
+### Testing
+- [ ] **Unit tests pass** - Run `npm run test:unit`
+- [ ] **New tests added** - Test new functionality
+- [ ] **Coverage maintained** - No decrease in coverage %
+- [ ] **Integration tests** - If touching core systems
+- [ ] **Manual testing** - Verify in browser
+
+### Performance
+- [ ] **Frame time ≤ 16ms** - Maintain 60 FPS
+- [ ] **No allocations in hot paths** - Profile if unsure
+- [ ] **Batch WASM calls** - Minimize boundary crossings
+- [ ] **Memory usage** - No unexpected increases
+
+### Documentation
+- [ ] **Updated .md files** - If architecture/API changed
+- [ ] **JSDoc comments** - For public APIs
+- [ ] **Code comments** - For complex logic
+- [ ] **CHANGELOG** - If major feature/change
+
+### Git Hygiene
+- [ ] **Commit message format** - `type(scope): description`
+- [ ] **No merge conflicts** - Resolved cleanly
+- [ ] **Branched from main** - Latest code
+- [ ] **Focused commits** - No unrelated changes
+- [ ] **No committed secrets** - API keys, passwords
+
+### Browser Compatibility
+- [ ] **Chrome** - Tested and working
+- [ ] **Firefox** - Tested and working
+- [ ] **Safari** - Tested and working (if possible)
+- [ ] **Mobile** - Touch controls work (if applicable)
+
+### Multiplayer (if applicable)
+- [ ] **No desync** - Deterministic replay works
+- [ ] **Same WASM version** - All clients use same build
+- [ ] **Network sync** - State synchronizes correctly
+- [ ] **Host authority** - Host state is source of truth
 
 ## Troubleshooting
 
@@ -491,14 +1031,129 @@ fetch('wasm/game.wasm')  // Located in public/wasm/ or root
 #### Desync in Multiplayer
 - Verify all clients use same WASM version
 - Check seed synchronization
-- Ensure no `Math.random()` in gameplay path
+- Ensure no `Math.random()` in gameplay path (see [ADR-002](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md))
 - Validate input timestamps
+- Confirm no duplicate physics in JavaScript (see [ADR-001](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md))
+- Verify single state source of truth (see [ADR-003](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md))
 
 #### Performance Issues
 - Profile WASM/JS boundary calls
 - Reduce state export frequency
 - Use `requestAnimationFrame` properly
 - Check for memory leaks
+
+### Enhanced Debugging Guide
+
+#### WASM/JS Boundary Debugging
+
+**Problem**: WASM function returns unexpected value
+
+```javascript
+// 1. Check if function exists
+console.log('Function exists?', typeof wasmModule.get_my_value === 'function');
+
+// 2. Check return value and type
+const value = wasmModule.get_my_value();
+console.log('Returned value:', value, 'Type:', typeof value);
+
+// 3. Check WASM exports manifest
+// See WASM_EXPORTS.json for all available functions
+const fs = await fetch('/WASM_EXPORTS.json');
+const exports = await fs.json();
+console.log('Available exports:', exports);
+```
+
+**Problem**: Game state desync in multiplayer
+
+```javascript
+// 1. Enable deterministic replay
+const seed = 12345;
+wasmModule.init_run(seed, 0);
+
+// 2. Record inputs with timestamps
+const inputs = [];
+function recordInput(input) {
+    inputs.push({ 
+        frame: frameCount, 
+        time: Date.now(), 
+        input: { ...input } 
+    });
+}
+
+// 3. Replay with same seed
+wasmModule.init_run(seed, 0);
+let frameCount = 0;
+inputs.forEach(({ input }) => {
+    wasmModule.set_player_input(...Object.values(input));
+    wasmModule.update(0.016); // Fixed timestep
+    frameCount++;
+});
+
+// 4. Compare final states
+const finalState = {
+    x: wasmModule.get_x(),
+    y: wasmModule.get_y(),
+    health: wasmModule.get_hp()
+};
+console.log('Final state:', finalState);
+// Should be identical across all clients
+```
+
+#### Common Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `exports.function_name is not a function` | WASM function not exported | Add `EMSCRIPTEN_KEEPALIVE` and rebuild WASM |
+| `Module is not defined` | WASM not loaded yet | Ensure WASM loads before calling functions |
+| `Cannot read property 'x' of undefined` | Accessing non-existent export | Check `WASM_EXPORTS.json` for available functions |
+| Desync in multiplayer | Non-deterministic code | Check for `Math.random()`, use WASM RNG only |
+| Animation not visible | Wrong renderer mode | Check `mode: 'physics'` vs `'procedural'` |
+| `Memory access out of bounds` | Buffer overflow in WASM | Check array bounds in C++ code |
+| Slow performance | Too many WASM calls | Batch state reads, profile with DevTools |
+
+#### Performance Profiling
+
+```javascript
+// Profile WASM update time
+performance.mark('wasm-start');
+wasmModule.update(deltaTime);
+performance.mark('wasm-end');
+performance.measure('wasm-update', 'wasm-start', 'wasm-end');
+
+// View measurements
+const measures = performance.getEntriesByName('wasm-update');
+console.log('WASM update time:', measures[0].duration, 'ms');
+// Target: < 1ms
+
+// Profile JS rendering time
+performance.mark('render-start');
+renderer.render(ctx, camera);
+performance.mark('render-end');
+performance.measure('render', 'render-start', 'render-end');
+
+const renderMeasures = performance.getEntriesByName('render');
+console.log('Render time:', renderMeasures[0].duration, 'ms');
+// Target: < 5ms
+
+// Memory profiling
+if (performance.memory) {
+    console.log('Heap used:', (performance.memory.usedJSHeapSize / 1048576).toFixed(2), 'MB');
+    console.log('Heap total:', (performance.memory.totalJSHeapSize / 1048576).toFixed(2), 'MB');
+}
+```
+
+#### Debugging Checklist
+
+When something goes wrong, check in this order:
+
+1. **[ ] Browser Console** - Any errors or warnings?
+2. **[ ] WASM Build** - Does `npm run wasm:build` succeed?
+3. **[ ] Function Exists** - Is the function in `WASM_EXPORTS.json`?
+4. **[ ] Correct Types** - Are you passing correct parameter types?
+5. **[ ] State Sync** - Is WASM state being read correctly?
+6. **[ ] Determinism** - Does same seed produce same result?
+7. **[ ] Performance** - Are frame times within budget?
+8. **[ ] Memory** - Any memory leaks or excessive allocation?
 
 ## Performance Metrics
 
@@ -576,13 +1231,82 @@ npm run test:performance  # Performance tests
 - [ ] Browser compatibility: Chrome, Firefox, Safari tested
 - [ ] Network sync: Multiplayer stays synchronized
 
+## 📖 Glossary
+
+### Architecture Terms
+
+- **Manager**: Handles a specific domain (e.g., `WolfManager`, `CombatManager`). Owns state and logic for that domain. Located in `public/src/wasm/managers/` (C++) or `public/src/game/` (JS).
+- **Coordinator**: Orchestrates multiple managers/systems without owning state (e.g., `GameCoordinator`). Higher-level than managers, connects systems together.
+- **Bridge**: Translates data between WASM and JavaScript (e.g., `progression-bridge.js`). Handles serialization and data format conversion.
+- **ViewModel**: JavaScript facade over WASM state for rendering (e.g., `WasmCoreState`). Provides clean API for UI layer without exposing WASM details.
+- **Animator**: Controls entity animations, reads from WASM state. Never modifies game state, only visualizes it.
+- **Renderer**: Pure visual display, no game logic. Takes state snapshots and draws to canvas.
+- **Facade**: Wrapper that simplifies complex subsystem interactions. Common pattern for WASM-JS boundary.
+
+### Game Systems
+
+- **Phase**: One of 8 game loop stages (Explore → Fight → Choose → PowerUp → Risk → Escalate → CashOut → Reset). Each phase has distinct gameplay mechanics.
+- **Run**: Single playthrough from start to death/reset. Can be replayed with same seed for determinism.
+- **Seed**: RNG initialization value for deterministic gameplay. Same seed = same gameplay across all clients.
+- **Deterministic**: Same inputs + seed always produce same outputs. Critical for multiplayer and replay systems.
+- **WASM-First**: Architecture where WASM owns all game logic, JS only visualizes. JavaScript cannot make gameplay decisions.
+- **Golden Test**: Test that replays recorded inputs and verifies identical output. Validates determinism.
+- **State Snapshot**: Read-only copy of game state at a specific point in time. Used for rendering and network sync.
+
+### Animation Terms
+
+- **Procedural Animation**: Generated algorithmically (IK, physics-based). Not keyframed or hand-animated.
+- **Physics Animation**: Lightweight top-down animation using physics solver. Faster than procedural, used for performance-critical scenarios.
+- **Skeleton**: Joint-based character structure for animation. Defines bone hierarchy and constraints.
+- **IK (Inverse Kinematics)**: Calculate joint positions from target positions. E.g., position hand at target, solve elbow angle.
+- **Gait**: Movement pattern (walk, trot, gallop for wolves). Defines foot placement timing and stride.
+- **Rig**: Skeleton structure with joint constraints. Defines character's movable parts.
+- **Keyframe**: Specific pose at a specific time. Interpolated between for smooth animation.
+- **Blend Tree**: System for blending multiple animations together. E.g., walk + aim + hurt.
+
+### Multiplayer Terms
+
+- **Host-Authoritative**: Host's WASM state is source of truth. Clients predict locally but accept host corrections.
+- **P2P (Peer-to-Peer)**: Direct connections between players, no server. Uses WebRTC for low-latency communication.
+- **Desync**: Divergent game states between clients (bug). Caused by non-deterministic code or network issues.
+- **Rollback**: Rewind simulation to past state for correction. Used when desync detected.
+- **Deterministic Replay**: Re-execute inputs to reproduce game state. Used for debugging and validation.
+- **Lockstep**: All clients advance in sync, wait for all inputs. Ensures perfect synchronization but adds latency.
+- **Input Prediction**: Client predicts own actions before server confirms. Reduces perceived latency.
+
+### WASM Terms
+
+- **Export**: C++ function marked with `EMSCRIPTEN_KEEPALIVE` that JavaScript can call.
+- **Import**: JavaScript function that WASM can call (rare in this project).
+- **Linear Memory**: Flat byte array shared between WASM and JS. Direct memory access for performance.
+- **Module**: Compiled WASM binary. Loaded and instantiated by JavaScript.
+- **Instance**: Runtime instance of WASM module. Contains exports and memory.
+- **Emscripten**: Toolchain for compiling C++ to WASM. Includes helper libraries and build tools.
+
+### Development Terms
+
+- **Hot Reload**: Update code without full page refresh. JavaScript changes only (WASM requires rebuild).
+- **Build Artifact**: Generated file from build process (e.g., `game.wasm`, `WASM_EXPORTS.json`).
+- **Linting**: Static code analysis for style and errors. Use ESLint for JavaScript, clang-tidy for C++.
+- **Coverage**: Percentage of code executed by tests. Target: >80% for critical paths.
+- **Profiling**: Measuring performance to find bottlenecks. Use browser DevTools and `performance.mark()`.
+
 ## 📚 Additional Resources
 
+### Architecture Decision Records
+- [ADR-001: Remove JavaScript Physics](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md)
+- [ADR-002: Math.random() Elimination](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md)
+- [ADR-003: State Manager Consolidation](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md)
+
+### External Resources
 - [WebAssembly MDN Documentation](https://developer.mozilla.org/en-US/docs/WebAssembly)
 - [Emscripten Documentation](https://emscripten.org/docs/)
 - [Game Networking Resources](https://gafferongames.com/)
 - [Deterministic Simulation Guide](https://gafferongames.com/post/deterministic_lockstep/)
-- [Performance Optimization Guide](https://developer.mozilla.org/en-US/docs/WebAssembly/Optimizing_WebAssembly_performance)
+- [Performance Optimization Guide](https://developer.mozilla.org/en-docs/WebAssembly/Optimizing_WebAssembly_performance)
+
+### Migration Guides
+- [UTILS/MIGRATION_GUIDE.md](./UTILS/MIGRATION_GUIDE.md) - Step-by-step migration from legacy patterns to WASM-first architecture
 
 ---
 

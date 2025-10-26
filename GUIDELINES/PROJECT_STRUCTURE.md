@@ -101,8 +101,29 @@ DozedEnt/
 │   │   │   │   ├── warden-abilities.js      # Warden bash ability
 │   │   │   │   ├── raider-abilities.js      # Raider charge ability
 │   │   │   │   └── kensei-abilities.js      # Kensei dash ability
-│   │   │   └── 📂 progression/     # Character progression
-│   │   │       └── progression-manager.js   # Progression system
+│   │   │   ├── 📂 coordinators/    # Game coordinators ⭐ **NEW**
+│   │   │   │   ├── AbilityCoordinator.js    # Ability system coordination
+│   │   │   │   ├── InputCoordinator.js      # Input processing coordination
+│   │   │   │   ├── RenderingCoordinator.js  # Rendering coordination
+│   │   │   │   ├── SpawnCoordinator.js      # Entity spawning coordination
+│   │   │   │   └── StateCoordinator.js      # Game state coordination
+│   │   │   ├── 📂 input/           # Input handling
+│   │   │   │   └── InputMapper.js           # Input mapping system
+│   │   │   ├── 📂 loop/            # Game loop management
+│   │   │   │   ├── GameLoopCoordinator.js   # Main game loop
+│   │   │   │   └── MVPLoop.js               # MVP loop implementation
+│   │   │   ├── 📂 progression/     # Character progression
+│   │   │   │   └── progression-manager.js   # Progression system
+│   │   │   ├── 📂 renderer/        # Game renderer
+│   │   │   │   └── GameRenderer.js          # Main game renderer
+│   │   │   ├── 📂 replay/          # Replay system ⭐ **NEW**
+│   │   │   │   ├── ReplayManager.js         # Replay recording/playback
+│   │   │   │   ├── ReplayRecorder.js        # Recording functionality
+│   │   │   │   └── ReplayPlayer.js          # Playback functionality
+│   │   │   ├── 📂 state/           # State management ⭐ **NEW**
+│   │   │   │   └── WasmCoreState.js         # WASM state facade
+│   │   │   └── 📂 ui/              # UI management
+│   │   │       └── UIManager.js             # UI coordination
 │   │   ├── 📂 gameentity/          # Game entities
 │   │   │   ├── wolf-character.js           # Wolf character class
 │   │   │   └── controls.js                # Mobile game controls
@@ -157,30 +178,30 @@ DozedEnt/
 │           ├── 📄 enemies.json     # Enemy stats
 │           └── 📄 player.json      # Player stats
 │
-├── 📂 src/                         # 💻 C++ Source code (WASM) - ACTIVE FILES ONLY
-│   ├── 📂 wasm/                    # WebAssembly C++ source (public/src/wasm/)
-│   │   ├── 📄 game_refactored.cpp  # Main game entry point with WASM exports
-│   │   ├── 📄 game-host.cpp        # Host-authoritative module for multiplayer
-│   │   ├── 📄 GameGlobals.cpp      # Global game state
-│   │   ├── 📄 GameGlobals.h        # Global state header
-│   │   ├── 📂 managers/            # Manager pattern (single responsibility)
-│   │   │   ├── 📄 CombatManager.cpp/h    # Combat system (attack, block, parry)
-│   │   │   ├── 📄 GameStateManager.cpp/h # Game state & phase management
-│   │   │   ├── 📄 InputManager.cpp/h     # Input processing & validation
-│   │   │   ├── 📄 PlayerManager.cpp/h    # Player state & resources
-│   │   │   └── 📄 README.md              # Manager documentation
-│   │   ├── 📂 coordinators/        # Coordinator pattern (orchestration)
-│   │   │   └── 📄 GameCoordinator.cpp/h  # Coordinates all managers
-│   │   ├── 📂 physics/             # Physics system (deterministic)
-│   │   │   ├── 📄 PhysicsManager.cpp/h   # Physics simulation
-│   │   │   ├── 📄 PhysicsTypes.h         # Physics type definitions
-│   │   │   └── 📄 FixedPoint.h           # Fixed-point math for determinism
-│   │   └── 📂 generated/           # Auto-generated files
-│   │       └── 📄 balance_data.h         # Balance data from JSON
-│   │
-│   ├── 📂 ui/                      # UI-specific source (src/ui/)
-│   ├── 📂 utils/                   # Utility source (src/utils/)
-│   └── 📂 css/                     # Stylesheets (src/css/)
+├── 📂 public/src/wasm/             # 💻 C++ WebAssembly Source (WASM logic) ⭐ **WASM-FIRST**
+│   ├── 📄 game_refactored.cpp      # Main game entry point with WASM exports
+│   ├── 📄 GameGlobals.cpp          # Global game state
+│   ├── 📄 GameGlobals.h            # Global state header
+│   ├── 📂 managers/                # Manager pattern (single responsibility)
+│   │   ├── 📄 CombatManager.cpp/h    # Combat system (attack, block, parry)
+│   │   ├── 📄 GameStateManager.cpp/h # Game state & phase management
+│   │   ├── 📄 InputManager.cpp/h     # Input processing & validation
+│   │   ├── 📄 PlayerManager.cpp/h    # Player state & resources
+│   │   ├── 📄 WolfManager.cpp/h      # Wolf AI and behavior
+│   │   └── 📄 README.md              # Manager documentation
+│   ├── 📂 coordinators/            # Coordinator pattern (orchestration)
+│   │   └── 📄 GameCoordinator.cpp/h  # Coordinates all managers
+│   ├── 📂 physics/                 # Physics system (deterministic)
+│   │   ├── 📄 PhysicsManager.cpp/h   # Physics simulation
+│   │   ├── 📄 PhysicsTypes.h         # Physics type definitions
+│   │   └── 📄 FixedPoint.h           # Fixed-point math for determinism
+│   ├── 📂 progression/             # Character progression (C++)
+│   │   ├── 📄 AbilityUpgradeSystem.cpp/h # Ability upgrades
+│   │   └── 📄 ProgressionManager.cpp/h   # Progression logic
+│   ├── 📂 entities/                # Game entities (C++)
+│   │   └── 📄 PhysicsBarrel.cpp    # Physics-enabled barrel entity
+│   └── 📂 generated/               # Auto-generated files
+│       └── 📄 balance_data.h       # Balance data from JSON
 │
 ├── 📂 data/                        # 📊 Game data
 │   └── 📂 balance/                 # Balance configuration
@@ -188,23 +209,66 @@ DozedEnt/
 │       └── 📄 player.json          # Player stats
 │
 ├── 📂 GUIDELINES/                  # 📚 Development documentation
-│   ├── 📄 AGENTS.md                # Main architecture guide
-│   ├── 📄 API.md                   # API documentation
-│   ├── 📄 Feature-overview.md      # Feature overview
-│   ├── 📄 MIME_TYPE_FIX.md         # MIME type fixes
-│   ├── 📄 PROJECT_STRUCTURE.md     # This file
+│   ├── 📄 AGENTS.md                # Main architecture guide ⭐ **PRIMARY REFERENCE**
+│   ├── 📄 PROJECT_STRUCTURE.md     # This file - Project layout
 │   ├── 📄 PUBLIC_DEPLOYMENT.md     # Deployment guide
-│   ├── 📂 AI/                      # AI documentation
-│   ├── 📂 ANIMATION/               # Animation documentation
-│   ├── 📂 BUILD/                   # Build documentation
-│   ├── 📂 FIGHT/                   # Combat documentation
-│   ├── 📂 GAME/                    # Game loop documentation
-│   ├── 📂 MULTIPLAYER/             # Multiplayer documentation
-│   ├── 📂 PAST CHOICES/            # Past choice documentation
-│   ├── 📂 PROGRESS/                # Progress documentation
-│   ├── 📂 SYSTEMS/                 # Systems documentation
-│   ├── 📂 UI/                      # UI documentation
-│   └── 📂 UTILS/                   # Utilities documentation
+│   ├── 📄 SERVER_CONFIG.md         # Server configuration
+│   ├── 📄 WASM_FEATURE_IMPLEMENTATION_GUIDE.md # WASM feature guide
+│   ├── 📂 ADR/                     # Architecture Decision Records ⭐ **NEW**
+│   │   ├── 📄 ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md # Physics consolidation
+│   │   ├── 📄 ADR-002-MATH-RANDOM-ELIMINATION.md   # RNG determinism
+│   │   └── 📄 ADR-003-STATE-MANAGER-CONSOLIDATION.md # State management
+│   ├── 📂 AI/                      # AI documentation (3 files)
+│   │   ├── 📄 ENEMY_AI.md          # Enemy AI system overview
+│   │   ├── 📄 ENEMY_TEMPLATE.md    # Enemy design template
+│   │   └── 📄 WOLF_AI.md           # Wolf-specific AI
+│   ├── 📂 ANIMATION/               # Animation documentation (13 files)
+│   │   ├── 📄 ANIMATION_SYSTEM_INDEX.md         # System overview ⭐
+│   │   ├── 📄 ANIMATION_ARCHITECTURE.md         # Architecture details
+│   │   ├── 📄 TOPDOWN_PHYSICS_ANIMATION.md      # Physics animation
+│   │   ├── 📄 PLAYER_ANIMATIONS.md              # Player animations
+│   │   ├── 📄 ANIMATION_EVENTS.md               # Event system
+│   │   ├── 📄 COMBO_SYSTEM.md                   # Combo system
+│   │   ├── 📄 ABILITY_ANIMATIONS.md             # Ability animations
+│   │   ├── 📄 HUMAN_MOTION_IMPROVEMENTS.md      # Procedural design
+│   │   └── [5 more files]          # Additional animation docs
+│   ├── 📂 BUILD/                   # Build documentation (4 files)
+│   │   ├── 📄 API.md               # WASM API reference ⭐ **CANONICAL**
+│   │   ├── 📄 DEVELOPMENT_WORKFLOW.md # Development cycle
+│   │   ├── 📄 TESTING.md           # Testing framework
+│   │   └── 📄 WASM_BUILD_WORKFLOW.md # Build workflow
+│   ├── 📂 FIGHT/                   # Combat documentation (5 files)
+│   │   ├── 📄 COMBAT_SYSTEM.md     # Combat system overview
+│   │   ├── 📄 3-BUTTON_COMBAT_IMPLEMENTATION.md # Combat controls
+│   │   └── [3 more files]          # Combat implementation docs
+│   ├── 📂 GAME/                    # Game loop documentation (3 files)
+│   │   ├── 📄 GAME_FEATURES_SUMMARY.md # Core loop features
+│   │   ├── 📄 CORE_LOOP_CHECKLIST.md # Validation checklist
+│   │   └── 📄 EMERGENT_GAMEPLAY_EXAMPLES.md # Gameplay examples
+│   ├── 📂 MULTIPLAYER/             # Multiplayer documentation (7 files)
+│   │   ├── 📄 LOBBY_SYSTEM.md      # Lobby implementation
+│   │   ├── 📄 ROOM_SYSTEM.md       # Room system
+│   │   └── [5 more files]          # Network implementation docs
+│   ├── 📂 SKELETON/                # Skeleton system (5 files)
+│   │   ├── 📄 README.md            # Skeleton overview
+│   │   └── [4 more files]          # Skeleton implementation
+│   ├── 📂 SYSTEMS/                 # Systems documentation (13 files)
+│   │   ├── 📄 PHYSICS_ARCHITECTURE.md # Physics system
+│   │   ├── 📄 GAMEPLAY_MECHANICS.md   # Gameplay mechanics
+│   │   ├── 📄 QUICK_COLLISION_REFERENCE.md # Collision reference
+│   │   └── [10 more files]         # System documentation
+│   ├── 📂 UI/                      # UI documentation (8 files)
+│   │   ├── 📄 ENHANCED_UI_SYSTEMS_README.md # UI systems
+│   │   └── [7 more files]          # UI implementation docs
+│   ├── 📂 UTILS/                   # Utilities documentation (10 files)
+│   │   ├── 📄 BUILD_INSTRUCTIONS.md # Build instructions
+│   │   ├── 📄 BALANCE_DATA.md      # Balance data guide
+│   │   ├── 📄 MIGRATION_GUIDE.md   # Migration guide
+│   │   └── [7 more files]          # Utility documentation
+│   └── 📂 WASM/                    # WASM documentation (7 files)
+│       ├── 📄 DEMO_DEVELOPMENT.md  # Feature implementation
+│       ├── 📄 README.md            # WASM overview
+│       └── [5 more files]          # WASM implementation docs
 │
 ├── 📂 archive/                     # 🗄️ Legacy code archive
 │   └── 📂 legacy-wasm/             # Archived WASM files (cleanup Sept 2025)
@@ -239,14 +303,31 @@ DozedEnt/
 │   └── 📂 build/                   # Build tools and utilities
 │
 ├── 📂 test/                        # 🧪 Test files
-│   ├── 📂 unit/                    # Unit tests (53 files)
-│   ├── 📂 integration/             # Integration tests
-│   ├── 📂 performance/             # Performance tests
-│   ├── 📂 ai/                      # AI tests
-│   ├── 📂 animation/               # Animation tests
+│   ├── 📂 unit/                    # Unit tests (61+ files) ⭐ **ENHANCED**
+│   │   ├── 📂 coordinators/        # Coordinator tests ⭐ **NEW**
+│   │   │   ├── AbilityCoordinator.test.js
+│   │   │   ├── InputCoordinator.test.js
+│   │   │   ├── RenderingCoordinator.test.js
+│   │   │   ├── SpawnCoordinator.test.js
+│   │   │   └── StateCoordinator.test.js
+│   │   ├── 📂 replay/              # Replay system tests ⭐ **NEW**
+│   │   │   ├── ReplayManager.test.js
+│   │   │   ├── ReplayRecorder.test.js
+│   │   │   └── ReplayPlayer.test.js
+│   │   ├── 📂 state/               # State management tests ⭐ **NEW**
+│   │   │   └── WasmCoreState.test.js
+│   │   └── [53+ other test files]  # Existing unit tests
+│   ├── 📂 integration/             # Integration tests (3 files)
+│   ├── 📂 performance/             # Performance tests (2 files)
+│   ├── 📂 ai/                      # AI tests (1 file)
+│   ├── 📂 animation/               # Animation tests (1 file)
+│   ├── 📂 physics/                 # Physics tests (2 files)
 │   ├── 📂 certs/                   # Test certificates
+│   ├── 📄 run-coordinator-tests.js # Coordinator test runner ⭐ **NEW**
+│   ├── 📄 run-ui-tests.js          # UI test runner
 │   ├── 📄 [20+ test spec files]    # Various test specifications
 │   ├── 📄 setup.js                 # Test setup
+│   ├── 📄 setup-browser-mocks.js   # Browser environment mocks
 │   ├── 📄 tests.js                 # Test runner
 │   └── 📄 [10+ test HTML files]    # Browser test pages
 │
@@ -313,13 +394,26 @@ DozedEnt/
 - **Script organization** - Build and utility scripts in `tools/scripts/`
 - **Demo separation** - Example files in dedicated `demos/` folder
 
-### 3. 📚 Documentation Structure
+### 3. 🏗️ Coordinator Pattern Implementation ⭐ **NEW**
+- **Game Coordinators** - `public/src/game/coordinators/` for game logic coordination
+- **Single Responsibility** - Each coordinator handles one specific concern
+- **Modular Design** - Easy to test, maintain, and extend
+- **Clear Separation** - Ability, Input, Rendering, Spawn, and State coordination
+
+### 4. 🎮 State Management ⭐ **NEW**
+- **WasmCoreState** - Single source of truth facade over WASM
+- **Replay System** - Complete replay recording and playback functionality
+- **State Coordination** - Centralized state management through StateCoordinator
+- **Read-Only JS** - JavaScript reads WASM state, never mutates
+
+### 5. 📚 Documentation Structure
+- **Architecture Decision Records (ADRs)** - `GUIDELINES/ADR/` for key decisions
 - **Comprehensive README** - Clear project overview and quick start
 - **Live demo documentation** - Dedicated public/README.md for GitHub Pages
-- **Maintained guidelines** - Existing GUIDELINES/ structure preserved
+- **Maintained guidelines** - Enhanced GUIDELINES/ structure with ADRs
 - **Project structure guide** - This document for navigation
 
-### 4. ⚡ Performance Optimization
+### 6. ⚡ Performance Optimization
 - **Asset optimization** - Proper MIME types for WASM files
 - **Build optimization** - Efficient bundling and minification
 - **Caching strategy** - Proper cache headers for static assets
@@ -381,38 +475,57 @@ npm test
 
 ---
 
-## 🔄 Migration Benefits
+## 🔄 Recent Improvements (January 2025)
 
-### Before (Issues)
-- ❌ Mixed deployment and development files
-- ❌ Cluttered root directory
-- ❌ Manual deployment process
-- ❌ Inconsistent asset organization
-- ❌ Difficult navigation for new developers
-- ❌ Incorrect documentation of actual structure
+### Architecture Enhancements ⭐
+- ✅ **Coordinator Pattern** - Modular game logic coordination (`public/src/game/coordinators/`)
+- ✅ **State Management** - Single source of truth with WasmCoreState facade
+- ✅ **Replay System** - Complete replay recording and playback functionality
+- ✅ **ADR Documentation** - Architecture Decision Records for key decisions
+- ✅ **Test Coverage** - Enhanced test suite with coordinator, replay, and state tests
 
-### After (Improvements)
-- ✅ Clean separation of concerns
-- ✅ GitHub Pages best practices
-- ✅ Automated CI/CD deployment
-- ✅ Organized development tools
-- ✅ Clear documentation structure
-- ✅ Improved developer experience
-- ✅ Better project maintainability
+### Code Quality & Organization
+- ✅ Clean separation of concerns with coordinator pattern
+- ✅ Single Responsibility Principle enforced (<500 lines per file)
+- ✅ Modular design with clear interfaces
+- ✅ Improved developer experience with better organization
+- ✅ Better project maintainability with focused modules
+
+### Documentation & Structure
 - ✅ Accurate documentation of actual structure
 - ✅ WASM-first architecture properly documented
+- ✅ ADR system for tracking architectural decisions
+- ✅ Enhanced GUIDELINES structure with subdirectories
+- ✅ Clear file organization and navigation
+
+### Development Workflow
+- ✅ GitHub Pages best practices maintained
+- ✅ Automated CI/CD deployment
+- ✅ Organized development tools in `tools/`
+- ✅ Comprehensive test infrastructure
+- ✅ Clear build and deployment processes
 
 ---
 
 ## 📝 Next Steps
 
-1. **Update repository settings** - Enable GitHub Pages from public/ folder
-2. **Configure custom domain** (optional) - Add CNAME file to public/
-3. **Test deployment** - Verify automated build and deploy process
-4. **Update documentation links** - Ensure all internal links work
-5. **Monitor performance** - Check load times and optimization
+1. **Continue Coordinator Implementation** - Expand coordinator pattern to remaining systems
+2. **Enhance Replay System** - Add replay analysis and debugging tools
+3. **Test Coverage** - Increase test coverage to >10% (currently 5.15%)
+4. **Documentation** - Keep ADRs updated with new architectural decisions
+5. **Performance** - Profile and optimize coordinator interactions
 6. **Maintain structure accuracy** - Keep this document updated with actual project changes
 
 ---
 
-*This structure follows GitHub Pages best practices while maintaining the existing WASM-first architecture and comprehensive documentation system.*
+## 📖 Related Documentation
+
+- **[AGENTS.md](./AGENTS.md)** - Primary architecture guide and development principles
+- **[ADR-001](./ADR/ADR-001-REMOVE-JAVASCRIPT-PHYSICS.md)** - JavaScript physics removal
+- **[ADR-002](./ADR/ADR-002-MATH-RANDOM-ELIMINATION.md)** - Math.random() elimination
+- **[ADR-003](./ADR/ADR-003-STATE-MANAGER-CONSOLIDATION.md)** - State manager consolidation
+
+---
+
+*Last Updated: January 2025*  
+*This structure follows GitHub Pages best practices while maintaining the WASM-first architecture, coordinator pattern, and comprehensive documentation system.*

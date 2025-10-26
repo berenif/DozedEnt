@@ -100,14 +100,23 @@ struct TerrainFeature {
 - Smooth transitions using interpolation (10% per update)
 
 #### Pack Coordination
-- Pack controller evaluates situation every frame
-- Role assignment based on position and capabilities
-- Synchronized attacks triggered when 3+ wolves ready
+- Pack controller enforces a pressure budget: at most one wolf in commit range and one in probe range; others threaten from ≥1.5× attack range.
+- Role assignment based on position and capabilities, with a 6–10 s role lock window to avoid thrash.
+- Synchronized attacks can be triggered when ≥3 wolves are ready, with communication jitter (±80–160 ms) and small range-based drop chance (3–5%) for non-critical messages to keep behavior organic.
 
 #### Emotional State Machine
 - Updates based on health, fatigue, and combat outcomes
 - Smooth emotional transitions with intensity decay
 - Emotions directly modify behavior parameters
+
+#### Injury–Emotion Coupling
+- At HP thresholds (~70/40/20%), apply limp modifiers (reduced acceleration/turn rate), increase fear, reduce feints, and raise pack-call likelihood.
+
+#### Adaptive Cadence Over Raw Stats
+- Prefer scaling attack cadence, feint probability, and strafe radius with estimated player skill; smooth via ~10% interpolation per update rather than large speed/damage swings.
+
+#### Shuffle-Bag Plan/Telegraph Selection
+- Use non-repeating shuffle-bags for hunting plans and telegraph tiers to avoid streaks while remaining deterministic.
 
 ## 🎮 Gameplay Impact
 
@@ -130,6 +139,25 @@ struct TerrainFeature {
 - All enhancements optimized for real-time performance
 - Minimal memory overhead with fixed-size arrays
 - Efficient algorithms with O(n) complexity for pack operations
+ - Stagger terrain scans across ticks; cap group coordination to nearby wolves
+ - Batch RNG draws and reuse plan bags per pack for determinism and cache behavior
+
+## 🛡️ Fairness & Anti-Frustration
+- Mercy window: after the player takes 2 hits in 2 seconds, all attackers back off for 0.8–1.2 seconds.
+- Anti corner-lock: if ≥2 wolves occupy a ≤30° arc facing the player, one yields position.
+- Guaranteed whiff-punish windows on heavy attacks.
+
+## 🎚️ Suggested Parameter Dials
+- Reaction delay: 110–220 ms (emotion- and skill-modified)
+- Engage cooldown per wolf: 1.5–2.5 s after attack/whiff
+- Pressure budget: 1 commit, 1 probe, others threaten at ≥1.5× range
+- Feint rate: base 6–10%, cap 20% under high frustration; 0% when stamina < 0.3
+- Flank evaluation cadence: every 1.2–1.8 s
+- Communication jitter: ±80–160 ms; 3–5% drop beyond 0.35 units
+
+## 🧪 Telemetry & Tests
+- Export per-encounter counters: attack cadence, time-in-contact, flank attempts, feint success, mercy-window triggers.
+- Unit tests: pressure budget invariants, role lock timing, mercy-window activation/deactivation, shuffle-bag no immediate repeat.
 
 ## 🔮 Future Improvements
 

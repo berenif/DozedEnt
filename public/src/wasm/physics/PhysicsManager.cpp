@@ -187,7 +187,7 @@ uint32_t PhysicsManager::create_wolf_body(float x, float y, float radius) {
     wolf_body.position = FixedVector3::from_floats(x, y, 0.0f);
     wolf_body.mass = Fixed::from_int(50);  // Wolves are lighter than player
     wolf_body.inverse_mass = Fixed::from_float(1.0f / 50.0f);
-    wolf_body.drag = Fixed::from_float(0.85f);  // Slightly more friction than player
+    wolf_body.drag = Fixed::from_float(0.80f);  // Higher drag to prevent sticking (was 0.85)
     wolf_body.radius = Fixed::from_float(radius);
     wolf_body.collision_layer = CollisionLayers::Enemy;
     wolf_body.collision_mask = CollisionLayers::Player | CollisionLayers::Enemy | CollisionLayers::Environment;
@@ -355,17 +355,33 @@ void PhysicsManager::detect_and_resolve_collisions() {
                 Fixed dist = fixed_sqrt(dist_sq);
                 FixedVector3 normal = delta.normalized();
                 Fixed overlap = combined_radius - dist;
+                
+                // Add separation buffer to prevent bodies getting stuck
+                // Use larger buffer for equal-mass collisions (like wolf-wolf)
+                Fixed mass_ratio = bi->mass / bj->mass;
+                Fixed separation_buffer = Fixed::from_float(0.004f); // Base buffer (increased from 0.002)
+                // Increase buffer for similar mass objects (prevents wolf-wolf sticking)
+                if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
+                    separation_buffer = Fixed::from_float(0.008f); // Extra buffer for similar masses (doubled)
+                }
+                Fixed total_separation = overlap + separation_buffer;
+                
                 Fixed total_inv_mass = bi->inverse_mass + bj->inverse_mass;
                 if (total_inv_mass > Fixed::from_int(0)) {
                     Fixed ratio_i = bi->inverse_mass / total_inv_mass;
                     Fixed ratio_j = bj->inverse_mass / total_inv_mass;
                     *bi = *bi; *bj = *bj; // no-op to keep formatting blocks similar
-                    bi->position -= normal * overlap * ratio_i;
-                    bj->position += normal * overlap * ratio_j;
+                    bi->position -= normal * total_separation * ratio_i;
+                    bj->position += normal * total_separation * ratio_j;
                     FixedVector3 relative_velocity = bj->velocity - bi->velocity;
                     Fixed velocity_along_normal = relative_velocity.dot(normal);
                     if (velocity_along_normal < Fixed::from_int(0)) {
-                        Fixed restitution = Fixed::from_float(0.5f);
+                        // Restitution coefficient - lower for similar mass collisions
+                        Fixed restitution = Fixed::from_float(0.15f); // Very low bounce
+                        // Even lower for wolf-wolf collisions (similar mass)
+                        if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
+                            restitution = Fixed::from_float(0.05f); // Almost no bounce
+                        }
                         Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
                         FixedVector3 impulse = normal * impulse_magnitude;
                         bi->velocity -= impulse * bi->inverse_mass;
@@ -429,14 +445,24 @@ void PhysicsManager::detect_and_resolve_collisions() {
                 // Calculate overlap amount
                 Fixed overlap = combined_radius - dist;
                 
+                // Add separation buffer to prevent bodies getting stuck
+                // Use larger buffer for equal-mass collisions (like wolf-wolf)
+                Fixed mass_ratio = bodies_[i].mass / bodies_[j].mass;
+                Fixed separation_buffer = Fixed::from_float(0.004f); // Base buffer (increased from 0.002)
+                // Increase buffer for similar mass objects (prevents wolf-wolf sticking)
+                if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
+                    separation_buffer = Fixed::from_float(0.008f); // Extra buffer for similar masses (doubled)
+                }
+                Fixed total_separation = overlap + separation_buffer;
+                
                 // Separate bodies (proportional to inverse mass)
                 Fixed total_inv_mass = bodies_[i].inverse_mass + bodies_[j].inverse_mass;
                 if (total_inv_mass > Fixed::from_int(0)) {
                     Fixed ratio_i = bodies_[i].inverse_mass / total_inv_mass;
                     Fixed ratio_j = bodies_[j].inverse_mass / total_inv_mass;
                     
-                    bodies_[i].position -= normal * overlap * ratio_i;
-                    bodies_[j].position += normal * overlap * ratio_j;
+                    bodies_[i].position -= normal * total_separation * ratio_i;
+                    bodies_[j].position += normal * total_separation * ratio_j;
                     
                     // Apply collision impulse (elastic collision)
                     FixedVector3 relative_velocity = bodies_[j].velocity - bodies_[i].velocity;
@@ -444,8 +470,12 @@ void PhysicsManager::detect_and_resolve_collisions() {
                     
                     // Only resolve if bodies are moving towards each other
                     if (velocity_along_normal < Fixed::from_int(0)) {
-                        // Restitution coefficient (0.5 = somewhat bouncy)
-                        Fixed restitution = Fixed::from_float(0.5f);
+                        // Restitution coefficient - lower for similar mass collisions
+                        Fixed restitution = Fixed::from_float(0.15f); // Very low bounce
+                        // Even lower for wolf-wolf collisions (similar mass)
+                        if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
+                            restitution = Fixed::from_float(0.05f); // Almost no bounce
+                        }
                         Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
                         
                         FixedVector3 impulse = normal * impulse_magnitude;

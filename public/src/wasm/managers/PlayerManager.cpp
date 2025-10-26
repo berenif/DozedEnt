@@ -433,6 +433,9 @@ bool PlayerManager::check_bash_collision(float target_x, float target_y, float t
 }
 
 void PlayerManager::update_skeleton(float delta_time) {
+    // Clamp dt for stability (avoid big steps or zero/negative)
+    const float dt_clamped = std::max(1.0f/240.0f, std::min(delta_time, 1.0f/30.0f));
+
     // Sync skeleton pelvis to player position
     skeleton_.sync_to_player_position(
         Fixed::from_float(state_.pos_x),
@@ -440,7 +443,7 @@ void PlayerManager::update_skeleton(float delta_time) {
     );
     
     // Update skeleton physics
-    Fixed dt = Fixed::from_float(delta_time);
+    Fixed dt = Fixed::from_float(dt_clamped);
     skeleton_.update(dt);
     
     // Extract balance state for gameplay

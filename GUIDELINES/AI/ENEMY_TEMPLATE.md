@@ -116,6 +116,15 @@ setState(newState) {
 }
 ```
 
+### Fairness & Pressure Patterns (Required)
+
+- Pressure budget: at most one attacker in commit range and one probe; others threaten from ≥1.5× attack range.
+- Engage cooldowns: 1.5–2.5 s per enemy after attack/whiff to prevent dogpiles.
+- Role fluidity with locks: allow swaps under clear triggers but lock roles for 6–10 s to avoid thrash.
+- Telegraph tiers: probe, strike, heavy with readable tells and guaranteed whiff-punish windows on heavy.
+- Anti-frustration: mercy window (back off 0.8–1.2 s after player takes 2 hits in 2 s); anti corner-lock if ≥2 enemies in ≤30° arc.
+- Imperfect comms: add ±80–160 ms jitter and 3–5% drop beyond 0.35 units for non-critical messages.
+
 ---
 
 ## AI Behavior Patterns
@@ -177,6 +186,10 @@ attack(target) {
     return false
 }
 ```
+
+#### Feints & Cadence
+- Gate feints by stamina and emotional state; disable when stamina < 0.3.
+- Base feint 6–10%, cap 20% under high frustration; smooth via 10% interpolation per update.
 
 ---
 
@@ -300,6 +313,9 @@ drawHealthBar(ctx) {
 }
 ```
 
+#### Injury–Emotion Coupling
+- At ~70/40/20% HP thresholds, apply limp modifiers (reduced acceleration/turn rate), increase fear, reduce feints, and raise call-for-help likelihood.
+
 ---
 
 ## Rendering Pipeline
@@ -376,6 +392,8 @@ update(deltaTime, player, gameState) {
 }
 ```
 
+Note: Physics and movement integration belong to WASM. JavaScript must not perform gameplay physics; it only renders state exported from WASM.
+
 ---
 
 ## Enemy Variants & Specialization
@@ -450,6 +468,9 @@ if (distanceToPlayer > LONG_RANGE) {
     }
 }
 ```
+
+### Determinism & Randomness
+- All gameplay randomness must come from WASM RNG and deterministic structures (e.g., shuffle-bags). Any visual-only randomness in JS must be isolated from gameplay.
 
 ---
 

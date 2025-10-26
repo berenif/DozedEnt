@@ -76,6 +76,7 @@ private:
     void handle_defensive_inputs();
     void synchronize_manager_states();
     void handle_player_wolf_collision(uint32_t wolf_body_id, float impulse_magnitude);
+    void handle_wolf_wolf_collision(uint32_t wolf_body_a, uint32_t wolf_body_b, float impulse_magnitude);
 public:
     ArmManager& get_arm_manager() { return arm_manager_; }
     const ArmManager& get_arm_manager() const { return arm_manager_; }
