@@ -212,30 +212,105 @@ function createJavaScriptSkeleton() {
 	];
 
 	const joints = [
-		{ name: 'spine01', parent: 0, child: 1, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
-		{ name: 'spine02', parent: 1, child: 2, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
-		{ name: 'spine03', parent: 2, child: 3, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
-		{ name: 'chest', parent: 3, child: 4, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD] },
-		{ name: 'neck', parent: 4, child: 5, type: 1, limits: [-45*DEG2RAD, -60*DEG2RAD, -80*DEG2RAD, 60*DEG2RAD, 45*DEG2RAD, 80*DEG2RAD] },
-		{ name: 'head', parent: 5, child: 6, type: 1, limits: [-20*DEG2RAD, -10*DEG2RAD, -30*DEG2RAD, 20*DEG2RAD, 10*DEG2RAD, 30*DEG2RAD] },
-		{ name: 'shoulder_R', parent: 8, child: 9, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -90*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 70*DEG2RAD] },
-		{ name: 'elbow_R', parent: 9, child: 10, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0] },
-		{ name: 'wrist_R', parent: 10, child: 11, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD] },
-		{ name: 'shoulder_L', parent: 13, child: 14, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -70*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 90*DEG2RAD] },
-		{ name: 'elbow_L', parent: 14, child: 15, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0] },
-		{ name: 'wrist_L', parent: 15, child: 16, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD] },
-		{ name: 'hip_R', parent: 0, child: 17, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -45*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 35*DEG2RAD] },
-		{ name: 'knee_R', parent: 17, child: 18, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0] },
-		{ name: 'ankle_R', parent: 18, child: 19, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0] },
-		{ name: 'toe_R', parent: 19, child: 20, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0] },
-		{ name: 'hip_L', parent: 0, child: 21, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -35*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 45*DEG2RAD] },
-		{ name: 'knee_L', parent: 21, child: 22, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0] },
-		{ name: 'ankle_L', parent: 22, child: 23, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0] },
-		{ name: 'toe_L', parent: 23, child: 24, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0] }
+		{ name: 'spine01', parent: 0, child: 1, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'spine02', parent: 1, child: 2, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'spine03', parent: 2, child: 3, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'chest', parent: 3, child: 4, type: 4, limits: [-30*DEG2RAD, -30*DEG2RAD, -15*DEG2RAD, 30*DEG2RAD, 30*DEG2RAD, 15*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'neck', parent: 4, child: 5, type: 1, limits: [-45*DEG2RAD, -60*DEG2RAD, -80*DEG2RAD, 60*DEG2RAD, 45*DEG2RAD, 80*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'head', parent: 5, child: 6, type: 1, limits: [-20*DEG2RAD, -10*DEG2RAD, -30*DEG2RAD, 20*DEG2RAD, 10*DEG2RAD, 30*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'shoulder_R', parent: 8, child: 9, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -90*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 70*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'elbow_R', parent: 9, child: 10, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'wrist_R', parent: 10, child: 11, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'shoulder_L', parent: 13, child: 14, type: 1, limits: [-45*DEG2RAD, -180*DEG2RAD, -70*DEG2RAD, 30*DEG2RAD, 180*DEG2RAD, 90*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'elbow_L', parent: 14, child: 15, type: 2, limits: [-5*DEG2RAD, 0, 0, 150*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'wrist_L', parent: 15, child: 16, type: 1, limits: [-80*DEG2RAD, -20*DEG2RAD, -80*DEG2RAD, 70*DEG2RAD, 30*DEG2RAD, 80*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'hip_R', parent: 0, child: 17, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -45*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 35*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'knee_R', parent: 17, child: 18, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'ankle_R', parent: 18, child: 19, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'toe_R', parent: 19, child: 20, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'hip_L', parent: 0, child: 21, type: 1, limits: [-120*DEG2RAD, -30*DEG2RAD, -35*DEG2RAD, 20*DEG2RAD, 45*DEG2RAD, 45*DEG2RAD], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'knee_L', parent: 21, child: 22, type: 2, limits: [0, 0, 0, 150*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'ankle_L', parent: 22, child: 23, type: 2, limits: [-50*DEG2RAD, 0, 0, 20*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } },
+		{ name: 'toe_L', parent: 23, child: 24, type: 2, limits: [-40*DEG2RAD, 0, 0, 65*DEG2RAD, 0, 0], targetAngles: { x: 0, y: 0, z: 0 }, currentAngles: { x: 0, y: 0, z: 0 } }
 	];
 
 	// Create parent mapping for renderers
 	const parents = bones.map(bone => bone.parent);
+	
+	// Store initial positions
+	const initialPositions = bones.map(b => ({...b.pos}));
+	
+	// Helper function to rotate a 3D vector
+	function rotateVector(v, angles) {
+		let x = v.x, y = v.y, z = v.z;
+		
+		// Rotation around X axis
+		if (angles.x !== 0) {
+			const cos = Math.cos(angles.x);
+			const sin = Math.sin(angles.x);
+			const ny = y * cos - z * sin;
+			const nz = y * sin + z * cos;
+			y = ny; z = nz;
+		}
+		
+		// Rotation around Y axis
+		if (angles.y !== 0) {
+			const cos = Math.cos(angles.y);
+			const sin = Math.sin(angles.y);
+			const nx = x * cos + z * sin;
+			const nz = -x * sin + z * cos;
+			x = nx; z = nz;
+		}
+		
+		// Rotation around Z axis
+		if (angles.z !== 0) {
+			const cos = Math.cos(angles.z);
+			const sin = Math.sin(angles.z);
+			const nx = x * cos - y * sin;
+			const ny = x * sin + y * cos;
+			x = nx; y = ny;
+		}
+		
+		return { x, y, z };
+	}
+	
+	// Forward kinematics update function
+	function updateBonePositions() {
+		for (let i = 0; i < bones.length; i++) {
+			const bone = bones[i];
+			if (bone.parent < 0) {
+				// Root bone stays at initial position
+				bone.pos = { ...initialPositions[i] };
+				continue;
+			}
+			
+			// Find joint affecting this bone
+			const joint = joints.find(j => j.child === i);
+			const parentBone = bones[bone.parent];
+			const offset = {
+				x: initialPositions[i].x - initialPositions[bone.parent].x,
+				y: initialPositions[i].y - initialPositions[bone.parent].y,
+				z: initialPositions[i].z - initialPositions[bone.parent].z
+			};
+			
+			if (!joint) {
+				// No joint, use unrotated offset
+				bone.pos = {
+					x: parentBone.pos.x + offset.x,
+					y: parentBone.pos.y + offset.y,
+					z: parentBone.pos.z + offset.z
+				};
+			} else {
+				// Apply joint rotation
+				const rotated = rotateVector(offset, joint.currentAngles);
+				bone.pos = {
+					x: parentBone.pos.x + rotated.x,
+					y: parentBone.pos.y + rotated.y,
+					z: parentBone.pos.z + rotated.z
+				};
+			}
+		}
+	}
 
 	return {
 		getBoneCount: () => bones.length,
@@ -249,23 +324,35 @@ function createJavaScriptSkeleton() {
 		getJointChildBoneIndex: (index) => joints[index] ? joints[index].child : -1,
 		computeCenterOfMass: () => ({ x: 0, y: 1.2, z: 0 }),
 		update: (dt) => {
-			// Simple physics update - could be enhanced
+			// Smoothly interpolate current angles toward target angles
+			for (const joint of joints) {
+				const lerpFactor = Math.min(1.0, dt * 5.0);
+				joint.currentAngles.x += (joint.targetAngles.x - joint.currentAngles.x) * lerpFactor;
+				joint.currentAngles.y += (joint.targetAngles.y - joint.currentAngles.y) * lerpFactor;
+				joint.currentAngles.z += (joint.targetAngles.z - joint.currentAngles.z) * lerpFactor;
+			}
+			// Apply forward kinematics
+			updateBonePositions();
 		},
 		setPhysicsEnabled: (enabled) => {
-			console.log('Physics enabled:', enabled);
+			console.log('[JS Fallback] Physics enabled:', enabled);
 		},
 		setGravityEnabled: (enabled) => {
-			console.log('Gravity enabled:', enabled);
+			console.log('[JS Fallback] Gravity enabled:', enabled);
 		},
 		setGlobalStiffness: (stiffness) => {
-			console.log('Global stiffness:', stiffness);
+			console.log('[JS Fallback] Global stiffness:', stiffness);
 		},
 		setGlobalDamping: (damping) => {
-			console.log('Global damping:', damping);
+			console.log('[JS Fallback] Global damping:', damping);
 		},
 		setJointTargetAngles: (jointIndex, x, y, z) => {
-			// Simple joint angle setting - could be enhanced
-			console.log(`Joint ${jointIndex} angles:`, x, y, z);
+			if (joints[jointIndex]) {
+				console.log(`[JS Fallback] setJointTargetAngles: joint ${jointIndex} (${joints[jointIndex].name}) to [${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}]`);
+				joints[jointIndex].targetAngles = { x, y, z };
+			} else {
+				console.warn(`[JS Fallback] setJointTargetAngles: joint ${jointIndex} not found`);
+			}
 		},
 		__boneParents: parents
 	};
