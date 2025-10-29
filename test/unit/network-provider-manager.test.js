@@ -4,7 +4,7 @@
  */
 
 import { expect } from 'chai'
-import NetworkProviderManager from '../../src/netcode/network-provider-manager.js'
+import NetworkProviderManager from '../../public/src/netcode/network-provider-manager.js'
 
 describe('NetworkProviderManager', () => {
   let networkManager

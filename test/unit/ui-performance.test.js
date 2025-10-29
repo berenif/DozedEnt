@@ -6,8 +6,8 @@
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { RoguelikeHUD } from '../../src/ui/roguelike-hud.js';
-import { UIEventHandlers } from '../../src/ui/ui-event-handlers.js';
+import { RoguelikeHUD } from '../../public/src/ui/roguelike-hud.js';
+import { UIEventHandlers } from '../../public/src/ui/ui-event-handlers.js';
 
 describe('UI Performance and Memory Management', () => {
   let mockDocument;

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { ParticleSystem, Particle, ParticleEmitter, ParticleEffect } from '../../src/utils/particle-system.js';
+import { ParticleSystem, Particle, ParticleEmitter, ParticleEffect } from '../../public/src/utils/particle-system.js';
 
 describe('ParticleSystem', () => {
   describe('Particle', () => {

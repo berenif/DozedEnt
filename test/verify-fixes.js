@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import {shuffle, genId, toHex} from '../src/utils/utils.js'
-import {genKey, encrypt, decrypt} from '../src/utils/crypto.js'
-import createPeer from '../src/netcode/peer.js'
-import createRoom from '../src/netcode/room.js'
+import {shuffle, genId, toHex} from '../public/src/utils/utils.js'
+import {genKey, encrypt, decrypt} from '../public/src/utils/crypto.js'
+import createPeer from '../public/src/netcode/peer.js'
+import createRoom from '../public/src/netcode/room.js'
 import {
   DeterministicRandom,
   toFixed,
@@ -12,7 +12,7 @@ import {
   fixedAdd,
   fixedSub,
   fixedMul
-} from '../src/netcode/deterministic-game.js'
+} from '../public/src/netcode/deterministic-game.js'
 
 console.log('🔍 Verifying bug fixes...\n')
 

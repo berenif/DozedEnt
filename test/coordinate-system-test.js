@@ -3,7 +3,7 @@
  * Tests WASM ↔ World ↔ Screen coordinate transformations
  */
 
-import { GameRenderer } from '../src/utils/game-renderer.js';
+import { GameRenderer } from '../public/src/utils/game-renderer.js';
 
 // Mock canvas for testing
 function createMockCanvas(width = 800, height = 600) {

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { RNG, seededRandom, randInt, randFloat, randChoice, shuffleArray, weightedChoice } from '../../src/utils/rng.js';
+import { RNG, seededRandom, randInt, randFloat, randChoice, shuffleArray, weightedChoice } from '../../public/src/utils/rng.js';
 
 describe('RNG (Random Number Generator)', () => {
   describe('RNG Class', () => {

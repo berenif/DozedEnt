@@ -19,23 +19,18 @@
  * - Modular design for testability
  */
 
-// Core animation classes
-export { AnimationFrame } from './AnimationFrame.js';
-export { Animation } from './Animation.js';
-export { AnimationController } from './AnimationController.js';
+// Import all modules for default export
+import { AnimationFrame } from './AnimationFrame.js';
+import { Animation } from './Animation.js';
+import { AnimationController } from './AnimationController.js';
+import { ProceduralAnimator } from './procedural/ProceduralAnimator.js';
+import { CharacterAnimator } from './CharacterAnimator.js';
+import { WolfAnimator } from './WolfAnimator.js';
+import { AnimationPresets } from './AnimationPresets.js';
+import { toMilliseconds } from './utils.js';
 
-// Procedural animation system
-export { ProceduralAnimator } from './procedural/ProceduralAnimator.js';
-
-// Character animators
-export { CharacterAnimator } from './CharacterAnimator.js';
-export { WolfAnimator } from './WolfAnimator.js';
-
-// Presets
-export { AnimationPresets } from './AnimationPresets.js';
-
-// Utilities
-export { toMilliseconds } from './utils.js';
+// Re-export all modules as named exports
+export { AnimationFrame, Animation, AnimationController, ProceduralAnimator, CharacterAnimator, WolfAnimator, AnimationPresets, toMilliseconds };
 
 // Default export for backwards compatibility
 export default {

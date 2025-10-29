@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import createStrategy from '../../src/strategy.js';
+import createStrategy from '../../public/src/strategy.js';
 
 describe('Strategy Module', () => {
   let mockInit, mockSubscribe, mockAnnounce;

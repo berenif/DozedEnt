@@ -1,9 +1,9 @@
 import './setup.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import LobbyAnalytics from '../src/utils/lobby-analytics.js'
+import LobbyAnalytics from '../public/src/utils/lobby-analytics.js'
 // Removed EnhancedRoomManager and EnhancedLobbyUI imports
-import HostAuthority from '../src/host-authority.js'
-import RollbackP2P from '../src/rollback-p2p.js'
+import HostAuthority from '../public/src/host-authority.js'
+import RollbackP2P from '../public/src/rollback-p2p.js'
 
 // Mock EnhancedRoomManager for tests
 class EnhancedRoomManager {

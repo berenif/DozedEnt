@@ -2,7 +2,7 @@
 // Verifies that all new AI features are working correctly
 
 import { expect } from 'chai';
-import WolfAIWASMIntegration from '../../src/ai/wolf-ai-wasm-integration.js';
+import WolfAIWASMIntegration from '../../public/src/ai/wolf-ai-wasm-integration.js';
 
 describe('Wolf AI WASM Integration', () => {
     let mockWasm;

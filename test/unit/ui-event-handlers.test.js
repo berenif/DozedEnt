@@ -6,7 +6,7 @@
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { UIEventHandlers } from '../../src/ui/ui-event-handlers.js';
+import { UIEventHandlers } from '../../public/src/ui/ui-event-handlers.js';
 
 describe('UIEventHandlers', () => {
   let uiEventHandlers;

@@ -6,10 +6,10 @@ import '../setup.js';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { GameStateManager } from '../../src/game/game-state-manager.js';
-import { EnhancedAudioManager } from '../../src/audio/enhanced-audio-manager.js';
-import { VisualEffectsManager } from '../../src/effects/visual-effects-manager.js';
-import { EnhancedAnimationController } from '../../src/animation/enhanced-animation-controller.js';
+import { GameStateManager } from '../../public/src/game/game-state-manager.js';
+import { EnhancedAudioManager } from '../../public/src/audio/enhanced-audio-manager.js';
+import { VisualEffectsManager } from '../../public/src/effects/visual-effects-manager.js';
+import { EnhancedAnimationController } from '../../public/src/animation/enhanced-animation-controller.js';
 
 describe('Performance Benchmarks', () => {
   let gameStateManager;

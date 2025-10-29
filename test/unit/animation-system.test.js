@@ -7,7 +7,7 @@ import {
   ProceduralAnimator,
   CharacterAnimator,
   AnimationPresets
-} from '../../src/animation/system/animation-system.js';
+} from '../../public/src/animation/system/animation-system.js';
 
 describe('Animation System', () => {
   describe('AnimationFrame', () => {

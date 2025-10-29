@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { AnimationFrame, Animation } from '../../src/animation/animation-system.js'
+import { AnimationFrame, Animation } from '../../public/src/animation/animation-system.js'
 
 describe('Animation progress', () => {
   it('returns finite progress for single-frame animations', () => {
