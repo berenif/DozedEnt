@@ -38,14 +38,24 @@ export async function initSkeletonDemo(canvasContainer) {
     coordinator.attachTo(canvasContainer);
 
     // Ensure simulation settings are sane even if UI isn't toggled yet
-    if (typeof skeleton.setPhysicsEnabled === 'function') skeleton.setPhysicsEnabled(true);
-    if (typeof skeleton.setGravityEnabled === 'function') skeleton.setGravityEnabled(true);
-    if (typeof skeleton.setGlobalStiffness === 'function') skeleton.setGlobalStiffness(1.0);
-    if (typeof skeleton.setGlobalDamping === 'function') skeleton.setGlobalDamping(1.0);
+    if (typeof skeleton.setPhysicsEnabled === 'function') {
+        skeleton.setPhysicsEnabled(true);
+    }
+    if (typeof skeleton.setGravityEnabled === 'function') {
+        skeleton.setGravityEnabled(true);
+    }
+    if (typeof skeleton.setGlobalStiffness === 'function') {
+        skeleton.setGlobalStiffness(1.0);
+    }
+    if (typeof skeleton.setGlobalDamping === 'function') {
+        skeleton.setGlobalDamping(1.0);
+    }
 
     // Start from a visible neutral pose
-    try { applyPoseByName(skeleton, 'apose'); } catch (error) {
-      console.warn('Failed to apply initial pose:', error);
+    try {
+        applyPoseByName(skeleton, 'apose');
+    } catch (error) {
+        console.warn('Failed to apply initial pose:', error);
     }
 
     const idle = new IdleAnimation(skeleton);
@@ -55,7 +65,8 @@ export async function initSkeletonDemo(canvasContainer) {
         renderer: coordinator.renderer,
         interactionController: coordinator.interaction,
         uiController: coordinator.ui,
-        idle
+        idle,
+        coordinator
     };
 }
 
@@ -74,7 +85,9 @@ export function startAnimationLoop(demo) {
     let isRunning = true;
 
     function animate() {
-        if (!isRunning) return;
+        if (!isRunning) {
+            return;
+        }
 
         animationId = requestAnimationFrame(animate);
 
@@ -114,12 +127,37 @@ export function startAnimationLoop(demo) {
     animate();
 
     // Return stop function
-    return () => {
+    const stop = () => {
         isRunning = false;
         if (animationId) {
             cancelAnimationFrame(animationId);
         }
+        if (demo.idle && typeof demo.idle.setEnabled === 'function') {
+            demo.idle.setEnabled(false);
+        }
     };
+    demo.stopLoop = stop;
+    return stop;
+}
+
+export function destroySkeletonDemo(demo, stopLoop) {
+    if (!demo) {
+        return;
+    }
+    const stop = typeof stopLoop === 'function' ? stopLoop : demo.stopLoop;
+    if (typeof stop === 'function') {
+        stop();
+    }
+    if (demo.coordinator && typeof demo.coordinator.detach === 'function') {
+        demo.coordinator.detach();
+    } else {
+        if (demo.uiController && typeof demo.uiController.cleanup === 'function') {
+            demo.uiController.cleanup();
+        }
+        if (demo.interactionController && typeof demo.interactionController.destroy === 'function') {
+            demo.interactionController.destroy();
+        }
+    }
 }
 
 function updatePerformanceStats(physicsTime, renderTime) {

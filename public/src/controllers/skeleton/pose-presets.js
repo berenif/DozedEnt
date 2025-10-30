@@ -1,6 +1,6 @@
 // Pose presets in radians
 
-const D = Math.PI / 180
+const D = Math.PI / 180;
 
 export const PosePresets = {
 	apose: {
@@ -35,19 +35,25 @@ export const PosePresets = {
 		shoulder_R: { y: 150 * D },
 		elbow_R: { x: 90 * D }
 	}
-}
+};
 
 export function applyPoseByName(skeleton, poseName) {
-	const pose = PosePresets[poseName]
-	if (!pose) return
-	const count = skeleton.getJointCount()
+	const pose = PosePresets[poseName];
+	if (!pose) {
+		return;
+	}
+	const count = skeleton.getJointCount();
 	// Build name to index once
-	const map = new Map()
-	for (let i = 0; i < count; i++) map.set(skeleton.getJointName(i), i)
+	const map = new Map();
+	for (let i = 0; i < count; i++) {
+		map.set(skeleton.getJointName(i), i);
+	}
 	for (const [name, axes] of Object.entries(pose)) {
-		const idx = map.get(name)
-		if (idx === undefined) continue
-		skeleton.setJointTargetAngles(idx, axes.x ?? 0, axes.y ?? 0, axes.z ?? 0)
+		const idx = map.get(name);
+		if (idx === undefined) {
+			continue;
+		}
+		skeleton.setJointTargetAngles(idx, axes.x ?? 0, axes.y ?? 0, axes.z ?? 0);
 	}
 }
 
