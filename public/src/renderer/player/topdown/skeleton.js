@@ -52,9 +52,9 @@ export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton, 
 		} else if (part === 'torsoUpper') {
 			drawIsometricUpperBody(ctx, position, baseRadius, hurt)
 		} else if (part === 'neck') {
-			drawIsometricNeck(ctx, position, baseRadius)
+			drawIsometricNeck(ctx, position, baseRadius, skeleton.neck, skeleton.chest)
 		} else if (part === 'head') {
-			drawIsometricHead(ctx, position, baseRadius, hurt)
+			drawIsometricHead(ctx, position, baseRadius, skeleton.head, skeleton.neck, hurt)
 		} else if (part === 'frontArm') {
 			drawIsometricArm(ctx, position, baseRadius, skeleton[sides.front + 'Arm'], sides.front, state)
 		} else if (part === 'backArm') {
@@ -67,92 +67,102 @@ export function drawTopDownSkeleton(ctx, state, position, baseRadius, skeleton, 
 	}
 }
 
-// Draw isometric head with hair and facial features
-function drawIsometricHead(ctx, position, baseRadius, hurt) {
-	const headRadius = baseRadius * 0.22
-	const headHeight = baseRadius * 0.82 // Z height above body (reduced to connect with neck)
-	
-	// Transform head position to isometric space
-	const isoPos = toIso(0, 0, headHeight)
-	const headX = position.x + isoPos.x
-	const headY = position.y + isoPos.y
-	
+// Draw isometric head with hair and facial features aligned to skeleton joints
+function drawIsometricHead(ctx, position, baseRadius, headJoint, neckJoint, hurt) {
+	const fallbackHead = { x: 0, y: -baseRadius * 0.82 }
+	const fallbackNeck = { x: 0, y: -baseRadius * 0.65 }
+	const head = headJoint ?? fallbackHead
+	const neck = neckJoint ?? fallbackNeck
+	const lateralScale = 0.5
+	const verticalScale = 0.7
+	const isoHead = toIso(head.x * lateralScale, 0, (-head.y) * verticalScale)
+	const isoNeck = toIso(neck.x * lateralScale, 0, (-neck.y) * verticalScale)
+	const headPos = { x: position.x + isoHead.x, y: position.y + isoHead.y }
+	const neckPos = { x: position.x + isoNeck.x, y: position.y + isoNeck.y }
+	const dx = headPos.x - neckPos.x
+	const dy = headPos.y - neckPos.y
+	const distance = Math.max(Math.hypot(dx, dy), baseRadius * 0.2)
+	const headRadius = Math.max(baseRadius * 0.16, distance * 0.45)
+	const faceRadiusX = headRadius * 0.88
+	const faceRadiusY = headRadius * 0.76
+	const rotation = Math.atan2(dy, dx) - Math.PI / 2
 	ctx.save()
-	
-	// Hair/Head top (slightly oval for isometric perspective)
-	const hairRadius = headRadius * 1.15
-	ctx.fillStyle = '#3d2817' // Dark brown hair
+	ctx.translate(headPos.x, headPos.y)
+	ctx.rotate(rotation)
+	// Hair/Head top
+	ctx.fillStyle = '#3d2817'
 	ctx.beginPath()
-	ctx.ellipse(headX, headY, hairRadius, hairRadius * 0.8, 0, 0, Math.PI * 2)
+	ctx.ellipse(0, 0, headRadius * 1.12, headRadius * 0.86, 0, 0, Math.PI * 2)
 	ctx.fill()
-	
-	// Face (skin tone) - front-facing oval
+	// Face
 	ctx.fillStyle = hurt ? '#ffb3b3' : '#ffd4a3'
 	ctx.beginPath()
-	ctx.ellipse(headX, headY, headRadius * 0.85, headRadius * 0.75, 0, 0, Math.PI * 2)
+	ctx.ellipse(0, 0, faceRadiusX, faceRadiusY, 0, 0, Math.PI * 2)
 	ctx.fill()
-	
 	// Face outline
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-	setScreenSpaceStroke(ctx, 1.5)
+	setScreenSpaceStroke(ctx, 1.4)
 	ctx.stroke()
-	
-	// Eyes (visible from isometric angle)
+	// Eyes
 	ctx.fillStyle = '#2c1810'
-	const eyeY = headY - headRadius * 0.1
-	const eyeSpacing = headRadius * 0.4
-	const eyeSize = 2.5
+	const eyeY = -faceRadiusY * 0.2
+	const eyeSpacing = faceRadiusX * 0.45
+	const eyeWidth = headRadius * 0.17
+	const eyeHeight = headRadius * 0.22
 	ctx.beginPath()
-	ctx.ellipse(headX - eyeSpacing, eyeY, eyeSize * 0.8, eyeSize, 0, 0, Math.PI * 2)
-	ctx.ellipse(headX + eyeSpacing, eyeY, eyeSize * 0.8, eyeSize, 0, 0, Math.PI * 2)
+	ctx.ellipse(-eyeSpacing, eyeY, eyeWidth, eyeHeight, 0, 0, Math.PI * 2)
+	ctx.ellipse(eyeSpacing, eyeY, eyeWidth, eyeHeight, 0, 0, Math.PI * 2)
 	ctx.fill()
-	
-	// Nose (small 3D-ish shape)
-	ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'
+	// Nose
+	ctx.fillStyle = 'rgba(0, 0, 0, 0.22)'
 	ctx.beginPath()
-	ctx.moveTo(headX, headY)
-	ctx.lineTo(headX - 2, headY + headRadius * 0.2)
-	ctx.lineTo(headX + 2, headY + headRadius * 0.2)
+	ctx.moveTo(0, headRadius * 0.05)
+	ctx.lineTo(-eyeWidth * 0.6, headRadius * 0.28)
+	ctx.lineTo(eyeWidth * 0.6, headRadius * 0.28)
+	ctx.closePath()
 	ctx.fill()
-	
-	// Mouth (curved smile)
+	// Mouth
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
-	setScreenSpaceStroke(ctx, 1.5)
+	setScreenSpaceStroke(ctx, 1.3)
 	ctx.lineCap = 'round'
 	ctx.beginPath()
-	ctx.arc(headX, headY + headRadius * 0.1, headRadius * 0.3, 0.2, Math.PI - 0.2)
+	ctx.arc(0, headRadius * 0.25, headRadius * 0.32, 0.1, Math.PI - 0.1)
 	ctx.stroke()
-	
 	ctx.restore()
 }
-
 // Draw isometric neck connecting head to shoulders
-function drawIsometricNeck(ctx, position, baseRadius) {
+function drawIsometricNeck(ctx, position, baseRadius, neckJoint, chestJoint) {
 	ctx.save()
-	
-	const neckHeight = baseRadius * 0.76
-	const neckTop = toIso(0, 0, neckHeight)
-	const neckBottom = toIso(0, 0, neckHeight * 0.92)
-	
-	const neckWidth = baseRadius * 0.08
-	
-	// Neck cylinder in isometric view (trapezoid)
-	ctx.fillStyle = '#ffd4a3' // Skin tone
+
+	const fallbackNeck = { x: 0, y: -baseRadius * 0.65 }
+	const fallbackChest = { x: 0, y: -baseRadius * 0.45 }
+	const neck = neckJoint ?? fallbackNeck
+	const chest = chestJoint ?? fallbackChest
+	const lateralScale = 0.5
+	const verticalScale = 0.7
+	const topIso = toIso(neck.x * lateralScale, 0, (-neck.y) * verticalScale)
+	const bottomIso = toIso(chest.x * lateralScale, 0, (-chest.y) * verticalScale)
+	const top = { x: position.x + topIso.x, y: position.y + topIso.y }
+	const bottom = { x: position.x + bottomIso.x, y: position.y + bottomIso.y }
+	const vx = bottom.x - top.x
+	const vy = bottom.y - top.y
+	const len = Math.hypot(vx, vy) || 1
+	const perpX = -vy / len
+	const perpY = vx / len
+	const neckWidth = Math.max(baseRadius * 0.06, Math.abs(neck.x - chest.x) * 0.18 + baseRadius * 0.02)
+	ctx.fillStyle = '#ffd4a3'
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)'
-	setScreenSpaceStroke(ctx, 1.5)
-	
+	setScreenSpaceStroke(ctx, 1.4)
 	ctx.beginPath()
-	ctx.moveTo(position.x + neckTop.x - neckWidth, position.y + neckTop.y)
-	ctx.lineTo(position.x + neckTop.x + neckWidth, position.y + neckTop.y)
-	ctx.lineTo(position.x + neckBottom.x + neckWidth * 1.2, position.y + neckBottom.y)
-	ctx.lineTo(position.x + neckBottom.x - neckWidth * 1.2, position.y + neckBottom.y)
+	ctx.moveTo(top.x - perpX * neckWidth, top.y - perpY * neckWidth)
+	ctx.lineTo(top.x + perpX * neckWidth, top.y + perpY * neckWidth)
+	ctx.lineTo(bottom.x + perpX * neckWidth * 1.2, bottom.y + perpY * neckWidth * 1.2)
+	ctx.lineTo(bottom.x - perpX * neckWidth * 1.2, bottom.y - perpY * neckWidth * 1.2)
 	ctx.closePath()
 	ctx.fill()
 	ctx.stroke()
-	
 	ctx.restore()
 }
-
 // Draw isometric upper body (chest and shoulders) as 3D box
 function drawIsometricUpperBody(ctx, position, baseRadius, hurt) {
 	ctx.save()
@@ -446,42 +456,45 @@ function drawIsometricLeg(ctx, position, baseRadius, leg, side, state) {
 	ctx.fill()
 	ctx.stroke()
 	
-	// Foot/shoe (isometric shoe shape)
+	// Foot/shoe oriented from foot to toe
+	const toeBase = toIso(
+		(leg.toe?.x ?? leg.foot?.x ?? 0) * 0.35,
+		(leg.toe?.y ?? leg.foot?.y ?? 0) * 0.35,
+		0
+	)
+	const toeX = position.x + toeBase.x
+	const toeY = position.y + toeBase.y
+	const dirX = toeX - footX
+	const dirY = toeY - footY
+	const dirLen = Math.hypot(dirX, dirY) || 1
+	const normX = dirX / dirLen
+	const normY = dirY / dirLen
+	const perpX = -normY
+	const perpY = normX
+	const halfWidth = 2.2
+	const toeWidth = halfWidth * 0.75
+
 	ctx.fillStyle = '#0f172a'
 	ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)'
-	setScreenSpaceStroke(ctx, 1.5)
+	setScreenSpaceStroke(ctx, 1.4)
 	ctx.beginPath()
-	// Draw shoe as parallelogram for isometric look
-	ctx.moveTo(footX - 3, footY)
-	ctx.lineTo(footX + 3, footY - 2)
-	ctx.lineTo(footX + 5, footY + 4)
-	ctx.lineTo(footX - 1, footY + 6)
+	ctx.moveTo(footX - perpX * halfWidth, footY - perpY * halfWidth)
+	ctx.lineTo(footX + perpX * halfWidth, footY + perpY * halfWidth)
+	ctx.lineTo(toeX + perpX * toeWidth, toeY + perpY * toeWidth)
+	ctx.lineTo(toeX - perpX * toeWidth, toeY - perpY * toeWidth)
 	ctx.closePath()
 	ctx.fill()
 	ctx.stroke()
 	
-	// Shoe lace detail
-	ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-	setScreenSpaceStroke(ctx, 1)
+	// Shoe lace detail aligned with foot direction
+	ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)'
+	setScreenSpaceStroke(ctx, 0.9)
 	ctx.beginPath()
-	ctx.moveTo(footX - 1, footY + 1)
-	ctx.lineTo(footX + 2, footY + 2)
+	const laceStartX = footX - perpX * (halfWidth * 0.4)
+	const laceStartY = footY - perpY * (halfWidth * 0.4)
+	ctx.moveTo(laceStartX, laceStartY)
+	ctx.lineTo(laceStartX + normX * 3.2, laceStartY + normY * 3.2)
 	ctx.stroke()
 	
 	ctx.restore()
-}
-
-// Helper: Draw rounded rectangle
-function roundRect(ctx, x, y, width, height, radius) {
-	ctx.beginPath()
-	ctx.moveTo(x + radius, y)
-	ctx.lineTo(x + width - radius, y)
-	ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
-	ctx.lineTo(x + width, y + height - radius)
-	ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
-	ctx.lineTo(x + radius, y + height)
-	ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
-	ctx.lineTo(x, y + radius)
-	ctx.quadraticCurveTo(x, y, x + radius, y)
-	ctx.closePath()
 }
