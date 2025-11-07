@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { InputManager } from '../../src/input/input-manager.js';
+import { InputManager } from '../../public/src/input/input-manager.js';
 
 describe('InputManager - Comprehensive Tests', () => {
   let inputManager;

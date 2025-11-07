@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { DeterministicIdGenerator } from '../../src/utils/deterministic-id-generator.js';
+import { DeterministicIdGenerator } from '../../public/src/utils/deterministic-id-generator.js';
 
 describe('DeterministicIdGenerator', () => {
   let generator;

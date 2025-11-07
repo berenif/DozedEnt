@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { CameraEffects } from '../../src/camera-effects.js';
+import { CameraEffects } from '../../public/src/camera-effects.js';
 
 describe('Camera Effects', () => {
   let canvas, ctx, cameraEffects;

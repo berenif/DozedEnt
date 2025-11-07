@@ -4,9 +4,9 @@
  */
 
 import { expect } from 'chai';
-import { PersistenceManager } from '../../src/gameplay/persistence-manager.js';
-import { LeaderboardSystem } from '../../src/gameplay/leaderboard-system.js';
-import { PersistenceUI } from '../../src/ui/persistence-ui.js';
+import { PersistenceManager } from '../../public/src/gameplay/persistence-manager.js';
+import { LeaderboardSystem } from '../../public/src/gameplay/leaderboard-system.js';
+import { PersistenceUI } from '../../public/src/ui/persistence-ui.js';
 
 // Mock WASM manager for testing
 class MockWasmManager {

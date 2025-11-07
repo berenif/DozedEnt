@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { encrypt, decrypt, genKey, sha1 } from '../../src/utils/crypto.js';
+import { encrypt, decrypt, genKey, sha1 } from '../../public/src/utils/crypto.js';
 
 describe('Crypto Utils', () => {
   let mockCrypto;

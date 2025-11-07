@@ -8,11 +8,11 @@ import sinon from 'sinon';
 import { JSDOM } from 'jsdom';
 
 // Import error handling modules
-import { gameErrorHandler } from '../../src/utils/game-error-handler.js';
-import { networkErrorRecovery } from '../../src/utils/network-error-recovery.js';
-import { browserAPIFallbacks } from '../../src/utils/browser-api-fallbacks.js';
-import { inputValidator } from '../../src/utils/input-validator.js';
-import { errorReporter } from '../../src/utils/error-reporter.js';
+import { gameErrorHandler } from '../../public/src/utils/game-error-handler.js';
+import { networkErrorRecovery } from '../../public/src/utils/network-error-recovery.js';
+import { browserAPIFallbacks } from '../../public/src/utils/browser-api-fallbacks.js';
+import { inputValidator } from '../../public/src/utils/input-validator.js';
+import { errorReporter } from '../../public/src/utils/error-reporter.js';
 
 describe('Error Handling System', () => {
   let mockWasmManager;

@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { normalizeConfig } from '../../src/utils/config.js';
+import { normalizeConfig } from '../../public/src/utils/config.js';
 
 describe('Config Utils', function() {
   let consoleWarnStub;

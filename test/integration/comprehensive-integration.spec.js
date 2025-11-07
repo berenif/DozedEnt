@@ -6,12 +6,12 @@ import '../setup.js';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { GameStateManager } from '../../src/game/game-state-manager.js';
-import { EnhancedAudioManager } from '../../src/audio/enhanced-audio-manager.js';
-import { VisualEffectsManager } from '../../src/effects/visual-effects-manager.js';
-import { GamepadManager } from '../../src/input/gamepad-manager.js';
-import { EnhancedMobileControls } from '../../src/input/enhanced-mobile-controls.js';
-import { EnhancedAnimationController } from '../../src/animation/enhanced-animation-controller.js';
+import { GameStateManager } from '../../public/src/game/game-state-manager.js';
+import { EnhancedAudioManager } from '../../public/src/audio/enhanced-audio-manager.js';
+import { VisualEffectsManager } from '../../public/src/effects/visual-effects-manager.js';
+import { GamepadManager } from '../../public/src/input/gamepad-manager.js';
+import { EnhancedMobileControls } from '../../public/src/input/enhanced-mobile-controls.js';
+import { EnhancedAnimationController } from '../../public/src/animation/enhanced-animation-controller.js';
 
 describe('Comprehensive Integration Tests', () => {
   let gameStateManager;

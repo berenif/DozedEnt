@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { SoundSystem } from '../../src/utils/sound-system.js';
+import { SoundSystem } from '../../public/src/utils/sound-system.js';
 
 describe('SoundSystem', () => {
   let soundSystem;

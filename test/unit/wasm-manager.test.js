@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { WasmManager } from '../../src/wasm/wasm-manager.js';
+import { WasmManager } from '../../public/src/wasm/wasm-manager.js';
 
 describe('WasmManager', () => {
   let wasmManager;

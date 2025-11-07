@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { WolfCharacter } from '../../src/gameentity/wolf-character.js';
+import { WolfCharacter } from '../../public/src/gameentity/wolf-character.js';
 
 describe('WolfCharacter', () => {
   let wolf;

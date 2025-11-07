@@ -5,7 +5,7 @@ import {
   OFFER_TTL_MS,
   ICE_TIMEOUT_MS,
   DATA_BUFFERED_LOW_THRESHOLD
-} from '../../src/constants.js';
+} from '../../public/src/constants.js';
 
 describe('Constants Module', () => {
   it('should export OFFER_POOL_SIZE with correct value', () => {

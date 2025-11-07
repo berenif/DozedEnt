@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { createLogger } from '../../src/utils/logger.js';
+import { createLogger } from '../../public/src/utils/logger.js';
 
 describe('Logger', () => {
   let consoleStubs;

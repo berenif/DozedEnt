@@ -35,13 +35,13 @@ console.log('Verifying Bug Fixes in Source Code...')
 
 // Test LobbyAnalytics fixes
 test('LobbyAnalytics should have aggregationInterval stored', () => {
-  const content = readFile('src/utils/lobby-analytics.js')
+  const content = readFile('public/src/utils/lobby-analytics.js')
   assert(content.includes('this.aggregationInterval = setInterval'), 
     'Should store interval in this.aggregationInterval')
 })
 
 test('LobbyAnalytics should have destroy method', () => {
-  const content = readFile('src/utils/lobby-analytics.js')
+  const content = readFile('public/src/utils/lobby-analytics.js')
   assert(content.includes('destroy()'), 'Should have destroy method')
   assert(content.includes('clearInterval(this.aggregationInterval)'), 
     'destroy method should clear aggregationInterval')
@@ -51,7 +51,7 @@ test('LobbyAnalytics should have destroy method', () => {
 
 // Test SoundSystem fixes
 test('SoundSystem should log initialization errors', () => {
-  const content = readFile('src/utils/sound-system.js')
+  const content = readFile('public/src/sound/sound-system.js')
   assert(content.includes("console.error('Failed to initialize sound system:'"), 
     'Should log error when sound system initialization fails')
 })
@@ -60,7 +60,7 @@ test('SoundSystem should log initialization errors', () => {
 
 // Test HostAuthority fixes
 test('HostAuthority has proper cleanup', () => {
-  const content = readFile('src/netcode/host-authority.js')
+  const content = readFile('public/src/netcode/host-authority.js')
   assert(content.includes('stopGameLoop()'), 'Should have stopGameLoop method')
   assert(content.includes('clearInterval(this.updateInterval)'), 
     'Should clear updateInterval')
@@ -71,8 +71,8 @@ test('HostAuthority has proper cleanup', () => {
 // Verify no TODO/FIXME comments were added
 test('No TODO/FIXME comments added in fixes', () => {
   const files = [
-    'src/utils/lobby-analytics.js',
-    'src/utils/sound-system.js'
+    'public/src/utils/lobby-analytics.js',
+    'public/src/sound/sound-system.js'
   ]
   
   files.forEach(file => {
@@ -91,15 +91,57 @@ console.log('\nChecking for Remaining Issues...')
 
 test('No empty catch blocks remain', () => {
   const files = [
-    'src/utils/sound-system.js'
+    'public/src/sound/sound-system.js'
   ]
   
   files.forEach(file => {
     const content = readFile(file)
-    // Look for catch blocks with only comments (no actual code)
-    const hasEmptyCatch = content.match(/catch\s*\([^)]*\)\s*{\s*\/\/[^}]*}/g)
-    assert(!hasEmptyCatch || hasEmptyCatch.length === 0, 
-      `No empty catch blocks should remain in ${file}`)
+    // Look for catch blocks with ONLY comments or whitespace (no actual code like console.log, throw, etc.)
+    // This pattern looks for catch blocks that don't contain any statements like console., throw, return, etc.
+    const lines = content.split('\n')
+    let inCatchBlock = false
+    let catchBlockContent = []
+    let braceDepth = 0
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.match(/catch\s*\([^)]*\)\s*{/)) {
+        inCatchBlock = true
+        catchBlockContent = []
+        braceDepth = 1
+        // Check if there's content on the same line after the opening brace
+        const afterBrace = line.substring(line.indexOf('{') + 1).trim()
+        if (afterBrace && afterBrace !== '' && afterBrace !== '}' && !afterBrace.startsWith('//')) {
+          catchBlockContent.push(afterBrace)
+        }
+        continue
+      }
+      
+      if (inCatchBlock) {
+        braceDepth += (line.match(/{/g) || []).length
+        braceDepth -= (line.match(/}/g) || []).length
+        
+        const trimmed = line.trim()
+        // Only count non-comment, non-empty lines as content
+        if (trimmed && !trimmed.startsWith('//') && trimmed !== '}') {
+          catchBlockContent.push(trimmed)
+        }
+        
+        if (braceDepth === 0) {
+          // End of catch block - check if it's empty
+          const hasCode = catchBlockContent.some(content => 
+            content.includes('console.') || 
+            content.includes('throw ') ||
+            content.includes('return ') ||
+            content.includes('=') ||
+            content.match(/\w+\s*\(/)  // function calls
+          )
+          
+          assert(hasCode, `Empty catch block found on line ${i} in ${file}`)
+          inCatchBlock = false
+        }
+      }
+    }
   })
 })
 

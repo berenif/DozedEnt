@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { GameStateManager } from '../../src/game/game-state-manager.js';
+import { GameStateManager } from '../../public/src/game/game-state-manager.js';
 
 describe('GameStateManager', function() {
   let gameStateManager;

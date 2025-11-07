@@ -1,9 +1,9 @@
 import { expect } from 'chai'
-import PlayerProceduralRig from '../../src/animation/player/procedural/player-procedural-rig.js'
-import CorePostureModule from '../../src/animation/player/procedural/modules/core-posture-module.js'
-import LocomotionModule from '../../src/animation/player/procedural/modules/locomotion-module.js'
-import CombatModule from '../../src/animation/player/procedural/modules/combat-module.js'
-import PlayerProceduralAnimator from '../../src/animation/player/procedural/player-procedural-animator.js'
+import PlayerProceduralRig from '../../public/src/animation/player/procedural/player-procedural-rig.js'
+import CorePostureModule from '../../public/src/animation/player/procedural/modules/core-posture-module.js'
+import LocomotionModule from '../../public/src/animation/player/procedural/modules/locomotion-module.js'
+import CombatModule from '../../public/src/animation/player/procedural/modules/combat-module.js'
+import PlayerProceduralAnimator from '../../public/src/animation/player/procedural/player-procedural-animator.js'
 
 const createPose = () => new PlayerProceduralRig().createWorkingPose()
 

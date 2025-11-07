@@ -6,11 +6,11 @@ import '../setup.js';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { WasmManager } from '../../src/wasm/wasm-manager.js';
-import { GameStateManager } from '../../src/game/game-state-manager.js';
-import { PerformanceLODSystem } from '../../src/utils/performance-lod-system.js';
-import { PerformanceProfiler } from '../../src/utils/performance-profiler.js';
-import { MemoryOptimizer } from '../../src/utils/memory-optimizer.js';
+import { WasmManager } from '../../public/src/wasm/wasm-manager.js';
+import { GameStateManager } from '../../public/src/game/game-state-manager.js';
+import { PerformanceLODSystem } from '../../public/src/utils/performance-lod-system.js';
+import { PerformanceProfiler } from '../../public/src/utils/performance-profiler.js';
+import { MemoryOptimizer } from '../../public/src/utils/memory-optimizer.js';
 
 describe('Comprehensive Performance Optimizations', () => {
   let wasmManager;

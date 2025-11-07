@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { GameStateManager } from '../../src/game/game-state-manager.js';
+import { GameStateManager } from '../../public/src/game/game-state-manager.js';
 
 // Clean up after each test
 afterEach(() => {

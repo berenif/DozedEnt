@@ -6,9 +6,9 @@
  */
 
 import { strict as assert } from 'assert'
-import LobbyAnalytics from '../../src/lobby-analytics.js'
+import LobbyAnalytics from '../../public/src/lobby-analytics.js'
 // Removed EnhancedRoomManager import
-import HostAuthority from '../../src/host-authority.js'
+import HostAuthority from '../../public/src/host-authority.js'
 
 console.log('🧪 Running Bug Fix Tests...\n')
 

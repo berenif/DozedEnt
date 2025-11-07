@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { normalizeConfig } from '../../src/utils/config.js';
+import { normalizeConfig } from '../../public/src/utils/config.js';
 
 describe('Config', () => {
   let consoleErrorStub;

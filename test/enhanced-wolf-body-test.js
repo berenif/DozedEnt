@@ -2,12 +2,12 @@
 // Tests all components of the improved wolf body system
 
 import { describe, it, expect, beforeEach, afterEach } from './test-framework.js'
-import EnhancedWolfBody from '../src/animation/enhanced-wolf-body.js'
-import AdvancedFurSystem from '../src/animation/advanced-fur-system.js'
-import WolfAnatomy from '../src/animation/wolf-anatomy.js'
-import WolfBodyVariations from '../src/animation/wolf-body-variations.js'
-import EnhancedWolfIntegration from '../src/animation/enhanced-wolf-integration.js'
-import WolfBodyPhysics from '../src/animation/wolf-body-physics.js'
+import EnhancedWolfBody from '../public/src/animation/enhanced-wolf-body.js'
+import AdvancedFurSystem from '../public/src/animation/advanced-fur-system.js'
+import WolfAnatomy from '../public/src/animation/wolf-anatomy.js'
+import WolfBodyVariations from '../public/src/animation/wolf-body-variations.js'
+import EnhancedWolfIntegration from '../public/src/animation/enhanced-wolf-integration.js'
+import WolfBodyPhysics from '../public/src/animation/wolf-body-physics.js'
 
 // Mock canvas and rendering context for tests
 class MockCanvas {

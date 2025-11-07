@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { GameRenderer } from '../../src/utils/game-renderer.js';
+import { GameRenderer } from '../../public/src/utils/game-renderer.js';
 
 // Clean up after each test
 afterEach(() => {
