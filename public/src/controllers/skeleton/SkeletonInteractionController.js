@@ -26,18 +26,60 @@ export class SkeletonInteractionController {
 		this.skeleton = skeleton;
 		this.activeJoint = null;
 		this.dragOffset = { x: 0, y: 0 };
+		this.dragChain = null;
+		this._listeners = [];
 
 		this._bind();
 	}
 
+	destroy() {
+		for (const { target, type, handler, options } of this._listeners) {
+			target.removeEventListener(type, handler, options);
+		}
+		this._listeners.length = 0;
+		this.activeJoint = null;
+		this.dragChain = null;
+	}
+
+	_addListener(target, type, handler, options) {
+		target.addEventListener(type, handler, options);
+		this._listeners.push({ target, type, handler, options });
+	}
+
 	_bind() {
 		const canvas = this.renderer.canvas;
-		canvas.addEventListener('mousedown', (e) => this._onDown(e));
-		canvas.addEventListener('touchstart', (e) => this._onDown(e.touches[0]));
-		window.addEventListener('mousemove', (e) => this._onMove(e));
-		window.addEventListener('touchmove', (e) => this._onMove(e.touches[0]));
-		window.addEventListener('mouseup', () => this._onUp());
-		window.addEventListener('touchend', () => this._onUp());
+		const handleMouseDown = (event) => {
+			this._onDown(event);
+		};
+		const handleTouchStart = (event) => {
+			event.preventDefault();
+			if (event.touches && event.touches[0]) {
+				this._onDown(event.touches[0]);
+			}
+		};
+		const handleMouseMove = (event) => {
+			this._onMove(event);
+		};
+		const handleTouchMove = (event) => {
+			if (event.touches && event.touches[0]) {
+				event.preventDefault();
+				this._onMove(event.touches[0]);
+			}
+		};
+		const handleMouseUp = () => {
+			this._onUp();
+		};
+		const handleTouchEnd = () => {
+			this._onUp();
+		};
+
+		this._addListener(canvas, 'mousedown', handleMouseDown);
+		this._addListener(canvas, 'touchstart', handleTouchStart, { passive: false });
+		this._addListener(window, 'mousemove', handleMouseMove);
+		this._addListener(window, 'touchmove', handleTouchMove, { passive: false });
+		this._addListener(window, 'mouseup', handleMouseUp);
+		this._addListener(window, 'touchend', handleTouchEnd);
+		this._addListener(window, 'touchcancel', handleTouchEnd);
 	}
 
 	_findJointAt(screenX, screenY) {
@@ -80,11 +122,18 @@ export class SkeletonInteractionController {
 		const x = e.clientX - rect.left + this.dragOffset.x;
 		const y = e.clientY - rect.top + this.dragOffset.y;
 		const target = this._screenToWorldOnDepth(x, y);
+		if (typeof this.renderer.setIkTarget === 'function') {
+			this.renderer.setIkTarget(target);
+		}
 		this._applyIK3D(this.activeJoint, target);
 	}
 
 	_onUp() {
 		this.activeJoint = null;
+		this.dragChain = null;
+		if (typeof this.renderer.setIkTarget === 'function') {
+			this.renderer.setIkTarget(null);
+		}
 	}
 
 	// Project to world using the current depth of the dragged joint

@@ -1,7 +1,7 @@
 // UI bootstrap for the interactive skeleton physics demo
 // Extracted from the HTML inline <script type="module"> block
 
-import { initSkeletonDemo, startAnimationLoop, setLoadingStatusCallback } from './demo-init.js';
+import { destroySkeletonDemo, initSkeletonDemo, startAnimationLoop, setLoadingStatusCallback } from './demo-init.js';
 
 export async function initializeSkeletonUI() {
     function updateLoadStatus(message) {
@@ -24,7 +24,10 @@ export async function initializeSkeletonUI() {
             }
         }, 500);
 
-        startAnimationLoop(demo);
+        const stopLoop = startAnimationLoop(demo);
+        const teardown = () => destroySkeletonDemo(demo, stopLoop);
+        window.addEventListener('beforeunload', teardown, { once: true });
+        window.addEventListener('pagehide', teardown, { once: true });
     } catch (error) {
         console.error('Failed to initialize application:', error);
         updateLoadStatus('Error: ' + error.message);

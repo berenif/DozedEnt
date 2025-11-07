@@ -14,6 +14,9 @@ export class SkeletonCanvasRenderer {
 		this.showBones = true;
 		this.showJoints = true;
 		this.showCOM = false;
+		this.showLimits = false;
+		this.showIKTargets = false;
+		this._ikTarget = null;
 	}
 
 	// Simple perspective-ish projection
@@ -76,6 +79,59 @@ export class SkeletonCanvasRenderer {
 		ctx.beginPath();
 		ctx.arc(S.x, S.y, r, 0, Math.PI * 2);
 		ctx.fill();
+	}
+
+	setIkTarget(target) {
+		this._ikTarget = target ? { x: target.x, y: target.y, z: target.z ?? 0 } : null;
+	}
+
+	_drawIkTarget() {
+		if (!this.showIKTargets || !this._ikTarget) {
+			return;
+		}
+		const { x, y } = this._worldToScreen(this._ikTarget);
+		const ctx = this.ctx;
+		ctx.save();
+		ctx.strokeStyle = '#ffffff';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.moveTo(x - 10, y);
+		ctx.lineTo(x + 10, y);
+		ctx.moveTo(x, y - 10);
+		ctx.lineTo(x, y + 10);
+		ctx.stroke();
+		ctx.restore();
+	}
+
+	_drawCenterOfMass(skeleton) {
+		if (!this.showCOM) {
+			return;
+		}
+		let com = null;
+		if (typeof skeleton.computeCenterOfMass === 'function') {
+			com = skeleton.computeCenterOfMass();
+		} else if (typeof skeleton.getCenterOfMass === 'function') {
+			com = skeleton.getCenterOfMass();
+		}
+		if (!com || !Number.isFinite(com.x) || !Number.isFinite(com.y)) {
+			return;
+		}
+		const screen = this._worldToScreen(com);
+		const ctx = this.ctx;
+		ctx.save();
+		ctx.fillStyle = '#fffb30';
+		ctx.strokeStyle = '#fffb30';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(screen.x, screen.y, 6, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.moveTo(screen.x - 8, screen.y);
+		ctx.lineTo(screen.x + 8, screen.y);
+		ctx.moveTo(screen.x, screen.y - 8);
+		ctx.lineTo(screen.x, screen.y + 8);
+		ctx.stroke();
+		ctx.restore();
 	}
 
 	render(skeleton) {
@@ -143,10 +199,13 @@ export class SkeletonCanvasRenderer {
 			for (let i = 0; i < count; i++) {
 				const pos = skeleton.getBonePosition(i);
 				const name = skeleton.getBoneName(i);
-			const c = name.endsWith('_L') ? this.colors.left : name.endsWith('_R') ? this.colors.right : this.colors.joint;
-			this._drawJoint(pos, Math.max(0.012, skeleton.getBoneRadius(i) * 1.2), c);
+				const c = name.endsWith('_L') ? this.colors.left : name.endsWith('_R') ? this.colors.right : this.colors.joint;
+				this._drawJoint(pos, Math.max(0.012, skeleton.getBoneRadius(i) * 1.2), c);
 			}
 		}
+
+		this._drawCenterOfMass(skeleton);
+		this._drawIkTarget();
 	}
 }
 
