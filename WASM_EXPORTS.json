@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2025-10-26T13:06:39.486Z",
+  "generatedAt": "2025-11-14T22:32:59.783Z",
   "tools": {
     "wasmDis": "C:\\Users\\flori\\Desktop\\DozedEnt\\emsdk\\upstream\\bin\\wasm-dis.exe"
   },
   "modules": [
     {
       "file": "public\\wasm\\game.wasm",
-      "exportCount": 197,
+      "exportCount": 201,
       "byType": {
         "memory": [
           "memory"
@@ -160,6 +160,10 @@
           "get_wolf_head_pitch",
           "get_wolf_head_yaw",
           "get_wolf_tail_wag",
+          "get_wolf_body_bob",
+          "get_wolf_ear_rotation",
+          "get_wolf_leg_x",
+          "get_wolf_leg_y",
           "get_enemy_vx",
           "get_enemy_vy",
           "damage_wolf",
@@ -362,6 +366,10 @@
         "get_wolf_head_pitch",
         "get_wolf_head_yaw",
         "get_wolf_tail_wag",
+        "get_wolf_body_bob",
+        "get_wolf_ear_rotation",
+        "get_wolf_leg_x",
+        "get_wolf_leg_y",
         "get_enemy_vx",
         "get_enemy_vy",
         "damage_wolf",

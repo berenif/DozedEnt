@@ -3,123 +3,1121 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DozedEnt – Core Loop MVP (FIXED)</title>
+  <title>DozedEnt – Roguelike Combat Arena</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #0b0f14; color: #e6f2ff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #root { position: relative; height: 100%; width: 100%; overflow: hidden; }
-    #gameCanvas { display: block; width: 100%; height: 100%; background: #0b0f14; }
-    .overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; }
-    .ui { position: absolute; left: 0; right: 0; top: 0; padding: 8px 12px; display: flex; gap: 12px; align-items: center; pointer-events: none; }
-    .panel { background: rgba(10, 16, 24, 0.9); border: 1px solid #163049; border-radius: 8px; padding: 10px 12px; pointer-events: auto; }
-    .row { display: flex; align-items: center; gap: 8px; }
-    .bar { width: 180px; height: 10px; background: #1b2a38; border-radius: 6px; overflow: hidden; border: 1px solid #20405f; }
-    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #2ee6a3, #29c4ff); }
-    .bar.stamina > i { background: linear-gradient(90deg, #ffe066, #ffb347); }
-    .phase { font-size: 12px; opacity: 0.9; letter-spacing: .02em; }
-    .corner { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 8px; }
-    button { background: #13324d; color: #e6f2ff; border: 1px solid #265a86; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #154266; }
-    .modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 92vw); background: rgba(8, 12, 18, 0.95); border: 1px solid #224664; border-radius: 10px; padding: 16px; display: none; pointer-events: auto; }
-    .modal.active { display: block; }
-    .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-    .card { padding: 12px; border-radius: 8px; border: 1px solid #2a4a6a; background: #0f1722; cursor: pointer; }
-    .card:hover { border-color: #3e79b5; }
-    .shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-    .badge { position: absolute; top: 12px; right: 12px; background: #2e7d32; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; pointer-events: none; }
+    * { box-sizing: border-box; }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@600;700&family=Fira+Mono:wght@500;700&display=swap');
+    
+    html, body { 
+      margin: 0; padding: 0; height: 100%; 
+      background: #0d0d0d; 
+      color: #d4c5b0; 
+      font-family: 'Crimson Text', Georgia, serif;
+      overflow: hidden;
+    }
+    
+    #root { position: relative; height: 100%; width: 100%; }
+    #gameCanvas { 
+      display: block; 
+      width: 100%; 
+      height: 100%; 
+      background: linear-gradient(135deg, #1a1410 0%, #0d0a08 100%);
+      image-rendering: pixelated;
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.8);
+    }
+    
+    /* Overlay System */
+    .overlay { 
+      position: absolute; 
+      inset: 0; 
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    /* Top HUD - Glassmorphism */
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      pointer-events: none;
+    }
+    
+    .panel {
+      background: rgba(18, 12, 8, 0.92);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(139, 101, 55, 0.4);
+      border-radius: 4px;
+      padding: 12px 16px;
+      pointer-events: auto;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(139, 101, 55, 0.2);
+      transition: all 0.2s ease;
+    }
+    
+    .panel:hover {
+      background: rgba(22, 16, 10, 0.95);
+      border-color: rgba(139, 101, 55, 0.6);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(139, 101, 55, 0.3);
+    }
+    
+    /* Stats Panel */
+    .stats-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 280px;
+    }
+    
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      min-width: 60px;
+      font-family: 'Fira Mono', monospace;
+      color: #b8986d;
+    }
+    
+    .bar-container {
+      flex: 1;
+      height: 14px;
+      background: rgba(10, 5, 2, 0.8);
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid rgba(80, 60, 40, 0.6);
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+    
+    .bar-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .bar-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 100%);
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .hp-bar { 
+      background: linear-gradient(90deg, #8b0000, #dc143c, #b22222);
+      box-shadow: 0 0 8px rgba(220, 20, 60, 0.5);
+    }
+    .stamina-bar { 
+      background: linear-gradient(90deg, #b8860b, #daa520, #ffd700);
+      box-shadow: 0 0 8px rgba(218, 165, 32, 0.4);
+    }
+    
+    .stat-value {
+      font-size: 11px;
+      font-weight: 700;
+      opacity: 0.85;
+      min-width: 75px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-family: 'Fira Mono', monospace;
+      color: #d4c5b0;
+    }
+    
+    /* Info Panel */
+    .info-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 200px;
+    }
+    
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .info-label {
+      opacity: 0.65;
+      font-weight: 600;
+      color: #9a8570;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+      font-weight: 700;
+      color: #d4a574;
+      font-variant-numeric: tabular-nums;
+      font-family: 'Fira Mono', monospace;
+    }
+    
+    /* Controls - Bottom Right */
+    .controls {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      display: flex;
+      gap: 8px;
+      pointer-events: none;
+    }
+    
+    button {
+      background: linear-gradient(180deg, #3a2a1a, #2a1e12);
+      backdrop-filter: blur(8px);
+      color: #d4c5b0;
+      border: 2px solid #5a4a3a;
+      padding: 10px 16px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Fira Mono', monospace;
+      pointer-events: auto;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(139, 101, 55, 0.3);
+    }
+    
+    button:hover {
+      background: linear-gradient(180deg, #4a3a2a, #3a2a1a);
+      border-color: #7a6a5a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(139, 101, 55, 0.4);
+      color: #e6d4ba;
+    }
+    
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Run Info Badge */
+    .status-badge {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, rgba(26, 18, 10, 0.95), rgba(18, 12, 6, 0.95));
+      backdrop-filter: blur(8px);
+      color: #d4a574;
+      padding: 8px 16px;
+      border-radius: 3px;
+      border: 2px solid rgba(139, 101, 55, 0.5);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Crimson Text', serif;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(139, 101, 55, 0.3);
+    }
+    
+    .status-badge::before {
+      content: '⚔';
+      margin-right: 8px;
+      color: #8b6537;
+    }
+    
+    .status-badge::after {
+      content: '⚔';
+      margin-left: 8px;
+      color: #8b6537;
+    }
+    
+    /* Modal System */
+    .modal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: min(800px, 90vw);
+      max-height: 85vh;
+      background: linear-gradient(135deg, rgba(18, 12, 8, 0.98), rgba(12, 8, 5, 0.98));
+      backdrop-filter: blur(20px);
+      border: 3px solid #5a4a3a;
+      border-radius: 4px;
+      padding: 24px;
+      display: none;
+      pointer-events: auto;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(139, 101, 55, 0.2);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+    }
+    
+    .modal.active {
+      display: block;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    
+    .modal h2 {
+      margin: 0 0 8px 0;
+      font-size: 32px;
+      font-weight: 700;
+      color: #d4a574;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      border-bottom: 2px solid rgba(139, 101, 55, 0.3);
+      padding-bottom: 12px;
+    }
+    
+    .modal h3 {
+      margin: 0 0 16px 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: #c49860;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+    
+    .modal-subtitle {
+      color: #9a8570;
+      font-size: 14px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+    
+    /* Help Modal */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .control-item {
+      background: rgba(26, 18, 10, 0.6);
+      border: 2px solid rgba(90, 74, 58, 0.4);
+      border-radius: 3px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    
+    .control-item:hover {
+      background: rgba(32, 24, 14, 0.8);
+      border-color: rgba(139, 101, 55, 0.6);
+    }
+    
+    .control-action {
+      font-weight: 600;
+      color: #d4c5b0;
+      font-size: 14px;
+    }
+    
+    .control-key {
+      background: linear-gradient(180deg, #3a2a1a, #2a1e12);
+      border: 2px solid #5a4a3a;
+      border-radius: 3px;
+      padding: 6px 12px;
+      font-family: 'Fira Mono', monospace;
+      font-weight: 700;
+      font-size: 13px;
+      color: #d4a574;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(139, 101, 55, 0.2);
+    }
+    
+    /* Choice/Shop Cards */
+    .choices, .shop {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    
+    .card {
+      background: rgba(26, 18, 10, 0.7);
+      border: 2px solid rgba(90, 74, 58, 0.4);
+      border-radius: 3px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(139, 101, 55, 0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: rgba(139, 101, 55, 0.7);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(139, 101, 55, 0.3);
+      background: rgba(32, 24, 14, 0.9);
+    }
+    
+    .card:hover::before {
+      opacity: 1;
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #d4a574;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .card-description {
+      font-size: 14px;
+      color: #b8a590;
+      line-height: 1.6;
+    }
+    
+    .modal-footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 2px solid rgba(90, 74, 58, 0.3);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .hud {
+        flex-direction: column;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+      }
+      
+      .stats-panel, .info-panel {
+        min-width: auto;
+        width: 100%;
+      }
+      
+      .controls {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+        justify-content: stretch;
+      }
+      
+      button {
+        flex: 1;
+        padding: 12px 8px;
+        font-size: 11px;
+      }
+      
+      .modal {
+        width: 94vw;
+        padding: 20px;
+      }
+      
+      .controls-grid,
+      .choices,
+      .shop {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Scrollbar Styling */
+    .modal::-webkit-scrollbar {
+      width: 10px;
+    }
+    
+    .modal::-webkit-scrollbar-track {
+      background: rgba(10, 5, 2, 0.6);
+      border-left: 1px solid rgba(90, 74, 58, 0.3);
+    }
+    
+    .modal::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #5a4a3a, #3a2a1a);
+      border: 1px solid rgba(139, 101, 55, 0.4);
+    }
+    
+    .modal::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #6a5a4a, #4a3a2a);
+    }
+    
+    /* Roguelike flavor text */
+    .flavor-text {
+      font-style: italic;
+      color: #9a8570;
+      font-size: 13px;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+    
+    /* Death counter / permadeath indicator */
+    .death-counter {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(18, 12, 8, 0.92);
+      border: 2px solid rgba(139, 69, 19, 0.6);
+      border-radius: 3px;
+      padding: 8px 12px;
+      font-family: 'Fira Mono', monospace;
+      font-size: 11px;
+      color: #d4a574;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    }
+    
+    .death-counter::before {
+      content: '☠';
+      margin-right: 6px;
+      color: #8b4513;
+    }
   </style>
 </head>
 <body>
   <div id="root">
     <canvas id="gameCanvas" width="1280" height="720"></canvas>
     <div class="overlay">
-      <div class="badge">✅ FIXED</div>
-      <div id="hud" class="ui panel">
-        <div class="row">
-          <span>HP</span>
-          <div class="bar" id="hpBar"><i style="width: 100%"></i></div>
-          <span>STA</span>
-          <div class="bar stamina" id="staminaBar"><i style="width: 100%"></i></div>
-          <span class="phase" id="phaseText">Phase: ?</span>
+      <!-- Run Title Badge -->
+      <div class="status-badge">Descent into Darkness</div>
+      
+      <!-- Top HUD -->
+      <div class="hud">
+        <!-- Stats Panel (Left) -->
+        <div class="panel stats-panel">
+          <div class="stat-row">
+            <span class="stat-label">Vitality</span>
+            <div class="bar-container">
+              <div id="hpBar" class="bar-fill hp-bar" style="width: 100%"></div>
+            </div>
+            <span class="stat-value" id="hpText">100 / 100</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Endurance</span>
+            <div class="bar-container">
+              <div id="staminaBar" class="bar-fill stamina-bar" style="width: 100%"></div>
+            </div>
+            <span class="stat-value" id="staminaText">100 / 100</span>
+          </div>
+        </div>
+        
+        <!-- Run Info Panel (Right) -->
+        <div class="panel info-panel">
+          <div class="info-item">
+            <span class="info-label">Depth</span>
+            <span class="info-value" id="waveText">Floor 1</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Foes</span>
+            <span class="info-value" id="enemiesText">0</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Status</span>
+            <span class="info-value" id="phaseText">Battle</span>
+          </div>
+        </div>
+        
+        <!-- Run Stats Panel -->
+        <div class="panel info-panel">
+          <div class="info-item">
+            <span class="info-label">Gold</span>
+            <span class="info-value" id="goldText">0</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Essence</span>
+            <span class="info-value" id="essenceText">0</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Time</span>
+            <span class="info-value" id="runTimeText">0:00</span>
+          </div>
         </div>
       </div>
-      <div class="corner">
-        <button id="btnRestart" title="Restart (new seed)">Restart</button>
-        <button id="btnHelp" title="Show controls">Help</button>
-        <button id="btnExport" title="Export replay">Export Replay</button>
+      
+      <!-- Death Counter (Roguelike Permadeath Tracking) -->
+      <div class="death-counter" id="deathCounter">
+        DEATHS: <span id="deathCount">0</span>
       </div>
+      
+      <!-- Phase-Specific Indicators -->
+      <div id="curseIndicators" style="display: none; position: absolute; bottom: 60px; left: 16px; max-width: 300px;">
+        <!-- Risk Phase Curses -->
+      </div>
+      
+      <div id="escalationMeter" style="display: none; position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(18, 12, 8, 0.92); border: 2px solid rgba(139, 69, 19, 0.6); border-radius: 3px; padding: 8px 16px; pointer-events: none;">
+        <!-- Escalate Phase Difficulty Indicator -->
+      </div>
+      
+      <div id="minibossHealth" style="display: none; position: absolute; top: 70px; left: 50%; transform: translateX(-50%); width: 400px; background: rgba(18, 12, 8, 0.95); border: 2px solid rgba(139, 101, 55, 0.6); border-radius: 3px; padding: 12px; pointer-events: none;">
+        <!-- Miniboss Health Bar -->
+      </div>
+      
+      <!-- Bottom Controls -->
+      <div class="controls">
+        <button id="btnRestart" title="Begin a new run with different seed">⟲ New Run</button>
+        <button id="btnHelp" title="View combat instructions">? Guide</button>
+        <button id="btnExport" title="Save run data">⎘ Save Run</button>
+      </div>
+      
+      <!-- Help Modal -->
       <div id="helpModal" class="modal">
-        <h3>Controls</h3>
-        <div style="font-size: 14px; line-height: 1.6">
-          <div>Move: WASD or Arrow Keys</div>
-          <div>Light Attack: J</div>
-          <div>Heavy Attack: L</div>
-          <div>Block (hold): Shift</div>
-          <div>Roll/Dodge: Space</div>
-          <div>Special (Raider Charge): K</div>
-          <div>Restart: Button at bottom-right</div>
+        <h2>Warrior's Guide</h2>
+        <p class="modal-subtitle">Learn the ancient art of combat to survive the depths</p>
+        
+        <div class="controls-grid">
+          <div class="control-item">
+            <span class="control-action">Navigate Dungeon</span>
+            <span class="control-key">WASD</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Alternative Movement</span>
+            <span class="control-key">Arrows</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Quick Strike</span>
+            <span class="control-key">J</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Power Strike</span>
+            <span class="control-key">L</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Raise Shield</span>
+            <span class="control-key">Shift</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Evasive Roll</span>
+            <span class="control-key">Space</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Battle Art</span>
+            <span class="control-key">K</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Select Choice</span>
+            <span class="control-key">1 / 2 / 3</span>
+          </div>
+          <div class="control-item">
+            <span class="control-action">Pause Game</span>
+            <span class="control-key">P / ESC</span>
+          </div>
         </div>
-        <div style="margin-top: 12px; text-align: right"><button id="btnCloseHelp">Close</button></div>
+        
+        <p class="flavor-text" style="margin-top: 20px;">
+          "Those who enter the depths must be swift and deliberate. Hesitation breeds death, 
+          but recklessness invites it. Master these techniques, warrior, for they are your only 
+          companions in the darkness below."
+        </p>
+        
+        <div class="modal-footer">
+          <button id="btnCloseHelp">I Understand</button>
+        </div>
       </div>
+      
+      <!-- Choice Modal (for upgrades) -->
       <div id="choiceModal" class="modal"></div>
+      
+      <!-- Shop Modal (for purchases) -->
       <div id="shopModal" class="modal"></div>
     </div>
   </div>
   <script type="module">
     import { startMVPDemo } from '../src/game/loop/MVPLoop.js';
     
-    // Initialize demo with error handling
+    // Cache-busting: Force WASM reload
+    console.log('[Roguelike] 🔄 WASM build timestamp:', new Date(1731626079000).toLocaleString());
+    
+    // Initialize demo with roguelike UI
     (async () => {
       try {
-        console.log('[Demo] Starting MVP demo (FIXED version)...');
+        console.log('[Roguelike] ⚔️ Descending into darkness...');
+        console.log('[Roguelike] ✓ WASM-powered dungeon generation');
+        console.log('[Roguelike] ✓ Deterministic procedural generation');
+        console.log('[Roguelike] ✓ Permadeath enabled - Every run matters');
         
+        // Track deaths across runs (localStorage for persistence)
+        let deathCount = parseInt(localStorage.getItem('dozedent_deaths') || '0', 10);
+        document.getElementById('deathCount').textContent = deathCount;
+        
+        // Start game with roguelike UI configuration
         const gameLoop = await startMVPDemo({
           canvasId: 'gameCanvas',
-          recordingEnabled: true, // Enable replay recording
+          recordingEnabled: true,
           ui: {
+            // Bar elements (for width updates)
             hpBar: 'hpBar',
             staminaBar: 'staminaBar',
+            
+            // Text elements (for value updates)
+            hpText: 'hpText',
+            staminaText: 'staminaText',
             phaseText: 'phaseText',
+            waveText: 'waveText',
+            enemiesText: 'enemiesText',
+            
+            // Modals
             helpModal: 'helpModal',
+            choiceModal: 'choiceModal',
+            shopModal: 'shopModal',
+            
+            // Controls
             btnHelp: 'btnHelp',
             btnCloseHelp: 'btnCloseHelp',
-            btnRestart: 'btnRestart',
-            choiceModal: 'choiceModal',
-            shopModal: 'shopModal'
+            btnRestart: 'btnRestart'
           }
         });
         
-        console.log('[Demo] ✅ Game started successfully');
-        console.log('[Demo] Architecture:');
-        console.log('  ✅ WASM-first (ADR-001)');
-        console.log('  ✅ Deterministic RNG (ADR-002)');
-        console.log('  ✅ Centralized state (ADR-003)');
-        console.log('  ✅ Focused coordinators (no god class)');
-        console.log('  ✅ Replay recording enabled');
+        console.log('[Roguelike] ✅ Dungeon generated. The darkness awaits...');
         
-        // Export replay button
+        // Global state tracking
+        let runStartTime = Date.now();
+        let lastPhase = '';
+        
+        // Choice/Shop mapping data
+        const choiceNames = {
+          0: 'Warrior\'s Vigor',
+          1: 'Swift Reflexes',
+          2: 'Iron Will',
+          3: 'Berserker Rage',
+          4: 'Divine Protection',
+          5: 'Vampiric Touch'
+        };
+        
+        const choiceDescriptions = {
+          0: 'Increase maximum health by 20. A warrior\'s body is their fortress.',
+          1: 'Increase movement speed by 15%. Strike like lightning, vanish like wind.',
+          2: 'Increase stamina regeneration by 25%. Endurance wins battles.',
+          3: 'Deal 30% more damage when below 50% HP. Fury fuels the desperate.',
+          4: 'Block reduces damage by 10% more. Faith is the strongest shield.',
+          5: 'Heal 15% of damage dealt. The life of your foes becomes yours.'
+        };
+        
+        // Helper Functions
+        const getChoiceName = (type) => choiceNames[type] || `Unknown Boon ${type}`;
+        const getChoiceDesc = (type) => choiceDescriptions[type] || 'Mysterious power awaits...';
+        
+        const getChoiceRarity = (rarity) => {
+          const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+          return rarities[rarity] || 'Common';
+        };
+        
+        const formatTime = (ms) => {
+          const seconds = Math.floor(ms / 1000);
+          const minutes = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        };
+        
+        // Modal Population Functions
+        const populateChoiceModal = () => {
+          const modal = document.getElementById('choiceModal');
+          if (!gameLoop || !gameLoop.wasmModule) {
+            return;
+          }
+          
+          const wasmModule = gameLoop.wasmModule;
+          const choiceCount = wasmModule.get_choice_count?.() || 3;
+          
+          let choicesHtml = '';
+          for (let i = 0; i < Math.min(choiceCount, 3); i++) {
+            const id = wasmModule.get_choice_id?.(i) ?? i;
+            const type = wasmModule.get_choice_type?.(i) ?? i;
+            const rarity = wasmModule.get_choice_rarity?.(i) ?? 0;
+            
+            choicesHtml += `
+              <div class="card" onclick="selectChoice(${id})" data-choice-key="${i + 1}">
+                <div class="card-title">${getChoiceName(type)}</div>
+                <div class="card-description">${getChoiceDesc(type)}</div>
+                <div class="flavor-text" style="margin-top: 8px; opacity: 0.7; font-size: 12px;">
+                  ${getChoiceRarity(rarity)} • Press ${i + 1} to select
+                </div>
+              </div>
+            `;
+          }
+          
+          modal.innerHTML = `
+            <h2>Choose Your Boon</h2>
+            <p class="modal-subtitle">The dungeon grants you power. Choose wisely.</p>
+            <div class="choices">
+              ${choicesHtml}
+            </div>
+          `;
+        };
+        
+        const populateShopModal = () => {
+          const modal = document.getElementById('shopModal');
+          if (!gameLoop || !gameLoop.wasmModule) {
+            return;
+          }
+          
+          const wasmModule = gameLoop.wasmModule;
+          const gold = wasmModule.get_gold?.() ?? 0;
+          const essence = wasmModule.get_essence?.() ?? 0;
+          const itemCount = wasmModule.get_shop_item_count?.() || 3;
+          
+          let shopHtml = '';
+          for (let i = 0; i < itemCount; i++) {
+            const cost = 50 + (i * 25);
+            const canBuy = gold >= cost;
+            
+            shopHtml += `
+              <div class="card ${canBuy ? '' : 'disabled'}" 
+                   onclick="${canBuy ? `purchaseShopItem(${i})` : ''}"
+                   style="${canBuy ? '' : 'opacity: 0.5; cursor: not-allowed;'}">
+                <div class="card-title">Shop Item ${i + 1}</div>
+                <div class="card-description">
+                  A mysterious merchant's offering. Perhaps it will aid you in the depths below.
+                </div>
+                <div class="flavor-text" style="margin-top: 8px; opacity: 0.9; font-size: 13px; color: #daa520;">
+                  💰 ${cost} Gold ${canBuy ? '' : '(Insufficient)'}
+                </div>
+              </div>
+            `;
+          }
+          
+          modal.innerHTML = `
+            <h2>Merchant's Wares</h2>
+            <p class="modal-subtitle">
+              Gold: <span style="color: #daa520;">${gold}</span> • 
+              Essence: <span style="color: #9370db;">${essence}</span>
+            </p>
+            <div class="shop">
+              ${shopHtml}
+            </div>
+            <div class="modal-footer">
+              <button onclick="closeShopModal()">Leave Merchant</button>
+            </div>
+          `;
+        };
+        
+        // Selection Handlers
+        window.selectChoice = (choiceId) => {
+          if (gameLoop && gameLoop.wasmModule && gameLoop.wasmModule.commit_choice) {
+            gameLoop.wasmModule.commit_choice(choiceId);
+            document.getElementById('choiceModal').classList.remove('active');
+            console.log('[Roguelike] 🎁 Choice selected:', choiceId);
+          }
+        };
+        
+        window.purchaseShopItem = (index) => {
+          if (gameLoop && gameLoop.wasmModule && gameLoop.wasmModule.buy_shop_item) {
+            gameLoop.wasmModule.buy_shop_item(index);
+            console.log('[Roguelike] 💰 Purchased item:', index);
+            populateShopModal();
+          }
+        };
+        
+        window.closeShopModal = () => {
+          document.getElementById('shopModal').classList.remove('active');
+        };
+        
+        // Enhanced UI Update Loop
+        const updateUI = () => {
+          try {
+            if (gameLoop && gameLoop.getState) {
+              const state = gameLoop.getState();
+              
+              // Update HP
+              const hpBar = document.getElementById('hpBar');
+              const hpText = document.getElementById('hpText');
+              if (hpBar && state.player) {
+                const hpPercent = (state.player.hp / state.player.maxHp) * 100;
+                hpBar.style.width = `${hpPercent}%`;
+                if (hpText) {
+                  hpText.textContent = `${Math.round(state.player.hp)} / ${state.player.maxHp}`;
+                }
+              }
+              
+              // Update Stamina
+              const staminaBar = document.getElementById('staminaBar');
+              const staminaText = document.getElementById('staminaText');
+              if (staminaBar && state.player) {
+                const staminaPercent = (state.player.stamina / state.player.maxStamina) * 100;
+                staminaBar.style.width = `${staminaPercent}%`;
+                if (staminaText) {
+                  staminaText.textContent = `${Math.round(state.player.stamina)} / ${state.player.maxStamina}`;
+                }
+              }
+              
+              // Update roguelike game info
+              const phaseText = document.getElementById('phaseText');
+              const waveText = document.getElementById('waveText');
+              const enemiesText = document.getElementById('enemiesText');
+              
+              // Translate phase to roguelike terminology
+              const currentPhase = state.phase?.toLowerCase() || 'combat';
+              if (phaseText) {
+                const phaseMap = {
+                  'explore': 'Exploring',
+                  'fight': 'Battle',
+                  'choose': 'Respite',
+                  'powerup': 'Empowered',
+                  'risk': 'Cursed',
+                  'escalate': 'Crisis',
+                  'cashout': 'Merchant',
+                  'reset': 'Recovering'
+                };
+                phaseText.textContent = phaseMap[currentPhase] || 
+                                       currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1);
+              }
+              
+              // Display as dungeon depth/floor
+              if (waveText && state.wave !== undefined) {
+                waveText.textContent = `Floor ${state.wave}`;
+              }
+              
+              // Count remaining foes
+              if (enemiesText && state.enemies) {
+                const aliveEnemies = state.enemies.filter(e => e.hp > 0).length;
+                enemiesText.textContent = aliveEnemies.toString();
+              }
+              
+              // Update run stats
+              const goldText = document.getElementById('goldText');
+              const essenceText = document.getElementById('essenceText');
+              const runTimeText = document.getElementById('runTimeText');
+              
+              if (gameLoop.wasmModule) {
+                if (goldText && gameLoop.wasmModule.get_gold) {
+                  goldText.textContent = gameLoop.wasmModule.get_gold();
+                }
+                if (essenceText && gameLoop.wasmModule.get_essence) {
+                  essenceText.textContent = gameLoop.wasmModule.get_essence();
+                }
+              }
+              
+              if (runTimeText) {
+                runTimeText.textContent = formatTime(Date.now() - runStartTime);
+              }
+              
+              // Phase-specific UI handling
+              handlePhaseUI(currentPhase);
+              
+              // Check for player death and update counter
+              if (state.player && state.player.hp <= 0) {
+                const currentDeaths = parseInt(localStorage.getItem('dozedent_deaths') || '0', 10);
+                if (currentDeaths === deathCount) {
+                  deathCount++;
+                  localStorage.setItem('dozedent_deaths', deathCount.toString());
+                  document.getElementById('deathCount').textContent = deathCount;
+                  console.log('[Roguelike] ☠️ Another warrior falls. Total deaths:', deathCount);
+                }
+              }
+            }
+          } catch (error) {
+            // Silently handle errors to avoid console spam
+          }
+          
+          requestAnimationFrame(updateUI);
+        };
+        
+        // Phase-specific UI handler
+        const handlePhaseUI = (phase) => {
+          const choiceModal = document.getElementById('choiceModal');
+          const shopModal = document.getElementById('shopModal');
+          const curseIndicators = document.getElementById('curseIndicators');
+          const escalationMeter = document.getElementById('escalationMeter');
+          const minibossHealth = document.getElementById('minibossHealth');
+          
+          // Handle phase transitions
+          if (phase !== lastPhase) {
+            lastPhase = phase;
+            
+            // Hide all phase-specific UI
+            choiceModal.classList.remove('active');
+            shopModal.classList.remove('active');
+            curseIndicators.style.display = 'none';
+            escalationMeter.style.display = 'none';
+            minibossHealth.style.display = 'none';
+            
+            // Show phase-specific UI
+            if (phase === 'choose') {
+              populateChoiceModal();
+              choiceModal.classList.add('active');
+              console.log('[Roguelike] ⚔️ Choice phase - Select your boon');
+            } else if (phase === 'cashout') {
+              populateShopModal();
+              shopModal.classList.add('active');
+              console.log('[Roguelike] 💰 Shop phase - Visit the merchant');
+            }
+          }
+          
+          // Update Risk phase curses
+          if (phase === 'risk' && gameLoop.wasmModule && gameLoop.wasmModule.get_curse_count) {
+            const curseCount = gameLoop.wasmModule.get_curse_count();
+            if (curseCount > 0) {
+              let curseHtml = '<div style="background: rgba(18, 12, 8, 0.92); border: 2px solid rgba(139, 69, 19, 0.6); border-radius: 3px; padding: 8px 12px;">';
+              curseHtml += '<div style="font-family: \'Fira Mono\', monospace; font-size: 11px; font-weight: 700; color: #d4a574; margin-bottom: 4px;">⚠ ACTIVE CURSES</div>';
+              for (let i = 0; i < curseCount; i++) {
+                const curseType = gameLoop.wasmModule.get_curse_type?.(i) ?? 0;
+                curseHtml += `<div style="font-size: 12px; color: #b8986d; margin: 2px 0;">☠ Curse ${curseType}</div>`;
+              }
+              curseHtml += '</div>';
+              curseIndicators.innerHTML = curseHtml;
+              curseIndicators.style.display = 'block';
+            }
+          }
+          
+          // Update Escalate phase difficulty
+          if (phase === 'escalate' && gameLoop.wasmModule && gameLoop.wasmModule.get_escalation_level) {
+            const escalation = gameLoop.wasmModule.get_escalation_level() * 100;
+            escalationMeter.innerHTML = `
+              <div style="font-family: 'Fira Mono', monospace; font-size: 11px; font-weight: 700; color: #d4a574;">
+                ⚔ ESCALATION: ${Math.round(escalation)}%
+              </div>
+            `;
+            escalationMeter.style.display = 'block';
+            
+            // Show miniboss health if active
+            if (gameLoop.wasmModule.get_miniboss_active?.() === 1) {
+              minibossHealth.innerHTML = `
+                <div style="font-family: 'Crimson Text', serif; font-size: 16px; font-weight: 700; color: #d4a574; margin-bottom: 6px; text-align: center;">
+                  ⚔️ ELITE FOE ⚔️
+                </div>
+                <div style="height: 12px; background: rgba(10, 5, 2, 0.8); border-radius: 2px; overflow: hidden; border: 1px solid rgba(80, 60, 40, 0.6);">
+                  <div style="height: 100%; width: 75%; background: linear-gradient(90deg, #8b0000, #dc143c); transition: width 0.3s ease;"></div>
+                </div>
+              `;
+              minibossHealth.style.display = 'block';
+            }
+          }
+        };
+        
+        // Start UI update loop
+        updateUI();
+        
+        // Export run data functionality
         const btnExport = document.getElementById('btnExport');
         if (btnExport) {
           btnExport.addEventListener('click', () => {
             try {
               const replay = gameLoop.exportReplay();
-              const json = JSON.stringify(replay, null, 2);
-              const blob = new Blob([json], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `replay-${Date.now()}.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-              console.log('[Demo] Replay exported:', replay.frameCount, 'frames');
+              if (replay) {
+                const json = JSON.stringify(replay, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `run-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                console.log('[Roguelike] 💾 Run data saved:', replay.frameCount, 'frames');
+              }
             } catch (error) {
-              console.error('[Demo] Failed to export replay:', error);
+              console.error('[Roguelike] ❌ Failed to save run data:', error);
             }
           });
         }
         
+        // Restart button - new run
+        const btnRestart = document.getElementById('btnRestart');
+        if (btnRestart) {
+          btnRestart.addEventListener('click', () => {
+            console.log('[Roguelike] ⟲ Beginning new descent...');
+            location.reload();
+          });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'h' || e.key === 'H' || e.key === '?') {
+            const helpModal = document.getElementById('helpModal');
+            if (helpModal && !helpModal.classList.contains('active')) {
+              helpModal.classList.add('active');
+              console.log('[Roguelike] 📖 Consulting the warrior\'s guide...');
+            }
+          }
+          
+          if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => modal.classList.remove('active'));
+          }
+          
+          // Choice selection shortcuts (1, 2, 3)
+          const choiceModal = document.getElementById('choiceModal');
+          if (choiceModal && choiceModal.classList.contains('active')) {
+            if (e.key === '1' || e.key === '2' || e.key === '3') {
+              const choiceIndex = parseInt(e.key, 10) - 1;
+              if (gameLoop && gameLoop.wasmModule && gameLoop.wasmModule.get_choice_count) {
+                const choiceCount = gameLoop.wasmModule.get_choice_count();
+                if (choiceIndex < choiceCount) {
+                  const choiceId = gameLoop.wasmModule.get_choice_id(choiceIndex);
+                  window.selectChoice(choiceId);
+                  console.log('[Roguelike] ⌨️ Quick-selected choice', e.key);
+                }
+              }
+            }
+          }
+        });
+        
+        console.log('[Roguelike] 💡 Press H or ? for controls, ESC/P to close menus');
+        console.log('[Roguelike] 💡 Press 1/2/3 to quick-select choices when offered');
+        console.log('[Roguelike] ⚔️ Your descent begins. May fortune favor the bold.');
+        
       } catch (error) {
-        console.error('[Demo] 🔴 Failed to start demo:', error);
-        // Error UI is shown by MVPLoop.js
+        console.error('[Roguelike] 🔴 The descent failed:', error);
+        
+        // Show atmospheric error in UI
+        const root = document.getElementById('root');
+        if (root) {
+          const errorDiv = document.createElement('div');
+          errorDiv.style.cssText = `
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(18, 12, 8, 0.98), rgba(12, 8, 5, 0.98));
+            color: #d4a574;
+            font-family: 'Crimson Text', serif;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 32px;
+            text-align: center;
+            z-index: 1000;
+          `;
+          errorDiv.innerHTML = `
+            <div style="max-width: 500px; border: 3px solid #5a4a3a; padding: 32px; border-radius: 4px; background: rgba(26, 18, 10, 0.9);">
+              <div style="font-size: 64px; margin-bottom: 16px;">☠</div>
+              <div style="font-size: 24px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">The Path is Blocked</div>
+              <div style="font-size: 14px; margin-top: 16px; opacity: 0.8; font-style: italic; color: #9a8570;">
+                ${error.message}
+              </div>
+              <div style="font-size: 13px; margin-top: 20px; opacity: 0.7; font-style: italic; color: #9a8570;">
+                "Even the bravest warriors must turn back when the dungeon refuses entry..."
+              </div>
+              <button onclick="location.reload()" style="margin-top: 28px; padding: 14px 28px; background: linear-gradient(180deg, #3a2a1a, #2a1e12); border: 2px solid #5a4a3a; border-radius: 3px; color: #d4c5b0; cursor: pointer; font-weight: 700; font-family: 'Fira Mono', monospace; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
+                ⟲ Try Again
+              </button>
+            </div>
+          `;
+          root.appendChild(errorDiv);
+        }
       }
     })();
   </script>

@@ -113,7 +113,9 @@ function Build-GameWasm {
         # Phase 2B: Advanced wolf state
         "_get_wolf_aggression", "_get_wolf_morale", "_get_wolf_stamina", "_get_wolf_pack_id", "_get_wolf_pack_role", "_get_wolf_limp_severity", "_get_wolf_facing_x", "_get_wolf_facing_y", "_get_pack_wolf_count", "_get_pack_leader_index",
         # Phase 3: Metrics
-        "_get_wolf_body_stretch", "_get_wolf_head_yaw", "_get_wolf_tail_wag", "_get_wolf_attack_success_rate", "_get_pack_coordination_bonus", "_get_player_skill_estimate", "_get_wolf_message_count", "_get_wolf_last_message_type"
+        "_get_wolf_body_stretch", "_get_wolf_head_yaw", "_get_wolf_tail_wag", "_get_wolf_attack_success_rate", "_get_pack_coordination_bonus", "_get_player_skill_estimate", "_get_wolf_message_count", "_get_wolf_last_message_type",
+        # Wolf Animation (Procedural leg IK and body bob)
+        "_get_wolf_leg_x", "_get_wolf_leg_y", "_get_wolf_body_bob", "_get_wolf_head_pitch", "_get_wolf_ear_rotation"
     )
     $exportedFunctionsJson = '["' + ($exportedFunctions -join '","') + '"]'
     $cmd = "em++ $($sourceFiles -join ' ') $flags -Ipublic/src/wasm -Ipublic/src/wasm/managers -Ipublic/src/wasm/coordinators -Ipublic/src/wasm/physics -Ipublic/src/wasm/progression -Ipublic/src/entities -s STANDALONE_WASM=1 -s WASM_BIGINT=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=`"$exportedFunctionsJson`" -o ./public/wasm/game.wasm"

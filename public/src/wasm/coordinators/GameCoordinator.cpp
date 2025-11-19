@@ -265,9 +265,14 @@ void GameCoordinator::process_collision_events() {
 
 void GameCoordinator::handle_wolf_wolf_collision(uint32_t wolf_body_a, uint32_t wolf_body_b, float impulse_magnitude) {
     // Set collision cooldown on both wolves to prevent sticking
-    const float WOLF_COLLISION_COOLDOWN = 0.2f;  // 200ms cooldown for wolf-wolf collisions
+    const float WOLF_COLLISION_COOLDOWN = 0.4f;  // 400ms cooldown for wolf-wolf collisions (increased)
     wolf_manager_.set_wolf_collision_cooldown(wolf_body_a, WOLF_COLLISION_COOLDOWN);
     wolf_manager_.set_wolf_collision_cooldown(wolf_body_b, WOLF_COLLISION_COOLDOWN);
+    
+    #ifdef DEBUG_COLLISIONS
+    printf("[GameCoordinator] Wolf-Wolf collision: bodies %u <-> %u, impulse=%.3f\n", 
+           wolf_body_a, wolf_body_b, impulse_magnitude);
+    #endif
     
     // Wolf-wolf collisions don't deal damage, physics separation is enough
     // The cooldown prevents them from immediately moving back toward the same target
@@ -275,8 +280,13 @@ void GameCoordinator::handle_wolf_wolf_collision(uint32_t wolf_body_a, uint32_t 
 
 void GameCoordinator::handle_player_wolf_collision(uint32_t wolf_body_id, float impulse_magnitude) {
     // Set collision cooldown on the wolf to prevent immediate re-collision
-    const float COLLISION_COOLDOWN = 0.3f;  // 300ms cooldown after collision
+    const float COLLISION_COOLDOWN = 0.5f;  // 500ms cooldown after collision (increased)
     wolf_manager_.set_wolf_collision_cooldown(wolf_body_id, COLLISION_COOLDOWN);
+    
+    #ifdef DEBUG_COLLISIONS
+    printf("[GameCoordinator] Player-Wolf collision: body %u, impulse=%.3f\n", 
+           wolf_body_id, impulse_magnitude);
+    #endif
     
     // Find the wolf that owns this physics body
     int wolf_count = wolf_manager_.get_wolf_count();

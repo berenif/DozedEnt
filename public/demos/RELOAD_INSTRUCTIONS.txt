@@ -1,0 +1,42 @@
+🔄 WASM UPDATED - CACHE CLEAR REQUIRED
+====================================
+
+The wolf attack has been FIXED! Wolves now deal damage to the player.
+
+⚠️ IMPORTANT: You MUST clear your browser cache to see the changes!
+
+HOW TO FORCE RELOAD:
+-------------------
+
+OPTION 1: Hard Refresh (Recommended)
+  • Chrome/Edge:   Ctrl + Shift + R  (or Ctrl + F5)
+  • Firefox:       Ctrl + Shift + R  (or Ctrl + F5)
+  • Safari:        Cmd + Shift + R
+
+OPTION 2: Clear Cache Manually
+  1. Open DevTools (F12)
+  2. Right-click the refresh button
+  3. Select "Empty Cache and Hard Reload"
+
+OPTION 3: Use Incognito/Private Mode
+  • Chrome:  Ctrl + Shift + N
+  • Firefox: Ctrl + Shift + P
+  • Edge:    Ctrl + Shift + N
+
+VERIFICATION:
+------------
+After reloading, you should see:
+✅ HP bar decreases when wolves attack
+✅ Wolves enter "Attack" state and lunge
+✅ Damage dealt during execute phase (not recovery)
+
+WHAT WAS FIXED:
+--------------
+Wolf attacks were executing animations but NOT dealing damage.
+The fix adds the actual damage call to PlayerManager during the attack execute phase.
+
+File updated: public/wasm/game.wasm
+Last modified: Friday, November 14, 2025 11:32:59 PM
+MD5 Hash: EAC6D8597C8B1AFB230BF670B08D5CCA
+
+Test URL: file:///C:/Users/flori/Desktop/DozedEnt/public/demos/core-loop-mvp.html

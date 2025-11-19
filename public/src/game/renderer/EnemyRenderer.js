@@ -5,6 +5,36 @@ export class EnemyRenderer {
   constructor(canvas) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d', { alpha: false })
+    this.wolfAnimEnabled = false
+    this.wasmExports = null
+  }
+
+  /**
+   * Initialize WASM animation support (called by RenderingCoordinator)
+   * @param {Object} wasmExports - WASM module exports
+   */
+  setWasmModule(wasmExports) {
+    // Check feature flag
+    const urlParams = new URLSearchParams(window.location.search)
+    const flagEnabled = urlParams.get('wolfAnim') === 'true'
+    
+    if (!flagEnabled) {
+      console.log('[WolfAnim] Feature flag disabled (use ?wolfAnim=true)')
+      return
+    }
+    
+    // Verify required exports exist
+    const required = ['get_wolf_leg_x', 'get_wolf_leg_y', 'get_wolf_body_bob']
+    const missing = required.filter(fn => typeof wasmExports[fn] !== 'function')
+    
+    if (missing.length > 0) {
+      console.warn('[WolfAnim] Missing exports, falling back to circles:', missing)
+      this.wolfAnimEnabled = false
+    } else {
+      this.wolfAnimEnabled = true
+      this.wasmExports = wasmExports
+      console.log('[WolfAnim] Enabled with WASM animation data')
+    }
   }
 
   worldToCanvas(wx, wy) {
@@ -97,10 +127,11 @@ export class EnemyRenderer {
         const wolfType = Number(ex.get_wolf_type?.(i) ?? 0)
         const packId = Number(ex.get_wolf_pack_id?.(i) ?? 0)
         
-        this.renderEnemy(x, y, stateId, emotionId, wolfType, packId)
+        this.renderEnemy(x, y, stateId, emotionId, wolfType, packId, i)
       }
-    } catch (_e) {
-      // Silently handle WASM errors
+    } catch (error) {
+      // Log rendering errors for debugging (non-critical, so warn not error)
+      console.warn('[EnemyRenderer] Failed to render enemies:', error.message)
     }
   }
 
@@ -143,23 +174,111 @@ export class EnemyRenderer {
     }
   }
 
-  renderEnemy(x, y, stateId, emotionId, wolfType, packId) {
+  renderEnemy(x, y, stateId, emotionId, wolfType, packId, index = -1) {
     const pos = this.worldToCanvas(x, y)
-    const stateName = this.enemyStateToString(stateId)
-    const stateColor = this.getEnemyColor(stateId)
+    
+    // Enhanced rendering with WASM animation data
+    if (this.wolfAnimEnabled && this.wasmExports && index >= 0) {
+      this.renderAnimatedWolf(pos, index, stateId, emotionId, packId)
+    } else {
+      // Fallback: simple circle (existing code)
+      const stateName = this.enemyStateToString(stateId)
+      const stateColor = this.getEnemyColor(stateId)
 
-    // Render enemy circle with state-based color
-    this.ctx.fillStyle = stateColor
+      // Render enemy circle with state-based color
+      this.ctx.fillStyle = stateColor
+      this.ctx.beginPath()
+      this.ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2)
+      this.ctx.fill()
+      
+      // Render emotion ring if not calm
+      if (emotionId && emotionId !== 0) {
+        this.ctx.strokeStyle = this.getEmotionColor(emotionId)
+        this.ctx.lineWidth = 2
+        this.ctx.beginPath()
+        this.ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
+        this.ctx.stroke()
+      }
+      
+      // Render pack ID indicator
+      if (packId && packId !== 0) {
+        this.ctx.fillStyle = '#ffffff'
+        this.ctx.font = 'bold 10px sans-serif'
+        this.ctx.textAlign = 'center'
+        this.ctx.textBaseline = 'middle'
+        this.ctx.fillText(`P${packId}`, pos.x, pos.y)
+      }
+
+      // Render state label
+      this.ctx.fillStyle = '#e6f2ff'
+      this.ctx.font = '11px sans-serif'
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'top'
+      this.ctx.fillText(stateName, pos.x, pos.y + 14)
+      
+      // Render emotion label if present
+      if (emotionId && emotionId !== 0) {
+        const emotionName = this.getEmotionString(emotionId)
+        this.ctx.fillStyle = this.getEmotionColor(emotionId)
+        this.ctx.font = '9px sans-serif'
+        this.ctx.fillText(emotionName, pos.x, pos.y + 26)
+      }
+    }
+  }
+
+  renderAnimatedWolf(pos, index, stateId, emotionId, packId) {
+    const ex = this.wasmExports
+    
+    // Read animation data from WASM
+    const bodyBob = ex.get_wolf_body_bob(index)
+    const headPitch = ex.get_wolf_head_pitch(index)
+    const headYaw = ex.get_wolf_head_yaw(index)
+    const tailWag = ex.get_wolf_tail_wag(index)
+    const bodyStretch = ex.get_wolf_body_stretch(index)
+    
+    // Validate all data is finite
+    if (!Number.isFinite(bodyBob) || !Number.isFinite(headYaw)) {
+      console.warn('[WolfAnim] Invalid data from WASM, falling back')
+      this.wolfAnimEnabled = false
+      return
+    }
+    
+    // For MVP: render enhanced circle with animation indicators
+    this.ctx.save()
+    this.ctx.translate(pos.x, pos.y + bodyBob * 20) // Apply body bob
+    
+    // Body (stretched circle)
+    this.ctx.fillStyle = this.getEnemyColor(stateId)
+    this.ctx.scale(bodyStretch, 1.0)
     this.ctx.beginPath()
-    this.ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2)
+    this.ctx.arc(0, 0, 12, 0, Math.PI * 2)
     this.ctx.fill()
+    this.ctx.scale(1.0 / bodyStretch, 1.0)
+    
+    // Head direction indicator
+    const headLen = 15
+    this.ctx.strokeStyle = '#ffffff'
+    this.ctx.lineWidth = 2
+    this.ctx.beginPath()
+    this.ctx.moveTo(0, 0)
+    this.ctx.lineTo(Math.cos(headYaw) * headLen, Math.sin(headYaw) * headLen)
+    this.ctx.stroke()
+    
+    // Tail indicator
+    const tailLen = 10
+    const tailAngle = headYaw + Math.PI + tailWag
+    this.ctx.strokeStyle = '#aaaaaa'
+    this.ctx.beginPath()
+    this.ctx.moveTo(0, 0)
+    this.ctx.lineTo(Math.cos(tailAngle) * tailLen, Math.sin(tailAngle) * tailLen)
+    this.ctx.stroke()
     
     // Render emotion ring if not calm
     if (emotionId && emotionId !== 0) {
       this.ctx.strokeStyle = this.getEmotionColor(emotionId)
       this.ctx.lineWidth = 2
       this.ctx.beginPath()
-      this.ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
+      this.ctx.arc(0, 0, 14, 0, Math.PI * 2)
       this.ctx.stroke()
     }
     
@@ -169,22 +288,17 @@ export class EnemyRenderer {
       this.ctx.font = 'bold 10px sans-serif'
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'middle'
-      this.ctx.fillText(`P${packId}`, pos.x, pos.y)
+      this.ctx.fillText(`P${packId}`, 0, 0)
     }
-
-    // Render state label
+    
+    this.ctx.restore()
+    
+    // Render state label (outside transform)
+    const stateName = this.enemyStateToString(stateId)
     this.ctx.fillStyle = '#e6f2ff'
     this.ctx.font = '11px sans-serif'
     this.ctx.textAlign = 'center'
     this.ctx.textBaseline = 'top'
-    this.ctx.fillText(stateName, pos.x, pos.y + 14)
-    
-    // Render emotion label if present
-    if (emotionId && emotionId !== 0) {
-      const emotionName = this.getEmotionString(emotionId)
-      this.ctx.fillStyle = this.getEmotionColor(emotionId)
-      this.ctx.font = '9px sans-serif'
-      this.ctx.fillText(emotionName, pos.x, pos.y + 26)
-    }
+    this.ctx.fillText(stateName, pos.x, pos.y + 18)
   }
 }

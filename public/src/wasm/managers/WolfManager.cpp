@@ -300,7 +300,10 @@ void WolfManager::move_towards_player(Wolf& wolf, float delta_time) {
     
     Fixed distance = fixed_sqrt(dx * dx + dy * dy);
     
-    if (distance > Fixed::from_int(0)) {
+    // Stop approaching when within attack range (prevent overlap)
+    Fixed min_distance = Fixed::from_float(wolf.attack_range * 0.9f);
+    
+    if (distance > min_distance) {
         wolf.facing_x = dx / distance;
         wolf.facing_y = dy / distance;
         
@@ -310,6 +313,10 @@ void WolfManager::move_towards_player(Wolf& wolf, float delta_time) {
             wolf.vx = wolf.facing_x * move_speed;
             wolf.vy = wolf.facing_y * move_speed;
         }
+    } else {
+        // Within attack range - stop moving (or slow down significantly)
+        wolf.vx *= Fixed::from_float(0.8f);
+        wolf.vy *= Fixed::from_float(0.8f);
     }
 }
 
@@ -399,14 +406,18 @@ void WolfManager::update_wolf_physics(Wolf& wolf, float delta_time) {
         auto* body = physics_mgr.get_body(wolf.physics_body_id);
         
         if (body) {
-            // Update physics body velocity based on wolf AI
-            physics_mgr.set_velocity(wolf.physics_body_id, FixedVector3::from_floats(wolf.vx.to_float(), wolf.vy.to_float(), 0.0f));
+            // Only update physics velocity if NOT in collision cooldown
+            // This allows physics separation to take effect without AI overriding it
+            if (wolf.collision_cooldown <= 0.0f) {
+                // Update physics body velocity based on wolf AI
+                physics_mgr.set_velocity(wolf.physics_body_id, FixedVector3::from_floats(wolf.vx.to_float(), wolf.vy.to_float(), 0.0f));
+            }
             
-            // Read back position from physics (handles collision resolution)
+            // Always read back position from physics (handles collision resolution)
             wolf.x = body->position.x;
             wolf.y = body->position.y;
             
-            // Read back velocity from physics (handles collision response)
+            // Always read back velocity from physics (handles collision response)
             wolf.vx = body->velocity.x;
             wolf.vy = body->velocity.y;
         }
@@ -999,6 +1010,38 @@ void WolfManager::update_wolf_animation(Wolf& wolf, float delta_time) {
     // Apply ear rotation to both ears
     wolf.ear_rotation[0] += (target_ear_rotation - wolf.ear_rotation[0]) * delta_time * anim_speed;
     wolf.ear_rotation[1] += (target_ear_rotation - wolf.ear_rotation[1]) * delta_time * anim_speed;
+    
+    // ===== NEW: Procedural Leg IK & Body Bob =====
+    float speed = sqrtf(wolf.vx.to_float() * wolf.vx.to_float() + 
+                        wolf.vy.to_float() * wolf.vy.to_float());
+    
+    // Update per-wolf animation phase (deterministic)
+    if (!coordinator_) return;
+    float freq = (speed > 0.15f) ? 0.015f : 0.008f;
+    wolf.anim_phase += delta_time * freq;
+    
+    // Quadruped gait - offset each leg by 90 degrees
+    const float phase_offsets[4] = {0.0f, 3.14159f, 1.5708f, 4.71239f}; // 0, π, π/2, 3π/2
+    const float leg_id_offsets[4] = {0.0f, 0.5f, 0.25f, 0.75f}; // Per-wolf variation
+    
+    for (int i = 0; i < 4; i++) {
+        float phase = wolf.anim_phase + phase_offsets[i] + (wolf.id * leg_id_offsets[i]);
+        
+        // X: horizontal stride (forward/back)
+        wolf.leg_positions[i][0] = sinf(phase) * 0.25f * speed;
+        
+        // Y: vertical lift (ground contact = 0, max lift = 0.15)
+        float raw_lift = sinf(phase * 2.0f);
+        wolf.leg_positions[i][1] = (raw_lift > 0.0f) ? raw_lift * 0.15f : 0.0f;
+    }
+    
+    // Body bob - vertical oscillation during movement
+    wolf.body_bob = (speed > 0.05f) ? sinf(wolf.anim_phase * 2.0f) * 0.08f * speed : 0.0f;
+    
+    // Update head_yaw to track movement direction (already have head_pitch from existing code)
+    if (speed > 0.05f) {
+        wolf.head_yaw = atan2f(wolf.vy.to_float(), wolf.vx.to_float());
+    }
 }
 
 // ============================================================================
@@ -1313,6 +1356,53 @@ bool WolfManager::check_interrupt_conditions(Wolf& wolf, WolfState& out_new_stat
     }
     
     return false;
+}
+
+// ============================================================================
+// ANIMATION STATE GETTERS (for WASM exports)
+// ============================================================================
+
+float WolfManager::get_wolf_leg_x(int index, int leg) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size()) || 
+        leg < 0 || leg >= 4) return 0.0f;
+    return wolves_[index].leg_positions[leg][0];
+}
+
+float WolfManager::get_wolf_leg_y(int index, int leg) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size()) || 
+        leg < 0 || leg >= 4) return 0.0f;
+    return wolves_[index].leg_positions[leg][1];
+}
+
+float WolfManager::get_wolf_body_bob(int index) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size())) return 0.0f;
+    return wolves_[index].body_bob;
+}
+
+float WolfManager::get_wolf_head_pitch(int index) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size())) return 0.0f;
+    return wolves_[index].head_pitch;
+}
+
+float WolfManager::get_wolf_head_yaw(int index) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size())) return 0.0f;
+    return wolves_[index].head_yaw;
+}
+
+float WolfManager::get_wolf_tail_wag(int index) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size())) return 0.0f;
+    return wolves_[index].tail_wag;
+}
+
+float WolfManager::get_wolf_ear_rotation(int index, int ear) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size()) || 
+        ear < 0 || ear >= 2) return 0.0f;
+    return wolves_[index].ear_rotation[ear];
+}
+
+float WolfManager::get_wolf_body_stretch(int index) const {
+    if (index < 0 || index >= static_cast<int>(wolves_.size())) return 0.0f;
+    return wolves_[index].body_stretch;
 }
 
 

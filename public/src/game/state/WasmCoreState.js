@@ -54,6 +54,19 @@ export class WasmCoreState {
   update() {
     this.frameCount++
     
+    // Check WASM readiness before attempting to read state
+    if (!this.wasmApi || !this.exports) {
+      console.warn('[WasmCoreState] WASM not ready, skipping state update')
+      this.snapshot.validated = false
+      return
+    }
+
+    if (typeof this.wasmApi.getPlayerState !== 'function') {
+      console.warn('[WasmCoreState] getPlayerState function not available')
+      this.snapshot.validated = false
+      return
+    }
+    
     try {
       // Read player state from WASM
       const playerState = this.wasmApi.getPlayerState()

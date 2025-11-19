@@ -4,11 +4,30 @@
 export class InputMapper {
   constructor() {
     this.keys = Object.create(null)
+    this.keydownHandler = null
+    this.keyupHandler = null
   }
 
   attach() {
-    window.addEventListener('keydown', (e) => { this.keys[e.key.toLowerCase()] = true })
-    window.addEventListener('keyup', (e) => { this.keys[e.key.toLowerCase()] = false })
+    // Store handlers for cleanup
+    this.keydownHandler = (e) => { this.keys[e.key.toLowerCase()] = true }
+    this.keyupHandler = (e) => { this.keys[e.key.toLowerCase()] = false }
+    
+    window.addEventListener('keydown', this.keydownHandler)
+    window.addEventListener('keyup', this.keyupHandler)
+  }
+
+  detach() {
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler)
+      this.keydownHandler = null
+    }
+    if (this.keyupHandler) {
+      window.removeEventListener('keyup', this.keyupHandler)
+      this.keyupHandler = null
+    }
+    // Clear key state
+    this.keys = Object.create(null)
   }
 
   axisX() {

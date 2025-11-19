@@ -72,11 +72,23 @@ export class StateCoordinator {
   _validatePhysics() {
     const pos = this.wasmState.getPlayerPosition()
     
+    // Validate position object structure
+    if (!pos || typeof pos !== 'object') {
+      console.error('[StateCoordinator] 🔴 PHYSICS VALIDATION FAILED: Position is not an object')
+      return
+    }
+
+    if (!('x' in pos) || !('y' in pos)) {
+      console.error('[StateCoordinator] 🔴 PHYSICS VALIDATION FAILED: Position missing x or y properties')
+      return
+    }
+    
     // Check for NaN corruption (indicates JS physics or WASM error)
     if (!Number.isFinite(pos.x) || !Number.isFinite(pos.y)) {
       console.error('[StateCoordinator] 🔴 PHYSICS VALIDATION FAILED: Position is NaN')
       console.error('This indicates JS physics interference or WASM corruption')
       console.trace('Position corruption trace:')
+      return
     }
     
     // Check for impossible teleportation (indicates position override)

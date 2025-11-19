@@ -124,6 +124,8 @@ struct Wolf {
     float tail_wag = 0.0f;
     float ear_rotation[2] = {0.0f, 0.0f};
     float leg_positions[4][2] = {{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
+    float body_bob = 0.0f;          // Vertical body offset for locomotion
+    float anim_phase = 0.0f;        // Per-wolf animation phase offset
 
     float decision_interval = 0.15f;
     float health_at_state_enter = 100.0f;

@@ -111,7 +111,13 @@ export class GameLoopCoordinator {
     this.abilityCoordinator.update(deltaTime)
 
     // 3. Update WASM simulation (physics happens here)
-    this.wasmApi.update(deltaTime)
+    if (typeof this.wasmApi.update === 'function') {
+      this.wasmApi.update(deltaTime)
+    } else if (typeof this.wasmApi.exports?.update === 'function') {
+      this.wasmApi.exports.update(deltaTime)
+    } else {
+      console.error('[GameLoopCoordinator] WASM update function not found')
+    }
 
     // 4. Update state snapshot (once per frame)
     this.stateCoordinator.update()

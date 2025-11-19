@@ -296,14 +296,22 @@ void WolfManager::update_attack_behavior(Wolf& wolf, float delta_time) {
         // Execute phase - lunge
         wolf.body_stretch = 1.3f;
         
-        // Check if player is in range
+        // Check if player is in range and hasn't been hit yet this attack
         if (is_player_in_attack_range(wolf) && coordinator_) {
-            // Apply damage with type-specific multiplier
-            float final_damage = wolf.damage * damage_multiplier;
-            // Note: This would integrate with the combat system
-            // For now, just track the attempt
-            wolf.successful_attacks++; // Simplified
-            total_attacks_++;
+            // Only deal damage once per attack (check if we just entered execute phase)
+            bool just_entered_execute = (time_remaining + delta_time) > (execute_time + recovery_time);
+            
+            if (just_entered_execute) {
+                // Apply damage with type-specific multiplier
+                float final_damage = wolf.damage * damage_multiplier;
+                
+                // Deal damage to player through coordinator
+                coordinator_->get_player_manager().take_damage(final_damage);
+                
+                // Track successful hit
+                wolf.successful_attacks++;
+                total_attacks_++;
+            }
         }
     } 
     else {

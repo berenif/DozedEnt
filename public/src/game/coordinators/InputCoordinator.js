@@ -117,7 +117,9 @@ export class InputCoordinator {
    * Clean up input listeners
    */
   dispose() {
-    // TODO: Add detach method to InputMapper
+    if (this.inputMapper && typeof this.inputMapper.detach === 'function') {
+      this.inputMapper.detach()
+    }
   }
 }
 

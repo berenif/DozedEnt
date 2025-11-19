@@ -987,29 +987,45 @@ float get_wolf_facing_y(int index) {
     return wolf ? wolf->facing_y.to_float() : 0.0f;
 }
 
-// Animation data exports (for JS rendering)
+// Animation data exports (for JS rendering) - Enhanced with procedural animation
 __attribute__((export_name("get_wolf_body_stretch")))
 float get_wolf_body_stretch(int index) {
-    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
-    return wolf ? wolf->body_stretch : 1.0f;
+    return g_coordinator.get_wolf_manager().get_wolf_body_stretch(index);
 }
 
 __attribute__((export_name("get_wolf_head_pitch")))
 float get_wolf_head_pitch(int index) {
-    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
-    return wolf ? wolf->head_pitch : 0.0f;
+    return g_coordinator.get_wolf_manager().get_wolf_head_pitch(index);
 }
 
 __attribute__((export_name("get_wolf_head_yaw")))
 float get_wolf_head_yaw(int index) {
-    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
-    return wolf ? wolf->head_yaw : 0.0f;
+    return g_coordinator.get_wolf_manager().get_wolf_head_yaw(index);
 }
 
 __attribute__((export_name("get_wolf_tail_wag")))
 float get_wolf_tail_wag(int index) {
-    const Wolf* wolf = g_coordinator.get_wolf_manager().get_wolf(index);
-    return wolf ? wolf->tail_wag : 0.0f;
+    return g_coordinator.get_wolf_manager().get_wolf_tail_wag(index);
+}
+
+__attribute__((export_name("get_wolf_body_bob")))
+float get_wolf_body_bob(int index) {
+    return g_coordinator.get_wolf_manager().get_wolf_body_bob(index);
+}
+
+__attribute__((export_name("get_wolf_ear_rotation")))
+float get_wolf_ear_rotation(int index, int ear) {
+    return g_coordinator.get_wolf_manager().get_wolf_ear_rotation(index, ear);
+}
+
+__attribute__((export_name("get_wolf_leg_x")))
+float get_wolf_leg_x(int index, int leg) {
+    return g_coordinator.get_wolf_manager().get_wolf_leg_x(index, leg);
+}
+
+__attribute__((export_name("get_wolf_leg_y")))
+float get_wolf_leg_y(int index, int leg) {
+    return g_coordinator.get_wolf_manager().get_wolf_leg_y(index, leg);
 }
 
 __attribute__((export_name("get_enemy_vx")))

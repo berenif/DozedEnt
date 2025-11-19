@@ -58,6 +58,16 @@ public:
     // Pack info queries (for WASM exports)
     int get_pack_count() const { return static_cast<int>(packs_.size()); }
     const Pack* get_pack(int index) const;
+    
+    // Animation state getters (for WASM exports)
+    float get_wolf_leg_x(int index, int leg) const;
+    float get_wolf_leg_y(int index, int leg) const;
+    float get_wolf_body_bob(int index) const;
+    float get_wolf_head_pitch(int index) const;
+    float get_wolf_head_yaw(int index) const;
+    float get_wolf_tail_wag(int index) const;
+    float get_wolf_ear_rotation(int index, int ear) const;
+    float get_wolf_body_stretch(int index) const;
 
 private:
     GameCoordinator* coordinator_ = nullptr;

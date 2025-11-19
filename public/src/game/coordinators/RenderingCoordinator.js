@@ -20,6 +20,7 @@ export class RenderingCoordinator {
     this.canvas = canvas
     this.gameRenderer = new GameRenderer(canvas)
     this.enemyRenderer = new EnemyRenderer(canvas)
+    this.wasmModuleInitialized = false
   }
 
   /**
@@ -28,14 +29,35 @@ export class RenderingCoordinator {
    * @param {Object} wasmApi - WASM API (for enemy renderer compatibility)
    */
   render(wasmState, wasmApi) {
+    // Validate required parameters
+    if (!wasmState) {
+      console.error('[RenderingCoordinator] wasmState is null, skipping render')
+      return
+    }
+
+    if (!wasmApi) {
+      console.error('[RenderingCoordinator] wasmApi is null, skipping render')
+      return
+    }
+
+    // Initialize WASM module on first render
+    if (!this.wasmModuleInitialized && wasmApi?.exports) {
+      this.enemyRenderer.setWasmModule(wasmApi.exports)
+      this.wasmModuleInitialized = true
+    }
+
     // Clear canvas
     this.gameRenderer.clear()
 
     // Get player state from centralized facade
-    const playerState = wasmState.getPlayerState()
+    try {
+      const playerState = wasmState.getPlayerState()
 
-    // Render player
-    this.gameRenderer.renderPlayer(playerState)
+      // Render player
+      this.gameRenderer.renderPlayer(playerState)
+    } catch (error) {
+      console.error('[RenderingCoordinator] Failed to render player:', error)
+    }
 
     // Render enemies (TODO: refactor EnemyRenderer to use wasmState instead of wasmApi)
     this.enemyRenderer.renderEnemies(wasmApi)
