@@ -1,6 +1,7 @@
 #include "PhysicsManager.h"
 #include <algorithm>
 #include "CollisionLayers.h"
+#include "CollisionResolver.h"
 #include "PhysicsEvents.h"
 #include "SpatialHash.h"
 #include "ForceField.h"
@@ -25,6 +26,7 @@ PhysicsManager::~PhysicsManager() {
 void PhysicsManager::initialize(const PhysicsConfig& config) {
     config_ = config;
     bodies_.clear();
+    body_id_to_index_.clear();
     bodies_.reserve(config.max_bodies);
     tick_accumulator_ = 0;
     next_body_id_ = 1;
@@ -40,11 +42,15 @@ void PhysicsManager::initialize(const PhysicsConfig& config) {
     player_body.radius = Fixed::from_float(0.05f);
     player_body.collision_layer = CollisionLayers::Player;
     player_body.collision_mask = CollisionLayers::Enemy | CollisionLayers::Environment;
+    body_id_to_index_[player_body.id] = bodies_.size();
     bodies_.push_back(player_body);
 }
 
 void PhysicsManager::reset() {
     bodies_.clear();
+    body_id_to_index_.clear();
+    distance_constraints_.clear();
+    range_constraints_.clear();
     tick_accumulator_ = 0;
     next_body_id_ = 1;
     
@@ -59,6 +65,7 @@ void PhysicsManager::reset() {
     player_body.radius = Fixed::from_float(0.05f);
     player_body.collision_layer = CollisionLayers::Player;
     player_body.collision_mask = CollisionLayers::Enemy | CollisionLayers::Environment;
+    body_id_to_index_[player_body.id] = bodies_.size();
     bodies_.push_back(player_body);
 }
 
@@ -109,8 +116,11 @@ void PhysicsManager::integrate_forces(Fixed dt) {
             continue;
         }
         
-        // Apply accumulated acceleration and gravity to velocity
-        FixedVector3 total_accel = body.acceleration + config_.gravity;
+        // For Kinematic bodies, skip gravity but still apply drag and integrate
+        FixedVector3 total_accel = body.acceleration;
+        if (body.type == BodyType::Dynamic) {
+            total_accel += config_.gravity;
+        }
         body.velocity += total_accel * dt;
         
         // Clear acceleration (forces are applied for one frame only)
@@ -124,8 +134,13 @@ void PhysicsManager::integrate_forces(Fixed dt) {
         Fixed max_speed_sq = config_.max_velocity * config_.max_velocity;
         
         if (speed_sq > max_speed_sq) {
-            Fixed speed = fixed_sqrt(speed_sq);
             body.velocity = body.velocity.normalized() * config_.max_velocity;
+        }
+        
+        // Stop very small velocities to allow sleeping
+        Fixed min_velocity_threshold = Fixed::from_float(0.001f);
+        if (speed_sq < min_velocity_threshold * min_velocity_threshold) {
+            body.velocity = FixedVector3::zero();
         }
         
         // Integrate velocity to position
@@ -176,6 +191,7 @@ void PhysicsManager::update_sleeping_bodies(int32_t timestep_micros) {
 uint32_t PhysicsManager::create_body(const RigidBody& body) {
     RigidBody new_body = body;
     new_body.id = generate_body_id();
+    body_id_to_index_[new_body.id] = bodies_.size();
     bodies_.push_back(new_body);
     return new_body.id;
 }
@@ -194,16 +210,47 @@ uint32_t PhysicsManager::create_wolf_body(float x, float y, float radius) {
     wolf_body.velocity = FixedVector3::zero();
     wolf_body.acceleration = FixedVector3::zero();
     
+    body_id_to_index_[wolf_body.id] = bodies_.size();
     bodies_.push_back(wolf_body);
     return wolf_body.id;
 }
 
 void PhysicsManager::destroy_body(uint32_t id) {
-    bodies_.erase(
-        std::remove_if(bodies_.begin(), bodies_.end(),
-            [id](const RigidBody& b) { return b.id == id; }),
-        bodies_.end()
+    // Remove any constraints referencing this body
+    distance_constraints_.erase(
+        std::remove_if(distance_constraints_.begin(), distance_constraints_.end(),
+            [id](const DistanceConstraint& c) {
+                return c.bodyA == id || c.bodyB == id;
+            }),
+        distance_constraints_.end()
     );
+    
+    range_constraints_.erase(
+        std::remove_if(range_constraints_.begin(), range_constraints_.end(),
+            [id](const DistanceRangeConstraint& c) {
+                return c.bodyA == id || c.bodyB == id;
+            }),
+        range_constraints_.end()
+    );
+    
+    // Find the body's index
+    auto map_it = body_id_to_index_.find(id);
+    if (map_it == body_id_to_index_.end()) {
+        return;
+    }
+    
+    size_t index = map_it->second;
+    
+    // If not the last element, swap with last and update index
+    if (index < bodies_.size() - 1) {
+        uint32_t last_id = bodies_.back().id;
+        std::swap(bodies_[index], bodies_.back());
+        body_id_to_index_[last_id] = index;
+    }
+    
+    // Remove from map and vector
+    body_id_to_index_.erase(id);
+    bodies_.pop_back();
 }
 
 RigidBody* PhysicsManager::get_body(uint32_t id) {
@@ -215,21 +262,19 @@ const RigidBody* PhysicsManager::get_body(uint32_t id) const {
 }
 
 RigidBody* PhysicsManager::find_body(uint32_t id) {
-    for (auto& body : bodies_) {
-        if (body.id == id) {
-            return &body;
-        }
+    auto it = body_id_to_index_.find(id);
+    if (it == body_id_to_index_.end()) {
+        return nullptr;
     }
-    return nullptr;
+    return &bodies_[it->second];
 }
 
 const RigidBody* PhysicsManager::find_body(uint32_t id) const {
-    for (const auto& body : bodies_) {
-        if (body.id == id) {
-            return &body;
-        }
+    auto it = body_id_to_index_.find(id);
+    if (it == body_id_to_index_.end()) {
+        return nullptr;
     }
-    return nullptr;
+    return &bodies_[it->second];
 }
 
 void PhysicsManager::apply_impulse(uint32_t body_id, const FixedVector3& impulse) {
@@ -281,248 +326,86 @@ void PhysicsManager::set_position(uint32_t body_id, const FixedVector3& position
     body->position = position;
 }
 
+void PhysicsManager::resolve_sphere_collision(RigidBody& bodyA, RigidBody& bodyB) {
+    if (CollisionResolver::resolve_sphere_collision(bodyA, bodyB)) {
+        collisions_resolved_++;
+    }
+}
+
 void PhysicsManager::detect_and_resolve_collisions() {
     pairs_checked_ = 0;
     collisions_resolved_ = 0;
-    // Ground collision detection (check all bodies against ground at y=0)
+    
+    // Ground collision detection
     const Fixed GROUND_Y = Fixed::from_int(0);
     const Fixed GROUND_RESTITUTION = Fixed::from_float(0.3f);
     const Fixed GROUND_FRICTION = Fixed::from_float(0.7f);
     
     for (auto& body : bodies_) {
-        // Skip static bodies, but check both Dynamic and Kinematic
-        if (body.type == BodyType::Static) continue;
-        if (body.type == BodyType::Dynamic && body.is_sleeping) continue;
-        
-        // Check if body is below ground level
-        if (body.position.y - body.radius < GROUND_Y) {
-            // Wake the body
-            body.wake();
-            
-            // Calculate overlap with ground
-            Fixed overlap = GROUND_Y - (body.position.y - body.radius);
-            
-            // Move body above ground
-            body.position.y = GROUND_Y + body.radius;
-            
-            // Apply ground collision response
-            if (body.velocity.y < Fixed::from_int(0)) {
-                // Apply restitution (bounce)
-                body.velocity.y *= -GROUND_RESTITUTION;
-                
-                // Apply friction to horizontal velocity
-                body.velocity.x *= GROUND_FRICTION;
-                body.velocity.z *= GROUND_FRICTION;
-            }
-        }
+        CollisionResolver::resolve_ground_collision(
+            body, GROUND_Y, GROUND_RESTITUTION, GROUND_FRICTION);
     }
     
-    // Simple sphere-sphere collision detection and response
-    // Optionally use broadphase to reduce candidate pairs
-    std::vector<std::pair<uint32_t, uint32_t>> potentialPairs;
+    // Sphere-sphere collision detection
     if (use_broadphase_) {
-        if (!spatial_hash_) spatial_hash_ = new SpatialHash();
-        spatial_hash_->update(bodies_);
-        spatial_hash_->getPotentialPairs(bodies_, potentialPairs);
-    }
-
-    if (use_broadphase_ && !potentialPairs.empty()) {
-        // Build an index for body id -> index lookup
-        // Note: ids are not guaranteed to be contiguous
-        for (const auto &p : potentialPairs) {
-            // Find indices for both ids
-            RigidBody *bi = find_body(p.first);
-            RigidBody *bj = find_body(p.second);
-            if (!bi || !bj) continue;
-            if (bi->type == BodyType::Static) continue;
-            if (bj->type == BodyType::Static) continue;
-            if (bi->type == BodyType::Dynamic && bi->is_sleeping) continue;
-            if (bj->type == BodyType::Dynamic && bj->is_sleeping) continue;
-            pairs_checked_++;
-            // Layer/mask filtering
-            if (!shouldCollide(bi->collision_layer, bi->collision_mask, bj->collision_layer, bj->collision_mask)) continue;
-            // Narrow phase
-            FixedVector3 delta = bj->position - bi->position;
-            Fixed dist_sq = delta.length_squared();
-            Fixed combined_radius = bi->radius + bj->radius;
-            Fixed combined_radius_sq = combined_radius * combined_radius;
-            const Fixed MAX_DISTANCE_SQ = Fixed::from_int(1000000);
-            const Fixed MIN_RADIUS = Fixed::from_float(0.001f);
-            if (dist_sq > MAX_DISTANCE_SQ || bi->radius < MIN_RADIUS || bj->radius < MIN_RADIUS) continue;
-            if (dist_sq < combined_radius_sq && dist_sq > Fixed::from_int(0)) {
-                bi->wake();
-                bj->wake();
-                Fixed dist = fixed_sqrt(dist_sq);
-                FixedVector3 normal = delta.normalized();
-                Fixed overlap = combined_radius - dist;
-                
-                // Add separation buffer to prevent bodies getting stuck
-                // Use larger buffer for equal-mass collisions (like wolf-wolf)
-                Fixed mass_ratio = bi->mass / bj->mass;
-                Fixed separation_buffer = Fixed::from_float(0.004f); // Base buffer (increased from 0.002)
-                // Increase buffer for similar mass objects (prevents wolf-wolf sticking)
-                if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
-                    separation_buffer = Fixed::from_float(0.008f); // Extra buffer for similar masses (doubled)
-                }
-                Fixed total_separation = overlap + separation_buffer;
-                
-                Fixed total_inv_mass = bi->inverse_mass + bj->inverse_mass;
-                if (total_inv_mass > Fixed::from_int(0)) {
-                    Fixed ratio_i = bi->inverse_mass / total_inv_mass;
-                    Fixed ratio_j = bj->inverse_mass / total_inv_mass;
-                    *bi = *bi; *bj = *bj; // no-op to keep formatting blocks similar
-                    bi->position -= normal * total_separation * ratio_i;
-                    bj->position += normal * total_separation * ratio_j;
-                    FixedVector3 relative_velocity = bj->velocity - bi->velocity;
-                    Fixed velocity_along_normal = relative_velocity.dot(normal);
-                    if (velocity_along_normal < Fixed::from_int(0)) {
-                        // Restitution coefficient - lower for similar mass collisions
-                        Fixed restitution = Fixed::from_float(0.15f); // Very low bounce
-                        // Even lower for wolf-wolf collisions (similar mass)
-                        if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
-                            restitution = Fixed::from_float(0.05f); // Almost no bounce
-                        }
-                        Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
-                        FixedVector3 impulse = normal * impulse_magnitude;
-                        bi->velocity -= impulse * bi->inverse_mass;
-                        bj->velocity += impulse * bj->inverse_mass;
-                        collisions_resolved_++;
-                        CollisionEvent ev{};
-                        ev.bodyA = bi->id; ev.bodyB = bj->id;
-                        ev.nx = normal.x.to_float(); ev.ny = normal.y.to_float(); ev.nz = normal.z.to_float();
-                        FixedVector3 contact = bi->position + (normal * bi->radius);
-                        ev.px = contact.x.to_float(); ev.py = contact.y.to_float(); ev.pz = contact.z.to_float();
-                        ev.impulse = impulse_magnitude.to_float();
-                        GetPhysicsEventQueue().push(ev);
-                    }
-                }
-            }
-        }
+        detect_collisions_broadphase();
     } else {
-        for (size_t i = 0; i < bodies_.size(); ++i) {
-        // Skip static bodies, but include both Dynamic and Kinematic
-        if (bodies_[i].type == BodyType::Static) continue;
-        if (bodies_[i].type == BodyType::Dynamic && bodies_[i].is_sleeping) continue;
+        detect_collisions_naive();
+    }
+}
+
+void PhysicsManager::detect_collisions_broadphase() {
+    if (!spatial_hash_) {
+        spatial_hash_ = new SpatialHash();
+    }
+    spatial_hash_->update(bodies_);
+    
+    std::vector<std::pair<uint32_t, uint32_t>> potentialPairs;
+    spatial_hash_->getPotentialPairs(bodies_, potentialPairs);
+    
+    for (const auto& pair : potentialPairs) {
+        RigidBody* bodyA = find_body(pair.first);
+        RigidBody* bodyB = find_body(pair.second);
+        
+        if (!bodyA || !bodyB) {
+            continue;
+        }
+        if (!bodyA->should_collide() || !bodyB->should_collide()) {
+            continue;
+        }
+        
+        pairs_checked_++;
+        
+        if (!shouldCollide(bodyA->collision_layer, bodyA->collision_mask,
+                          bodyB->collision_layer, bodyB->collision_mask)) {
+            continue;
+        }
+        
+        resolve_sphere_collision(*bodyA, *bodyB);
+    }
+}
+
+void PhysicsManager::detect_collisions_naive() {
+    for (size_t i = 0; i < bodies_.size(); ++i) {
+        if (!bodies_[i].should_collide()) {
+            continue;
+        }
         
         for (size_t j = i + 1; j < bodies_.size(); ++j) {
-            // Skip static bodies, but include both Dynamic and Kinematic
-            if (bodies_[j].type == BodyType::Static) continue;
-            if (bodies_[j].type == BodyType::Dynamic && bodies_[j].is_sleeping) continue;
-            pairs_checked_++;
-            // Collision layer/mask filtering (cheap bitmask test before math)
-            if (!shouldCollide(
-                bodies_[i].collision_layer, bodies_[i].collision_mask,
-                bodies_[j].collision_layer, bodies_[j].collision_mask)) {
+            if (!bodies_[j].should_collide()) {
                 continue;
             }
             
-            // Calculate distance between bodies
-            FixedVector3 delta = bodies_[j].position - bodies_[i].position;
-            Fixed dist_sq = delta.length_squared();
-            Fixed combined_radius = bodies_[i].radius + bodies_[j].radius;
-            Fixed combined_radius_sq = combined_radius * combined_radius;
+            pairs_checked_++;
             
-            // Bounds checking for extreme values
-            const Fixed MAX_DISTANCE_SQ = Fixed::from_int(1000000); // 1000 units max distance
-            const Fixed MIN_RADIUS = Fixed::from_float(0.001f); // Minimum reasonable radius
-            
-            if (dist_sq > MAX_DISTANCE_SQ || 
-                bodies_[i].radius < MIN_RADIUS || 
-                bodies_[j].radius < MIN_RADIUS) {
-                continue; // Skip this collision pair
+            if (!shouldCollide(bodies_[i].collision_layer, bodies_[i].collision_mask,
+                              bodies_[j].collision_layer, bodies_[j].collision_mask)) {
+                continue;
             }
             
-            // Check for collision
-            if (dist_sq < combined_radius_sq && dist_sq > Fixed::from_int(0)) {
-                // Wake both bodies
-                bodies_[i].wake();
-                bodies_[j].wake();
-                
-                // Calculate collision normal
-                Fixed dist = fixed_sqrt(dist_sq);
-                FixedVector3 normal = delta.normalized();
-                
-                // Calculate overlap amount
-                Fixed overlap = combined_radius - dist;
-                
-                // Add separation buffer to prevent bodies getting stuck
-                // Use larger buffer for equal-mass collisions (like wolf-wolf)
-                Fixed mass_ratio = bodies_[i].mass / bodies_[j].mass;
-                Fixed separation_buffer = Fixed::from_float(0.004f); // Base buffer (increased from 0.002)
-                // Increase buffer for similar mass objects (prevents wolf-wolf sticking)
-                if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
-                    separation_buffer = Fixed::from_float(0.008f); // Extra buffer for similar masses (doubled)
-                }
-                Fixed total_separation = overlap + separation_buffer;
-                
-                // Separate bodies (proportional to inverse mass)
-                Fixed total_inv_mass = bodies_[i].inverse_mass + bodies_[j].inverse_mass;
-                if (total_inv_mass > Fixed::from_int(0)) {
-                    Fixed ratio_i = bodies_[i].inverse_mass / total_inv_mass;
-                    Fixed ratio_j = bodies_[j].inverse_mass / total_inv_mass;
-                    
-                    bodies_[i].position -= normal * total_separation * ratio_i;
-                    bodies_[j].position += normal * total_separation * ratio_j;
-                    
-                    // Apply collision impulse (elastic collision)
-                    FixedVector3 relative_velocity = bodies_[j].velocity - bodies_[i].velocity;
-                    Fixed velocity_along_normal = relative_velocity.dot(normal);
-                    
-                    // Only resolve if bodies are moving towards each other
-                    if (velocity_along_normal < Fixed::from_int(0)) {
-                        // Restitution coefficient - lower for similar mass collisions
-                        Fixed restitution = Fixed::from_float(0.15f); // Very low bounce
-                        // Even lower for wolf-wolf collisions (similar mass)
-                        if (mass_ratio > Fixed::from_float(0.8f) && mass_ratio < Fixed::from_float(1.25f)) {
-                            restitution = Fixed::from_float(0.05f); // Almost no bounce
-                        }
-                        Fixed impulse_magnitude = -(Fixed::from_int(1) + restitution) * velocity_along_normal / total_inv_mass;
-                        
-                        FixedVector3 impulse = normal * impulse_magnitude;
-                        bodies_[i].velocity -= impulse * bodies_[i].inverse_mass;
-                        bodies_[j].velocity += impulse * bodies_[j].inverse_mass;
-                        collisions_resolved_++;
-
-                        // Emit collision event for callbacks/telemetry
-                        CollisionEvent ev{};
-                        ev.bodyA = bodies_[i].id;
-                        ev.bodyB = bodies_[j].id;
-                        ev.nx = normal.x.to_float();
-                        ev.ny = normal.y.to_float();
-                        ev.nz = normal.z.to_float();
-                        // Approximate contact point on surface of A along normal
-                        FixedVector3 contact = bodies_[i].position + (normal * bodies_[i].radius);
-                        ev.px = contact.x.to_float();
-                        ev.py = contact.y.to_float();
-                        ev.pz = contact.z.to_float();
-                        ev.impulse = impulse_magnitude.to_float();
-                        GetPhysicsEventQueue().push(ev);
-                    }
-                }
-            }
+            resolve_sphere_collision(bodies_[i], bodies_[j]);
         }
     }
-    
-    // Ground collisions generate events as well (optional)
-    // Using sentinel 0xFFFFFFFF for ground id
-    const uint32_t GROUND_ID = 0xFFFFFFFFu;
-    for (auto &body : bodies_) {
-        if (body.type == BodyType::Static) continue;
-        if (body.type == BodyType::Dynamic && body.is_sleeping) continue;
-        const Fixed GROUND_Y = Fixed::from_int(0);
-        if (body.position.y - body.radius == GROUND_Y) {
-            CollisionEvent ev{};
-            ev.bodyA = body.id;
-            ev.bodyB = GROUND_ID;
-            ev.nx = 0.0f; ev.ny = 1.0f; ev.nz = 0.0f;
-            ev.px = body.position.x.to_float();
-            ev.py = (GROUND_Y + body.radius).to_float();
-            ev.pz = body.position.z.to_float();
-            ev.impulse = 0.0f; // Not computed here; can be extended later
-            GetPhysicsEventQueue().push(ev);
-        }
-    }
-}
 }
 
 void PhysicsManager::solve_constraints(int iterations) {

@@ -37,32 +37,46 @@ public:
 
     void getPotentialPairs(const std::vector<RigidBody> &bodies, std::vector<std::pair<uint32_t, uint32_t>> &outPairs) const {
         outPairs.clear();
-        // For each occupied cell, pair within cell and with 8 neighbors
-        static const int OFF[9][2] = {{0,0},{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{-1,1},{1,-1},{1,1}};
+        
+        // Only check 4 neighbors (right, down, down-right, down-left) to avoid duplicates
+        // Each pair is only generated once when the cell with the smaller key processes it
+        static const int NEIGHBOR_OFF[4][2] = {{1,0}, {0,1}, {1,1}, {-1,1}};
+        
         for (const auto &entry : cells_) {
             const GridKey &k = entry.first;
             const std::vector<uint32_t> &vec = entry.second;
-            // Within-cell pairs
+            
+            // Within-cell pairs (always checked)
             for (size_t i = 0; i < vec.size(); ++i) {
                 for (size_t j = i + 1; j < vec.size(); ++j) {
-                    outPairs.emplace_back(vec[i], vec[j]);
+                    uint32_t a = vec[i];
+                    uint32_t b = vec[j];
+                    if (a > b) {
+                        std::swap(a, b);
+                    }
+                    outPairs.emplace_back(a, b);
                 }
             }
-            // Neighbor cells
-            for (int n = 1; n < 9; ++n) {
-                GridKey nk{ k.x + OFF[n][0], k.y + OFF[n][1] };
+            
+            // Check only forward neighbors to avoid duplicate pairs
+            for (int n = 0; n < 4; ++n) {
+                GridKey nk{ k.x + NEIGHBOR_OFF[n][0], k.y + NEIGHBOR_OFF[n][1] };
                 auto it = cells_.find(nk);
-                if (it == cells_.end()) continue;
+                if (it == cells_.end()) {
+                    continue;
+                }
                 for (uint32_t a : vec) {
                     for (uint32_t b : it->second) {
-                        if (a < b) outPairs.emplace_back(a, b);
-                        else if (b < a) outPairs.emplace_back(b, a);
+                        // Canonical ordering to ensure consistent pair representation
+                        if (a > b) {
+                            outPairs.emplace_back(b, a);
+                        } else {
+                            outPairs.emplace_back(a, b);
+                        }
                     }
                 }
             }
         }
-        // Optionally deduplicate pairs (skipped for simplicity; neighbor emission may duplicate)
-        // In practice, PhysicsManager can guard by (i<j) uniqueness when mapping ids to indices.
     }
 
 private:

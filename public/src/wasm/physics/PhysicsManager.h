@@ -1,6 +1,7 @@
 #pragma once
 #include "PhysicsTypes.h"
 #include <vector>
+#include <unordered_map>
 #include "constraints/DistanceConstraint.h"
 #include "constraints/DistanceRangeConstraint.h"
 class SpatialHash;
@@ -63,6 +64,7 @@ private:
     
     // Bodies
     std::vector<RigidBody> bodies_;
+    std::unordered_map<uint32_t, size_t> body_id_to_index_;  // O(1) lookup by ID
     uint32_t next_body_id_;
     
     // Timing (using integer microseconds for determinism)
@@ -75,6 +77,9 @@ private:
     void apply_world_bounds(RigidBody& body);
     void update_sleeping_bodies(int32_t timestep_micros);
     void detect_and_resolve_collisions();
+    void detect_collisions_broadphase();
+    void detect_collisions_naive();
+    void resolve_sphere_collision(RigidBody& bodyA, RigidBody& bodyB);
     void solve_constraints(int iterations);
     
     // Utility

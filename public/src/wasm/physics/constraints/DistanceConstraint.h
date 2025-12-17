@@ -1,5 +1,6 @@
 #pragma once
 #include "../PhysicsTypes.h"
+#include <unordered_map>
 
 /**
  * DistanceConstraint - simple PBD-style distance constraint between two bodies
@@ -26,55 +27,75 @@ public:
         const std::vector<DistanceConstraint>& constraints,
         int iterations
     ) {
-        if (constraints.empty() || iterations <= 0) return;
+        if (constraints.empty() || iterations <= 0) {
+            return;
+        }
+        
+        // Build ID map for O(1) lookups during constraint solving
+        std::unordered_map<uint32_t, size_t> id_to_index;
+        for (size_t i = 0; i < bodies.size(); ++i) {
+            id_to_index[bodies[i].id] = i;
+        }
+        
         for (int it = 0; it < iterations; ++it) {
             for (const auto& c : constraints) {
-                RigidBody* a = find_body(bodies, c.bodyA);
-                RigidBody* b = find_body(bodies, c.bodyB);
-                if (!a || !b) continue;
+                auto itA = id_to_index.find(c.bodyA);
+                auto itB = id_to_index.find(c.bodyB);
+                if (itA == id_to_index.end() || itB == id_to_index.end()) {
+                    continue;
+                }
+                
+                RigidBody* a = &bodies[itA->second];
+                RigidBody* b = &bodies[itB->second];
 
-                // World points (spheres → use centers for v1)
-                FixedVector3 pa = a->position; // + c.localA (not used for spheres)
-                FixedVector3 pb = b->position; // + c.localB
-                FixedVector3 delta = pb - pa;
+                FixedVector3 delta = b->position - a->position;
                 Fixed distSq = delta.length_squared();
-                if (distSq <= Fixed::from_int(0)) continue;
+                
+                // Handle near-zero distance
+                if (distSq < Fixed::from_float(0.0001f)) {
+                    // Push apart in arbitrary direction
+                    a->position.x -= Fixed::from_float(0.005f);
+                    b->position.x += Fixed::from_float(0.005f);
+                    continue;
+                }
+                
                 Fixed dist = fixed_sqrt(distSq);
-                Fixed target = c.restLength;
-                // If rest length zero, use small epsilon to avoid div by zero
-                Fixed diff = dist - target;
-                if (diff == Fixed::from_int(0)) continue;
+                Fixed diff = dist - c.restLength;
+                
+                // Skip if already at rest length
+                if (diff.abs() < Fixed::from_float(0.0001f)) {
+                    continue;
+                }
 
-                FixedVector3 n = delta / dist; // normalized
+                FixedVector3 n = delta / dist;
 
                 // Kinematic bodies get zero inverse mass contribution
                 Fixed invMassA = (a->type == BodyType::Dynamic) ? a->inverse_mass : Fixed::from_int(0);
                 Fixed invMassB = (b->type == BodyType::Dynamic) ? b->inverse_mass : Fixed::from_int(0);
                 Fixed invMassSum = invMassA + invMassB;
-                if (invMassSum <= Fixed::from_int(0)) continue;
+                
+                if (invMassSum <= Fixed::from_int(0)) {
+                    continue;
+                }
 
                 // Positional correction along n scaled by stiffness
-                Fixed correctionMag = (diff * c.stiffness);
+                Fixed correctionMag = diff * c.stiffness;
                 Fixed ratioA = invMassA / invMassSum;
                 Fixed ratioB = invMassB / invMassSum;
 
                 // Move opposite directions to reduce error
-                a->position += n * (correctionMag * ratioA * Fixed::from_int(-1));
+                a->position -= n * (correctionMag * ratioA);
                 b->position += n * (correctionMag * ratioB);
 
                 // Wake if moved
-                if (ratioA > Fixed::from_int(0)) a->wake();
-                if (ratioB > Fixed::from_int(0)) b->wake();
+                if (ratioA > Fixed::from_int(0)) {
+                    a->wake();
+                }
+                if (ratioB > Fixed::from_int(0)) {
+                    b->wake();
+                }
             }
         }
-    }
-
-private:
-    static RigidBody* find_body(std::vector<RigidBody>& bodies, uint32_t id) {
-        for (auto& body : bodies) {
-            if (body.id == id) return &body;
-        }
-        return nullptr;
     }
 };
 
