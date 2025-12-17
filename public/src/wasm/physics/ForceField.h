@@ -23,32 +23,47 @@ public:
 
     void apply(std::vector<RigidBody> &bodies, Fixed dt) const {
         for (auto &b : bodies) {
-            if (!b.should_simulate()) continue;
+            // Force fields only affect dynamic bodies with non-zero inverse mass
+            if (b.type != BodyType::Dynamic || b.is_sleeping) {
+                continue;
+            }
+            if (b.inverse_mass <= Fixed::from_int(0)) {
+                continue;
+            }
+            
             for (const auto &f : fields_) {
                 switch (f.type) {
                     case ForceFieldType::RadialAttract: {
                         FixedVector3 d = f.position - b.position;
                         Fixed distSq = d.length_squared();
-                        if (distSq > Fixed::from_int(0)) {
+                        // Apply inverse square falloff for realistic behavior
+                        if (distSq > Fixed::from_float(0.01f)) {
                             FixedVector3 n = d.normalized();
-                            Fixed invFalloff = Fixed::from_float(1.0f); // simple constant falloff
-                            b.acceleration += n * (f.strength * invFalloff) * b.inverse_mass;
+                            Fixed falloff = Fixed::from_int(1) / distSq;
+                            // Clamp falloff to prevent extreme forces at close range
+                            falloff = Fixed::min(falloff, Fixed::from_float(100.0f));
+                            b.acceleration += n * (f.strength * falloff) * b.inverse_mass;
                         }
                         break;
                     }
                     case ForceFieldType::RadialRepel: {
                         FixedVector3 d = b.position - f.position;
                         Fixed distSq = d.length_squared();
-                        if (distSq > Fixed::from_int(0)) {
+                        // Apply inverse square falloff for realistic behavior
+                        if (distSq > Fixed::from_float(0.01f)) {
                             FixedVector3 n = d.normalized();
-                            Fixed invFalloff = Fixed::from_float(1.0f);
-                            b.acceleration += n * (f.strength * invFalloff) * b.inverse_mass;
+                            Fixed falloff = Fixed::from_int(1) / distSq;
+                            // Clamp falloff to prevent extreme forces at close range
+                            falloff = Fixed::min(falloff, Fixed::from_float(100.0f));
+                            b.acceleration += n * (f.strength * falloff) * b.inverse_mass;
                         }
                         break;
                     }
                     case ForceFieldType::DirectionalWind: {
                         FixedVector3 n = f.direction.normalized();
-                        b.acceleration += n * (f.strength) * b.inverse_mass;
+                        if (!n.is_zero()) {
+                            b.acceleration += n * f.strength * b.inverse_mass;
+                        }
                         break;
                     }
                 }

@@ -62,8 +62,31 @@ struct RigidBody {
     {}
     
     // Helper: Check if body should be simulated
+    // Dynamic bodies are always simulated when not sleeping
+    // Kinematic bodies are simulated only when they have non-zero velocity (e.g., knockback)
     bool should_simulate() const {
-        return type == BodyType::Dynamic && !is_sleeping;
+        if (type == BodyType::Static) {
+            return false;
+        }
+        if (is_sleeping) {
+            return false;
+        }
+        if (type == BodyType::Dynamic) {
+            return true;
+        }
+        // Kinematic: simulate only if moving (for knockback decay)
+        return !velocity.is_zero();
+    }
+    
+    // Helper: Check if body participates in collision detection
+    bool should_collide() const {
+        if (type == BodyType::Static) {
+            return false;
+        }
+        if (type == BodyType::Dynamic && is_sleeping) {
+            return false;
+        }
+        return true;
     }
     
     // Helper: Update sleep state based on velocity
