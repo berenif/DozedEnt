@@ -205,7 +205,8 @@ export class StatisticsDashboard {
    * Update summary cards
    */
   updateSummaryCards() {
-    const stats = this.statisticsManager.getAllStatistics();
+    // Get all stats and update summary cards
+    this.statisticsManager.getAllStatistics();
     
     // Update each summary card
     document.getElementById('summary-kills').textContent = 
@@ -295,7 +296,7 @@ export class StatisticsDashboard {
               <span class="progress-text">${progress}%</span>
             </div>
           ` : ''}
-          ${stat.sessionValue !== undefined ? `
+          ${(typeof stat.sessionValue !== 'undefined') ? `
             <div class="stat-session">
               <span class="session-label">Session:</span>
               <span class="session-value">${this.statisticsManager.formatValue(stat.sessionValue, stat.type)}</span>

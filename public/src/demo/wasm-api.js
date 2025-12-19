@@ -68,7 +68,7 @@ let createPromise = null;
 const onceLogs = new Set();
 
 const logOnce = (key, fn) => {
-  if (onceLogs.has(key)) return;
+  if (onceLogs.has(key)) {return;}
   onceLogs.add(key);
   fn();
 };
@@ -135,7 +135,7 @@ const loadContract = async () => {
 };
 
 const contractToSet = (contract) => {
-  if (!contract) return null;
+  if (!contract) {return null;}
   const modules = Array.isArray(contract.modules) ? contract.modules : [];
   const entry = modules.find(mod => mod.file === 'game.wasm');
   if (!entry || !entry.byType || !Array.isArray(entry.byType.func)) {
@@ -369,7 +369,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
   });
   // Normalize boolean-like exports to strict 0/1 to avoid noisy logs
   const wrapBool01 = (fn) => {
-    if (typeof fn !== 'function') return fn;
+    if (typeof fn !== 'function') {return fn;}
     return (...args) => {
       try {
         const v = Number(fn(...args));
@@ -391,7 +391,7 @@ const createApiFromRuntime = (runtime, optionalDefaults, contractSet) => {
 
   const optionalHandles = {};
   const attachOptional = (name) => {
-    if (optionalHandles[name]) return;
+    if (optionalHandles[name]) {return;}
     optionalHandles[name] = createOptionalWrapper(name, exports, optionalDefaults, debugEnabled);
   };
 
@@ -665,8 +665,8 @@ const tryLazyLoad = async () => {
       loaderInfo: { mode: 'lazy', path, fallback: false }
     };
   } finally {
-    if (originalResolver) loader.resolveModulePaths = originalResolver;
-    if (originalFetch) loader.fetchWithTimeout = originalFetch;
+    if (originalResolver) {loader.resolveModulePaths = originalResolver;}
+    if (originalFetch) {loader.fetchWithTimeout = originalFetch;}
   }
 };
 

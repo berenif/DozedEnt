@@ -249,7 +249,7 @@ export default ({init, subscribe, announce}) => {
     const unsubFns = initPromises.map(async (relayP, i) => {
       try {
         const relay = await relayP
-        if (!relay) throw new Error('relay not available')
+        if (!relay) {throw new Error('relay not available')}
 
         return subscribe(
           relay,
@@ -282,7 +282,7 @@ export default ({init, subscribe, announce}) => {
         try {
           await didSub
           const relay = await initPromises[i].catch(() => null)
-          if (relay) queueAnnounce(relay, i)
+          if (relay) {queueAnnounce(relay, i)}
         } catch (error) {
           console.warn('Failed to initialize relay:', error);
         }

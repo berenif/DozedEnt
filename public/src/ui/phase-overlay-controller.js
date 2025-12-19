@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PhaseOverlayController centralizes phase overlay presentation logic.
  * It reads data from the WASM bridge and updates the DOM accordingly.
  */
@@ -323,7 +323,7 @@ export class PhaseOverlayController {
   safeCall(fn, fallback) {
     try {
       const value = fn();
-      return value !== undefined ? value : fallback;
+      return (typeof value !== 'undefined') ? value : fallback;
     } catch (error) {
       console.warn('PhaseOverlayController: failed to read data from WASM bridge.', error);
       return fallback;

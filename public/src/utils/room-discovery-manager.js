@@ -29,7 +29,7 @@ export class RoomDiscoveryManager {
     initSelfId() {
         try {
             const existing = localStorage.getItem('working-demo-self-id')
-            if (existing) return existing
+            if (existing) {return existing}
             const next = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2)
             localStorage.setItem('working-demo-self-id', next)
             return next
@@ -70,10 +70,10 @@ export class RoomDiscoveryManager {
      * Set up room info handler
      */
     setupRoomInfoHandler() {
-        if (!this.getRoomInfo) return
+        if (!this.getRoomInfo) {return}
 
         this.getRoomInfo((info) => {
-            if (!info || !info.providerId) return
+            if (!info || !info.providerId) {return}
             const stored = this.recordDiscoveredRoom(info.providerId, info)
             if (stored && this.roomStore) {
                 // Notify room store of update
@@ -86,10 +86,10 @@ export class RoomDiscoveryManager {
      * Set up discovery handler
      */
     setupDiscoveryHandler() {
-        if (!this.getRoomDiscovery) return
+        if (!this.getRoomDiscovery) {return}
 
         this.getRoomDiscovery((payload) => {
-            if (!payload || !this.sendRoomInfo || !this.currentPeerName) return
+            if (!payload || !this.sendRoomInfo || !this.currentPeerName) {return}
             if (payload.type === 'request') {
                 this.respondToDiscovery()
             }
@@ -102,7 +102,7 @@ export class RoomDiscoveryManager {
      * @param {string} providerId - Provider ID
      */
     handleBroadcastMessage(data, providerId) {
-        if (!data) return
+        if (!data) {return}
 
         if (data.type === 'room-broadcast') {
             const stored = this.recordDiscoveredRoom(providerId, data.roomInfo)
@@ -153,10 +153,10 @@ export class RoomDiscoveryManager {
      * Respond to discovery request by broadcasting room info
      */
     respondToDiscovery() {
-        if (!this.currentPeerName) return
+        if (!this.currentPeerName) {return}
 
         const roomInfo = this.getCurrentRoomInfo()
-        if (!roomInfo) return
+        if (!roomInfo) {return}
 
         // Send through network if available
         if (this.sendRoomInfo) {
@@ -195,10 +195,10 @@ export class RoomDiscoveryManager {
      * @returns {Object|null} Recorded room info or null
      */
     recordDiscoveredRoom(providerId, info) {
-        if (!info || !providerId) return null
+        if (!info || !providerId) {return null}
 
         const now = Date.now()
-        if (now < this.suppressDiscoveryUntil) return null
+        if (now < this.suppressDiscoveryUntil) {return null}
 
         const normalizedInfo = {
             ...info,
@@ -207,7 +207,7 @@ export class RoomDiscoveryManager {
             roomId: info.roomId || info.id
         }
 
-        if (!normalizedInfo.roomId) return null
+        if (!normalizedInfo.roomId) {return null}
 
         // Store in room store if available
         if (this.roomStore) {

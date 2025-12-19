@@ -83,7 +83,7 @@ export class WolfStateManager {
 
   _readPacks() {
     const ex = this.exports
-    if (!this._hasPackBasics()) return []
+    if (!this._hasPackBasics()) {return []}
     const countRaw = ex.get_pack_count()
     const count = this._clampInt(countRaw, 0, 128)
     const packs = new Array(count)
@@ -100,7 +100,7 @@ export class WolfStateManager {
     const ex = this.exports
     if (typeof ex.get_frame_count === 'function') {
       const t = ex.get_frame_count()
-      if (Number.isFinite(t)) return t
+      if (Number.isFinite(t)) {return t}
     }
     return Math.floor(performance?.now?.() || Date.now())
   }
@@ -117,8 +117,8 @@ export class WolfStateManager {
 
   _clampInt(v, min, max) {
     const n = this._int(v, 0)
-    if (n < min) return min
-    if (n > max) return max
+    if (n < min) {return min}
+    if (n > max) {return max}
     return n
   }
 }

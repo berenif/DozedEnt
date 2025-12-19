@@ -137,7 +137,7 @@ export class MultiplayerGameController {
   }
   
   async startGame() {
-    if (this.running) return
+    if (this.running) {return}
     
     console.log('▶️ Starting game loop...')
     this.running = true
@@ -146,7 +146,7 @@ export class MultiplayerGameController {
   }
   
   stopGame() {
-    if (!this.running) return
+    if (!this.running) {return}
     
     console.log('⏹️ Stopping game loop...')
     this.running = false
@@ -162,14 +162,14 @@ export class MultiplayerGameController {
   }
   
   resume() {
-    if (this.running) return
+    if (this.running) {return}
     this.running = true
     this.lastTime = performance.now()
     this.gameLoop()
   }
   
   gameLoop() {
-    if (!this.running) return
+    if (!this.running) {return}
     
     const now = performance.now()
     const deltaTime = (now - this.lastTime) / 1000
@@ -225,7 +225,7 @@ export class MultiplayerGameController {
   }
   
   applyInput(input) {
-    if (!this.wasmApi) return
+    if (!this.wasmApi) {return}
     
     const dx = input.direction?.x || 0
     const dy = input.direction?.y || 0

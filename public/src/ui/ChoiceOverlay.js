@@ -8,13 +8,13 @@ export class ChoiceOverlay {
   }
 
   show() {
-    if (!this.el) return
+    if (!this.el) {return}
     this.el.classList.add('active')
     this.render()
   }
 
   hide() {
-    if (!this.el) return
+    if (!this.el) {return}
     this.el.classList.remove('active')
   }
 
@@ -48,7 +48,9 @@ export class ChoiceOverlay {
         try {
           if (typeof ex.commit_choice === 'function') { ex.commit_choice(id) }
           this.hide()
-        } catch (_e) {}
+        } catch (_e) {
+          // Silently handle commit errors - UI can continue without throwing
+        }
       })
     })
   }

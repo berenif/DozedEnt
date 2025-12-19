@@ -464,8 +464,6 @@ export class CombatUIOptimizer {
      */
     applyAdaptiveScaling() {
         const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-        const aspectRatio = screenWidth / screenHeight;
         
         // Calculate optimal UI scale
         let uiScale = 1.0;

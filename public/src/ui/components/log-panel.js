@@ -82,7 +82,7 @@ export class LogPanel {
      */
     addLog(message, type = 'info') {
         const logFeed = this.element.querySelector('#event-log')
-        if (!logFeed) return
+        if (!logFeed) {return}
 
         const entry = document.createElement('div')
         entry.className = `log-entry ${type}`
@@ -137,7 +137,7 @@ export class LogPanel {
      */
     clearLogs() {
         const logFeed = this.element.querySelector('#event-log')
-        if (!logFeed) return
+        if (!logFeed) {return}
 
         logFeed.innerHTML = `
             <div class="log-entry info">
@@ -175,7 +175,7 @@ export class LogPanel {
      */
     filterLogs(type) {
         const logFeed = this.element.querySelector('#event-log')
-        if (!logFeed) return
+        if (!logFeed) {return}
 
         const entries = logFeed.querySelectorAll('.log-entry')
         entries.forEach(entry => {
@@ -192,7 +192,7 @@ export class LogPanel {
      */
     searchLogs(searchTerm) {
         const logFeed = this.element.querySelector('#event-log')
-        if (!logFeed) return
+        if (!logFeed) {return}
 
         const entries = logFeed.querySelectorAll('.log-entry')
         entries.forEach(entry => {
@@ -215,7 +215,7 @@ export class LogPanel {
      */
     clearSearchHighlights() {
         const logFeed = this.element.querySelector('#event-log')
-        if (!logFeed) return
+        if (!logFeed) {return}
 
         const entries = logFeed.querySelectorAll('.log-entry')
         entries.forEach(entry => {

@@ -789,7 +789,7 @@ export class ThreatAwarenessUI {
         this.settings = { ...this.settings, ...newSettings };
         
         // Update color scheme if colorblind mode changed
-        if (newSettings.colorBlindMode !== undefined) {
+        if (typeof newSettings.colorBlindMode !== 'undefined') {
             this.setupColorBlindSupport();
             this.updateThreatLegend();
         }

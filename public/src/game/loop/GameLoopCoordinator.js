@@ -79,7 +79,7 @@ export class GameLoopCoordinator {
    * Start game loop
    */
   start() {
-    if (this.isRunning) return
+    if (this.isRunning) {return}
     this.isRunning = true
     this.lastFrameTime = this._getTime()
     this.frame()
@@ -96,7 +96,7 @@ export class GameLoopCoordinator {
    * Main game loop frame
    */
   frame() {
-    if (!this.isRunning) return
+    if (!this.isRunning) {return}
 
     // Calculate delta time
     const now = this._getTime()

@@ -102,7 +102,7 @@ export class MultiplayerDemoCoordinator {
      * Set up network manager with event handlers
      */
     setupNetworkManager() {
-        if (this.networkManager) return
+        if (this.networkManager) {return}
 
         this.networkManager = new NetworkProviderManager()
 
@@ -175,7 +175,7 @@ export class MultiplayerDemoCoordinator {
      * @param {boolean} force - Force generation even if name exists
      */
     generatePeerName(force = false) {
-        if (this.currentPeerName && !force) return this.currentPeerName
+        if (this.currentPeerName && !force) {return this.currentPeerName}
 
         const name = peerNameGenerator.generateName()
         this.currentPeerName = name
@@ -258,7 +258,7 @@ export class MultiplayerDemoCoordinator {
      * Leave the current room
      */
     async leaveRoom() {
-        if (!this.networkManager || !this.isInRoom) return
+        if (!this.networkManager || !this.isInRoom) {return}
 
         await this.networkManager.leaveRoom()
         this.handleRoomClosed()
@@ -367,7 +367,7 @@ export class MultiplayerDemoCoordinator {
      * Start peer actions
      */
     startPeerActions() {
-        if (!this.room || !this.networkManager) return
+        if (!this.room || !this.networkManager) {return}
 
         const actions = {
             peerInfo: this.networkManager.createAction('peerInfo'),
@@ -423,7 +423,7 @@ export class MultiplayerDemoCoordinator {
      * Announce self to other peers
      */
     announceSelf() {
-        if (!this.sendPeerInfo || !this.currentPeerName) return
+        if (!this.sendPeerInfo || !this.currentPeerName) {return}
         const selfId = this.getSelfPeerId()
         peerLatencyManager.announceSelf(this.sendPeerInfo, selfId, this.currentPeerName)
     }
@@ -433,7 +433,7 @@ export class MultiplayerDemoCoordinator {
      * @returns {string} Self peer ID
      */
     getSelfPeerId() {
-        if (!this.room || typeof this.room.getSelfId !== 'function') return 'self'
+        if (!this.room || typeof this.room.getSelfId !== 'function') {return 'self'}
         return this.room.getSelfId()
     }
 
@@ -441,7 +441,7 @@ export class MultiplayerDemoCoordinator {
      * Broadcast own room
      */
     broadcastOwnRoom() {
-        if (!this.isInRoom || !this.currentPeerName) return
+        if (!this.isInRoom || !this.currentPeerName) {return}
         
         // Update room discovery manager with current room info
         const roomInfo = this.getCurrentRoomInfoForDiscovery()
@@ -455,12 +455,12 @@ export class MultiplayerDemoCoordinator {
      * @returns {Object|null} Current room info
      */
     getCurrentRoomInfoForDiscovery() {
-        if (!this.isInRoom || !this.currentPeerName) return null
+        if (!this.isInRoom || !this.currentPeerName) {return null}
         
         const peers = typeof this.networkManager?.getPeers === 'function' ? this.networkManager.getPeers() : {}
         const roomId = this.room ? this.room.getSelfId?.() : null
         
-        if (!roomId) return null
+        if (!roomId) {return null}
         
         return {
             id: roomId,
@@ -520,7 +520,7 @@ export class MultiplayerDemoCoordinator {
         const listElement = document.getElementById('players-list')
         const countElement = document.getElementById('players-count')
         
-        if (!listElement) return
+        if (!listElement) {return}
 
         const peers = this.isInRoom && typeof this.networkManager?.getPeers === 'function' 
             ? this.networkManager.getPeers() 
@@ -587,7 +587,7 @@ export class MultiplayerDemoCoordinator {
      */
     updateRoomList() {
         const roomListElement = document.getElementById('room-list')
-        if (!roomListElement) return
+        if (!roomListElement) {return}
 
         const rooms = this.roomStore.getRooms(this.selectedProviderId)
         
@@ -692,7 +692,7 @@ export class MultiplayerDemoCoordinator {
      * Update status
      */
     updateStatus() {
-        if (!this.networkManager) return
+        if (!this.networkManager) {return}
 
         const peers = typeof this.networkManager.getPeers === 'function' ? this.networkManager.getPeers() : {}
         const remoteCount = Object.keys(peers || {}).length
@@ -715,7 +715,7 @@ export class MultiplayerDemoCoordinator {
      * Initialize broadcast channel
      */
     initializeBroadcastChannel() {
-        if (!broadcastManager.isBroadcastSupported()) return
+        if (!broadcastManager.isBroadcastSupported()) {return}
         broadcastManager.getChannel(this.selectedProviderId)
     }
 

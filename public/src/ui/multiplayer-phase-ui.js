@@ -620,7 +620,7 @@ export class MultiplayerPhaseUI {
    * Register event handlers with phase manager
    */
   registerEventHandlers() {
-    if (!this.phaseManager) return
+    if (!this.phaseManager) {return}
     
     // Phase change handler
     this.phaseManager.eventHandlers.onPhaseChanged = (data) => {
@@ -679,7 +679,7 @@ export class MultiplayerPhaseUI {
    * Update display elements
    */
   updateDisplay() {
-    if (!this.phaseManager) return
+    if (!this.phaseManager) {return}
     
     const phaseInfo = this.phaseManager.getCurrentPhaseInfo()
     
@@ -861,7 +861,7 @@ export class MultiplayerPhaseUI {
    * Handle transition start
    */
   handleTransitionStart(data) {
-    if (!this.config.showTransitions) return
+    if (!this.config.showTransitions) {return}
     
     this.state.transitionInProgress = true
     
@@ -882,7 +882,7 @@ export class MultiplayerPhaseUI {
   /**
    * Handle transition end
    */
-  handleTransitionEnd(data) {
+  handleTransitionEnd(_data) {
     this.state.transitionInProgress = false
     
     // Hide overlay after delay
@@ -894,7 +894,7 @@ export class MultiplayerPhaseUI {
   /**
    * Handle sync error
    */
-  handleSyncError(data) {
+  handleSyncError(_data) {
     // Flash sync indicator
     const indicator = this.elements.syncIndicator
     indicator.style.background = 'rgba(244, 67, 54, 0.2)'
@@ -920,7 +920,7 @@ export class MultiplayerPhaseUI {
     if (config && config.transitions) {
       for (const transition of config.transitions) {
         const optionConfig = PHASE_CONFIG[transition]
-        if (!optionConfig) continue
+        if (!optionConfig) {continue}
         
         const option = document.createElement('div')
         option.className = 'vote-option'
@@ -957,7 +957,7 @@ export class MultiplayerPhaseUI {
    * Handle vote click
    */
   handleVoteClick(phase) {
-    if (!this.phaseManager) return
+    if (!this.phaseManager) {return}
     
     // Cast vote
     this.phaseManager.castPhaseVote(phase)
@@ -975,7 +975,7 @@ export class MultiplayerPhaseUI {
   /**
    * Handle phase timeout
    */
-  handlePhaseTimeout(data) {
+  handlePhaseTimeout(_data) {
     // Flash timer display
     if (this.elements.timerDisplay) {
       this.elements.timerDisplay.style.background = 'rgba(244, 67, 54, 0.2)'

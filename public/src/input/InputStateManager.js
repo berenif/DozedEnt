@@ -151,10 +151,10 @@ export class InputStateManager {
     let x = 0;
     let y = 0;
 
-    if (this.keyStates.left) x -= 1;
-    if (this.keyStates.right) x += 1;
-    if (this.keyStates.up) y -= 1;
-    if (this.keyStates.down) y += 1;
+    if (this.keyStates.left) {x -= 1;}
+    if (this.keyStates.right) {x += 1;}
+    if (this.keyStates.up) {y -= 1;}
+    if (this.keyStates.down) {y += 1;}
 
     if (x !== 0 && y !== 0) {
       const length = Math.sqrt(x * x + y * y);

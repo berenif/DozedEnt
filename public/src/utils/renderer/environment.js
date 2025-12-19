@@ -80,10 +80,10 @@ export function getWeatherTypeFromWasm(wasmModule) {
   const temperature = wasmModule.get_weather_temperature();
   const lightning = wasmModule.is_lightning_active() === 1;
 
-  if (lightning) return 'storm';
-  if (rainIntensity > 0.5) return 'rain';
-  if (rainIntensity > 0.2) return 'fog';
-  if (temperature < 5) return 'snow';
+  if (lightning) {return 'storm';}
+  if (rainIntensity > 0.5) {return 'rain';}
+  if (rainIntensity > 0.2) {return 'fog';}
+  if (temperature < 5) {return 'snow';}
   return 'clear';
 }
 

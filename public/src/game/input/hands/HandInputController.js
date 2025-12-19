@@ -25,18 +25,16 @@ export class HandInputController {
   }
 
   _onMove(handId, e) {
-    if (!window.wasmExports) return
+    if (!window.wasmExports) {return}
     const world = screenToWorld(this.renderer, e.x, e.y)
     const wasm = worldToWasm(this.renderer, world.x, world.y)
     if (handId === 0) {
       if (typeof window.wasmExports.set_left_hand_target === 'function') {
         window.wasmExports.set_left_hand_target(wasm.x, wasm.y, 0)
       }
-    } else {
-      if (typeof window.wasmExports.set_right_hand_target === 'function') {
+    } else if (typeof window.wasmExports.set_right_hand_target === 'function') {
         window.wasmExports.set_right_hand_target(wasm.x, wasm.y, 0)
       }
-    }
   }
 }
 

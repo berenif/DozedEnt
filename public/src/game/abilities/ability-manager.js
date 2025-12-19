@@ -97,7 +97,7 @@ export class AbilityManager {
      * Optional: Provide progression scalar lookup for abilities
      */
     getUpgradeScalar(effectKey) {
-        if (!this.progression) return 0;
+        if (!this.progression) {return 0;}
         const classId = this.characterType === CHARACTER_TYPE.WARDEN ? 'warden'
                        : this.characterType === CHARACTER_TYPE.RAIDER ? 'raider'
                        : 'kensei';

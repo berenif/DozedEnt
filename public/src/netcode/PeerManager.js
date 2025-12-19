@@ -27,7 +27,7 @@ export class PeerManager {
    */
   setupPeerHandlers() {
     const trysteroRoom = this.roomManager.getTrysteroRoom()
-    if (!trysteroRoom) return
+    if (!trysteroRoom) {return}
     
     // Handle peer joins
     trysteroRoom.onPeerJoin(peerId => {
@@ -156,7 +156,7 @@ export class PeerManager {
    */
   getPeerHealth(peerId) {
     const peer = this.peers.get(peerId)
-    if (!peer) return null
+    if (!peer) {return null}
     
     const now = Date.now()
     const timeSinceHeartbeat = now - peer.lastHeartbeat

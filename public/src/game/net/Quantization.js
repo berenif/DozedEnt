@@ -12,7 +12,7 @@ export const Dir8 = Object.freeze({
 export function angleToDir8(angleRad) {
   // Normalize angle to [0, 2π)
   let a = angleRad % (Math.PI * 2)
-  if (a < 0) a += Math.PI * 2
+  if (a < 0) {a += Math.PI * 2}
   const sector = Math.round(a / (Math.PI / 4)) % 8
   // Math.round centers sectors on the axes (±π/8 boundaries)
   return sector

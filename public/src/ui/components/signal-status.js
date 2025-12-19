@@ -104,7 +104,7 @@ export class SignalStatus {
      * Update the connection quality display
      */
     updateConnectionQuality(quality, providerLabel = 'MQTT', isInRoom = false, remotePeerCount = 0) {
-        let qualityText = quality
+        let qualityText;
         
         if (!isInRoom) {
             qualityText = providerLabel ? `Link idle - ${providerLabel}` : 'Link idle'
@@ -175,7 +175,7 @@ export class SignalStatus {
      */
     setConnectionState(state) {
         const connectionElement = this.element.querySelector('#connection-quality')
-        if (!connectionElement) return
+        if (!connectionElement) {return}
 
         // Remove existing state classes
         connectionElement.classList.remove('connected', 'disconnected', 'connecting', 'error')

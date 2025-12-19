@@ -760,13 +760,13 @@ export class PersistenceUI {
           }
           
           // Ensure achievement has all required properties
-          if (!achievement.rarity) achievement.rarity = 'Common';
-          if (!achievement.name) achievement.name = `Achievement ${i + 1}`;
-          if (!achievement.description) achievement.description = 'Default achievement description';
-          if (typeof achievement.unlocked !== 'boolean') achievement.unlocked = false;
-          if (typeof achievement.progress !== 'number') achievement.progress = 0;
-          if (typeof achievement.target !== 'number') achievement.target = 1;
-          if (typeof achievement.points !== 'number') achievement.points = 10;
+          if (!achievement.rarity) {achievement.rarity = 'Common';}
+          if (!achievement.name) {achievement.name = `Achievement ${i + 1}`;}
+          if (!achievement.description) {achievement.description = 'Default achievement description';}
+          if (typeof achievement.unlocked !== 'boolean') {achievement.unlocked = false;}
+          if (typeof achievement.progress !== 'number') {achievement.progress = 0;}
+          if (typeof achievement.target !== 'number') {achievement.target = 1;}
+          if (typeof achievement.points !== 'number') {achievement.points = 10;}
           
           // Apply filters
           if (!this.shouldShowAchievement(achievement)) {
@@ -1174,13 +1174,13 @@ export class PersistenceUI {
           }
           
           // Ensure stat has all required properties
-          if (!stat.name) stat.name = `Statistic ${i + 1}`;
-          if (!stat.description) stat.description = 'Default statistic description';
-          if (typeof stat.category !== 'number') stat.category = 0;
-          if (typeof stat.type !== 'number') stat.type = 0;
-          if (typeof stat.session !== 'number') stat.session = 0;
-          if (typeof stat.total !== 'number') stat.total = 0;
-          if (typeof stat.maximum !== 'number') stat.maximum = 0;
+          if (!stat.name) {stat.name = `Statistic ${i + 1}`;}
+          if (!stat.description) {stat.description = 'Default statistic description';}
+          if (typeof stat.category !== 'number') {stat.category = 0;}
+          if (typeof stat.type !== 'number') {stat.type = 0;}
+          if (typeof stat.session !== 'number') {stat.session = 0;}
+          if (typeof stat.total !== 'number') {stat.total = 0;}
+          if (typeof stat.maximum !== 'number') {stat.maximum = 0;}
           
           const statElement = this.createStatisticElement(stat, period);
           statisticsGrid.appendChild(statElement);

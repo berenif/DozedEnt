@@ -251,7 +251,7 @@ function render(currentTime) {
         }
 
         // Get player state - try physics functions first, fallback to standard
-        let px, py, vx, vy, perfMs;
+        let px; let py; let vx; let vy; let perfMs;
 
         if (typeof wasmExports.get_physics_player_x === 'function') {
             px = wasmExports.get_physics_player_x();

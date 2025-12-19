@@ -2,7 +2,7 @@
 // Catmull–Rom spline smoothing utilities for gesture paths
 
 export function catmullRomSpline(points, alpha = 0.5, resolution = 1) {
-  if (!points || points.length < 2) return points || []
+  if (!points || points.length < 2) {return points || []}
   const p = points
   const out = []
   const get = (i) => p[Math.max(0, Math.min(p.length - 1, i))]
@@ -23,7 +23,7 @@ export function catmullRomSpline(points, alpha = 0.5, resolution = 1) {
 }
 
 function distance(a, b) {
-  const dx = b.x - a.x, dy = b.y - a.y
+  const dx = b.x - a.x; const dy = b.y - a.y
   return Math.hypot(dx, dy)
 }
 
@@ -49,7 +49,7 @@ function tj(ti, pi, pj, alpha) {
   const dx = pj.x - pi.x
   const dy = pj.y - pi.y
   const d = Math.hypot(dx, dy)
-  return ti + Math.pow(d, alpha)
+  return ti + d**alpha
 }
 
 function lerpP(a, b, w) {

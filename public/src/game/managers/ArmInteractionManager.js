@@ -24,7 +24,7 @@ export class ArmInteractionManager {
       case Intent.Grab:
         return this._emit({ type: 'Grab', handId, ...context })
       case Intent.Push: {
-        const dx = context.dx || 0, dy = context.dy || 0
+        const dx = context.dx || 0; const dy = context.dy || 0
         return this._emit({ type: 'Push', handId, dx, dy })
       }
       case Intent.Throw: {

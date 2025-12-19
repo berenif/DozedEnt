@@ -907,7 +907,8 @@ export class ChoiceSystemClarity {
         const tab = document.getElementById('consequences-tab');
         if (!tab) {return;}
 
-        const overallConsequences = this.analyzeOverallConsequences();
+        // Analyze consequences (currently showing static content, but analysis available for future use)
+        this.analyzeOverallConsequences();
         
         tab.innerHTML = `
             <div class="consequences-overview">
@@ -1658,12 +1659,13 @@ export class ChoiceSystemClarity {
                 
             case '1':
             case '2':
-            case '3':
+            case '3': {
                 const index = parseInt(e.key) - 1;
                 if (index < this.currentChoices.length) {
                     this.selectChoice(this.currentChoices[index].id);
                 }
                 break;
+            }
                 
             case 'c':
             case 'C':
@@ -1710,8 +1712,9 @@ export class ChoiceSystemClarity {
         try {
             const saved = localStorage.getItem('choiceSystemSettings');
             if (saved) {
-                const settings = JSON.parse(saved);
-                // Apply any saved settings
+                // Parse and apply saved settings if available
+                JSON.parse(saved);
+                // Apply any saved settings as needed
             }
         } catch (error) {
             console.warn('Failed to load choice system settings:', error);

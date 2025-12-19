@@ -89,7 +89,7 @@ export class AchievementManager {
   getAchievementData(index) {
     try {
       const id = this.wasmManager.exports.get_achievement_id(index);
-      if (id === 0) return null;
+      if (id === 0) {return null;}
       
       // Get name string
       const namePtr = this.wasmManager.exports.get_achievement_name ? 
@@ -147,7 +147,7 @@ export class AchievementManager {
     let str = '';
     for (let i = 0; i < maxLength; i++) {
       const char = memory[ptr + i];
-      if (char === 0) break;
+      if (char === 0) {break;}
       str += String.fromCharCode(char);
     }
     return str;
@@ -244,7 +244,7 @@ export class AchievementManager {
    * Check for newly unlocked achievements
    */
   checkForNewAchievements() {
-    if (!this.wasmManager.isLoaded) return;
+    if (!this.wasmManager.isLoaded) {return;}
     
     try {
       // Get current unlocked count
@@ -384,7 +384,7 @@ export class AchievementManager {
    */
   getAchievementProgress(achievementId) {
     const achievement = this.achievements.get(achievementId);
-    if (!achievement) return 0;
+    if (!achievement) {return 0;}
     
     return Math.min(100, (achievement.progress / achievement.requirement) * 100);
   }
@@ -399,7 +399,7 @@ export class AchievementManager {
     }
     
     const total = this.achievements.size;
-    if (total === 0) return 0;
+    if (total === 0) {return 0;}
     
     const unlocked = this.unlockedAchievements.size;
     return (unlocked / total) * 100;

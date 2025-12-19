@@ -356,7 +356,7 @@ export class RoguelikeHUD {
 
     // Update status effects in the UI
     const statusPanel = document.querySelector('.status-panel');
-    if (!statusPanel) return;
+    if (!statusPanel) {return;}
 
     // Clear existing status effects
     const existingEffects = statusPanel.querySelectorAll('.status-effect');

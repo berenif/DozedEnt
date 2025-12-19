@@ -124,14 +124,14 @@ export function createInputManager(wasmManager, options = {}) {
             adapter.setDebugMode(true);
         }
         return adapter;
-    } else {
+    } 
         console.log('✨ Creating unified input manager');
         const manager = new UnifiedInputManager(wasmManager);
         if (debugMode) {
             manager.setDebugMode(true);
         }
         return manager;
-    }
+    
 }
 
 /**
@@ -196,10 +196,10 @@ export class InputMigrationHelper {
         if (issues.length === 0) {
             console.log('✅ Input system migration validation passed');
             return { valid: true, issues: [] };
-        } else {
+        } 
             console.warn('⚠️ Input system migration issues found:', issues);
             return { valid: false, issues };
-        }
+        
     }
 }
 

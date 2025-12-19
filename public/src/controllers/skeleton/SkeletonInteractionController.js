@@ -172,7 +172,7 @@ export class SkeletonInteractionController {
 		// Map joint names to joint indices
 		const jointIdxOf = (n) => {
 			const c = this.skeleton.getJointCount();
-			for (let i = 0; i < c; i++) if (this.skeleton.getJointName(i) === n) return i;
+			for (let i = 0; i < c; i++) {if (this.skeleton.getJointName(i) === n) {return i;}}
 			return -1;
 		};
 		const jRoot = jointIdxOf(rootName);

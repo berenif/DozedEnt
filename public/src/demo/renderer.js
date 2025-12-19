@@ -49,7 +49,7 @@ const updateCamera = (targetX, targetY, deltaTime) => {
   camera.targetY = clamp(targetY, worldBounds.minY, worldBounds.maxY);
   
   // Smooth interpolation (exponential smoothing)
-  const smoothing = 1 - Math.pow(1 - camera.smoothing, deltaTime * 60);
+  const smoothing = 1 - (1 - camera.smoothing)**(deltaTime * 60);
   camera.x += (camera.targetX - camera.x) * smoothing;
   camera.y += (camera.targetY - camera.y) * smoothing;
   
@@ -87,7 +87,7 @@ const ensureContext = () => {
 };
 
 const resize = () => {
-  if (!canvas) return;
+  if (!canvas) {return;}
   deviceRatio = window.devicePixelRatio || 1;
   const displayWidth = Math.floor(canvas.clientWidth * deviceRatio);
   const displayHeight = Math.floor(canvas.clientHeight * deviceRatio);
@@ -315,7 +315,7 @@ const drawPlayer = (state) => {
 
 const drawObstacles = (obstacles) => {
   ensureContext();
-  if (!Array.isArray(obstacles) || obstacles.length === 0) return;
+  if (!Array.isArray(obstacles) || obstacles.length === 0) {return;}
   ctx.save();
   ctx.lineWidth = 2;
   for (const obstacle of obstacles) {

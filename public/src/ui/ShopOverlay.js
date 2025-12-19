@@ -8,13 +8,13 @@ export class ShopOverlay {
   }
 
   show() {
-    if (!this.el) return
+    if (!this.el) {return}
     this.el.classList.add('active')
     this.render()
   }
 
   hide() {
-    if (!this.el) return
+    if (!this.el) {return}
     this.el.classList.remove('active')
   }
 
@@ -49,17 +49,29 @@ export class ShopOverlay {
     const buyBtns = this.el.querySelectorAll('[data-buy]')
     buyBtns.forEach(btn => btn.addEventListener('click', () => {
       const idx = Number(btn.getAttribute('data-buy'))
-      try { if (typeof ex.buy_shop_item === 'function') { ex.buy_shop_item(idx) } } catch (_e) {}
+      try {
+        if (typeof ex.buy_shop_item === 'function') { ex.buy_shop_item(idx) }
+      } catch (_e) {
+        // Silently handle purchase errors
+      }
       this.render()
     }))
     const buyHeal = this.el.querySelector('#buyHeal')
     buyHeal?.addEventListener('click', () => {
-      try { if (typeof ex.buy_heal === 'function') { ex.buy_heal() } } catch (_e) {}
+      try {
+        if (typeof ex.buy_heal === 'function') { ex.buy_heal() }
+      } catch (_e) {
+        // Silently handle heal errors
+      }
       this.render()
     })
     const reroll = this.el.querySelector('#reroll')
     reroll?.addEventListener('click', () => {
-      try { if (typeof ex.reroll_shop_items === 'function') { ex.reroll_shop_items() } } catch (_e) {}
+      try {
+        if (typeof ex.reroll_shop_items === 'function') { ex.reroll_shop_items() }
+      } catch (_e) {
+        // Silently handle reroll errors
+      }
       this.render()
     })
   }

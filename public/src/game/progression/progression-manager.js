@@ -3,7 +3,7 @@ import { ProgressionBridge } from '../../bridge/progression-bridge.js';
 
 function fetchJson(url) {
   return fetch(url).then(r => {
-    if (!r.ok) throw new Error(`Failed to load ${url}`);
+    if (!r.ok) {throw new Error(`Failed to load ${url}`);}
     return r.json();
   });
 }
@@ -47,14 +47,14 @@ export class ProgressionManager {
 
   on(event, fn) {
     const set = this.listeners[event];
-    if (set) set.add(fn);
+    if (set) {set.add(fn);}
     return () => set && set.delete(fn);
   }
 
   emit(event, payload) {
     const set = this.listeners[event];
-    if (!set) return;
-    for (const fn of set) fn(payload);
+    if (!set) {return;}
+    for (const fn of set) {fn(payload);}
   }
 
   loadClassState(classId) {
@@ -109,7 +109,7 @@ export class ProgressionManager {
 
   getEffectScalar(classId, effectKey) {
     const cacheKey = `${classId}:${effectKey}`;
-    if (this.cachedScalars.has(cacheKey)) return this.cachedScalars.get(cacheKey);
+    if (this.cachedScalars.has(cacheKey)) {return this.cachedScalars.get(cacheKey);}
     const Module = this.bridge.Module;
     const enc = new TextEncoder();
     const bytes = enc.encode(effectKey);

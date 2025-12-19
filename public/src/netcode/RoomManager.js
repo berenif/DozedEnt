@@ -113,7 +113,7 @@ export class RoomManager {
    * Leave the current room
    */
   leaveRoom() {
-    if (!this.trysteroRoom) return
+    if (!this.trysteroRoom) {return}
     
     console.log('👋 Leaving room:', this.roomId)
     

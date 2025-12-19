@@ -215,8 +215,8 @@ export class GamepadManager {
     let leftY = gamepad.axes[1] || 0;
     
     // Apply dead zone
-    if (Math.abs(leftX) < this.config.deadZone) leftX = 0;
-    if (Math.abs(leftY) < this.config.deadZone) leftY = 0;
+    if (Math.abs(leftX) < this.config.deadZone) {leftX = 0;}
+    if (Math.abs(leftY) < this.config.deadZone) {leftY = 0;}
     
     this.inputState.leftStick = { x: leftX, y: leftY };
     
@@ -224,8 +224,8 @@ export class GamepadManager {
     let rightX = gamepad.axes[2] || 0;
     let rightY = gamepad.axes[3] || 0;
     
-    if (Math.abs(rightX) < this.config.deadZone) rightX = 0;
-    if (Math.abs(rightY) < this.config.deadZone) rightY = 0;
+    if (Math.abs(rightX) < this.config.deadZone) {rightX = 0;}
+    if (Math.abs(rightY) < this.config.deadZone) {rightY = 0;}
     
     this.inputState.rightStick = { x: rightX, y: rightY };
   }
@@ -277,7 +277,7 @@ export class GamepadManager {
    * Check if button is pressed (handles both digital and analog buttons)
    */
   isButtonPressed(button) {
-    if (!button) return false;
+    if (!button) {return false;}
     return button.pressed || button.value > this.config.triggerThreshold;
   }
   
@@ -324,7 +324,7 @@ export class GamepadManager {
    * Forward processed input to game state manager
    */
   forwardInputToGame() {
-    if (!this.gameStateManager) return;
+    if (!this.gameStateManager) {return;}
     
     const input = this.getProcessedInput();
     
@@ -356,11 +356,11 @@ export class GamepadManager {
     let moveY = leftStick.y;
     
     // D-pad override (digital input takes precedence)
-    if (buttons.dpadLeft) moveX = -1;
-    else if (buttons.dpadRight) moveX = 1;
+    if (buttons.dpadLeft) {moveX = -1;}
+    else if (buttons.dpadRight) {moveX = 1;}
     
-    if (buttons.dpadUp) moveY = -1;
-    else if (buttons.dpadDown) moveY = 1;
+    if (buttons.dpadUp) {moveY = -1;}
+    else if (buttons.dpadDown) {moveY = 1;}
     
     return {
       // Movement
@@ -391,7 +391,7 @@ export class GamepadManager {
    * Trigger gamepad vibration
    */
   vibrate(duration = 100, intensity = 1.0) {
-    if (!this.config.vibrationEnabled || !this.activeGamepad) return;
+    if (!this.config.vibrationEnabled || !this.activeGamepad) {return;}
     
     if (this.activeGamepad.vibrationActuator) {
       // Modern Gamepad API
@@ -419,7 +419,7 @@ export class GamepadManager {
    * Get active gamepad info
    */
   getActiveGamepadInfo() {
-    if (!this.activeGamepad) return null;
+    if (!this.activeGamepad) {return null;}
     
     return {
       id: this.activeGamepad.id,

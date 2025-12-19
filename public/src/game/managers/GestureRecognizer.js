@@ -13,9 +13,9 @@ export class GestureRecognizer {
   }
 
   process(rawPoints60Hz, playerOriginMeters) {
-    if (!rawPoints60Hz || rawPoints60Hz.length < 2) return {
+    if (!rawPoints60Hz || rawPoints60Hz.length < 2) {return {
       path30Hz: [], quantizedPoints: [], startFrame: 0, endFrame: 0
-    }
+    }}
 
     // 1) Smooth with Catmull–Rom (centripetal)
     const smoothed = catmullRomSpline(rawPoints60Hz, 0.5, this.smoothRes)
@@ -40,7 +40,7 @@ export class GestureRecognizer {
 }
 
 function resampleSeries(points, targetHz) {
-  if (points.length < 2) return points
+  if (points.length < 2) {return points}
   const targetDt = 1000 / targetHz
   const out = []
   let acc = 0

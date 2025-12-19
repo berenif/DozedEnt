@@ -9,7 +9,7 @@ function getJointTriplet(prefix) {
 }
 
 export function renderPlayerArms(renderer) {
-  if (!window.wasmExports) return
+  if (!window.wasmExports) {return}
   const ctx = renderer.ctx
 
   const ls = getJointTriplet('get_left_shoulder')

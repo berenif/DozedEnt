@@ -140,7 +140,7 @@ export class AchievementUI {
   /**
    * Process notification queue
    */
-  async processNotificationQueue() {
+  processNotificationQueue() {
     if (this.notificationQueue.length === 0) {
       this.isShowingNotification = false;
       return;
@@ -361,13 +361,13 @@ export class AchievementUI {
         break;
       case 'locked':
         sorted.sort((a, b) => {
-          if (a.unlocked === b.unlocked) return 0;
+          if (a.unlocked === b.unlocked) {return 0;}
           return a.unlocked ? 1 : -1;
         });
         break;
       case 'unlocked':
         sorted.sort((a, b) => {
-          if (a.unlocked === b.unlocked) return 0;
+          if (a.unlocked === b.unlocked) {return 0;}
           return a.unlocked ? -1 : 1;
         });
         break;
@@ -436,7 +436,7 @@ export class AchievementUI {
       const recentList = document.getElementById('recent-list');
       recentList.innerHTML = recent.map(id => {
         const achievement = this.achievementManager.achievements.get(id);
-        if (!achievement) return '';
+        if (!achievement) {return '';}
         
         return `
           <div class="recent-achievement">
@@ -522,7 +522,7 @@ export class AchievementUI {
    * @returns {string}
    */
   formatTime(timestamp) {
-    if (!timestamp) return 'Never';
+    if (!timestamp) {return 'Never';}
     
     const now = Date.now();
     const diff = now - timestamp;
@@ -535,10 +535,10 @@ export class AchievementUI {
     } else if (diff < 86400000) {
       const hours = Math.floor(diff / 3600000);
       return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else {
+    } 
       const days = Math.floor(diff / 86400000);
       return `${days} day${days > 1 ? 's' : ''} ago`;
-    }
+    
   }
   
   /**

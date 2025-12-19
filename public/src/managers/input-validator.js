@@ -304,7 +304,7 @@ export class InputValidator {
      * Utility: Round to specified precision
      */
     roundToPrecision(value, precision) {
-        const factor = Math.pow(10, precision);
+        const factor = 10**precision;
         return Math.round(value * factor) / factor;
     }
     

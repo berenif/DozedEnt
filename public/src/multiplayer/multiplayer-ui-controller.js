@@ -133,7 +133,7 @@ export class RoomLobbyUI {
   }
   
   updateRoomList(rooms) {
-    if (!this.elements.roomList) return
+    if (!this.elements.roomList) {return}
     
     if (!rooms || rooms.length === 0) {
       this.elements.roomList.innerHTML = `
@@ -172,7 +172,7 @@ export class RoomLobbyUI {
   }
   
   showCurrentRoom(room) {
-    if (!this.elements.currentRoomSection) return
+    if (!this.elements.currentRoomSection) {return}
     
     this.elements.currentRoomSection.classList.add('active')
     this.elements.currentRoomName.textContent = room.name
@@ -185,12 +185,12 @@ export class RoomLobbyUI {
   }
   
   hideCurrentRoom() {
-    if (!this.elements.currentRoomSection) return
+    if (!this.elements.currentRoomSection) {return}
     this.elements.currentRoomSection.classList.remove('active')
   }
   
   updatePlayerList(room) {
-    if (!this.elements.playerListContainer || !room) return
+    if (!this.elements.playerListContainer || !room) {return}
     
     // Convert Map to Array if needed
     const players = room.players instanceof Map 
@@ -211,7 +211,7 @@ export class RoomLobbyUI {
   }
   
   updateReadyButton(isReady) {
-    if (!this.elements.readyBtn) return
+    if (!this.elements.readyBtn) {return}
     
     if (isReady) {
       this.elements.readyBtn.textContent = 'Not Ready'
@@ -232,12 +232,12 @@ export class RoomLobbyUI {
   }
   
   showCreateRoomModal() {
-    if (!this.elements.createRoomModal) return
+    if (!this.elements.createRoomModal) {return}
     this.elements.createRoomModal.classList.add('active')
   }
   
   hideCreateRoomModal() {
-    if (!this.elements.createRoomModal) return
+    if (!this.elements.createRoomModal) {return}
     this.elements.createRoomModal.classList.remove('active')
     this.elements.createRoomForm?.reset()
   }
@@ -285,7 +285,7 @@ export class RoomLobbyUI {
   }
   
   showLoading(show) {
-    if (!this.elements.loading) return
+    if (!this.elements.loading) {return}
     
     if (show) {
       this.elements.loading.classList.add('active')
@@ -295,7 +295,7 @@ export class RoomLobbyUI {
   }
   
   showStatus(message, type = 'info') {
-    if (!this.elements.statusMessage) return
+    if (!this.elements.statusMessage) {return}
     
     // Clear previous timeout
     if (this.statusTimeout) {
@@ -313,7 +313,7 @@ export class RoomLobbyUI {
   }
   
   updateNetworkQuality(quality) {
-    if (!this.elements.networkIndicator) return
+    if (!this.elements.networkIndicator) {return}
     
     this.elements.networkIndicator.classList.add('active')
     

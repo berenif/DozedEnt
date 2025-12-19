@@ -1,7 +1,7 @@
 export function spawnWolvesIfAvailable(wasmApi, count = 5) {
   try {
     const exports = wasmApi?.exports;
-    if (!exports) return;
+    if (!exports) {return;}
 
     if (typeof exports.spawn_wolves === 'function') {
       exports.spawn_wolves(count);

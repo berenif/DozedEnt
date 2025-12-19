@@ -586,9 +586,9 @@ export class DesyncDetectionSystem {
       return 'fair'
     } else if (desyncRate > 0.005) {
       return 'good'
-    } else {
+    } 
       return 'excellent'
-    }
+    
   }
   
   /**
