@@ -141,10 +141,10 @@ export class ChatIntegration {
      */
     sendMessage() {
         const chatInput = this.element.querySelector('#chat-message')
-        if (!chatInput) return
+        if (!chatInput) {return}
 
         const message = chatInput.value.trim()
-        if (!message) return
+        if (!message) {return}
 
         this.options.onSendMessage(message)
         chatInput.value = ''
@@ -155,7 +155,7 @@ export class ChatIntegration {
      */
     addChatMessage(sender, message, isSystem = false, isSelf = false) {
         const chatMessages = this.element.querySelector('#chat-messages')
-        if (!chatMessages) return
+        if (!chatMessages) {return}
 
         const messageElement = document.createElement('div')
         const timestamp = new Date().toLocaleTimeString()
@@ -225,7 +225,7 @@ export class ChatIntegration {
      */
     clearChat() {
         const chatMessages = this.element.querySelector('#chat-messages')
-        if (!chatMessages) return
+        if (!chatMessages) {return}
 
         chatMessages.innerHTML = `
             <div class="chat-message system" role="listitem">
@@ -253,13 +253,13 @@ export class ChatIntegration {
         const muteIcon = muteBtn?.querySelector('.quick-icon')
         
         if (this.isMuted) {
-            if (muteIcon) muteIcon.textContent = '🔊'
-            if (muteBtn) muteBtn.title = 'Unmute Chat'
+            if (muteIcon) {muteIcon.textContent = '🔊'}
+            if (muteBtn) {muteBtn.title = 'Unmute Chat'}
             this.updateChatStatus('Muted')
             this.addChatMessage('System', 'Chat muted. You will not receive new messages.', true)
         } else {
-            if (muteIcon) muteIcon.textContent = '🔇'
-            if (muteBtn) muteBtn.title = 'Toggle Chat Mute'
+            if (muteIcon) {muteIcon.textContent = '🔇'}
+            if (muteBtn) {muteBtn.title = 'Toggle Chat Mute'}
             this.updateChatStatus('Connected')
             this.addChatMessage('System', 'Chat unmuted. You will receive new messages.', true)
         }
@@ -283,13 +283,13 @@ export class ChatIntegration {
         
         switch (status) {
             case 'Connected':
-                if (statusIndicator) statusIndicator.classList.add('connected')
+                if (statusIndicator) {statusIndicator.classList.add('connected')}
                 break
             case 'Disconnected':
-                if (statusIndicator) statusIndicator.classList.add('disconnected')
+                if (statusIndicator) {statusIndicator.classList.add('disconnected')}
                 break
             case 'Muted':
-                if (statusIndicator) statusIndicator.classList.add('muted')
+                if (statusIndicator) {statusIndicator.classList.add('muted')}
                 break
             case 'Ready':
                 // Default state
@@ -301,7 +301,7 @@ export class ChatIntegration {
      * Handle incoming message
      */
     handleIncomingMessage(message) {
-        if (this.isMuted) return
+        if (this.isMuted) {return}
         
         // Parse message format: [sender]: message
         const match = message.match(/^\[([^\]]+)\]:\s*(.+)$/)

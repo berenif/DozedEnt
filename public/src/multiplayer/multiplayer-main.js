@@ -31,7 +31,7 @@ class MultiplayerCoordinator {
   }
   
   async initialize() {
-    if (this.initialized) return
+    if (this.initialized) {return}
     
     console.log('🎮 Initializing multiplayer system...')
     
@@ -251,7 +251,7 @@ class MultiplayerCoordinator {
   
   async leaveRoom() {
     try {
-      if (!this.state.currentRoom) return
+      if (!this.state.currentRoom) {return}
       
       // If game is running, stop it first
       if (this.state.gameStarted) {
@@ -352,7 +352,7 @@ class MultiplayerCoordinator {
   
   async startGame() {
     try {
-      if (this.state.gameStarted) return
+      if (this.state.gameStarted) {return}
       
       console.log('🎮 Starting multiplayer game...')
       this.showLoading(true)
@@ -407,7 +407,7 @@ class MultiplayerCoordinator {
   }
   
   stopGame() {
-    if (!this.state.gameStarted) return
+    if (!this.state.gameStarted) {return}
     
     console.log('🛑 Stopping game...')
     
@@ -443,14 +443,12 @@ class MultiplayerCoordinator {
           })
         }
       },
-      getPeerConnection: (peerId) => {
-        return this.networkManager?.getPeerConnection(peerId)
-      }
+      getPeerConnection: (peerId) => this.networkManager?.getPeerConnection(peerId)
     }
   }
   
   getHostPlayerId() {
-    if (!this.state.currentRoom) return null
+    if (!this.state.currentRoom) {return null}
     const hostPlayer = this.state.currentRoom.players?.find(p => p.role === 'host')
     return hostPlayer?.id || null
   }

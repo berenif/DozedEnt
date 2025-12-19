@@ -195,7 +195,7 @@ export class SaveLoadUI {
     
     // Save slots
     document.querySelectorAll('.save-slot').forEach(slot => {
-      slot.addEventListener('click', (e) => {
+      slot.addEventListener('click', () => {
         const slotIndex = slot.dataset.slot;
         if (slotIndex !== 'auto') {
           this.selectSlot(parseInt(slotIndex));
@@ -554,9 +554,9 @@ export class SaveLoadUI {
     } else if (diff < 86400000) {
       const hours = Math.floor(diff / 3600000);
       return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else {
+    } 
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-    }
+    
   }
   
   /**
@@ -573,9 +573,9 @@ export class SaveLoadUI {
       return `${hours}h ${minutes}m`;
     } else if (minutes > 0) {
       return `${minutes}m ${secs}s`;
-    } else {
+    } 
       return `${secs}s`;
-    }
+    
   }
   
   /**

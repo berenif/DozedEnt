@@ -165,9 +165,9 @@ function updatePerformanceStats(physicsTime, renderTime) {
     const perfRender = document.getElementById('perf-render');
     const perfTotal = document.getElementById('perf-total');
 
-    if (perfPhysics) perfPhysics.textContent = physicsTime.toFixed(2) + 'ms';
-    if (perfRender) perfRender.textContent = renderTime.toFixed(2) + 'ms';
-    if (perfTotal) perfTotal.textContent = (physicsTime + renderTime).toFixed(2) + 'ms';
+    if (perfPhysics) {perfPhysics.textContent = physicsTime.toFixed(2) + 'ms';}
+    if (perfRender) {perfRender.textContent = renderTime.toFixed(2) + 'ms';}
+    if (perfTotal) {perfTotal.textContent = (physicsTime + renderTime).toFixed(2) + 'ms';}
 }
 
 function updateFPS(fps) {

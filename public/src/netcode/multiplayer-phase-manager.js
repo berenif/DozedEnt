@@ -214,7 +214,7 @@ export class MultiplayerPhaseManager {
    * Register network message handlers
    */
   registerNetworkHandlers() {
-    if (!this.networkManager) return
+    if (!this.networkManager) {return}
     
     // Handle phase sync messages
     this.networkManager.on('phase_sync', (data, senderId) => {
@@ -303,7 +303,7 @@ export class MultiplayerPhaseManager {
    * Broadcast current phase state to all peers
    */
   broadcastPhaseState() {
-    if (!this.networkManager) return
+    if (!this.networkManager) {return}
     
     const phaseData = {
       phase: this.state.currentPhase,
@@ -573,7 +573,7 @@ export class MultiplayerPhaseManager {
    */
   isValidTransition(from, to) {
     const config = PHASE_CONFIG[from]
-    if (!config) return false
+    if (!config) {return false}
     
     return config.transitions.includes(to)
   }
@@ -685,7 +685,7 @@ export class MultiplayerPhaseManager {
    * Check if voting has reached consensus
    */
   checkVoteConsensus() {
-    if (this.phaseVotes.size === 0) return
+    if (this.phaseVotes.size === 0) {return}
     
     const now = performance.now()
     if (now - this.voteStartTime < this.voteDuration) {
@@ -699,7 +699,7 @@ export class MultiplayerPhaseManager {
    * Conclude phase voting
    */
   concludePhaseVote() {
-    if (this.phaseVotes.size === 0) return
+    if (this.phaseVotes.size === 0) {return}
     
     // Count votes
     const voteCounts = new Map()
@@ -948,7 +948,7 @@ export class MultiplayerPhaseManager {
    * Request phase validation from peers
    */
   async validatePhaseWithPeers(timeout = 3000) {
-    if (!this.networkManager) return true
+    if (!this.networkManager) {return true}
     
     const requestId = `validate_${Date.now()}`
     const responses = []
@@ -990,7 +990,7 @@ export class MultiplayerPhaseManager {
    * Evaluate validation responses
    */
   evaluateValidationResponses(responses) {
-    if (responses.length === 0) return true
+    if (responses.length === 0) {return true}
     
     let validCount = 0
     for (const response of responses) {
@@ -1043,7 +1043,7 @@ export class MultiplayerPhaseManager {
    * Calculate synchronization health
    */
   calculateSyncHealth() {
-    if (this.playerStates.size === 0) return 1.0
+    if (this.playerStates.size === 0) {return 1.0}
     
     let syncedCount = 0
     for (const state of this.playerStates.values()) {

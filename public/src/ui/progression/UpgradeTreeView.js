@@ -40,17 +40,17 @@ export class UpgradeTreeView {
     this.container.appendChild(list);
 
     this.vm.onUpdate = (state) => this.updateState(state);
-    if (this.vm.state) this.updateState(this.vm.state);
+    if (this.vm.state) {this.updateState(this.vm.state);}
   }
 
   updateState(state) {
-    if (!state) return;
+    if (!state) {return;}
     this.essenceEl.textContent = `Essence: ${state.essence ?? 0}`;
     // Enable/disable buttons based on levels and cost hints if present
     const levels = state.nodes || {};
     for (const node of this.tree.nodes) {
       const control = this.nodesById.get(node.id);
-      if (!control) continue;
+      if (!control) {continue;}
       const level = levels[node.id] || 0;
       const atMax = level >= (node.maxLevel || 1);
       control.buy.disabled = atMax;

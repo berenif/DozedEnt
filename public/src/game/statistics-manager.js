@@ -199,7 +199,7 @@ export class StatisticsManager {
    */
   getFormattedStatistic(statId) {
     const stat = this.statistics.get(statId);
-    if (!stat) return 'N/A';
+    if (!stat) {return 'N/A';}
     
     return this.formatValue(stat.value, stat.type || this.guessType(statId));
   }
@@ -211,7 +211,7 @@ export class StatisticsManager {
    * @returns {string}
    */
   formatValue(value, type) {
-    if (value === undefined || value === null) return '0';
+    if (value === undefined || value === null) {return '0';}
     
     switch (type) {
       case 'time':
@@ -241,9 +241,9 @@ export class StatisticsManager {
       return `${hours}h ${minutes}m ${secs}s`;
     } else if (minutes > 0) {
       return `${minutes}m ${secs}s`;
-    } else {
+    } 
       return `${secs}s`;
-    }
+    
   }
   
   /**
@@ -284,9 +284,9 @@ export class StatisticsManager {
       return 'meta';
     } else if (key.includes('accuracy') || key.includes('rate') || key.includes('efficiency')) {
       return 'performance';
-    } else {
+    } 
       return 'survival';
-    }
+    
   }
   
   /**
@@ -295,9 +295,9 @@ export class StatisticsManager {
    * @returns {string}
    */
   guessType(key) {
-    if (key.includes('time')) return 'time';
-    if (key.includes('rate') || key.includes('accuracy') || key.includes('percentage')) return 'percentage';
-    if (key.includes('gold') || key.includes('cost')) return 'currency';
+    if (key.includes('time')) {return 'time';}
+    if (key.includes('rate') || key.includes('accuracy') || key.includes('percentage')) {return 'percentage';}
+    if (key.includes('gold') || key.includes('cost')) {return 'currency';}
     return 'number';
   }
   
@@ -441,7 +441,7 @@ export class StatisticsManager {
     const gamesPlayed = this.getStatValue('games_played') || 0;
     const deaths = this.getStatValue('total_deaths') || 0;
     
-    if (gamesPlayed === 0) return 0;
+    if (gamesPlayed === 0) {return 0;}
     return ((gamesPlayed - deaths) / gamesPlayed * 100).toFixed(1);
   }
   
@@ -487,7 +487,7 @@ export class StatisticsManager {
     let str = '';
     for (let i = 0; i < maxLength; i++) {
       const char = memory[ptr + i];
-      if (char === 0) break;
+      if (char === 0) {break;}
       str += String.fromCharCode(char);
     }
     return str;

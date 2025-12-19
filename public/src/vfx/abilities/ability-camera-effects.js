@@ -90,7 +90,7 @@ export class AbilityCameraEffects {
         const t = Math.min(1.0, this.zoomProgress / this.zoomDuration);
         
         // Ease out zoom
-        const easedT = 1 - Math.pow(1 - t, 3);
+        const easedT = 1 - (1 - t)**3;
         const newZoom = this.originalZoom + (this.targetZoom - this.originalZoom) * easedT;
         
         if (this.camera) {

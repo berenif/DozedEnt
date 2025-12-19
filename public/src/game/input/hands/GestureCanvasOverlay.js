@@ -21,13 +21,13 @@ export class GestureCanvasOverlay {
   }
 
   show() {
-    if (!this.canvas) return
+    if (!this.canvas) {return}
     this.visible = true
     this.canvas.style.display = 'block'
   }
 
   hide() {
-    if (!this.canvas) return
+    if (!this.canvas) {return}
     this.visible = false
     this.canvas.style.display = 'none'
   }
@@ -74,7 +74,7 @@ export class GestureCanvasOverlay {
   }
 
   _detach() {
-    if (!this.canvas) return
+    if (!this.canvas) {return}
     window.removeEventListener('resize', this._resize)
     this.canvas.remove()
     this.canvas = null
@@ -82,7 +82,7 @@ export class GestureCanvasOverlay {
   }
 
   _resize = () => {
-    if (!this.canvas) return
+    if (!this.canvas) {return}
     const dpr = window.devicePixelRatio || 1
     this.canvas.width = Math.floor(window.innerWidth * dpr)
     this.canvas.height = Math.floor(window.innerHeight * dpr)
@@ -92,10 +92,10 @@ export class GestureCanvasOverlay {
   }
 
   _ensureAnimating() {
-    if (this._raf) return
+    if (this._raf) {return}
     const loop = () => {
       this._raf = requestAnimationFrame(loop)
-      if (!this.visible || !this.ctx) return
+      if (!this.visible || !this.ctx) {return}
       this._render()
     }
     this._raf = requestAnimationFrame(loop)
@@ -103,14 +103,14 @@ export class GestureCanvasOverlay {
 
   _render() {
     const ctx = this.ctx
-    if (!ctx) return
+    if (!ctx) {return}
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-    if (this.points.length < 2) return
+    if (this.points.length < 2) {return}
     ctx.lineWidth = 3
     ctx.strokeStyle = 'rgba(80,200,255,0.85)'
     ctx.beginPath()
     ctx.moveTo(this.points[0].x, this.points[0].y)
-    for (let i = 1; i < this.points.length; i++) ctx.lineTo(this.points[i].x, this.points[i].y)
+    for (let i = 1; i < this.points.length; i++) {ctx.lineTo(this.points[i].x, this.points[i].y)}
     ctx.stroke()
   }
 }

@@ -70,7 +70,7 @@ export default class HostAuthority {
    * @private
    */
   updateGameState() {
-    if (!this.gameState) return
+    if (!this.gameState) {return}
 
     // Process input buffer
     for (const [playerId, inputs] of this.inputBuffer.entries()) {
@@ -102,7 +102,7 @@ export default class HostAuthority {
    * @private
    */
   broadcastState() {
-    if (!this.gameState || !this.roomManager) return
+    if (!this.gameState || !this.roomManager) {return}
 
     // Only send snapshots at configured rate
     if (this.gameState.frameNumber % (this.config.updateRate / this.config.stateSnapshotRate) === 0) {

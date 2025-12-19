@@ -177,7 +177,7 @@ export class GameRenderer {
 
   // Render pipeline
   renderWithCameraFollow(followPlayer = true) {
-    if (followPlayer) this.updateCamera(this.player.x, this.player.y, 1 / 60);
+    if (followPlayer) {this.updateCamera(this.player.x, this.player.y, 1 / 60);}
     this.ctx.save();
     const offsetX = -this.camera.x + this.canvas.width / 2;
     const offsetY = -this.camera.y + this.canvas.height / 2;
@@ -188,7 +188,7 @@ export class GameRenderer {
     this.renderCollectibles();
     this.renderInteractables();
     this.renderEnemies();
-    if (!this.useExternalPlayer) this.renderPlayer();
+    if (!this.useExternalPlayer) {this.renderPlayer();}
     this.renderProjectiles();
     this.renderLighting();
     this.renderWeather();
@@ -234,14 +234,14 @@ export class GameRenderer {
   renderWeather() {
     switch (this.currentBiome) {
       case 0: this.weather.type = 'rain'; this.weather.intensity = 0.2; this.drawFallingLeaves(0.3); break;
-      case 1: this.weather.type = 'fog'; this.weather.intensity = 0.6; if (Math.random() < 0.01) this.drawRainEffect(0.3); this.drawGlowingSpores(0.4); break;
+      case 1: this.weather.type = 'fog'; this.weather.intensity = 0.6; if (Math.random() < 0.01) {this.drawRainEffect(0.3);} this.drawGlowingSpores(0.4); break;
       case 2: this.weather.type = 'snow'; this.weather.intensity = 0.7; this.drawWindEffect(0.1); this.drawShimmeringCold(0.2); break;
       case 3: this.weather.type = 'clear'; this.weather.intensity = 0; this.drawWindEffect(0.2); this.drawFloatingDust(0.3); break;
       default: this.weather.type = 'clear'; this.weather.intensity = 0; break;
     }
-    if (this.weather.type === 'rain') this.drawRainEffect(this.weather.intensity);
-    else if (this.weather.type === 'snow') this.drawSnowEffect(this.weather.intensity);
-    else if (this.weather.type === 'fog') this.drawFogEffect(this.weather.intensity);
+    if (this.weather.type === 'rain') {this.drawRainEffect(this.weather.intensity);}
+    else if (this.weather.type === 'snow') {this.drawSnowEffect(this.weather.intensity);}
+    else if (this.weather.type === 'fog') {this.drawFogEffect(this.weather.intensity);}
   }
   renderUI() {
     this.drawHealthBar(20, 20, 200, 20, this.player.health, this.player.maxHealth);
@@ -259,7 +259,7 @@ export class GameRenderer {
   renderCollectibles() {
     const time = Date.now() / 1000;
     this.collectibles.forEach((item) => {
-      if (item.collected) return;
+      if (item.collected) {return;}
       const floatY = Math.sin(time * 2 + item.animationTime) * 5;
       this.ctx.shadowColor = item.color;
       this.ctx.shadowBlur = 15;

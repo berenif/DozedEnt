@@ -44,7 +44,7 @@ export class ReplayRecorder {
    * Record a frame
    */
   recordFrame(frameData) {
-    if (!this.enabled) return
+    if (!this.enabled) {return}
 
     const frame = {
       tick: frameData.tick,
@@ -59,7 +59,7 @@ export class ReplayRecorder {
    * Record state snapshot (for validation)
    */
   recordStateSnapshot(tick, stateData) {
-    if (!this.enabled) return
+    if (!this.enabled) {return}
 
     const snapshot = {
       tick,

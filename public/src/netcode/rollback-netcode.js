@@ -899,9 +899,9 @@ class RollbackNetcode {
       return 'fair'
     } else if (avgLatency > 50) {
       return 'good'
-    } else {
+    } 
       return 'excellent'
-    }
+    
   }
   
   /**

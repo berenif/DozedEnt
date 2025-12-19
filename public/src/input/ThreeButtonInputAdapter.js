@@ -168,7 +168,7 @@ export class ThreeButtonInputAdapter {
 
     if (isDown && this._special.down) {
       // While holding, remember if direction was ever active
-      if (hasDirection) this._special.directionWasNonZero = true;
+      if (hasDirection) {this._special.directionWasNonZero = true;}
     }
 
     return false;
@@ -176,11 +176,11 @@ export class ThreeButtonInputAdapter {
 
   _isSpecialActive(now, hasDirection) {
     // Only while button is held and we haven't emitted a roll
-    if (!this._special.down) return false;
+    if (!this._special.down) {return false;}
 
     const heldMs = now - this._special.downAt;
     // If within roll window, do not activate special yet
-    if (heldMs <= this.rollTapWindowMs) return false;
+    if (heldMs <= this.rollTapWindowMs) {return false;}
 
     // Activate special when held long enough without direction
     if (heldMs >= this.specialHoldMs && !hasDirection) {

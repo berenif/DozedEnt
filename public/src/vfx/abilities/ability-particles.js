@@ -245,7 +245,7 @@ export class AbilityParticleSystem {
      * Ease out cubic
      */
     easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
+        return 1 - (1 - t)**3;
     }
     
     /**

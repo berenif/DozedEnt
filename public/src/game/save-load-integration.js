@@ -113,10 +113,10 @@ class SaveLoadManager {
             if (success) {
                 console.log(`Save loaded from slot ${slot}:`, metadata.name);
                 return true;
-            } else {
+            } 
                 console.error('Failed to load save data into WASM');
                 return false;
-            }
+            
             
         } catch (error) {
             console.error('Error loading save:', error);

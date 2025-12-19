@@ -78,7 +78,7 @@ export class MultiplayerDemoUI {
     /**
      * Initialize all UI components
      */
-    async initializeComponents() {
+    initializeComponents() {
         // RoomForge component
         this.components.roomForge = new RoomForge('room-forge-container', {
             onRoomCreate: () => this.handleRoomCreate(),
@@ -240,7 +240,7 @@ export class MultiplayerDemoUI {
      * Update the entire UI state
      */
     updateUIState() {
-        if (!this.isInitialized) return
+        if (!this.isInitialized) {return}
 
         // Update room forge
         this.components.roomForge.updateButtonVisibility(
@@ -279,7 +279,7 @@ export class MultiplayerDemoUI {
      * Update room list
      */
     updateRoomList(rooms) {
-        if (!this.isInitialized || !this.components.roomForge) return
+        if (!this.isInitialized || !this.components.roomForge) {return}
         this.components.roomForge.updateRoomList(rooms, this.getProviderLabel(this.currentState.selectedProvider))
     }
 
@@ -334,7 +334,7 @@ export class MultiplayerDemoUI {
      * Add a log entry
      */
     log(message, type = 'info') {
-        if (!this.isInitialized || !this.components.logPanel) return
+        if (!this.isInitialized || !this.components.logPanel) {return}
         this.components.logPanel.addLog(message, type)
     }
 
@@ -342,7 +342,7 @@ export class MultiplayerDemoUI {
      * Add a chat message
      */
     addChatMessage(sender, message, isSystem = false, isSelf = false) {
-        if (!this.isInitialized || !this.components.chatIntegration) return
+        if (!this.isInitialized || !this.components.chatIntegration) {return}
         this.components.chatIntegration.addChatMessage(sender, message, isSystem, isSelf)
     }
 
@@ -350,7 +350,7 @@ export class MultiplayerDemoUI {
      * Handle incoming message
      */
     handleIncomingMessage(message) {
-        if (!this.isInitialized || !this.components.chatIntegration) return
+        if (!this.isInitialized || !this.components.chatIntegration) {return}
         this.components.chatIntegration.handleIncomingMessage(message)
     }
 
@@ -386,7 +386,7 @@ export class MultiplayerDemoUI {
      * Clean up all components and resources
      */
     destroy() {
-        if (!this.isInitialized) return
+        if (!this.isInitialized) {return}
 
         // Destroy all components
         Object.values(this.components).forEach(component => {

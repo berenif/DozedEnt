@@ -242,7 +242,7 @@ function createJavaScriptSkeleton() {
 	
 	// Helper function to rotate a 3D vector
 	function rotateVector(v, angles) {
-		let x = v.x, y = v.y, z = v.z;
+		let x = v.x; let y = v.y; let z = v.z;
 		
 		// Rotation around X axis
 		if (angles.x !== 0) {

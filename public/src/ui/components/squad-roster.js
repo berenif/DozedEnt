@@ -118,7 +118,7 @@ export class SquadRoster {
         const squadMembers = this.element.querySelector('#squad-members')
         const squadCount = this.element.querySelector('#squad-count')
         
-        if (!squadMembers || !squadCount) return
+        if (!squadMembers || !squadCount) {return}
 
         const peersArray = Object.keys(peers)
         const totalMembers = peersArray.length + (isInRoom ? 1 : 0)
@@ -184,7 +184,7 @@ export class SquadRoster {
     /**
      * Get a random status for a peer
      */
-    getPeerStatus(peerId) {
+    getPeerStatus(_peerId) {
         const statuses = [
             'Ready for battle',
             'Standing by',
@@ -211,7 +211,7 @@ export class SquadRoster {
      */
     addSquadMember(peerId, peerName, isSelf = false) {
         const squadMembers = this.element.querySelector('#squad-members')
-        if (!squadMembers) return
+        if (!squadMembers) {return}
 
         const status = this.getPeerStatus(peerId)
         const avatar = isSelf ? '👑' : '⚔️'
@@ -251,7 +251,7 @@ export class SquadRoster {
      */
     removeSquadMember(peerId) {
         const squadMembers = this.element.querySelector('#squad-members')
-        if (!squadMembers) return
+        if (!squadMembers) {return}
 
         const memberElements = squadMembers.querySelectorAll('.squad-member')
         memberElements.forEach(member => {
@@ -275,7 +275,7 @@ export class SquadRoster {
      */
     updateSquadCount() {
         const squadCount = this.element.querySelector('#squad-count')
-        if (!squadCount) return
+        if (!squadCount) {return}
 
         const memberElements = this.element.querySelectorAll('.squad-member:not(.empty)')
         const count = memberElements.length
@@ -287,7 +287,7 @@ export class SquadRoster {
      */
     highlightMember(peerId, duration = 2000) {
         const squadMembers = this.element.querySelector('#squad-members')
-        if (!squadMembers) return
+        if (!squadMembers) {return}
 
         const memberElements = squadMembers.querySelectorAll('.squad-member')
         memberElements.forEach(member => {

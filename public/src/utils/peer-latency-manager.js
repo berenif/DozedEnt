@@ -18,7 +18,7 @@ export class PeerLatencyManager {
      */
     startPingLoop(sendPing) {
         this.stopPingLoop()
-        if (!sendPing) return
+        if (!sendPing) {return}
 
         this.sendPing = sendPing
         this.isActive = true
@@ -51,10 +51,10 @@ export class PeerLatencyManager {
      * @param {Function} sendPing - Function to send ping responses
      */
     setupPingHandler(getPing, sendPing) {
-        if (!getPing) return
+        if (!getPing) {return}
 
         getPing((payload, peerId) => {
-            if (!payload || !peerId) return
+            if (!payload || !peerId) {return}
 
             if (payload.type === 'ping-response' && typeof payload.sentAt === 'number') {
                 // Calculate latency from ping response
@@ -79,10 +79,10 @@ export class PeerLatencyManager {
      * @param {Function} getPeerInfo - Function to receive peer info messages
      */
     setupPeerInfoHandler(getPeerInfo) {
-        if (!getPeerInfo) return
+        if (!getPeerInfo) {return}
 
         getPeerInfo((payload) => {
-            if (!payload || !payload.peerId) return
+            if (!payload || !payload.peerId) {return}
             if (payload.peerName) {
                 this.peerNames.set(payload.peerId, payload.peerName)
             }
@@ -96,7 +96,7 @@ export class PeerLatencyManager {
      * @param {string} peerName - Peer name
      */
     announceSelf(sendPeerInfo, selfId, peerName) {
-        if (!sendPeerInfo || !selfId || !peerName) return
+        if (!sendPeerInfo || !selfId || !peerName) {return}
         sendPeerInfo({ 
             type: 'intro', 
             peerId: selfId, 
@@ -111,7 +111,7 @@ export class PeerLatencyManager {
      * @param {string} peerName - New peer name
      */
     updatePeerName(sendPeerInfo, selfId, peerName) {
-        if (!sendPeerInfo || !selfId || !peerName) return
+        if (!sendPeerInfo || !selfId || !peerName) {return}
         sendPeerInfo({ 
             type: 'update', 
             peerId: selfId, 

@@ -269,7 +269,7 @@ export class PhaseAudioSystem {
      */
     applyPhaseAudio(phase) {
         const config = this.phaseAudioConfig[phase];
-        if (!config) return;
+        if (!config) {return;}
         
         // Update music
         this.audioManager.handlePhaseTransition({
@@ -459,7 +459,7 @@ export class PhaseAudioSystem {
      */
     updatePhaseSpecificAudio(deltaTime) {
         const config = this.phaseAudioConfig[this.currentPhase];
-        if (!config) return;
+        if (!config) {return;}
         
         // Update audio intensity based on game state
         let targetIntensity = config.intensity;
@@ -518,7 +518,7 @@ export class PhaseAudioSystem {
      */
     setPhaseAudioVolume(category, volume) {
         const config = this.phaseAudioConfig[this.currentPhase];
-        if (!config) return;
+        if (!config) {return;}
         
         switch (category) {
             case 'music':

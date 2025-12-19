@@ -108,7 +108,7 @@ export class ConnectionManager {
    * Set connection state and emit event
    */
   setConnectionState(state) {
-    if (this.connectionState === state) return
+    if (this.connectionState === state) {return}
     
     this.connectionState = state
     console.log('📡 Connection state:', state)

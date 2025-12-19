@@ -6,6 +6,18 @@
  * - Celebration animations on successful orientation
  * - Battery-aware optimizations
  */
+
+// Default mobile device detection function
+function defaultDetectMobileDevice() {
+  const userAgent = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+  const hasTouch = typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 2;
+  const smallViewport = window.innerWidth <= 768;
+  const mobileRegex = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/;
+  const tabletRegex = /ipad|android(?!.*mobile)|tablet/;
+
+  return mobileRegex.test(userAgent) || tabletRegex.test(userAgent) || hasTouch || smallViewport;
+}
+
 export class OrientationManager {
   constructor({
     overlayId = 'orientation-overlay',
@@ -300,7 +312,7 @@ export class OrientationManager {
   /**
    * Handle button touch end
    */
-  handleButtonTouchEnd(event) {
+  handleButtonTouchEnd(_event) {
     // Remove pressed visual state
     if (this.startButton) {
       this.startButton.classList.remove('pressed');
@@ -311,7 +323,7 @@ export class OrientationManager {
    * Trigger haptic feedback if available
    */
   triggerHapticFeedback(intensity = 'medium') {
-    if (!navigator.vibrate) return;
+    if (!navigator.vibrate) {return;}
     
     const patterns = {
       light: 10,
@@ -328,7 +340,7 @@ export class OrientationManager {
    * Create ripple effect on button press
    */
   createRippleEffect(event) {
-    if (!this.startButton) return;
+    if (!this.startButton) {return;}
     
     const ripple = document.createElement('span');
     ripple.className = 'ripple-effect';
@@ -353,7 +365,7 @@ export class OrientationManager {
    * Show celebration animation when transitioning to landscape
    */
   showCelebrationAnimation() {
-    if (!this.overlayElement) return;
+    if (!this.overlayElement) {return;}
     
     const celebration = document.createElement('div');
     celebration.className = 'celebration-animation';
@@ -397,7 +409,7 @@ export class OrientationManager {
     let lastAlpha = null;
     
     window.addEventListener('deviceorientation', (event) => {
-      if (!this.overlayElement || this.overlayElement.style.display === 'none') return;
+      if (!this.overlayElement || this.overlayElement.style.display === 'none') {return;}
       
       const alpha = event.alpha; // Rotation around z-axis
       if (lastAlpha !== null && Math.abs(alpha - lastAlpha) > 20) {
@@ -413,7 +425,7 @@ export class OrientationManager {
    */
   addEncouragementPulse() {
     const rotationIcon = this.overlayElement?.querySelector('.rotation-icon');
-    if (!rotationIcon) return;
+    if (!rotationIcon) {return;}
     
     rotationIcon.classList.remove('pulse-encourage');
     // Force reflow to restart animation
@@ -429,7 +441,7 @@ export class OrientationManager {
    * Initialize floating particles in overlay
    */
   initializeParticles() {
-    if (!this.overlayElement) return;
+    if (!this.overlayElement) {return;}
     
     const particlesContainer = document.createElement('div');
     particlesContainer.className = 'particles-container';
@@ -498,16 +510,6 @@ export class OrientationManager {
       }
     }
   }
-}
-
-function defaultDetectMobileDevice() {
-  const userAgent = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-  const hasTouch = typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 2;
-  const smallViewport = window.innerWidth <= 768;
-  const mobileRegex = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/;
-  const tabletRegex = /ipad|android(?!.*mobile)|tablet/;
-
-  return mobileRegex.test(userAgent) || tabletRegex.test(userAgent) || hasTouch || smallViewport;
 }
 
 export default OrientationManager;

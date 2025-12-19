@@ -55,9 +55,9 @@ export function registerDebugHelpers({ wasmApi, inputManagerRef }) {
     console.log('  Input Dir:', input.direction.x.toFixed(2), input.direction.y.toFixed(2));
     console.log('  Attacks:', input.lightAttack ? 'LIGHT' : '', input.heavyAttack ? 'HEAVY' : '', input.special ? 'SPECIAL' : '');
 
-    if (state.block) console.warn('BLOCK is active - this prevents movement!');
-    if (state.anim === 'attacking') console.warn('Attack animation may slow movement');
-    if (state.stamina < 0.1) console.warn('Low stamina may affect movement');
+    if (state.block) {console.warn('BLOCK is active - this prevents movement!');}
+    if (state.anim === 'attacking') {console.warn('Attack animation may slow movement');}
+    if (state.stamina < 0.1) {console.warn('Low stamina may affect movement');}
   };
 }
 

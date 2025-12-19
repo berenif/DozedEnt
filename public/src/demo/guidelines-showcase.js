@@ -27,8 +27,8 @@ const categoryCounts = normalizedFeatures.reduce((acc, feature) => {
 }, {});
 
 const orderedMajors = Array.from(new Set(normalizedFeatures.map((feature) => feature.majorCategory))).sort((a, b) => {
-  if (a === 'ROOT') return -1;
-  if (b === 'ROOT') return 1;
+  if (a === 'ROOT') {return -1;}
+  if (b === 'ROOT') {return 1;}
   return a.localeCompare(b);
 });
 

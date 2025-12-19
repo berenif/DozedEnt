@@ -19,7 +19,7 @@ export class MessageManager {
    */
   setupMessageActions() {
     const trysteroRoom = this.roomManager.getTrysteroRoom()
-    if (!trysteroRoom) return
+    if (!trysteroRoom) {return}
     
     // Create actions for different message types
     const messageTypes = [

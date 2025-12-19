@@ -525,7 +525,7 @@ export class TutorialSystem {
      * Start tutorial for a specific phase
      */
     startTutorial(phase) {
-        if (!this.tutorialSettings.enabled) return;
+        if (!this.tutorialSettings.enabled) {return;}
         
         const tutorial = this.tutorialData[phase];
         if (!tutorial) {
@@ -561,7 +561,7 @@ export class TutorialSystem {
      * Update tutorial display
      */
     updateTutorialDisplay() {
-        if (!this.currentTutorial) return;
+        if (!this.currentTutorial) {return;}
         
         const step = this.currentTutorial.steps[this.currentStep];
         const totalSteps = this.currentTutorial.steps.length;
@@ -807,8 +807,14 @@ export class TutorialSystem {
 }
 
 // Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = TutorialSystem;
-} else if (typeof window !== 'undefined') {
+// CommonJS export (Node.js compatibility)
+/* eslint-disable no-undef */
+if (typeof exports !== 'undefined' && typeof exports === 'object') {
+    exports.TutorialSystem = TutorialSystem;
+}
+/* eslint-enable no-undef */
+
+// Browser global export
+if (typeof window !== 'undefined') {
     window.TutorialSystem = TutorialSystem;
 }

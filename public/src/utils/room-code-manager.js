@@ -15,7 +15,7 @@ export class RoomCodeManager {
      */
     formatRoomCode(value = '') {
         const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
-        if (cleaned.length <= 3) return cleaned
+        if (cleaned.length <= 3) {return cleaned}
         return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`
     }
 
@@ -35,7 +35,7 @@ export class RoomCodeManager {
      */
     generateRoomId(provided = '') {
         const rawProvided = provided.replace(/[^A-Z0-9]/g, '').slice(0, 6)
-        if (rawProvided.length === 6) return rawProvided
+        if (rawProvided.length === 6) {return rawProvided}
         return Math.random().toString(36).slice(2, 8).toUpperCase()
     }
 
@@ -69,7 +69,7 @@ export class RoomCodeManager {
      * @param {boolean} isValid - Whether the code is valid
      */
     updateRoomCodeStatus(statusElement, isValid) {
-        if (!statusElement) return
+        if (!statusElement) {return}
         statusElement.innerHTML = isValid ? '&#10003;' : ''
         statusElement.classList.toggle('valid', isValid)
     }
@@ -100,7 +100,7 @@ export class RoomCodeManager {
      */
     handleRoomCodePaste(event, inputElement, statusElement) {
         const text = (event.clipboardData || window.clipboardData).getData('text')
-        if (!text) return ''
+        if (!text) {return ''}
         
         event.preventDefault()
         const formatted = this.formatRoomCode(text)

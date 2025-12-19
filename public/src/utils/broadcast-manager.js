@@ -16,7 +16,7 @@ export class BroadcastManager {
      * @returns {BroadcastChannel|null} Broadcast channel or null if not supported
      */
     getChannel(providerId) {
-        if (!this.isSupported) return null
+        if (!this.isSupported) {return null}
 
         if (this.channels.has(providerId)) {
             return this.channels.get(providerId)
@@ -70,7 +70,7 @@ export class BroadcastManager {
      */
     sendMessage(providerId, message) {
         const channel = this.getChannel(providerId)
-        if (!channel) return
+        if (!channel) {return}
 
         try {
             const messageWithTimestamp = {
@@ -98,7 +98,7 @@ export class BroadcastManager {
      * @param {MessageEvent} event - Message event
      */
     handleMessage(providerId, event) {
-        if (!event?.data) return
+        if (!event?.data) {return}
 
         const handler = this.messageHandlers.get(providerId)
         if (handler) {

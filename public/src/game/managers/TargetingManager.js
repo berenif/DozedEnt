@@ -28,14 +28,14 @@ function pickBestTarget(playerPos, facingDir, candidates, currentId) {
   let best = null
   let bestScore = -Infinity
   for (const c of candidates || []) {
-    if (!c || !c.interactable) continue
+    if (!c || !c.interactable) {continue}
     const dx = c.x - playerPos.x
     const dy = c.y - playerPos.y
     const dist = Math.hypot(dx, dy)
-    if (dist > maxR + hysteresisR) continue
+    if (dist > maxR + hysteresisR) {continue}
     const ang = Math.atan2(dy, dx)
     const delta = smallestAngleDiff(ang, facingDir)
-    if (Math.abs(delta) > (maxAng + hysteresisAng)) continue
+    if (Math.abs(delta) > (maxAng + hysteresisAng)) {continue}
     const base = (maxR - dist) / maxR + Math.max(0, (maxAng - Math.abs(delta)) / maxAng)
     const pri = (c.priority || 0) * 0.1
     const sticky = c.id === currentId ? 0.25 : 0 // hysteresis preference
@@ -49,8 +49,8 @@ function toRad(deg) { return (deg * Math.PI) / 180 }
 
 function smallestAngleDiff(a, b) {
   let d = a - b
-  while (d > Math.PI) d -= 2 * Math.PI
-  while (d < -Math.PI) d += 2 * Math.PI
+  while (d > Math.PI) {d -= 2 * Math.PI}
+  while (d < -Math.PI) {d += 2 * Math.PI}
   return d
 }
 

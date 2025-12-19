@@ -32,13 +32,13 @@ export class HandStateMachine {
   }
 
   reset() {
-    for (const handId of this.hands.keys()) this._resetHand(handId)
+    for (const handId of this.hands.keys()) {this._resetHand(handId)}
   }
 
   _resetHand(handId) {
     const h = this.hands.get(handId)
-    if (!h) return
-    if (h.holdTimer) clearTimeout(h.holdTimer)
+    if (!h) {return}
+    if (h.holdTimer) {clearTimeout(h.holdTimer)}
     h.state = HandState.Idle
     h.downTs = 0
     h.heavyCharge = false
@@ -49,7 +49,7 @@ export class HandStateMachine {
 
   handleDown(handId, info) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     const now = this.now()
     h.state = HandState.Hold
     h.downTs = now
@@ -61,7 +61,7 @@ export class HandStateMachine {
     h.swipe.addPoint(info.x, info.y, now)
 
     // Schedule hold threshold
-    if (h.holdTimer) clearTimeout(h.holdTimer)
+    if (h.holdTimer) {clearTimeout(h.holdTimer)}
     h.holdTimer = setTimeout(() => {
       // Decide between Grab vs HeavyCharge
       if (this.isGrabbableInRange(handId)) {
@@ -79,7 +79,7 @@ export class HandStateMachine {
 
   handleMove(handId, info) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     h.x = info.x
     h.y = info.y
     h.swipe.addPoint(info.x, info.y, this.now())
@@ -98,15 +98,15 @@ export class HandStateMachine {
 
   handleUp(handId, info) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     const now = this.now()
     const elapsed = now - h.downTs
     if (h.holdTimer) { clearTimeout(h.holdTimer); h.holdTimer = null }
 
     // Cancel slide-off
     if (info.cancelled) {
-      if (h.heavyCharge) this._emitIntent(handId, Intent.HeavyCharge, { phase: 'cancel' })
-      if (h.grabbing) this._emitIntent(handId, Intent.Grab, { phase: 'cancel' })
+      if (h.heavyCharge) {this._emitIntent(handId, Intent.HeavyCharge, { phase: 'cancel' })}
+      if (h.grabbing) {this._emitIntent(handId, Intent.Grab, { phase: 'cancel' })}
       this._setState(handId, HandState.Idle)
       this._clearFlags(h)
       return
@@ -160,7 +160,7 @@ export class HandStateMachine {
   // External draw controls (entry/exit handled by UI coordinator)
   beginDraw(handId, startX, startY) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     h.drawing = true
     this._setState(handId, HandState.Draw)
     this._emitIntent(handId, Intent.DrawPath, { phase: 'start', x: startX, y: startY })
@@ -168,7 +168,7 @@ export class HandStateMachine {
 
   endDraw(handId, result) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     if (h.drawing) {
       this._emitIntent(handId, Intent.DrawPath, { phase: 'end', ...result })
     }
@@ -189,9 +189,9 @@ export class HandStateMachine {
 
   _setState(handId, next) {
     const h = this.hands.get(handId)
-    if (!h) return
+    if (!h) {return}
     const prev = h.state
-    if (prev === next) return
+    if (prev === next) {return}
     h.state = next
     this.onStateChange && this.onStateChange(handId, prev, next)
   }

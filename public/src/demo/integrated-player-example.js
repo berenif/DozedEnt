@@ -203,20 +203,20 @@ export class IntegratedPlayerExample {
 		// Convert key state to input
 		const input = {
 			// Movement
-			left: this.keys['a'] || this.keys['arrowleft'],
-			right: this.keys['d'] || this.keys['arrowright'],
-			up: this.keys['w'] || this.keys['arrowup'],
-			down: this.keys['s'] || this.keys['arrowdown'],
+			left: this.keys.a || this.keys.arrowleft,
+			right: this.keys.d || this.keys.arrowright,
+			up: this.keys.w || this.keys.arrowup,
+			down: this.keys.s || this.keys.arrowdown,
 			
 			// Combat (5-button system)
-			lightAttack: this.keys['j'] || this.keys['1'],
-			heavyAttack: this.keys['k'] || this.keys['2'],
-			block: this.keys['shift'] || this.keys['3'],
-			roll: this.keys['control'] || this.keys['4'],
-			special: this.keys['l'] || this.keys['5'],
+			lightAttack: this.keys.j || this.keys['1'],
+			heavyAttack: this.keys.k || this.keys['2'],
+			block: this.keys.shift || this.keys['3'],
+			roll: this.keys.control || this.keys['4'],
+			special: this.keys.l || this.keys['5'],
 			
 			// Legacy
-			jump: this.keys[' '] || this.keys['z']
+			jump: this.keys[' '] || this.keys.z
 		}
 		
 		// Update integrated player controller

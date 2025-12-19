@@ -140,7 +140,7 @@ export class RoomForge {
      */
     updateRoomList(rooms, providerLabel = 'MQTT') {
         const roomList = this.element.querySelector('#room-list')
-        if (!roomList) return
+        if (!roomList) {return}
 
         if (rooms.length === 0) {
             roomList.innerHTML = `
@@ -186,9 +186,9 @@ export class RoomForge {
 
         if (isInRoom) {
             // Player is in a room - hide join button, show leave button
-            if (joinBtn) joinBtn.style.display = 'none'
-            if (leaveBtn) leaveBtn.style.display = 'inline-block'
-            if (createBtn) createBtn.style.display = 'none'
+            if (joinBtn) {joinBtn.style.display = 'none'}
+            if (leaveBtn) {leaveBtn.style.display = 'inline-block'}
+            if (createBtn) {createBtn.style.display = 'none'}
         } else {
             // Player is not in a room - show join button, hide leave button
             if (joinBtn) {
@@ -206,7 +206,7 @@ export class RoomForge {
                 }
                 joinBtn.style.display = 'inline-block'
             }
-            if (leaveBtn) leaveBtn.style.display = 'none'
+            if (leaveBtn) {leaveBtn.style.display = 'none'}
             
             if (createBtn) {
                 if (isOnCooldown && cooldownTime > 0) {
@@ -307,9 +307,9 @@ export class RoomForge {
         const minutes = Math.floor(seconds / 60)
         const hours = Math.floor(minutes / 60)
         
-        if (seconds < 60) return `${seconds}s ago`
-        if (minutes < 60) return `${minutes}m ago`
-        if (hours < 24) return `${hours}h ago`
+        if (seconds < 60) {return `${seconds}s ago`}
+        if (minutes < 60) {return `${minutes}m ago`}
+        if (hours < 24) {return `${hours}h ago`}
         return 'long ago'
     }
 

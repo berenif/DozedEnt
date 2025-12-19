@@ -95,7 +95,7 @@ export class PlayerSkeletonRenderer {
 
     // Joints
     const important = [0,1,2,3,4,5,14,16,18,20,22,24,15,17,19,21,23,25];
-    for (let idx of important) {
+    for (const idx of important) {
       this.drawJoint(j[idx], 4);
     }
   }

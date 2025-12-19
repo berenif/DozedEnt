@@ -65,7 +65,7 @@ export class HandInputView {
 
     const left = this.elements.left
     const right = this.elements.right
-    if (!left || !right) return
+    if (!left || !right) {return}
 
     // Right pill bottom-right (primary)
     right.style.width = `${w}px`
@@ -111,56 +111,56 @@ export class HandInputView {
   _insideSafeZone(x, y) {
     const inset = this.getUnsafeInsets()
     const m = Tunables.safeEdgeMarginPx
-    if (x < m + inset.left) return false
-    if (x > window.innerWidth - (m + inset.right)) return false
-    if (y < m + inset.top) return false
-    if (y > window.innerHeight - (m + inset.bottom)) return false
+    if (x < m + inset.left) {return false}
+    if (x > window.innerWidth - (m + inset.right)) {return false}
+    if (y < m + inset.top) {return false}
+    if (y > window.innerHeight - (m + inset.bottom)) {return false}
     return true
   }
 
   _pickHand(x, y) {
-    if (!this.pillRects) this._updatePillRects()
+    if (!this.pillRects) {this._updatePillRects()}
     const L = this.pillRects?.left
     const R = this.pillRects?.right
     const inside = (r) => r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
-    if (inside(R)) return HandId.Right
-    if (inside(L)) return HandId.Left
+    if (inside(R)) {return HandId.Right}
+    if (inside(L)) {return HandId.Left}
     // Fallback: nearest center
     const dist2 = (r) => {
-      if (!r) return Infinity
+      if (!r) {return Infinity}
       const cx = (r.left + r.right) / 2
       const cy = (r.top + r.bottom) / 2
       const dx = x - cx
       const dy = y - cy
       return dx*dx + dy*dy
     }
-    const dL = dist2(L), dR = dist2(R)
+    const dL = dist2(L); const dR = dist2(R)
     return dR <= dL ? HandId.Right : HandId.Left
   }
 
   _updatePillRects() {
     const left = this.elements.left
     const right = this.elements.right
-    if (!left || !right) return
+    if (!left || !right) {return}
     this.pillRects = { left: left.getBoundingClientRect(), right: right.getBoundingClientRect() }
   }
 
   _handleStart(e) {
     for (const t of Array.from(e.changedTouches)) {
-      const x = t.clientX, y = t.clientY
-      if (!this._insideSafeZone(x, y)) continue
+      const x = t.clientX; const y = t.clientY
+      if (!this._insideSafeZone(x, y)) {continue}
       const handId = this._pickHand(x, y)
       const radiusPx = handId === HandId.Left ? this.leftCancelRadius : this.rightCancelRadius
       this.activeTouches.set(t.identifier, { handId, startX: x, startY: y, x, y, startTime: performance.now(), radiusPx, cancelled: false })
       this.onHandDown(handId, { x, y, startTime: performance.now(), id: t.identifier })
     }
-    if (e.changedTouches.length) e.preventDefault()
+    if (e.changedTouches.length) {e.preventDefault()}
   }
 
   _handleMove(e) {
     for (const t of Array.from(e.changedTouches)) {
       const info = this.activeTouches.get(t.identifier)
-      if (!info) continue
+      if (!info) {continue}
       info.x = t.clientX; info.y = t.clientY
 
       // Slide-off cancel
@@ -177,17 +177,17 @@ export class HandInputView {
 
       this.onHandMove(info.handId, { x: info.x, y: info.y, id: t.identifier, startX: info.startX, startY: info.startY, startTime: info.startTime })
     }
-    if (e.changedTouches.length) e.preventDefault()
+    if (e.changedTouches.length) {e.preventDefault()}
   }
 
   _handleEnd(e) {
     for (const t of Array.from(e.changedTouches)) {
       const info = this.activeTouches.get(t.identifier)
-      if (!info) continue
+      if (!info) {continue}
       this.onHandUp(info.handId, { x: t.clientX, y: t.clientY, id: t.identifier, cancelled: !!info.cancelled })
       this.activeTouches.delete(t.identifier)
     }
-    if (e.changedTouches.length) e.preventDefault()
+    if (e.changedTouches.length) {e.preventDefault()}
   }
 }
 

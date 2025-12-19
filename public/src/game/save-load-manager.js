@@ -194,10 +194,10 @@ export class SaveLoadManager {
         
         console.log(`Game loaded from slot ${slotIndex}`);
         return true;
-      } else {
+      } 
         console.error(`Failed to load save data from slot ${slotIndex}`);
         return false;
-      }
+      
       
     } catch (error) {
       console.error('Failed to load game:', error);
@@ -319,10 +319,10 @@ export class SaveLoadManager {
       if (result === 1) {
         this.showNotification('Auto-save loaded', 'success');
         return true;
-      } else {
+      } 
         console.error('Failed to load auto-save data');
         return false;
-      }
+      
       
     } catch (error) {
       console.error('Failed to load auto-save:', error);

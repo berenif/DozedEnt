@@ -36,7 +36,7 @@ export function lightenColor(hex, amount) {
 // Time-based angular smoothing (frame-rate independent)
 export function smoothRotate(current, target, dt, speed = 10) {
     const TAU = Math.PI * 2
-    let diff = ((target - current + Math.PI) % TAU) - Math.PI
+    const diff = ((target - current + Math.PI) % TAU) - Math.PI
     const t = Math.min(1, Math.max(0, (speed || 0) * (dt || 0)))
     return current + diff * t
 }

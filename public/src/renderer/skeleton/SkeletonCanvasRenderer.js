@@ -160,28 +160,28 @@ export class SkeletonCanvasRenderer {
 					const name = skeleton.getBoneName(i);
 					const pos = skeleton.getBonePosition(i);
 					let parent = null;
-					if (name === 'knee_L') parent = 'hip_L';
-					else if (name === 'ankle_L') parent = 'knee_L';
-					else if (name === 'knee_R') parent = 'hip_R';
-					else if (name === 'ankle_R') parent = 'knee_R';
-					else if (name === 'elbow_L') parent = 'shoulder_L';
-					else if (name === 'wrist_L') parent = 'elbow_L';
-					else if (name === 'elbow_R') parent = 'shoulder_R';
-					else if (name === 'wrist_R') parent = 'elbow_R';
-					else if (name === 'shoulder_L' || name === 'shoulder_R') parent = 'chest';
-					else if (name === 'chest') parent = 'spine_03';
-					else if (name === 'spine_03') parent = 'spine_02';
-					else if (name === 'spine_02') parent = 'spine_01';
-					else if (name === 'spine_01') parent = 'pelvis';
-					else if (name === 'neck') parent = 'chest';
-					else if (name === 'head') parent = 'neck';
-					else if (name === 'hip_L' || name === 'hip_R') parent = 'pelvis';
-					else if (name === 'toe_L') parent = 'foot_L';
-					else if (name === 'toe_R') parent = 'foot_R';
+					if (name === 'knee_L') {parent = 'hip_L';}
+					else if (name === 'ankle_L') {parent = 'knee_L';}
+					else if (name === 'knee_R') {parent = 'hip_R';}
+					else if (name === 'ankle_R') {parent = 'knee_R';}
+					else if (name === 'elbow_L') {parent = 'shoulder_L';}
+					else if (name === 'wrist_L') {parent = 'elbow_L';}
+					else if (name === 'elbow_R') {parent = 'shoulder_R';}
+					else if (name === 'wrist_R') {parent = 'elbow_R';}
+					else if (name === 'shoulder_L' || name === 'shoulder_R') {parent = 'chest';}
+					else if (name === 'chest') {parent = 'spine_03';}
+					else if (name === 'spine_03') {parent = 'spine_02';}
+					else if (name === 'spine_02') {parent = 'spine_01';}
+					else if (name === 'spine_01') {parent = 'pelvis';}
+					else if (name === 'neck') {parent = 'chest';}
+					else if (name === 'head') {parent = 'neck';}
+					else if (name === 'hip_L' || name === 'hip_R') {parent = 'pelvis';}
+					else if (name === 'toe_L') {parent = 'foot_L';}
+					else if (name === 'toe_R') {parent = 'foot_R';}
 					if (parent) {
 						const mapIndex = (() => {
 							for (let j = 0; j < count; j++) {
-								if (skeleton.getBoneName(j) === parent) return j;
+								if (skeleton.getBoneName(j) === parent) {return j;}
 							}
 							return -1;
 						})();

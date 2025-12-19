@@ -130,7 +130,7 @@ export class AlertSystem {
      * @param {Object} options - Additional options
      * @returns {HTMLElement} - The created toast element
      */
-    createToastElement(message, type, options = {}) {
+    createToastElement(message, type, _options = {}) {
         const toast = document.createElement('div');
         toast.className = `ui-toast ${type}`;
         
@@ -359,7 +359,7 @@ export function showAlertStatus() {
 /**
  * Show WebTorrent tracker connection error with fallback options
  */
-export function showWebTorrentError(trackerUrl, errorMessage) {
+export function showWebTorrentError(trackerUrl, _errorMessage) {
     if (!globalAlertSystem) {
         globalAlertSystem = initializeGlobalAlertSystem();
     }

@@ -134,7 +134,7 @@ export class EnhancedRoomManager {
    * Set up network message handlers
    */
   setupNetworkHandlers() {
-    if (!this.networkManager) return
+    if (!this.networkManager) {return}
     
     // Handle room state updates from other peers
     this.networkManager.onMessage('roomState', (data, peerId) => {
@@ -186,7 +186,7 @@ export class EnhancedRoomManager {
   handleRemotePlayerJoin(data, peerId) {
     console.log('📥 Remote player joined:', data)
     
-    if (!this.currentRoom) return
+    if (!this.currentRoom) {return}
     
     // Add player to current room if not already present
     if (!this.currentRoom.players.has(data.playerId)) {
@@ -215,7 +215,7 @@ export class EnhancedRoomManager {
   handleRemotePlayerLeave(data, peerId) {
     console.log('📥 Remote player left:', data)
     
-    if (!this.currentRoom) return
+    if (!this.currentRoom) {return}
     
     // Remove player from room
     if (this.currentRoom.players.has(data.playerId)) {
@@ -234,7 +234,7 @@ export class EnhancedRoomManager {
   handleRemotePlayerReady(data, peerId) {
     console.log('📥 Remote player ready state:', data)
     
-    if (!this.currentRoom) return
+    if (!this.currentRoom) {return}
     
     if (this.currentRoom.players.has(data.playerId)) {
       const player = this.currentRoom.players.get(data.playerId)
@@ -273,7 +273,7 @@ export class EnhancedRoomManager {
    * Handle peer disconnection
    */
   handlePeerDisconnect(peerId) {
-    if (!this.currentRoom) return
+    if (!this.currentRoom) {return}
     
     // Find and remove player with this peerId
     for (const [playerId, player] of this.currentRoom.players.entries()) {
@@ -291,7 +291,7 @@ export class EnhancedRoomManager {
    * Broadcast room state to all peers
    */
   broadcastRoomState() {
-    if (!this.networkEnabled || !this.networkManager || !this.currentRoom) return
+    if (!this.networkEnabled || !this.networkManager || !this.currentRoom) {return}
     
     const roomData = {
       roomId: this.currentRoom.id,
@@ -313,7 +313,7 @@ export class EnhancedRoomManager {
    * Broadcast to room (for external use)
    */
   broadcastToRoom(messageType, data) {
-    if (!this.networkEnabled || !this.networkManager) return
+    if (!this.networkEnabled || !this.networkManager) {return}
     
     this.networkManager.broadcastToRoom({
       type: messageType,

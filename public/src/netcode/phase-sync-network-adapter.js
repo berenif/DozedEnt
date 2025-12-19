@@ -228,12 +228,12 @@ export class PhaseSyncNetworkAdapter {
    * Schedule reconnection attempt
    */
   scheduleReconnect() {
-    if (this.connectionState.reconnecting) return
+    if (this.connectionState.reconnecting) {return}
     
     this.connectionState.reconnecting = true
     this.connectionState.reconnectAttempts++
     
-    const delay = this.config.reconnectDelay * Math.pow(2, this.connectionState.reconnectAttempts - 1)
+    const delay = this.config.reconnectDelay * 2**(this.connectionState.reconnectAttempts - 1)
     
     this.logger.info('Scheduling reconnection', {
       attempt: this.connectionState.reconnectAttempts,
@@ -434,7 +434,7 @@ export class PhaseSyncNetworkAdapter {
    */
   handleResponse(message) {
     const request = this.pendingRequests.get(message.requestId)
-    if (!request) return
+    if (!request) {return}
     
     clearTimeout(request.timeout)
     this.pendingRequests.delete(message.requestId)
@@ -601,7 +601,7 @@ export class PhaseSyncNetworkAdapter {
    * Send heartbeat to all peers
    */
   sendHeartbeat() {
-    if (!this.connectionState.connected) return
+    if (!this.connectionState.connected) {return}
     
     this.broadcast(JSON.stringify({
       type: 'heartbeat',

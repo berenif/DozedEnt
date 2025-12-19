@@ -39,10 +39,10 @@ function processFile(filePath) {
       fs.writeFileSync(filePath, newContent, 'utf8');
       console.log(`✅ Fixed ${changes} loose equality operators in ${filePath}`);
       return changes;
-    } else {
+    } 
       console.log(`ℹ️  No loose equality operators found in ${filePath}`);
       return 0;
-    }
+    
   } catch (error) {
     console.error(`❌ Error processing ${filePath}:`, error.message);
     return 0;

@@ -22,7 +22,7 @@ export class ProgressionCoordinator {
   }
 
   stop() {
-    if (this.vm) this.vm.detach();
+    if (this.vm) {this.vm.detach();}
   }
 }
 
