@@ -348,7 +348,7 @@ export class IntegratedPlayerController {
 	/**
 	 * Render player and combo UI
 	 */
-	render(ctx, camera = null) {
+	render(ctx, _camera = null) {
 		// Note: Player rendering should be done by TopDownPlayerRenderer
 		// This is just for backward compatibility
 		if (this.player.debugMode) {

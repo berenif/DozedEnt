@@ -106,7 +106,7 @@ export class PlayerPhysicsAnimator {
 
     interpolateLimb(current, target, lerp) {
         Object.keys(target).forEach(key => {
-            if (target[key] && typeof target[key] === 'object' && target[key].x !== undefined) {
+            if (target[key] && typeof target[key] === 'object' && typeof target[key].x !== 'undefined') {
                 this.interpolatePoint(current[key], target[key], lerp);
             }
         });

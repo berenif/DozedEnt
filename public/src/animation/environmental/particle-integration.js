@@ -259,20 +259,22 @@ export class AnimationParticleIntegration {
     }
 
     calculateParticleAngle(index, total, config, direction) {
-        const baseAngle = Math.atan2(direction.y, direction.x)
+        const baseAngle = Math.atan2(direction.y, direction.x);
         
         if (config.ring) {
             // Distribute evenly in a ring
-            return (index / total) * Math.PI * 2
-        } else if (config.spread >= 360) {
-            // Full circle burst
-            return (index / total) * Math.PI * 2
-        } else {
-            // Cone spread
-            const spreadRad = (config.spread * Math.PI) / 180
-            const offset = (randFloat('particle_angle') - 0.5) * spreadRad
-            return baseAngle + offset
+            return (index / total) * Math.PI * 2;
         }
+        
+        if (config.spread >= 360) {
+            // Full circle burst
+            return (index / total) * Math.PI * 2;
+        }
+        
+        // Cone spread
+        const spreadRad = (config.spread * Math.PI) / 180;
+        const offset = (randFloat('particle_angle') - 0.5) * spreadRad;
+        return baseAngle + offset;
     }
 
     calculateParticleSpeed(config, options) {
@@ -283,8 +285,8 @@ export class AnimationParticleIntegration {
 
     // Update active particle effects
     update(deltaTime) {
-        for (const [id, effect] of this.activeEffects) {
-            this.updateEffect(effect, deltaTime)
+        for (const [, effect] of this.activeEffects) {
+            this.updateEffect(effect, deltaTime);
         }
     }
 

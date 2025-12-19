@@ -27,14 +27,13 @@ export default class SpineModule {
     }
 
     apply(deltaTime, pose, context) {
-        const velocity = context.velocity || { x: 0, y: 0 }
-        const facing = context.facing ?? 1
-        const maxSpeed = context.maxSpeed ?? 0.3
-        const posture = context.posture || { lean: 0 }
-        const locomotion = context.locomotion || { stridePhase: 0, moving: false }
-        const breathing = context.breathing ?? 1
-        const combatDir = context.combatDir || null
-        const isAttacking = context.playerState === 'attacking'
+        const velocity = context.velocity || { x: 0, y: 0 };
+        const facing = context.facing ?? 1;
+        const maxSpeed = context.maxSpeed ?? 0.3;
+        const locomotion = context.locomotion || { stridePhase: 0, moving: false };
+        const breathing = context.breathing ?? 1;
+        const combatDir = context.combatDir || null;
+        const isAttacking = context.playerState === 'attacking';
         
         const horizontalVelocity = clamp(velocity.x / maxSpeed, -1, 1)
         const speed = context.speed ?? Math.hypot(velocity.x, velocity.y)

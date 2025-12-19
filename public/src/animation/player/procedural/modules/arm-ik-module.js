@@ -67,9 +67,9 @@ export default class ArmIKModule {
     }
 
     apply(deltaTime, pose, context) {
-        const combat = context.combat || { handTargets: null }
-        const facing = context.facing ?? 1
-        const state = context.playerState || 'idle'
+        // combat context available if needed for hand targets
+        const facing = context.facing ?? 1;
+        const state = context.playerState || 'idle';
         
         // Get hand targets from combat module (already set by combat module)
         // We'll use the current hand positions as targets
@@ -88,31 +88,35 @@ export default class ArmIKModule {
         const rightIK = solveArmIK(shoulderR, rightTarget, this.config.upperArmLength, this.config.forearmLength, preferDown)
         
         // Calculate wrist orientation based on state and movement
-        let leftWristRotation = 0
-        let rightWristRotation = 0
-        let leftPronation = 0
-        let rightPronation = 0
+        let leftWristRotation;
+        let rightWristRotation;
+        let leftPronation;
+        let rightPronation;
         
         if (state === 'attacking') {
             // Attacking: pronate wrist during swing for power
-            const attackPhase = context.normalizedTime ?? 0
+            const attackPhase = context.normalizedTime ?? 0;
             if (attackPhase >= 0.3 && attackPhase <= 0.7) {
-                rightPronation = -0.7  // Pronated during active swing
-                rightWristRotation = facing * 0.3
+                rightPronation = -0.7;  // Pronated during active swing
+                rightWristRotation = facing * 0.3;
             } else {
-                rightPronation = 0.2   // Slightly supinated at rest
+                rightPronation = 0.2;   // Slightly supinated at rest
+                rightWristRotation = 0;
             }
-            leftPronation = 0.3
+            leftPronation = 0.3;
+            leftWristRotation = 0;
         } else if (state === 'blocking') {
             // Blocking: both hands up, slight supination for guard
-            leftPronation = 0.4
-            rightPronation = 0.4
-            leftWristRotation = -facing * 0.2
-            rightWristRotation = -facing * 0.2
+            leftPronation = 0.4;
+            rightPronation = 0.4;
+            leftWristRotation = -facing * 0.2;
+            rightWristRotation = -facing * 0.2;
         } else {
             // Idle/walking: neutral wrist position
-            leftPronation = 0.1
-            rightPronation = 0.1
+            leftPronation = 0.1;
+            rightPronation = 0.1;
+            leftWristRotation = 0;
+            rightWristRotation = 0;
         }
         
         // Smooth wrist transitions

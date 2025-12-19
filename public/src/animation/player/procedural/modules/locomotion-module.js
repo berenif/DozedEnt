@@ -51,13 +51,10 @@ export default class LocomotionModule {
     }
 
     apply(deltaTime, pose, context) {
-        const velocity = context.velocity || { x: 0, y: 0 }
-        const speed = context.speed ?? Math.hypot(velocity.x, velocity.y)
-        const facing = context.facing ?? 1
-        const isGrounded = context.isGrounded ?? true
-        const legLiftLeft = context.legLiftLeft ?? 0
-        const legLiftRight = context.legLiftRight ?? 0
-        const groundOffset = context.groundOffset ?? 0
+        const velocity = context.velocity || { x: 0, y: 0 };
+        const speed = context.speed ?? Math.hypot(velocity.x, velocity.y);
+        const isGrounded = context.isGrounded ?? true;
+        const groundOffset = context.groundOffset ?? 0;
 
         // Calculate movement direction and speed ratio
         const speedRatio = clamp(speed / this.config.maxStrideSpeed, 0, 1)

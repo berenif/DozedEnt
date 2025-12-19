@@ -9,7 +9,7 @@ import { createCanvasRenderer, applyPose } from './SkeletonFactory.js';
  * @param {number} height - Height in meters (default: 1.7)
  * @returns {Object} Skeleton instance
  */
-export async function createHumanSkeleton(height = 1.7) {
+export async function createHumanSkeleton(_height = 1.7) {
     const manager = new SkeletonManager();
     const skeleton = await manager.initializePreferred();
     

@@ -345,7 +345,7 @@ export class KenseiDashAnimation {
             const particle = this.trailParticles[i];
             
             // Update position with velocity
-            if (particle.vx !== undefined) {
+            if (typeof particle.vx !== 'undefined') {
                 particle.x += particle.vx * dt;
                 particle.y += particle.vy * dt;
             }

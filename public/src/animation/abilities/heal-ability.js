@@ -35,10 +35,10 @@ export class HealAbility extends AbilityAnimationBase {
     /**
      * Start healing
      */
-    onStart(player, target) {
+    onStart(player, _target) {
         // Play healing animation
         if (player.setState) {
-            player.setState('healing')
+            player.setState('healing');
         }
         
         // Visual effects
@@ -108,7 +108,9 @@ export class HealAbility extends AbilityAnimationBase {
      * Spawn initial heal effects
      */
     spawnHealEffects(position) {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         // Healing aura
         this.particleSystem.spawn('heal_aura', position, {
@@ -133,9 +135,11 @@ export class HealAbility extends AbilityAnimationBase {
      * Spawn healing particles
      */
     spawnHealParticles() {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
-        const position = this.player.position
+        const position = this.player.position;
         
         // Healing particles
         this.particleSystem.spawn('heal_particles', position, {
@@ -162,9 +166,11 @@ export class HealAbility extends AbilityAnimationBase {
      * Apply healing to targets
      */
     applyHealing() {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
-        const targets = this.findHealTargets()
+        const targets = this.findHealTargets();
         
         targets.forEach(target => {
             if (!this.healedTargets.has(target.id)) {
@@ -202,7 +208,9 @@ export class HealAbility extends AbilityAnimationBase {
      * Spawn target heal effect
      */
     spawnTargetHealEffect(position) {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         // Target heal effect
         this.particleSystem.spawn('target_heal', position, {
