@@ -34,10 +34,10 @@ export class FireballAbility extends AbilityAnimationBase {
     /**
      * Start charging fireball
      */
-    onStart(player, target) {
+    onStart(player, _target) {
         // Play charge-up animation
         if (player.setState) {
-            player.setState('chargingFireball')
+            player.setState('chargingFireball');
         }
         
         // Visual effects
@@ -110,10 +110,12 @@ export class FireballAbility extends AbilityAnimationBase {
      * Release the fireball projectile
      */
     releaseProjectile() {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
-        const direction = this.getProjectileDirection()
-        const startPos = this.getProjectileStartPosition()
+        const direction = this.getProjectileDirection();
+        const startPos = this.getProjectileStartPosition();
         
         this.projectile = new FireballProjectile({
             position: startPos,
@@ -140,8 +142,10 @@ export class FireballAbility extends AbilityAnimationBase {
      * Handle projectile impact
      */
     handleImpact() {
-        if (this.impactSpawned) return
-        this.impactSpawned = true
+        if (this.impactSpawned) {
+            return;
+        }
+        this.impactSpawned = true;
         
         const impactPos = this.projectile.position
         
@@ -166,7 +170,9 @@ export class FireballAbility extends AbilityAnimationBase {
      * Spawn charge particles
      */
     spawnChargeParticles(position) {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         this.particleSystem.spawn('fireball_charge', position, {
             count: 3,
@@ -183,7 +189,9 @@ export class FireballAbility extends AbilityAnimationBase {
      * Spawn impact effect
      */
     spawnImpactEffect(position) {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         // Explosion effect
         this.particleSystem.spawn('explosion', position, {
@@ -297,7 +305,9 @@ class FireballProjectile {
     }
     
     update(deltaTime) {
-        if (this.hasImpacted) return
+        if (this.hasImpacted) {
+            return;
+        }
         
         // Update position
         this.position.x += this.velocity.x * deltaTime
@@ -315,7 +325,9 @@ class FireballProjectile {
     }
     
     spawnTrailParticle() {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         this.particleSystem.spawn('fireball_trail', this.position, {
             count: 1,

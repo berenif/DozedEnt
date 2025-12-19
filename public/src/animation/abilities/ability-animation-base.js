@@ -122,7 +122,7 @@ export class AbilityAnimationBase {
 
     // Utilities
     lerp(a, b, t) { return a + (b - a) * t }
-    easeOutCubic(t) { return 1 - Math.pow(1 - t, 3) }
+    easeOutCubic(t) { return 1 - (1 - t) ** 3; }
     easeInCubic(t) { return t * t * t }
 
     _switchState(next) {

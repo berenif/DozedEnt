@@ -21,7 +21,7 @@ public:
     void clear() { fields_.clear(); }
     void add(const ForceField &f) { fields_.push_back(f); }
 
-    void apply(std::vector<RigidBody> &bodies, Fixed dt) const {
+    void apply(std::vector<RigidBody> &bodies, Fixed /* dt */) const {
         for (auto &b : bodies) {
             // Force fields only affect dynamic bodies with non-zero inverse mass
             if (b.type != BodyType::Dynamic || b.is_sleeping) {

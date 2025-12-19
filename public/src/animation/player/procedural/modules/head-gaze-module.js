@@ -27,12 +27,10 @@ export default class HeadGazeModule {
     }
 
     apply(deltaTime, pose, context) {
-        const velocity = context.velocity || { x: 0, y: 0 }
-        const facing = context.facing ?? 1
-        const posture = context.posture || { lean: 0 }
-        const spine = context.spine || { counterRotation: 0 }
-        const locomotion = context.locomotion || { stridePhase: 0, moving: false, footContacts: { left: false, right: false } }
-        const lookTarget = context.lookTarget || null
+        const facing = context.facing ?? 1;
+        const spine = context.spine || { counterRotation: 0 };
+        const locomotion = context.locomotion || { stridePhase: 0, moving: false, footContacts: { left: false, right: false } };
+        const lookTarget = context.lookTarget || null;
         
         // Counter-rotation: head rotates opposite to chest
         const chestRotation = spine.counterRotation ?? 0
@@ -62,10 +60,10 @@ export default class HeadGazeModule {
         this.headState.pitch = damp(this.headState.pitch, targetPitch, deltaTime, this.config.lookAtSpeed)
         
         // Micro-nod on footstep impacts
-        const leftContact = locomotion.footContacts?.left ?? false
-        const rightContact = locomotion.footContacts?.right ?? false
-        const nodPhase = Math.sin(locomotion.stridePhase * Math.PI * 2)
-        const nodTarget = (leftContact || rightContact) ? -this.config.nodAmplitude : 0
+        const leftContact = locomotion.footContacts?.left ?? false;
+        const rightContact = locomotion.footContacts?.right ?? false;
+        // nodPhase available for future use: Math.sin(locomotion.stridePhase * Math.PI * 2)
+        const nodTarget = (leftContact || rightContact) ? -this.config.nodAmplitude : 0;
         this.headState.nodOffset = damp(this.headState.nodOffset, nodTarget, deltaTime, 20)
         
         // Apply to head pose

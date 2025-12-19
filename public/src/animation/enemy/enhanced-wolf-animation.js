@@ -356,8 +356,10 @@ export class EnhancedWolfAnimationSystem {
      * Update wolf animation
      */
     updateWolfAnimation(wolf, deltaTime) {
-        const behavior = this.behaviorStates[wolf.behavior]
-        if (!behavior) return
+        const behavior = this.behaviorStates[wolf.behavior];
+        if (!behavior) {
+            return;
+        }
         
         // Update animation time
         wolf.animationTime += deltaTime * wolf.animationSpeed
@@ -397,9 +399,9 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update body animation
      */
-    updateBodyAnimation(wolf, deltaTime) {
-        const behavior = this.behaviorStates[wolf.behavior]
-        const speed = behavior.speed
+    updateBodyAnimation(wolf, _deltaTime) {
+        const behavior = this.behaviorStates[wolf.behavior];
+        const speed = behavior.speed;
         
         // Body bob based on speed
         const bobAmplitude = speed * 2
@@ -417,8 +419,8 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update head animation
      */
-    updateHeadAnimation(wolf, deltaTime) {
-        const behavior = this.behaviorStates[wolf.behavior]
+    updateHeadAnimation(wolf, _deltaTime) {
+        // behavior is stored but animation is based on wolf.behavior directly
         
         // Head movement based on behavior
         let headPitch = 0
@@ -444,8 +446,8 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update tail animation
      */
-    updateTailAnimation(wolf, deltaTime) {
-        const behavior = this.behaviorStates[wolf.behavior]
+    updateTailAnimation(wolf, _deltaTime) {
+        // behavior is stored but animation is based on wolf.behavior directly
         
         // Tail movement based on behavior and personality
         let tailSway = 0
@@ -476,9 +478,8 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update wolf physics
      */
-    updateWolfPhysics(wolf, deltaTime) {
-        const behavior = this.behaviorStates[wolf.behavior]
-        const speed = behavior.speed
+    updateWolfPhysics(wolf, _deltaTime) {
+        // speed unused - physics updates based on wolf state
         
         // Update center of mass
         wolf.physics.centerOfMass.x = wolf.position.x
@@ -516,7 +517,7 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update wolf environmental adaptation
      */
-    updateWolfEnvironment(wolf, deltaTime) {
+    updateWolfEnvironment(wolf, _deltaTime) {
         // Temperature adaptation
         wolf.environment.temperature = this.environment.weather.temperature
         
@@ -544,8 +545,10 @@ export class EnhancedWolfAnimationSystem {
      * Update behavior state machine
      */
     updateBehaviorStateMachine(wolf, deltaTime) {
-        const currentBehavior = this.behaviorStates[wolf.behavior]
-        if (!currentBehavior) return
+        const currentBehavior = this.behaviorStates[wolf.behavior];
+        if (!currentBehavior) {
+            return;
+        }
         
         // Update behavior duration
         currentBehavior.duration += deltaTime
@@ -557,9 +560,9 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Check behavior transitions
      */
-    checkBehaviorTransitions(wolf, deltaTime) {
-        const currentBehavior = this.behaviorStates[wolf.behavior]
-        const personality = wolf.personality
+    checkBehaviorTransitions(wolf, _deltaTime) {
+        const currentBehavior = this.behaviorStates[wolf.behavior];
+        const personality = wolf.personality;
         
         // Simple behavior transition logic
         if (currentBehavior.duration > 5) { // Minimum behavior duration
@@ -579,7 +582,9 @@ export class EnhancedWolfAnimationSystem {
      * Transition to new behavior
      */
     transitionBehavior(wolf, newBehavior) {
-        if (wolf.behavior === newBehavior) return
+        if (wolf.behavior === newBehavior) {
+            return;
+        }
         
         wolf.behavior = newBehavior
         wolf.animationTime = 0
@@ -598,7 +603,9 @@ export class EnhancedWolfAnimationSystem {
      * Spawn behavior transition effect
      */
     spawnBehaviorTransitionEffect(wolf, newBehavior) {
-        if (!this.particleSystem) return
+        if (!this.particleSystem) {
+            return;
+        }
         
         // Different effects for different behaviors
         switch (newBehavior) {
@@ -633,7 +640,9 @@ export class EnhancedWolfAnimationSystem {
      * Update pack dynamics
      */
     updatePackDynamics(deltaTime) {
-        if (!this.packLeader) return
+        if (!this.packLeader) {
+            return;
+        }
         
         // Update pack coordination
         for (const wolf of this.wolves.values()) {
@@ -646,7 +655,7 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update pack follower
      */
-    updatePackFollower(wolf, deltaTime) {
+    updatePackFollower(wolf, _deltaTime) {
         // Follow pack leader
         const leader = this.packLeader
         const distance = Math.hypot(
@@ -678,7 +687,7 @@ export class EnhancedWolfAnimationSystem {
     /**
      * Update pack leadership
      */
-    updatePackLeadership(wolf, deltaTime) {
+    updatePackLeadership(wolf, _deltaTime) {
         // Pack leader behavior
         const personality = wolf.personality
         

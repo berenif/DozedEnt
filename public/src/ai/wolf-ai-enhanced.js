@@ -1046,7 +1046,7 @@ export class ScentTrackingSystem {
     }
     
     // Get deterministic wind seed based on time and position
-    getDeterministicWindSeed(deltaTime) {
+    getDeterministicWindSeed(_deltaTime) {
         // Use time-based seed for deterministic wind variation
         const timeSeed = (Date.now() * 0.001) % 1
         const positionSeed = ((this.wind.direction.x + this.wind.direction.y) * 1000) % 1
@@ -1297,7 +1297,7 @@ export class EnhancedWolfAISystem {
     }
     
     // Get deterministic vocalization seed based on wolf state and time
-    getDeterministicVocalizationSeed(wolf, player) {
+    getDeterministicVocalizationSeed(wolf, _player) {
         // Use wolf ID, time, and state for deterministic vocalization timing
         const wolfId = wolf.id || 0
         const timeSeed = (Date.now() * 0.001) % 1

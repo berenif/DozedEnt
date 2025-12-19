@@ -226,9 +226,8 @@ export class AnimatedPlayer {
 	 * @param {string} type - 'light' or 'heavy'
 	 */
 	queueAttack(type = 'light') {
-		const stats = this.stateViewModel.getStats()
 		if (this.canAttack()) {
-			this.startAttack(type)
+			this.startAttack(type);
 		}
 	}
 
@@ -283,10 +282,10 @@ export class AnimatedPlayer {
 	 * @param {number} knockbackX - Horizontal knockback
 	 * @param {number} knockbackY - Vertical knockback
 	 */
-	takeDamage(amount, knockbackX = 0, knockbackY = 0) {
+	takeDamage(amount, _knockbackX = 0, _knockbackY = 0) {
 		// Update cached health
-		const stats = this.stateViewModel.getStats()
-		this.stateViewModel._cachedHealth = Math.max(0, stats.health - amount)
+		const currentHealth = this.stateViewModel.getStats().health;
+		this.stateViewModel._cachedHealth = Math.max(0, currentHealth - amount);
 		
 		// Trigger hurt animation
 		this.setState('hurt')
@@ -359,9 +358,9 @@ export class AnimatedPlayer {
 	 * @param {string} newState
 	 * @param {boolean} wasmDriven
 	 */
-	setState(newState, wasmDriven = false) {
-		this.animationCoordinator.setState(newState)
-		this.state = newState
+	setState(newState, _wasmDriven = false) {
+		this.animationCoordinator.setState(newState);
+		this.state = newState;
 	}
 
 	/**
@@ -402,21 +401,21 @@ export class AnimatedPlayer {
 	 * @private
 	 */
 	renderFallback(ctx, camera = null) {
-		const camX = camera?.x || 0
-		const camY = camera?.y || 0
+		const camX = camera?.x || 0;
+		const camY = camera?.y || 0;
 		
-		let screenX = 0
-		let screenY = 0
+		let screenX;
+		let screenY;
 		
 		if (globalThis.gameRenderer && typeof globalThis.gameRenderer.wasmToWorld === 'function') {
-			const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0.5, this.y || 0.5)
-			screenX = pos.x - camX
-			screenY = pos.y - camY
+			const pos = globalThis.gameRenderer.wasmToWorld(this.x || 0.5, this.y || 0.5);
+			screenX = pos.x - camX;
+			screenY = pos.y - camY;
 		} else {
-			const worldWidth = 800
-			const worldHeight = 600
-			screenX = (this.x || 0) * worldWidth - camX
-			screenY = (this.y || 0) * worldHeight - camY
+			const worldWidth = 800;
+			const worldHeight = 600;
+			screenX = (this.x || 0) * worldWidth - camX;
+			screenY = (this.y || 0) * worldHeight - camY;
 		}
 		
 		ctx.save()

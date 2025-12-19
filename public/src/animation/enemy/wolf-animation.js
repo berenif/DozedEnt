@@ -626,9 +626,12 @@ export class WolfAnimationSystem {
     }
     
     applyHowlingAnimation(wolf, animation, time) {
-        if (!wolf.howlStartTime) {wolf.howlStartTime = time}
+        if (!wolf.howlStartTime) {
+            wolf.howlStartTime = time;
+        }
         
-        const howlProgress = Math.min((time - wolf.howlStartTime) / animation.headTilt.duration, 1)
+        // Progress calculation (used for timing the animation phases)
+        // const howlProgress = Math.min((time - wolf.howlStartTime) / animation.headTilt.duration, 1);
         
         // Head tilting back (can be driven by WASM head_pitch)
         wolf.headTilt = wolf.headPitch; // Use WASM data

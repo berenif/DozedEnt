@@ -30,48 +30,44 @@ export default class CombatModule {
         const locomotion = context.locomotion || { stridePhase: 0, moving: false }
         const speed = context.speed ?? 0
 
-        const baseLeft = { x: -12, y: -2 }
-        const baseRight = { x: 12, y: -2 }
-        let targetLeft = { ...baseLeft }
-        let targetRight = { ...baseRight }
+        const baseLeft = { x: -12, y: -2 };
+        const baseRight = { x: 12, y: -2 };
+        const targetLeft = { ...baseLeft };
+        const targetRight = { ...baseRight };
 
         if (state === 'attacking') {
             // Enhanced attack animation with anticipation, swing, and follow-through
-            const attackType = context.attackType || 'light'
-            const isHeavy = attackType === 'heavy'
-            const swing = Math.sin(normalizedTime * Math.PI)
-            const reach = this.config.attackReach * (context.attackStrength ?? 1)
+            const attackType = context.attackType || 'light';
+            const isHeavy = attackType === 'heavy';
+            // swing phase calculated inline as needed
+            const reach = this.config.attackReach * (context.attackStrength ?? 1);
             
             // Anticipation phase (0-0.3): pull back
             // Active phase (0.3-0.7): swing forward
             // Recovery phase (0.7-1.0): return to neutral
-            let anticipation = 0
-            let activeSwing = 0
-            let recovery = 0
-            
             if (normalizedTime < 0.3) {
                 // Pull back during anticipation
-                anticipation = normalizedTime / 0.3
-                targetRight.x = facing * (-8 * anticipation)
-                targetRight.y = -4 - anticipation * 4
-                targetLeft.x = facing * (-4 * anticipation)
-                targetLeft.y = -6
+                const anticipation = normalizedTime / 0.3;
+                targetRight.x = facing * (-8 * anticipation);
+                targetRight.y = -4 - anticipation * 4;
+                targetLeft.x = facing * (-4 * anticipation);
+                targetLeft.y = -6;
             } else if (normalizedTime < 0.7) {
                 // Active swing phase with maximum reach
-                activeSwing = (normalizedTime - 0.3) / 0.4
-                const swingCurve = Math.sin(activeSwing * Math.PI)
-                targetRight.x = facing * (reach * swingCurve)
-                targetRight.y = -6 - swingCurve * 8
-                targetLeft.x = facing * (reach * 0.35 * swingCurve)
-                targetLeft.y = -8 - swingCurve * 3
+                const activeSwing = (normalizedTime - 0.3) / 0.4;
+                const swingCurve = Math.sin(activeSwing * Math.PI);
+                targetRight.x = facing * (reach * swingCurve);
+                targetRight.y = -6 - swingCurve * 8;
+                targetLeft.x = facing * (reach * 0.35 * swingCurve);
+                targetLeft.y = -8 - swingCurve * 3;
             } else {
                 // Recovery phase - return to guard position
-                recovery = (normalizedTime - 0.7) / 0.3
-                const recoveryCurve = 1 - recovery
-                targetRight.x = facing * (reach * 0.3 * recoveryCurve)
-                targetRight.y = -4 - recoveryCurve * 2
-                targetLeft.x = facing * 4
-                targetLeft.y = -6
+                const recovery = (normalizedTime - 0.7) / 0.3;
+                const recoveryCurve = 1 - recovery;
+                targetRight.x = facing * (reach * 0.3 * recoveryCurve);
+                targetRight.y = -4 - recoveryCurve * 2;
+                targetLeft.x = facing * 4;
+                targetLeft.y = -6;
             }
             
             // Heavy attacks have more exaggerated motion

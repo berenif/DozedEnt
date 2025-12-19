@@ -292,7 +292,7 @@ export class PlayerActionManager {
 	 * Create roll visual/audio effects (non-gameplay)
 	 * @private
 	 */
-	createRollEffects(dirX, dirY) {
+	createRollEffects(_dirX, _dirY) {
 		if (this.particleSystem) {
 			this.particleSystem.createDustCloud?.(0, 0) // Position handled by renderer
 		}

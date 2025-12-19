@@ -36,10 +36,10 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
     /**
      * Start thunder strike
      */
-    onStart(player, target) {
+    onStart(player, _target) {
         // Play charge-up animation
         if (player.setState) {
-            player.setState('chargingThunder')
+            player.setState('chargingThunder');
         }
         
         // Visual effects
@@ -59,8 +59,8 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
     /**
      * Update thunder strike
      */
-    onUpdate(deltaTime) {
-        const progress = this.getProgress()
+    onUpdate(_deltaTime) {
+        const progress = this.getProgress();
         
         // Phase 1: Charging (0-30%)
         if (progress < 0.3) {
@@ -100,7 +100,9 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
      * Update charging phase
      */
     updateChargingPhase(progress) {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
         // Spawn charge particles
         this.spawnChargeEffects(this.player.position)
@@ -115,7 +117,7 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
     /**
      * Update striking phase
      */
-    updateStrikingPhase(progress) {
+    updateStrikingPhase(_progress) {
         if (this.strikePhase === 0) {
             this.executeMainStrike()
             this.strikePhase = 1
@@ -130,7 +132,7 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
     /**
      * Update chaining phase
      */
-    updateChainingPhase(progress) {
+    updateChainingPhase(_progress) {
         if (this.strikePhase === 1) {
             this.executeChainLightning()
             this.strikePhase = 2
@@ -141,9 +143,11 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
      * Execute main lightning strike
      */
     executeMainStrike() {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
-        const targetPos = this.getTargetPosition()
+        const targetPos = this.getTargetPosition();
         
         // Create main lightning bolt
         this.lightningBolts.push({
@@ -176,9 +180,11 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
      * Execute chain lightning
      */
     executeChainLightning() {
-        if (!this.player) return
+        if (!this.player) {
+            return;
+        }
         
-        const mainTarget = this.getTargetPosition()
+        const mainTarget = this.getTargetPosition();
         this.chainTargets = this.findChainTargets(mainTarget, this.maxChains)
         
         // Create chain lightning bolts
@@ -204,7 +210,9 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
      * Spawn charge effects
      */
     spawnChargeEffects(position) {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         // Electric charge particles
         this.particleSystem.spawn('electric_charge', position, {
@@ -229,7 +237,9 @@ export class ThunderStrikeAbility extends AbilityAnimationBase {
      * Spawn lightning bolt
      */
     spawnLightningBolt() {
-        if (!this.particleSystem || !this.particleSystem.spawn) return
+        if (!this.particleSystem || !this.particleSystem.spawn) {
+            return;
+        }
         
         // Lightning bolt effect
         this.particleSystem.spawn('lightning_bolt', this.player.position, {
