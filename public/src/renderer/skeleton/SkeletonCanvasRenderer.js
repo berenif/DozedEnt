@@ -4,7 +4,9 @@ export class SkeletonCanvasRenderer {
 	constructor(canvas) {
 		this.canvas = canvas;
 		this.ctx = canvas.getContext('2d');
-		this.camera = { x: 0, y: 1.0, z: 1.0, rotX: -0.2, rotY: 0.0, zoom: 1.6 };
+		// Camera positioned for top-down/isometric view
+		// rotX: tilt down to see from above; rotY: slight angle for 3D depth
+		this.camera = { x: 0, y: 0.3, z: 0.8, rotX: -0.6, rotY: 0.3, zoom: 2.0 };
 		this.colors = {
 			bone: '#3be26f',
 			joint: '#ff5252',
@@ -146,7 +148,7 @@ export class SkeletonCanvasRenderer {
 			if (Array.isArray(parents) && parents.length === count) {
 				for (let i = 0; i < count; i++) {
 					const parent = parents[i];
-					if (parent != null && parent >= 0) {
+					if (parent !== null && parent !== -1 && parent >= 0) {
 						this._drawCapsule(
 							skeleton.getBonePosition(parent),
 							skeleton.getBonePosition(i),
@@ -156,37 +158,21 @@ export class SkeletonCanvasRenderer {
 					}
 				}
 			} else {
+				// Fallback: use bone name-based parent mapping
+				const parentMap = this._buildParentMap();
 				for (let i = 0; i < count; i++) {
 					const name = skeleton.getBoneName(i);
 					const pos = skeleton.getBonePosition(i);
-					let parent = null;
-					if (name === 'knee_L') {parent = 'hip_L';}
-					else if (name === 'ankle_L') {parent = 'knee_L';}
-					else if (name === 'knee_R') {parent = 'hip_R';}
-					else if (name === 'ankle_R') {parent = 'knee_R';}
-					else if (name === 'elbow_L') {parent = 'shoulder_L';}
-					else if (name === 'wrist_L') {parent = 'elbow_L';}
-					else if (name === 'elbow_R') {parent = 'shoulder_R';}
-					else if (name === 'wrist_R') {parent = 'elbow_R';}
-					else if (name === 'shoulder_L' || name === 'shoulder_R') {parent = 'chest';}
-					else if (name === 'chest') {parent = 'spine_03';}
-					else if (name === 'spine_03') {parent = 'spine_02';}
-					else if (name === 'spine_02') {parent = 'spine_01';}
-					else if (name === 'spine_01') {parent = 'pelvis';}
-					else if (name === 'neck') {parent = 'chest';}
-					else if (name === 'head') {parent = 'neck';}
-					else if (name === 'hip_L' || name === 'hip_R') {parent = 'pelvis';}
-					else if (name === 'toe_L') {parent = 'foot_L';}
-					else if (name === 'toe_R') {parent = 'foot_R';}
+					const parent = parentMap[name];
 					if (parent) {
-						const mapIndex = (() => {
-							for (let j = 0; j < count; j++) {
-								if (skeleton.getBoneName(j) === parent) {return j;}
-							}
-							return -1;
-						})();
+						const mapIndex = this._findBoneIndex(skeleton, count, parent);
 						if (mapIndex >= 0) {
-							this._drawCapsule(skeleton.getBonePosition(mapIndex), pos, skeleton.getBoneRadius(i) * 2.0, this.colors.bone);
+							this._drawCapsule(
+								skeleton.getBonePosition(mapIndex),
+								pos,
+								skeleton.getBoneRadius(i) * 2.0,
+								this.colors.bone
+							);
 						}
 					}
 				}
@@ -199,13 +185,58 @@ export class SkeletonCanvasRenderer {
 			for (let i = 0; i < count; i++) {
 				const pos = skeleton.getBonePosition(i);
 				const name = skeleton.getBoneName(i);
-				const c = name.endsWith('_L') ? this.colors.left : name.endsWith('_R') ? this.colors.right : this.colors.joint;
+				const c = name.endsWith('_L') ? this.colors.left :
+				          name.endsWith('_R') ? this.colors.right :
+				          this.colors.joint;
 				this._drawJoint(pos, Math.max(0.012, skeleton.getBoneRadius(i) * 1.2), c);
 			}
 		}
 
 		this._drawCenterOfMass(skeleton);
 		this._drawIkTarget();
+	}
+
+	// Build parent mapping for top-down skeleton bone names
+	_buildParentMap() {
+		return {
+			// Spine chain
+			'spine_01': 'pelvis',
+			'spine_02': 'spine_01',
+			'spine_03': 'spine_02',
+			'chest': 'spine_03',
+			'neck': 'chest',
+			'head': 'neck',
+			// Right arm chain
+			'clav_R': 'chest',
+			'upperArm_R': 'clav_R',
+			'forearm_R': 'upperArm_R',
+			'hand_R': 'forearm_R',
+			// Left arm chain
+			'clav_L': 'chest',
+			'upperArm_L': 'clav_L',
+			'forearm_L': 'upperArm_L',
+			'hand_L': 'forearm_L',
+			// Right leg chain
+			'thigh_R': 'pelvis',
+			'shin_R': 'thigh_R',
+			'foot_R': 'shin_R',
+			'toe_R': 'foot_R',
+			// Left leg chain
+			'thigh_L': 'pelvis',
+			'shin_L': 'thigh_L',
+			'foot_L': 'shin_L',
+			'toe_L': 'foot_L'
+		};
+	}
+
+	// Find bone index by name
+	_findBoneIndex(skeleton, count, name) {
+		for (let j = 0; j < count; j++) {
+			if (skeleton.getBoneName(j) === name) {
+				return j;
+			}
+		}
+		return -1;
 	}
 }
 
