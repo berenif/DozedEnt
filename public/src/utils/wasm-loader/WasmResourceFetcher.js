@@ -1,4 +1,4 @@
-﻿import { decompressIfNeeded } from './WasmCompression.js';
+import { decompressIfNeeded } from './WasmCompression.js';
 
 export class WasmResourceFetcher {
   constructor({ retryStrategy, config, logger = console } = {}) {
@@ -132,12 +132,16 @@ export class WasmResourceFetcher {
       baseUrl = new URL(window.location.href);
     }
 
+    // Detect the site's base path (e.g., '/DozedEnt/' for GitHub Pages subdirectory)
+    const basePath = this.detectBasePath(baseUrl);
+
     const candidates = [
-      // Prefer absolute server root first so demo pages don't prefix /demos
-      `/wasm/${moduleName}.wasm`,
-      // Then common relative locations
+      // Prefer relative paths first - these work correctly with baseURI
       `wasm/${moduleName}.wasm`,
       `${moduleName}.wasm`,
+      // Use detected base path for absolute paths (GitHub Pages compatibility)
+      `${basePath}wasm/${moduleName}.wasm`,
+      // Additional fallback paths
       `public/${moduleName}.wasm`,
       `src/wasm/${moduleName}.wasm`,
       `dist/${moduleName}.wasm`,
@@ -160,5 +164,37 @@ export class WasmResourceFetcher {
         }
       })
       .filter(Boolean);
+  }
+
+  /**
+   * Detect the site's base path from the URL.
+   * Handles GitHub Pages subdirectory deployments (e.g., /DozedEnt/).
+   * @param {URL} baseUrl - The base URL to analyze
+   * @returns {string} The base path (e.g., '/DozedEnt/' or '/')
+   */
+  detectBasePath(baseUrl) {
+    try {
+      const pathname = baseUrl.pathname;
+
+      // Check for GitHub Pages pattern: /<repo-name>/...
+      // The first path segment after root is likely the repo name
+      const segments = pathname.split('/').filter(Boolean);
+
+      if (segments.length > 0) {
+        // If we're in a subdirectory (e.g., /DozedEnt/index.html)
+        // Check if this looks like a GitHub Pages deployment
+        const isGitHubPages = baseUrl.hostname.endsWith('.github.io');
+
+        if (isGitHubPages && segments.length >= 1) {
+          // Return the repo path (e.g., '/DozedEnt/')
+          return `/${segments[0]}/`;
+        }
+      }
+
+      // Default to root for non-GitHub Pages or root deployments
+      return '/';
+    } catch {
+      return '/';
+    }
   }
 }
