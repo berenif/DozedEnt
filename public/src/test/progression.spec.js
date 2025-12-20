@@ -20,7 +20,7 @@ const fakeModule = {
 };
 
 async function createPm() {
-  const pm = new ProgressionManager(Promise.resolve(fakeModule), '/src');
+  const pm = new ProgressionManager(Promise.resolve(fakeModule));
   pm.trees.set('warden', { classId: 'warden', version: 1, nodes: [] });
   pm.trees.set('raider', { classId: 'raider', version: 1, nodes: [] });
   pm.trees.set('kensei', { classId: 'kensei', version: 1, nodes: [] });

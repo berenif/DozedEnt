@@ -5,7 +5,7 @@ import { ProgressionCoordinator } from '../game/progression/progression-coordina
 
 export async function startProgressionDemo(ModulePromise, classId = 'warden') {
   const root = document.getElementById('progression-root');
-  const coord = new ProgressionCoordinator(ModulePromise, root, { classId, basePath: '/src' });
+  const coord = new ProgressionCoordinator(ModulePromise, root, { classId });
   await coord.start();
   return coord;
 }
