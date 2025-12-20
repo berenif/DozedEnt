@@ -9,8 +9,11 @@ function fetchJson(url) {
 }
 
 export class ProgressionManager {
-  constructor(modulePromise, basePath = '/src') {
+  constructor(modulePromise, basePath = null) {
     this.modulePromise = modulePromise; // Promise resolving to Emscripten Module
+    // NOTE: basePath is kept for backward compatibility, but upgrade JSONs are
+    // resolved relative to this module via import.meta.url to work under GitHub Pages
+    // subpaths (e.g. /DozedEnt/).
     this.basePath = basePath;
     this.store = new LocalProgressStore();
     this.bridge = null;
@@ -23,9 +26,9 @@ export class ProgressionManager {
     const Module = await this.modulePromise;
     this.bridge = new ProgressionBridge(Module);
     const [warden, raider, kensei] = await Promise.all([
-      fetchJson(`${this.basePath}/data/upgrades/warden.json`),
-      fetchJson(`${this.basePath}/data/upgrades/raider.json`),
-      fetchJson(`${this.basePath}/data/upgrades/kensei.json`)
+      fetchJson(new URL('../../data/upgrades/warden.json', import.meta.url).href),
+      fetchJson(new URL('../../data/upgrades/raider.json', import.meta.url).href),
+      fetchJson(new URL('../../data/upgrades/kensei.json', import.meta.url).href)
     ]);
     this.trees.set('warden', warden);
     this.trees.set('raider', raider);

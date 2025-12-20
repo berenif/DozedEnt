@@ -68,14 +68,14 @@ inputManager = createInputManager(wasmApi, {
 });
 
 vfxManager = new VFXManager(canvas);
-progressionManager = new ProgressionManager(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), '/src');
+progressionManager = new ProgressionManager(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }));
 await progressionManager.init();
 // Default to WARDEN progression for demo
 progressionManager.loadClassState('warden');
 // Optional: mount minimal UI if container exists
 const progRoot = document.getElementById('progression-root');
 if (progRoot) {
-  progressionCoordinator = new ProgressionCoordinator(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), progRoot, { classId: 'warden', basePath: '/src' });
+  progressionCoordinator = new ProgressionCoordinator(Promise.resolve({ exports: wasmApi.exports, memory: wasmApi.memory }), progRoot, { classId: 'warden' });
   try { await progressionCoordinator.start(); } catch (error) {
     console.warn('Failed to start progression coordinator:', error);
   }

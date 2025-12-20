@@ -5,7 +5,7 @@ import { UpgradeTreeView } from '../../ui/progression/UpgradeTreeView.js';
 
 export class ProgressionCoordinator {
   constructor(modulePromise, root, options = {}) {
-    this.pm = new ProgressionManager(modulePromise, options.basePath || '/src');
+    this.pm = new ProgressionManager(modulePromise);
     this.root = root;
     this.vm = null;
     this.view = null;
