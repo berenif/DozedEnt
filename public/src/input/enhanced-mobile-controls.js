@@ -197,6 +197,7 @@ export class EnhancedMobileControls {
     // Only prevent default for game-related touches
     const target = event.target;
     if (target.closest('.mobile-controls') || 
+        target.closest('#demo-canvas') || 
         target.closest('#gameCanvas') || 
         target.closest('.action-btn') ||
         target.closest('#joystick')) {

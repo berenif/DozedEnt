@@ -36,13 +36,21 @@ class MobileGameControls {
     }
 
     setupCanvas() {
-        this.canvas = document.getElementById('gameCanvas');
+        // Try both canvas IDs for compatibility
+        this.canvas = document.getElementById('demo-canvas') || document.getElementById('gameCanvas');
+        if (!this.canvas) {
+            console.warn('[MobileControls] No canvas found (demo-canvas or gameCanvas). Visual effects disabled.');
+            return;
+        }
         this.ctx = this.canvas.getContext('2d');
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
     }
 
     resizeCanvas() {
+        if (!this.canvas) {
+            return;
+        }
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
     }
@@ -883,6 +891,9 @@ class MobileGameControls {
     }
 
     createVisualEffect(type) {
+        if (!this.canvas || !this.ctx) {
+            return;
+        }
         const x = (this.gameState.position.x / 100) * this.canvas.width;
         const y = (this.gameState.position.y / 100) * this.canvas.height;
         
@@ -911,6 +922,9 @@ class MobileGameControls {
     }
 
     drawAttackEffect(x, y) {
+        if (!this.ctx) {
+            return;
+        }
         this.ctx.strokeStyle = '#ff4444';
         this.ctx.lineWidth = 3;
         this.ctx.beginPath();
@@ -918,16 +932,24 @@ class MobileGameControls {
         this.ctx.stroke();
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 35, y - 35, 70, 70);
+            if (this.ctx) {
+                this.ctx.clearRect(x - 35, y - 35, 70, 70);
+            }
         }, 200);
     }
 
     drawRollEffect(x, y) {
+        if (!this.ctx) {
+            return;
+        }
         // Spinning roll effect
         this.ctx.strokeStyle = 'rgba(150, 150, 255, 0.6)';
         this.ctx.lineWidth = 2;
         for (let i = 0; i < 4; i++) {
             setTimeout(() => {
+                if (!this.ctx) {
+                    return;
+                }
                 this.ctx.save();
                 this.ctx.translate(x, y);
                 this.ctx.rotate((Math.PI / 2) * i);
@@ -939,11 +961,16 @@ class MobileGameControls {
         }
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 30, y - 30, 60, 60);
+            if (this.ctx) {
+                this.ctx.clearRect(x - 30, y - 30, 60, 60);
+            }
         }, 500);
     }
 
     drawBlockEffect(x, y) {
+        if (!this.ctx) {
+            return;
+        }
         // Shield/barrier effect
         this.ctx.strokeStyle = '#4488ff';
         this.ctx.fillStyle = 'rgba(68, 136, 255, 0.2)';
@@ -966,11 +993,16 @@ class MobileGameControls {
         this.ctx.stroke();
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 40, y - 40, 80, 80);
+            if (this.ctx) {
+                this.ctx.clearRect(x - 40, y - 40, 80, 80);
+            }
         }, 600);
     }
 
     drawJumpEffect(x, y) {
+        if (!this.ctx) {
+            return;
+        }
         // Jump burst effect
         this.ctx.strokeStyle = '#00ffff';
         this.ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
@@ -979,6 +1011,9 @@ class MobileGameControls {
         // Draw upward burst rings
         for (let i = 0; i < 3; i++) {
             setTimeout(() => {
+                if (!this.ctx) {
+                    return;
+                }
                 this.ctx.save();
                 this.ctx.globalAlpha = 0.7 - i * 0.2;
                 
@@ -1003,11 +1038,16 @@ class MobileGameControls {
         }
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 40, y - 20, 80, 80);
+            if (this.ctx) {
+                this.ctx.clearRect(x - 40, y - 20, 80, 80);
+            }
         }, 400);
     }
 
     drawSkillEffect(x, y, skill) {
+        if (!this.ctx) {
+            return;
+        }
         const colors = {
             '1': '#ff6600',
             '2': '#00ccff',
@@ -1020,6 +1060,9 @@ class MobileGameControls {
         
         for (let i = 0; i < 5; i++) {
             setTimeout(() => {
+                if (!this.ctx) {
+                    return;
+                }
                 this.ctx.beginPath();
                 this.ctx.arc(x, y, 10 + i * 10, 0, Math.PI * 2);
                 this.ctx.fill();
@@ -1027,7 +1070,9 @@ class MobileGameControls {
         }
         
         setTimeout(() => {
-            this.ctx.clearRect(x - 60, y - 60, 120, 120);
+            if (this.ctx) {
+                this.ctx.clearRect(x - 60, y - 60, 120, 120);
+            }
         }, 600);
     }
 
@@ -1149,6 +1194,9 @@ class MobileGameControls {
     }
 
     render() {
+        if (!this.canvas || !this.ctx) {
+            return;
+        }
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
