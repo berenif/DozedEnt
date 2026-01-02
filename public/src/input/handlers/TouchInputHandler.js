@@ -148,10 +148,13 @@ export class TouchInputHandler {
 
     const action = button.dataset.action;
 
+    // Handle both camelCase (HTML) and kebab-case formats
     switch (action) {
+      case 'lightAttack':
       case 'light-attack':
         this.stateManager.handleAction('light-attack', pressed);
         break;
+      case 'heavyAttack':
       case 'heavy-attack':
         this.stateManager.handleAction('heavy-attack', pressed);
         break;
@@ -164,7 +167,22 @@ export class TouchInputHandler {
       case 'special':
         this.stateManager.handleAction('special', pressed);
         break;
+      // Three-button system support (camelCase -> kebab-case)
+      case 'leftHand':
+        this.stateManager.handleAction('left-hand', pressed);
+        break;
+      case 'rightHand':
+        this.stateManager.handleAction('right-hand', pressed);
+        break;
+      case 'special3':
+        this.stateManager.handleAction('special3', pressed);
+        break;
       default:
+        // Try passing through the action directly for custom buttons
+        if (this.config.debugInput) {
+          console.log(`[Touch] Unknown action: ${action}`);
+        }
+        this.stateManager.handleAction(action, pressed);
         break;
     }
   }
